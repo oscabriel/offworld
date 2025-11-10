@@ -1,6 +1,3 @@
-import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
-import UserMenu from "@/components/user-menu";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -10,6 +7,9 @@ import {
 	useQuery,
 } from "convex/react";
 import { useState } from "react";
+import SignInForm from "@/components/sign-in-form";
+import SignUpForm from "@/components/sign-up-form";
+import UserMenu from "@/components/user-menu";
 
 export const Route = createFileRoute("/dashboard")({
 	component: RouteComponent,

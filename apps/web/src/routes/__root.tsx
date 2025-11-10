@@ -1,28 +1,26 @@
-import { Toaster } from "@/components/ui/sonner";
-
-import {
-	HeadContent,
-	Outlet,
-	Scripts,
-	createRootRouteWithContext,
-	useRouteContext,
-} from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import Header from "../components/header";
-import appCss from "../index.css?url";
-import type { QueryClient } from "@tanstack/react-query";
-import type { ConvexQueryClient } from "@convex-dev/react-query";
-import type { ConvexReactClient } from "convex/react";
-
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest, getCookie } from "@tanstack/react-start/server";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import {
 	fetchSession,
 	getCookieName,
 } from "@convex-dev/better-auth/react-start";
-import { authClient } from "@/lib/auth-client";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { createAuth } from "@offworld/backend/convex/auth";
+import type { QueryClient } from "@tanstack/react-query";
+import {
+	createRootRouteWithContext,
+	HeadContent,
+	Outlet,
+	Scripts,
+	useRouteContext,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { createServerFn } from "@tanstack/react-start";
+import { getCookie, getRequest } from "@tanstack/react-start/server";
+import type { ConvexReactClient } from "convex/react";
+import { Toaster } from "@/components/ui/sonner";
+import { authClient } from "@/lib/auth-client";
+import Header from "../components/header";
+import appCss from "../index.css?url";
 
 const fetchAuth = createServerFn({ method: "GET" }).handler(async () => {
 	const { session } = await fetchSession(getRequest());

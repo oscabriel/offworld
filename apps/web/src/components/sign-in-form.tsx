@@ -1,8 +1,8 @@
-import { authClient } from "@/lib/auth-client";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import z from "zod";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -49,8 +49,8 @@ export default function SignInForm({
 	});
 
 	return (
-		<div className="mx-auto w-full mt-10 max-w-md p-6">
-			<h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
+		<div className="mx-auto mt-10 w-full max-w-md p-6">
+			<h1 className="mb-6 text-center font-bold text-3xl">Welcome Back</h1>
 
 			<form
 				onSubmit={(e) => {

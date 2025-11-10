@@ -1,0 +1,36 @@
+{
+  "name": "fumadocs",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port=4000",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "postinstall": "fumadocs-mdx"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-router-devtools": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "fumadocs-core": "16.0.9",
+    "fumadocs-mdx": "13.0.6",
+    "fumadocs-ui": "16.0.9",
+    "lucide-static": "^0.552.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwind-merge": "catalog:",
+    "vite": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/mdx": "^2.0.13",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite-tsconfig-paths": "catalog:"
+  }
+}

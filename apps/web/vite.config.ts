@@ -10,10 +10,16 @@ export default defineConfig({
 		port: 3001,
 	},
 	plugins: [
-		tsconfigPaths(),
+		tsconfigPaths({
+			projects: ["./tsconfig.json"],
+		}),
 		tailwindcss(),
 		tanstackStart(),
-		viteReact(),
+		viteReact({
+			babel: {
+				plugins: ["babel-plugin-react-compiler"],
+			},
+		}),
 		alchemy(),
 	],
 });

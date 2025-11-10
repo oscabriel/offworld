@@ -37,17 +37,18 @@
 		"@convex-dev/better-auth": "catalog:"
 	},
 	"devDependencies": {
+		"@cloudflare/vite-plugin": "^1.13.8",
 		"@tanstack/react-router-devtools": "catalog:",
 		"@testing-library/dom": "^10.4.0",
 		"@testing-library/react": "^16.2.0",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
+		"alchemy": "^0.77.0",
+		"babel-plugin-react-compiler": "^1.0.0",
 		"jsdom": "^26.0.0",
 		"typescript": "catalog:",
 		"vite": "catalog:",
-		"web-vitals": "^5.0.3",
-		"alchemy": "^0.77.0",
-		"@cloudflare/vite-plugin": "^1.13.8"
+		"web-vitals": "^5.0.3"
 	}
 }

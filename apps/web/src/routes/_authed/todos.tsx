@@ -17,19 +17,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
-export const Route = createFileRoute("/todos")({
+export const Route = createFileRoute("/_authed/todos")({
 	component: TodosRoute,
 });
 
 function TodosRoute() {
 	const [newTodoText, setNewTodoText] = useState("");
 
-	const todosQuery = useSuspenseQuery(convexQuery(api.todos.getAll, {}));
+	const todosQuery = useSuspenseQuery(convexQuery(api.todos.get, {}));
 	const todos = todosQuery.data;
 
 	const createTodo = useMutation(api.todos.create);
 	const toggleTodo = useMutation(api.todos.toggle);
-	const removeTodo = useMutation(api.todos.deleteTodo);
+	const removeTodo = useMutation(api.todos.remove);
 
 	const handleAddTodo = async (e: React.FormEvent) => {
 		e.preventDefault();

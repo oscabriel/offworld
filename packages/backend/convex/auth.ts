@@ -37,3 +37,23 @@ export const getCurrentUser = query({
 	returns: v.any(),
 	handler: async (ctx) => authComponent.getAuthUser(ctx),
 });
+
+/**
+ * Returns the current authenticated user or null if not authenticated.
+ * Use for queries that support unauthenticated access.
+ */
+export async function safeGetUser(ctx: GenericCtx<DataModel>) {
+	return await authComponent.safeGetAuthUser(ctx);
+}
+
+/**
+ * Returns the current authenticated user or throws an error if not authenticated.
+ * Use for mutations and protected queries.
+ */
+export async function getUser(ctx: GenericCtx<DataModel>) {
+	const user = await authComponent.getAuthUser(ctx);
+	if (!user) {
+		throw new Error("Unauthorized");
+	}
+	return user;
+}

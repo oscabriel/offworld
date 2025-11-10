@@ -1,9 +1,17 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getUser, safeGetUser } from "./auth";
 
-export const getAll = query({
+export const get = query({
 	handler: async (ctx) => {
-		return await ctx.db.query("todos").collect();
+		const user = await safeGetUser(ctx);
+		if (!user) {
+			return [];
+		}
+		return await ctx.db
+			.query("todos")
+			.withIndex("userId", (q) => q.eq("userId", user._id))
+			.collect();
 	},
 });
 
@@ -12,9 +20,11 @@ export const create = mutation({
 		text: v.string(),
 	},
 	handler: async (ctx, args) => {
+		const user = await getUser(ctx);
 		const newTodoId = await ctx.db.insert("todos", {
 			text: args.text,
 			completed: false,
+			userId: user._id,
 		});
 		return await ctx.db.get(newTodoId);
 	},
@@ -26,16 +36,30 @@ export const toggle = mutation({
 		completed: v.boolean(),
 	},
 	handler: async (ctx, args) => {
+		const user = await getUser(ctx);
+		const todo = await ctx.db.get(args.id);
+
+		if (!todo || todo.userId !== user._id) {
+			throw new Error("Todo not found or unauthorized");
+		}
+
 		await ctx.db.patch(args.id, { completed: args.completed });
 		return { success: true };
 	},
 });
 
-export const deleteTodo = mutation({
+export const remove = mutation({
 	args: {
 		id: v.id("todos"),
 	},
 	handler: async (ctx, args) => {
+		const user = await getUser(ctx);
+		const todo = await ctx.db.get(args.id);
+
+		if (!todo || todo.userId !== user._id) {
+			throw new Error("Todo not found or unauthorized");
+		}
+
 		await ctx.db.delete(args.id);
 		return { success: true };
 	},

@@ -5,7 +5,7 @@
 	"scripts": {
 		"build": "vite build",
 		"serve": "vite preview",
-		"dev": "vite dev --port=3001",
+		"dev": "alchemy dev --stage dev",
 		"deploy": "alchemy deploy",
 		"destroy": "alchemy destroy"
 	},

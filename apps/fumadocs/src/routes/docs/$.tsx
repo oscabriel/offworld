@@ -75,8 +75,10 @@ function Page() {
 
 function transformPageTree(root: PageTree.Root): PageTree.Root {
 	function mapNode<T extends PageTree.Node>(item: T): T {
+		let transformed = item;
+
 		if (typeof item.icon === "string") {
-			item = {
+			transformed = {
 				...item,
 				icon: (
 					<span
@@ -88,15 +90,15 @@ function transformPageTree(root: PageTree.Root): PageTree.Root {
 			};
 		}
 
-		if (item.type === "folder") {
+		if (transformed.type === "folder") {
 			return {
-				...item,
-				index: item.index ? mapNode(item.index) : undefined,
-				children: item.children.map(mapNode),
+				...transformed,
+				index: transformed.index ? mapNode(transformed.index) : undefined,
+				children: transformed.children.map(mapNode),
 			};
 		}
 
-		return item;
+		return transformed;
 	}
 
 	return {

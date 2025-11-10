@@ -6,6 +6,7 @@ import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 
+// biome-ignore lint/style/noNonNullAssertion: this is fine
 const siteUrl = process.env.SITE_URL!;
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
@@ -34,5 +35,5 @@ export { createAuth };
 export const getCurrentUser = query({
 	args: {},
 	returns: v.any(),
-	handler: async (ctx, args) => authComponent.getAuthUser(ctx),
+	handler: async (ctx) => authComponent.getAuthUser(ctx),
 });

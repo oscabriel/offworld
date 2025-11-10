@@ -10,6 +10,8 @@ export const source = loader({
 			return;
 		}
 
-		if (icon in icons) return icons[icon as keyof typeof icons];
+		const iconKey = icon as keyof typeof icons;
+		// biome-ignore lint/performance/noDynamicNamespaceImportAccess: Dynamic icon lookup is required for fumadocs
+		if (iconKey in icons) return icons[iconKey];
 	},
 });

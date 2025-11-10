@@ -16,7 +16,7 @@
 		"fumadocs-core": "16.0.9",
 		"fumadocs-mdx": "13.0.6",
 		"fumadocs-ui": "16.0.9",
-		"lucide-static": "^0.552.0",
+		"lucide-static": "^0.553.0",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"tailwind-merge": "catalog:",

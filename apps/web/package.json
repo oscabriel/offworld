@@ -20,7 +20,7 @@
 		"@tanstack/router-plugin": "^1.132.31",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
-		"lucide-react": "^0.525.0",
+		"lucide-react": "^0.553.0",
 		"next-themes": "^0.4.6",
 		"react": "catalog:",
 		"react-dom": "catalog:",
@@ -46,7 +46,7 @@
 		"@vitejs/plugin-react": "catalog:",
 		"alchemy": "^0.77.0",
 		"babel-plugin-react-compiler": "^1.0.0",
-		"jsdom": "^26.0.0",
+		"jsdom": "^27.1.0",
 		"typescript": "catalog:",
 		"vite": "catalog:",
 		"web-vitals": "^5.0.3"

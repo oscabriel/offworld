@@ -25,7 +25,8 @@
 			"@vitejs/plugin-react": "^5.1.0",
 			"typescript": "^5.9.3",
 			"vite": "^7.2.2",
-			"@types/node": "^24.10.0"
+			"@types/node": "^24.10.0",
+			"alchemy": "^0.77.0"
 		}
 	},
 	"scripts": {
@@ -37,7 +38,11 @@
 		"dev:native": "turbo -F native dev",
 		"dev:web": "turbo -F web dev",
 		"dev:server": "turbo -F @offworld/backend dev",
-		"dev:setup": "turbo -F @offworld/backend dev:setup"
+		"dev:setup": "turbo -F @offworld/backend dev:setup",
+		"deploy:backend": "cd packages/backend && npx convex deploy --yes",
+		"deploy:web": "cd apps/web && bun run deploy",
+		"deploy:docs": "cd apps/fumadocs && bun run deploy",
+		"deploy:all": "bun run deploy:backend && bun run deploy:web && bun run deploy:docs"
 	},
 	"dependencies": {},
 	"devDependencies": {

@@ -62,21 +62,25 @@ function TodosRoute() {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-md py-10">
+		<div className="container mx-auto max-w-2xl px-4 py-24">
+			<div className="mb-8">
+				<h1 className="text-3xl font-semibold tracking-tight">Todo List</h1>
+				<p className="text-muted-foreground mt-2">
+					Manage your tasks efficiently
+				</p>
+			</div>
+
 			<Card>
-				<CardHeader>
-					<CardTitle>Todo List (Convex)</CardTitle>
-					<CardDescription>Manage your tasks efficiently</CardDescription>
-				</CardHeader>
-				<CardContent>
+				<CardContent className="pt-6">
 					<form
 						onSubmit={handleAddTodo}
-						className="mb-6 flex items-center space-x-2"
+						className="mb-6 flex items-center gap-2"
 					>
 						<Input
 							value={newTodoText}
 							onChange={(e) => setNewTodoText(e.target.value)}
 							placeholder="Add a new task..."
+							className="flex-1"
 						/>
 						<Button type="submit" disabled={!newTodoText.trim()}>
 							Add
@@ -84,15 +88,17 @@ function TodosRoute() {
 					</form>
 
 					{todos?.length === 0 ? (
-						<p className="py-4 text-center">No todos yet. Add one above!</p>
+						<p className="text-muted-foreground py-8 text-center text-sm">
+							No todos yet. Add one above!
+						</p>
 					) : (
 						<ul className="space-y-2">
 							{todos?.map((todo) => (
 								<li
 									key={todo._id}
-									className="flex items-center justify-between rounded-md border p-2"
+									className="flex items-center justify-between rounded-lg border bg-card p-3 transition-colors hover:bg-accent"
 								>
-									<div className="flex items-center space-x-2">
+									<div className="flex items-center gap-3">
 										<Checkbox
 											checked={todo.completed}
 											onCheckedChange={() =>
@@ -102,7 +108,7 @@ function TodosRoute() {
 										/>
 										<label
 											htmlFor={`todo-${todo._id}`}
-											className={`${
+											className={`cursor-pointer ${
 												todo.completed
 													? "text-muted-foreground line-through"
 													: ""
@@ -116,6 +122,7 @@ function TodosRoute() {
 										size="icon"
 										onClick={() => handleDeleteTodo(todo._id)}
 										aria-label="Delete todo"
+										className="h-8 w-8"
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>

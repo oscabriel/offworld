@@ -49,13 +49,96 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "My App",
+				title: "offworld",
+			},
+			{
+				name: "description",
+				content: "Explore distant code.",
+			},
+			// OpenGraph meta tags
+			{
+				property: "og:title",
+				content: "OFFWORLD",
+			},
+			{
+				property: "og:description",
+				content: "Explore distant code.",
+			},
+			{
+				property: "og:image",
+				content: "https://offworld.sh/opengraph-image.png",
+			},
+			{
+				property: "og:type",
+				content: "website",
+			},
+			{
+				property: "og:url",
+				content: "https://offworld.sh",
+			},
+			// Twitter Card meta tags
+			{
+				name: "twitter:card",
+				content: "summary_large_image",
+			},
+			{
+				name: "twitter:title",
+				content: "OFFWORLD",
+			},
+			{
+				name: "twitter:description",
+				content: "Explore distant code.",
+			},
+			{
+				name: "twitter:image",
+				content: "https://offworld.sh/opengraph-image.png",
 			},
 		],
 		links: [
 			{
 				rel: "stylesheet",
 				href: appCss,
+			},
+			// Favicon
+			{
+				rel: "icon",
+				type: "image/svg+xml",
+				href: "/favicon.svg",
+			},
+			// Preload critical images
+			{
+				rel: "preload",
+				as: "image",
+				href: "/background-image.png",
+			},
+			{
+				rel: "preload",
+				as: "image",
+				href: "/logotype.svg",
+			},
+			{
+				rel: "preload",
+				as: "image",
+				href: "/logotype-mobile.svg",
+			},
+			{
+				rel: "preload",
+				as: "image",
+				href: "/favicon.svg",
+			},
+			// Google Font - Sorts Mill Goudy
+			{
+				rel: "preconnect",
+				href: "https://fonts.googleapis.com",
+			},
+			{
+				rel: "preconnect",
+				href: "https://fonts.gstatic.com",
+				crossOrigin: "anonymous",
+			},
+			{
+				rel: "stylesheet",
+				href: "https://fonts.googleapis.com/css2?family=Sorts+Mill+Goudy:ital@0;1&display=swap",
 			},
 		],
 	}),
@@ -82,10 +165,8 @@ function RootDocument() {
 					<HeadContent />
 				</head>
 				<body>
-					<div className="grid h-svh grid-rows-[auto_1fr]">
-						<Header />
-						<Outlet />
-					</div>
+					<Header />
+					<Outlet />
 					<Toaster richColors />
 					<TanStackRouterDevtools position="bottom-left" />
 					<Scripts />

@@ -1,50 +1,52 @@
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@offworld/backend/convex/_generated/api";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
 });
 
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
-
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
-
 function HomeComponent() {
-	const healthCheck = useQuery(convexQuery(api.healthCheck.get, {}));
-
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-2">
-			<pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
-			<div className="grid gap-6">
-				<section className="rounded-lg border p-4">
-					<h2 className="mb-2 font-medium">API Status</h2>
-					<div className="flex items-center gap-2">
-						<div
-							className={`h-2 w-2 rounded-full ${healthCheck.data === "OK" ? "bg-green-500" : healthCheck.isLoading ? "bg-orange-400" : "bg-red-500"}`}
-						/>
-						<span className="text-muted-foreground text-sm">
-							{healthCheck.isLoading
-								? "Checking..."
-								: healthCheck.data === "OK"
-									? "Connected"
-									: "Error"}
-						</span>
-					</div>
-				</section>
+		<div className="relative min-h-screen w-full bg-background">
+			{/* Background image */}
+			<div
+				className="absolute inset-0 z-0 bg-center bg-cover opacity-10 dark:opacity-5"
+				style={{
+					backgroundImage: "url(/background-image.png)",
+				}}
+			/>
+
+			{/* Centered content */}
+			<div className="relative z-10 flex min-h-screen flex-col items-center justify-between p-4">
+				{/* Spacer for vertical centering of logo */}
+				<div className="flex-1" />
+
+				{/* OFFWORLD logotype - responsive */}
+				<img
+					src="/logotype-mobile.svg"
+					alt="OFFWORLD"
+					className="w-[80vw] max-w-none md:hidden"
+				/>
+				<img
+					src="/logotype.svg"
+					alt="OFFWORLD"
+					className="hidden w-[80vw] max-w-none md:block"
+				/>
+
+				{/* Spacer pushing footer down */}
+				<div className="flex-1" />
+
+				{/* Footer text at bottom */}
+				<div className="flex flex-col items-center gap-3 pb-8 text-center">
+					<Link
+						to="/"
+						className="font-sorts-mill text-2xl text-primary hover:underline"
+					>
+						offworld.sh
+					</Link>
+					<p className="font-sorts-mill text-primary text-xl italic">
+						"Explore distant code."
+					</p>
+				</div>
 			</div>
 		</div>
 	);

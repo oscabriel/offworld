@@ -22,19 +22,21 @@ function RouteComponent() {
 	return (
 		<div className="container mx-auto max-w-4xl px-4 py-24">
 			<Authenticated>
-				<div className="space-y-8">
+				<div className="space-y-12">
 					<div>
-						<h1 className="text-3xl font-semibold tracking-tight">
+						<h1 className="font-normal font-sorts-mill text-5xl tracking-tight">
 							Dashboard
 						</h1>
-						<p className="text-muted-foreground mt-2">
+						<p className="mt-3 font-work-sans font-medium text-lg text-muted-foreground">
 							Welcome to your dashboard
 						</p>
 					</div>
 
-					<div className="rounded-lg border p-6">
-						<h2 className="mb-2 text-lg font-medium">Private Data</h2>
-						<p className="text-muted-foreground">
+					<div className="rounded-lg border-2 border-primary/10 p-8">
+						<h2 className="mb-3 font-normal font-sorts-mill text-2xl">
+							Private Data
+						</h2>
+						<p className="font-work-sans font-medium text-base text-muted-foreground">
 							{privateData?.message || "Loading..."}
 						</p>
 					</div>

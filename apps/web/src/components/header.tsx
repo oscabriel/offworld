@@ -4,8 +4,7 @@ export default function Header() {
 	const { userId } = useRouteContext({ from: "__root__" });
 
 	const links = [
-		{ to: "/", label: "Home" },
-		{ to: "/dashboard", label: "Dashboard" },
+		{ to: "/dashboard", label: userId ? "Dashboard" : "Get Started" },
 		...(userId ? [{ to: "/todos", label: "Todos" } as const] : []),
 	];
 
@@ -15,7 +14,7 @@ export default function Header() {
 				<Link to="/" className="flex items-center gap-2 pointer-events-auto">
 					<img src="/favicon.svg" alt="Home" className="h-10 w-10" />
 				</Link>
-				<nav className="flex gap-6 text-sm pointer-events-auto">
+				<nav className="flex gap-6 text-lg font-sorts-mill pointer-events-auto">
 					{links.map(({ to, label }) => {
 						return (
 							<Link

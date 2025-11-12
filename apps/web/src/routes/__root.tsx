@@ -126,7 +126,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				as: "image",
 				href: "/favicon.svg",
 			},
-			// Google Font - Sorts Mill Goudy
+			// Google Fonts - Sorts Mill Goudy & Work Sans
 			{
 				rel: "preconnect",
 				href: "https://fonts.googleapis.com",
@@ -138,7 +138,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Sorts+Mill+Goudy:ital@0;1&display=swap",
+				href: "https://fonts.googleapis.com/css2?family=Sorts+Mill+Goudy:ital@0;1&family=Work+Sans:wght@300;400;500;600&display=swap",
 			},
 		],
 	}),

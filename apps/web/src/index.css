@@ -5,6 +5,7 @@
 
 @theme {
 	--font-sorts-mill: "Sorts Mill Goudy", serif;
+	--font-work-sans: "Work Sans", sans-serif;
 }
 
 :root {
@@ -43,7 +44,7 @@
 	--font-sans: sans-serif;
 	--font-serif: serif;
 	--font-mono: monospace;
-	--radius: 0.5rem;
+	--radius: 0rem;
 	--shadow-x: 0rem;
 	--shadow-y: 0.125rem;
 	--shadow-blur: 0.5rem;
@@ -108,7 +109,7 @@
 	--font-sans: sans-serif;
 	--font-serif: serif;
 	--font-mono: monospace;
-	--radius: 0.5rem;
+	--radius: 0rem;
 	--shadow-x: 0rem;
 	--shadow-y: 0.125rem;
 	--shadow-blur: 0.5rem;

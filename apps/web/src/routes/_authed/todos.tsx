@@ -63,42 +63,42 @@ function TodosRoute() {
 
 	return (
 		<div className="container mx-auto max-w-2xl px-4 py-24">
-			<div className="mb-8">
-				<h1 className="text-3xl font-semibold tracking-tight">Todo List</h1>
-				<p className="text-muted-foreground mt-2">
+			<div className="mb-12">
+				<h1 className="font-sorts-mill text-5xl font-normal tracking-tight">Todo List</h1>
+				<p className="font-work-sans font-medium text-muted-foreground mt-3 text-lg">
 					Manage your tasks efficiently
 				</p>
 			</div>
 
-			<Card>
-				<CardContent className="pt-6">
+			<Card className="border-2 border-primary/10">
+				<CardContent className="pt-8">
 					<form
 						onSubmit={handleAddTodo}
-						className="mb-6 flex items-center gap-2"
+						className="mb-8 flex items-center gap-3"
 					>
 						<Input
 							value={newTodoText}
 							onChange={(e) => setNewTodoText(e.target.value)}
 							placeholder="Add a new task..."
-							className="flex-1"
+							className="flex-1 text-base"
 						/>
-						<Button type="submit" disabled={!newTodoText.trim()}>
+						<Button type="submit" disabled={!newTodoText.trim()} className="px-6">
 							Add
 						</Button>
 					</form>
 
 					{todos?.length === 0 ? (
-						<p className="text-muted-foreground py-8 text-center text-sm">
+						<p className="font-work-sans font-medium text-muted-foreground py-12 text-center text-base">
 							No todos yet. Add one above!
 						</p>
 					) : (
-						<ul className="space-y-2">
+						<ul className="space-y-3">
 							{todos?.map((todo) => (
 								<li
 									key={todo._id}
-									className="flex items-center justify-between rounded-lg border bg-card p-3 transition-colors hover:bg-accent"
+									className="flex items-center justify-between rounded-lg border-2 border-primary/10 bg-card p-4 transition-all hover:border-primary/20 hover:bg-accent/50"
 								>
-									<div className="flex items-center gap-3">
+									<div className="flex items-center gap-4">
 										<Checkbox
 											checked={todo.completed}
 											onCheckedChange={() =>
@@ -108,7 +108,7 @@ function TodosRoute() {
 										/>
 										<label
 											htmlFor={`todo-${todo._id}`}
-											className={`cursor-pointer ${
+											className={`font-work-sans font-medium cursor-pointer text-base ${
 												todo.completed
 													? "text-muted-foreground line-through"
 													: ""
@@ -122,7 +122,7 @@ function TodosRoute() {
 										size="icon"
 										onClick={() => handleDeleteTodo(todo._id)}
 										aria-label="Delete todo"
-										className="h-8 w-8"
+										className="h-9 w-9"
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>

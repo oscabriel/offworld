@@ -9,7 +9,7 @@ function HomeComponent() {
 		<div className="relative min-h-screen w-full bg-background">
 			{/* Background image */}
 			<div
-				className="absolute inset-0 z-0 bg-center bg-cover opacity-10 dark:opacity-5"
+				className="absolute inset-0 z-0 bg-center bg-cover opacity-10 dark:opacity-10"
 				style={{
 					backgroundImage: "url(/background-image.png)",
 				}}

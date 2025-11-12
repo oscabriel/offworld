@@ -52,8 +52,8 @@ export default function SignUpForm({
 	});
 
 	return (
-		<div className="mx-auto mt-10 w-full max-w-md p-6">
-			<h1 className="mb-6 text-center font-bold text-3xl">Create Account</h1>
+		<div className="mx-auto mt-10 w-full max-w-md p-8">
+			<h1 className="font-sorts-mill mb-8 text-center text-5xl font-normal">Create Account</h1>
 
 			<form
 				onSubmit={(e) => {
@@ -61,7 +61,7 @@ export default function SignUpForm({
 					e.stopPropagation();
 					form.handleSubmit();
 				}}
-				className="space-y-4"
+				className="space-y-6"
 			>
 				<div>
 					<form.Field name="name">
@@ -144,11 +144,11 @@ export default function SignUpForm({
 				</form.Subscribe>
 			</form>
 
-			<div className="mt-4 text-center">
+			<div className="mt-6 text-center">
 				<Button
 					variant="link"
 					onClick={onSwitchToSignIn}
-					className="text-indigo-600 hover:text-indigo-800"
+					className="text-primary hover:text-primary/80"
 				>
 					Already have an account? Sign In
 				</Button>

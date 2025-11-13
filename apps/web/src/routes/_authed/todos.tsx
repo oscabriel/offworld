@@ -7,13 +7,7 @@ import { useMutation } from "convex/react";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
@@ -64,8 +58,10 @@ function TodosRoute() {
 	return (
 		<div className="container mx-auto max-w-2xl px-4 py-24">
 			<div className="mb-12">
-				<h1 className="font-sorts-mill text-5xl font-normal tracking-tight">Todo List</h1>
-				<p className="font-work-sans font-medium text-muted-foreground mt-3 text-lg">
+				<h1 className="font-normal font-serif text-5xl tracking-tight">
+					Todo List
+				</h1>
+				<p className="mt-3 font-mono font-medium text-lg text-muted-foreground">
 					Manage your tasks efficiently
 				</p>
 			</div>
@@ -82,13 +78,17 @@ function TodosRoute() {
 							placeholder="Add a new task..."
 							className="flex-1 text-base"
 						/>
-						<Button type="submit" disabled={!newTodoText.trim()} className="px-6">
+						<Button
+							type="submit"
+							disabled={!newTodoText.trim()}
+							className="px-6"
+						>
 							Add
 						</Button>
 					</form>
 
 					{todos?.length === 0 ? (
-						<p className="font-work-sans font-medium text-muted-foreground py-12 text-center text-base">
+						<p className="py-12 text-center font-mono font-medium text-base text-muted-foreground">
 							No todos yet. Add one above!
 						</p>
 					) : (
@@ -108,7 +108,7 @@ function TodosRoute() {
 										/>
 										<label
 											htmlFor={`todo-${todo._id}`}
-											className={`font-work-sans font-medium cursor-pointer text-base ${
+											className={`cursor-pointer font-mono font-medium text-base ${
 												todo.completed
 													? "text-muted-foreground line-through"
 													: ""

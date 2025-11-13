@@ -3,9 +3,18 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@font-face {
+	font-family: "Not Jam Third Dimension";
+	src: url("/not-jam-third-dimension.woff2") format("woff2");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
 @theme {
-	--font-sorts-mill: "Sorts Mill Goudy", serif;
-	--font-work-sans: "Work Sans", sans-serif;
+	--font-serif: "Sorts Mill Goudy", serif;
+	--font-mono: "Geist Mono", monospace;
+	--font-special: "Not Jam Third Dimension", "Sorts Mill Goudy", serif;
 }
 
 :root {
@@ -42,8 +51,9 @@
 	--sidebar-border: oklch(0.8452 0 0);
 	--sidebar-ring: oklch(0.2178 0 0);
 	--font-sans: sans-serif;
-	--font-serif: serif;
-	--font-mono: monospace;
+	--font-serif: "Sorts Mill Goudy", serif;
+	--font-mono: "Geist Mono", monospace;
+	--font-special: "Not Jam Third Dimension", "Sorts Mill Goudy", serif;
 	--radius: 0rem;
 	--shadow-x: 0rem;
 	--shadow-y: 0.125rem;
@@ -107,8 +117,9 @@
 	--sidebar-border: oklch(0.3715 0 0);
 	--sidebar-ring: oklch(0.9702 0 0);
 	--font-sans: sans-serif;
-	--font-serif: serif;
-	--font-mono: monospace;
+	--font-serif: "Sorts Mill Goudy", serif;
+	--font-mono: "Geist Mono", monospace;
+	--font-special: "Not Jam Third Dimension", "Sorts Mill Goudy", serif;
 	--radius: 0rem;
 	--shadow-x: 0rem;
 	--shadow-y: 0.125rem;
@@ -173,6 +184,7 @@
 	--font-sans: var(--font-sans);
 	--font-mono: var(--font-mono);
 	--font-serif: var(--font-serif);
+	--font-special: var(--font-special);
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);

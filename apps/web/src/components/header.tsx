@@ -9,18 +9,18 @@ export default function Header() {
 	];
 
 	return (
-		<div className="absolute top-0 right-0 left-0 z-50 bg-transparent pointer-events-none">
+		<div className="pointer-events-none absolute top-0 right-0 left-0 z-50 bg-transparent">
 			<div className="flex flex-row items-center justify-between px-4 py-2">
-				<Link to="/" className="flex items-center gap-2 pointer-events-auto">
+				<Link to="/" className="pointer-events-auto flex items-center gap-2">
 					<img src="/favicon.svg" alt="Home" className="h-10 w-10" />
 				</Link>
-				<nav className="flex gap-6 text-lg font-sorts-mill pointer-events-auto">
+				<nav className="pointer-events-auto flex gap-6 font-serif text-lg">
 					{links.map(({ to, label }) => {
 						return (
 							<Link
 								key={to}
 								to={to}
-								className="hover:opacity-70 transition-opacity cursor-pointer"
+								className="cursor-pointer transition-opacity hover:opacity-70"
 							>
 								{label}
 							</Link>

@@ -24,19 +24,19 @@ function RouteComponent() {
 			<Authenticated>
 				<div className="space-y-12">
 					<div>
-						<h1 className="font-normal font-sorts-mill text-5xl tracking-tight">
+						<h1 className="font-normal font-serif text-5xl tracking-tight">
 							Dashboard
 						</h1>
-						<p className="mt-3 font-work-sans font-medium text-lg text-muted-foreground">
+						<p className="mt-3 font-mono font-medium text-lg text-muted-foreground">
 							Welcome to your dashboard
 						</p>
 					</div>
 
 					<div className="rounded-lg border-2 border-primary/10 p-8">
-						<h2 className="mb-3 font-normal font-sorts-mill text-2xl">
+						<h2 className="mb-3 font-normal font-serif text-2xl">
 							Private Data
 						</h2>
-						<p className="font-work-sans font-medium text-base text-muted-foreground">
+						<p className="font-mono font-medium text-base text-muted-foreground">
 							{privateData?.message || "Loading..."}
 						</p>
 					</div>

@@ -39,11 +39,11 @@ function HomeComponent() {
 				<div className="flex flex-col items-center gap-3 pb-8 text-center">
 					<Link
 						to="/"
-						className="font-sorts-mill text-2xl text-primary hover:underline"
+						className="font-serif text-2xl text-primary hover:underline"
 					>
 						offworld.sh
 					</Link>
-					<p className="font-sorts-mill text-primary text-xl italic">
+					<p className="font-serif text-primary text-xl italic">
 						"Explore distant code."
 					</p>
 				</div>

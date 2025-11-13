@@ -38,6 +38,7 @@
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.13.8",
+		"@tailwindcss/typography": "^0.5.19",
 		"@tanstack/react-router-devtools": "catalog:",
 		"@testing-library/dom": "^10.4.0",
 		"@testing-library/react": "^16.2.0",

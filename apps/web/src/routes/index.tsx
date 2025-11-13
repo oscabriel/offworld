@@ -1,10 +1,39 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
 });
 
 function HomeComponent() {
+	const [repoUrl, setRepoUrl] = useState("");
+	const navigate = useNavigate();
+
+	const handleAnalyze = () => {
+		// Parse GitHub URL to extract owner/name
+		const match = repoUrl.match(
+			/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/,
+		);
+
+		if (match) {
+			const [, owner, name] = match;
+			navigate({ to: "/repo/$owner/$name", params: { owner, name } });
+		} else {
+			// Try parsing as just "owner/repo" format
+			const simpleMatch = repoUrl.match(/^([^/]+)\/([^/]+)$/);
+			if (simpleMatch) {
+				const [, owner, name] = simpleMatch;
+				navigate({ to: "/repo/$owner/$name", params: { owner, name } });
+			}
+		}
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			handleAnalyze();
+		}
+	};
+
 	return (
 		<div className="relative min-h-screen w-full bg-background">
 			{/* Background image */}
@@ -31,6 +60,35 @@ function HomeComponent() {
 					alt="OFFWORLD"
 					className="hidden w-[80vw] max-w-none md:block"
 				/>
+
+				{/* Get Started input section */}
+				<div className="mt-16 w-full max-w-2xl px-4">
+					<label
+						htmlFor="repo-url"
+						className="mb-3 block font-mono text-muted-foreground text-sm uppercase tracking-wide"
+					>
+						Get Started
+					</label>
+					<div className="flex gap-2">
+						<input
+							id="repo-url"
+							type="text"
+							value={repoUrl}
+							onChange={(e) => setRepoUrl(e.target.value)}
+							onKeyDown={handleKeyDown}
+							placeholder="github.com/owner/repo"
+							className="flex-1 border border-primary/20 bg-background px-4 py-3 font-mono text-foreground text-lg focus:border-primary focus:outline-none"
+						/>
+						<button
+							type="button"
+							onClick={handleAnalyze}
+							disabled={!repoUrl}
+							className="border border-primary bg-primary px-8 py-3 font-mono text-lg text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							Analyze
+						</button>
+					</div>
+				</div>
 
 				{/* Spacer pushing footer down */}
 				<div className="flex-1" />

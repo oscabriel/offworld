@@ -5,7 +5,7 @@ export default function Header() {
 
 	const links = [
 		{ to: "/dashboard", label: userId ? "Dashboard" : "Get Started" },
-		...(userId ? [{ to: "/todos", label: "Todos" } as const] : []),
+		{ to: "/test-workflow", label: "Test" },
 	];
 
 	return (

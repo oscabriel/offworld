@@ -44,7 +44,9 @@
 		"deploy:docs": "cd apps/fumadocs && bun run deploy",
 		"deploy:all": "bun run deploy:backend && bun run deploy:web && bun run deploy:docs"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"react-markdown": "^10.1.0"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
 		"@cloudflare/workers-types": "^4.20250822.0",

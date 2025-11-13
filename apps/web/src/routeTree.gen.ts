@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TestWorkflowRouteImport } from './routes/test-workflow'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthedTodosRouteImport } from './routes/_authed/todos'
+import { Route as RepoOwnerNameRouteImport } from './routes/repo.$owner.$name'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const TestWorkflowRoute = TestWorkflowRouteImport.update({
+  id: '/test-workflow',
+  path: '/test-workflow',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -29,10 +35,10 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedTodosRoute = AuthedTodosRouteImport.update({
-  id: '/todos',
-  path: '/todos',
-  getParentRoute: () => AuthedRoute,
+const RepoOwnerNameRoute = RepoOwnerNameRouteImport.update({
+  id: '/repo/$owner/$name',
+  path: '/repo/$owner/$name',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -43,46 +49,69 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/todos': typeof AuthedTodosRoute
+  '/test-workflow': typeof TestWorkflowRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/repo/$owner/$name': typeof RepoOwnerNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/todos': typeof AuthedTodosRoute
+  '/test-workflow': typeof TestWorkflowRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/repo/$owner/$name': typeof RepoOwnerNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authed': typeof AuthedRouteWithChildren
+  '/_authed': typeof AuthedRoute
   '/dashboard': typeof DashboardRoute
-  '/_authed/todos': typeof AuthedTodosRoute
+  '/test-workflow': typeof TestWorkflowRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/repo/$owner/$name': typeof RepoOwnerNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/todos' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/test-workflow'
+    | '/api/auth/$'
+    | '/repo/$owner/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/todos' | '/api/auth/$'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/test-workflow'
+    | '/api/auth/$'
+    | '/repo/$owner/$name'
   id:
     | '__root__'
     | '/'
     | '/_authed'
     | '/dashboard'
-    | '/_authed/todos'
+    | '/test-workflow'
     | '/api/auth/$'
+    | '/repo/$owner/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthedRoute: typeof AuthedRouteWithChildren
+  AuthedRoute: typeof AuthedRoute
   DashboardRoute: typeof DashboardRoute
+  TestWorkflowRoute: typeof TestWorkflowRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  RepoOwnerNameRoute: typeof RepoOwnerNameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/test-workflow': {
+      id: '/test-workflow'
+      path: '/test-workflow'
+      fullPath: '/test-workflow'
+      preLoaderRoute: typeof TestWorkflowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -104,12 +133,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/todos': {
-      id: '/_authed/todos'
-      path: '/todos'
-      fullPath: '/todos'
-      preLoaderRoute: typeof AuthedTodosRouteImport
-      parentRoute: typeof AuthedRoute
+    '/repo/$owner/$name': {
+      id: '/repo/$owner/$name'
+      path: '/repo/$owner/$name'
+      fullPath: '/repo/$owner/$name'
+      preLoaderRoute: typeof RepoOwnerNameRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -121,22 +150,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthedRouteChildren {
-  AuthedTodosRoute: typeof AuthedTodosRoute
-}
-
-const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedTodosRoute: AuthedTodosRoute,
-}
-
-const AuthedRouteWithChildren =
-  AuthedRoute._addFileChildren(AuthedRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthedRoute: AuthedRouteWithChildren,
+  AuthedRoute: AuthedRoute,
   DashboardRoute: DashboardRoute,
+  TestWorkflowRoute: TestWorkflowRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  RepoOwnerNameRoute: RepoOwnerNameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

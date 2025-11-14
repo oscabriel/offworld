@@ -34,6 +34,7 @@
 		"ruler:apply": "bunx @intellectronica/ruler@latest apply --local-only",
 		"dev": "turbo dev",
 		"build": "turbo build",
+		"typecheck": "turbo typecheck",
 		"check-types": "turbo check-types",
 		"dev:native": "turbo -F native dev",
 		"dev:web": "turbo -F web dev",

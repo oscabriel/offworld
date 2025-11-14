@@ -306,3 +306,100 @@ export const analyzeAndStoreIssues = internalAction({
 		return analyzedIssues.length;
 	},
 });
+
+/**
+ * Fetch owner (user or organization) information from GitHub
+ */
+export const fetchOwnerInfo = internalAction({
+	args: {
+		owner: v.string(),
+	},
+	handler: async (_ctx, args) => {
+		const octokit = getOctokit();
+
+		try {
+			// Try fetching as user first
+			const { data: user } = await octokit.users.getByUsername({
+				username: args.owner,
+			});
+
+			return {
+				login: user.login,
+				name: user.name || user.login,
+				avatarUrl: user.avatar_url,
+				bio: user.bio || undefined,
+				type: user.type.toLowerCase() as "user" | "organization",
+				publicRepos: user.public_repos,
+				followers: user.followers || undefined,
+				following: user.following || undefined,
+				htmlUrl: user.html_url,
+			};
+		} catch (error: unknown) {
+			if (
+				error &&
+				typeof error === "object" &&
+				"status" in error &&
+				error.status === 404
+			) {
+				throw new Error(`User or organization ${args.owner} not found`);
+			}
+			const message = error instanceof Error ? error.message : "Unknown error";
+			throw new Error(`Failed to fetch owner info: ${message}`);
+		}
+	},
+});
+
+/**
+ * Fetch all public repositories for a user or organization
+ */
+export const fetchOwnerRepos = internalAction({
+	args: {
+		owner: v.string(),
+		perPage: v.optional(v.number()),
+		sort: v.optional(
+			v.union(
+				v.literal("created"),
+				v.literal("updated"),
+				v.literal("pushed"),
+				v.literal("full_name"),
+			),
+		),
+	},
+	handler: async (_ctx, args) => {
+		const octokit = getOctokit();
+
+		try {
+			// Fetch repos - works for both users and orgs
+			const { data: repos } = await octokit.repos.listForUser({
+				username: args.owner,
+				per_page: args.perPage || 30,
+				sort: args.sort || "updated",
+			});
+
+			return repos.map((repo) => ({
+				owner: repo.owner.login,
+				name: repo.name,
+				fullName: repo.full_name,
+				description: repo.description || undefined,
+				stars: repo.stargazers_count,
+				language: repo.language || undefined,
+				githubUrl: repo.html_url,
+				defaultBranch: repo.default_branch,
+				updatedAt: repo.updated_at
+					? new Date(repo.updated_at).getTime()
+					: Date.now(),
+			}));
+		} catch (error: unknown) {
+			if (
+				error &&
+				typeof error === "object" &&
+				"status" in error &&
+				error.status === 404
+			) {
+				throw new Error(`Repositories for ${args.owner} not found`);
+			}
+			const message = error instanceof Error ? error.message : "Unknown error";
+			throw new Error(`Failed to fetch repositories: ${message}`);
+		}
+	},
+});

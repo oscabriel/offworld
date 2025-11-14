@@ -1,12 +1,7 @@
-import { Link, useRouteContext } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 
 export default function Header() {
-	const { userId } = useRouteContext({ from: "__root__" });
-
-	const links = [
-		{ to: "/dashboard", label: userId ? "Dashboard" : "Get Started" },
-		{ to: "/test-workflow", label: "Test" },
-	];
+	const links = [{ to: "/explore", label: "Explore" }];
 
 	return (
 		<div className="pointer-events-none absolute top-0 right-0 left-0 z-50 bg-transparent">

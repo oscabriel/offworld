@@ -10,24 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TestWorkflowRouteImport } from './routes/test-workflow'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as GithubRouteRouteImport } from './routes/_github/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RepoOwnerNameRouteImport } from './routes/repo.$owner.$name'
+import { Route as GithubOwnerRouteImport } from './routes/_github/$owner'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as GithubOwnerRepoRouteImport } from './routes/_github/$owner_.$repo'
 
 const TestWorkflowRoute = TestWorkflowRouteImport.update({
   id: '/test-workflow',
   path: '/test-workflow',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+const GithubRouteRoute = GithubRouteRouteImport.update({
+  id: '/_github',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -35,72 +36,82 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RepoOwnerNameRoute = RepoOwnerNameRouteImport.update({
-  id: '/repo/$owner/$name',
-  path: '/repo/$owner/$name',
-  getParentRoute: () => rootRouteImport,
+const GithubOwnerRoute = GithubOwnerRouteImport.update({
+  id: '/$owner',
+  path: '/$owner',
+  getParentRoute: () => GithubRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GithubOwnerRepoRoute = GithubOwnerRepoRouteImport.update({
+  id: '/$owner_/$repo',
+  path: '/$owner/$repo',
+  getParentRoute: () => GithubRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/explore': typeof ExploreRoute
   '/test-workflow': typeof TestWorkflowRoute
+  '/$owner': typeof GithubOwnerRoute
+  '/$owner/$repo': typeof GithubOwnerRepoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/repo/$owner/$name': typeof RepoOwnerNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/explore': typeof ExploreRoute
   '/test-workflow': typeof TestWorkflowRoute
+  '/$owner': typeof GithubOwnerRoute
+  '/$owner/$repo': typeof GithubOwnerRepoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/repo/$owner/$name': typeof RepoOwnerNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authed': typeof AuthedRoute
-  '/dashboard': typeof DashboardRoute
+  '/_github': typeof GithubRouteRouteWithChildren
+  '/explore': typeof ExploreRoute
   '/test-workflow': typeof TestWorkflowRoute
+  '/_github/$owner': typeof GithubOwnerRoute
+  '/_github/$owner_/$repo': typeof GithubOwnerRepoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/repo/$owner/$name': typeof RepoOwnerNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
+    | '/explore'
     | '/test-workflow'
+    | '/$owner'
+    | '/$owner/$repo'
     | '/api/auth/$'
-    | '/repo/$owner/$name'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
+    | '/explore'
     | '/test-workflow'
+    | '/$owner'
+    | '/$owner/$repo'
     | '/api/auth/$'
-    | '/repo/$owner/$name'
   id:
     | '__root__'
     | '/'
-    | '/_authed'
-    | '/dashboard'
+    | '/_github'
+    | '/explore'
     | '/test-workflow'
+    | '/_github/$owner'
+    | '/_github/$owner_/$repo'
     | '/api/auth/$'
-    | '/repo/$owner/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthedRoute: typeof AuthedRoute
-  DashboardRoute: typeof DashboardRoute
+  GithubRouteRoute: typeof GithubRouteRouteWithChildren
+  ExploreRoute: typeof ExploreRoute
   TestWorkflowRoute: typeof TestWorkflowRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  RepoOwnerNameRoute: typeof RepoOwnerNameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -112,18 +123,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TestWorkflowRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed': {
-      id: '/_authed'
+    '/_github': {
+      id: '/_github'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof AuthedRouteImport
+      preLoaderRoute: typeof GithubRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -133,12 +144,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/repo/$owner/$name': {
-      id: '/repo/$owner/$name'
-      path: '/repo/$owner/$name'
-      fullPath: '/repo/$owner/$name'
-      preLoaderRoute: typeof RepoOwnerNameRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_github/$owner': {
+      id: '/_github/$owner'
+      path: '/$owner'
+      fullPath: '/$owner'
+      preLoaderRoute: typeof GithubOwnerRouteImport
+      parentRoute: typeof GithubRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -147,16 +158,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_github/$owner_/$repo': {
+      id: '/_github/$owner_/$repo'
+      path: '/$owner/$repo'
+      fullPath: '/$owner/$repo'
+      preLoaderRoute: typeof GithubOwnerRepoRouteImport
+      parentRoute: typeof GithubRouteRoute
+    }
   }
 }
 
+interface GithubRouteRouteChildren {
+  GithubOwnerRoute: typeof GithubOwnerRoute
+  GithubOwnerRepoRoute: typeof GithubOwnerRepoRoute
+}
+
+const GithubRouteRouteChildren: GithubRouteRouteChildren = {
+  GithubOwnerRoute: GithubOwnerRoute,
+  GithubOwnerRepoRoute: GithubOwnerRepoRoute,
+}
+
+const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(
+  GithubRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthedRoute: AuthedRoute,
-  DashboardRoute: DashboardRoute,
+  GithubRouteRoute: GithubRouteRouteWithChildren,
+  ExploreRoute: ExploreRoute,
   TestWorkflowRoute: TestWorkflowRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  RepoOwnerNameRoute: RepoOwnerNameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

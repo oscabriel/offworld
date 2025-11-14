@@ -7,7 +7,8 @@
 		"serve": "vite preview",
 		"dev": "alchemy dev --stage dev --env-file .env.dev",
 		"deploy": "alchemy deploy --env-file .env.prod",
-		"destroy": "alchemy destroy"
+		"destroy": "alchemy destroy",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"radix-ui": "^1.4.2",

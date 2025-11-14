@@ -17,13 +17,13 @@ function HomeComponent() {
 
 		if (match) {
 			const [, owner, name] = match;
-			navigate({ to: "/repo/$owner/$name", params: { owner, name } });
+			navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
 		} else {
 			// Try parsing as just "owner/repo" format
 			const simpleMatch = repoUrl.match(/^([^/]+)\/([^/]+)$/);
 			if (simpleMatch) {
 				const [, owner, name] = simpleMatch;
-				navigate({ to: "/repo/$owner/$name", params: { owner, name } });
+				navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
 			}
 		}
 	};

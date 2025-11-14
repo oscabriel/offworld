@@ -34,7 +34,7 @@ export default function UserMenu() {
 								fetchOptions: {
 									onSuccess: () => {
 										navigate({
-											to: "/dashboard",
+											to: "/",
 										});
 									},
 								},

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
+	action,
 	internalMutation,
 	internalQuery,
 	mutation,
@@ -269,6 +270,23 @@ export const getByFullName = query({
 });
 
 /**
+ * Get repository by full name (owner/name) - INTERNAL VERSION for actions
+ */
+export const getByFullNameInternal = internalQuery({
+	args: {
+		fullName: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repositories")
+			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		return repo;
+	},
+});
+
+/**
  * Get repository by ID with related data
  */
 export const getById = query({
@@ -381,5 +399,80 @@ export const startAnalysis = mutation({
 			status: "queued",
 			message: `Repository analysis started for ${owner}/${name}`,
 		};
+	},
+});
+
+/**
+ * Fetch owner information from GitHub (public action)
+ */
+export const getOwnerInfo = action({
+	args: {
+		owner: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Call the internal action to fetch from GitHub
+		const ownerInfo = await ctx.runAction(
+			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
+			(internal as any).github.fetchOwnerInfo,
+			{
+				owner: args.owner,
+			},
+		);
+
+		return ownerInfo;
+	},
+});
+
+/**
+ * Fetch owner's repositories from GitHub and check indexing status
+ */
+export const getOwnerRepos = action({
+	args: {
+		owner: v.string(),
+		perPage: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Fetch repos from GitHub
+		const repos = await ctx.runAction(
+			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
+			(internal as any).github.fetchOwnerRepos,
+			{
+				owner: args.owner,
+				perPage: args.perPage || 30,
+				sort: "updated",
+			},
+		);
+
+		// For each repo, check if we have it indexed in our DB
+		const reposWithStatus = await Promise.all(
+			repos.map(
+				async (repo: {
+					owner: string;
+					name: string;
+					fullName: string;
+					description?: string;
+					stars: number;
+					language?: string;
+					githubUrl: string;
+					defaultBranch: string;
+					updatedAt: number;
+				}) => {
+					const indexed = await ctx.runQuery(
+						internal.repos.getByFullNameInternal,
+						{
+							fullName: repo.fullName,
+						},
+					);
+
+					return {
+						...repo,
+						isIndexed: indexed !== null,
+						indexingStatus: indexed?.indexingStatus || null,
+					};
+				},
+			),
+		);
+
+		return reposWithStatus;
 	},
 });

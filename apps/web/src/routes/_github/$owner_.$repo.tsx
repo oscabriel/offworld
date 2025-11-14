@@ -1,10 +1,10 @@
 import { api } from "@offworld/backend/convex/_generated/api";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 
-export const Route = createFileRoute("/repo/$owner/$name")({
+export const Route = createFileRoute("/_github/$owner_/$repo")({
 	component: RepoPage,
 });
 
@@ -25,34 +25,33 @@ function formatTimestamp(timestamp: number): string {
 		month: "short",
 		day: "numeric",
 		year: "numeric",
-	});
+	})
 }
 
 function RepoPage() {
-	const { owner, name } = Route.useParams();
-	const analysisTriggered = useRef(false);
+	const { owner, repo } = Route.useParams();
+	const [isIndexing, setIsIndexing] = useState(false);
 
-	const fullName = `${owner}/${name}`;
+	const fullName = `${owner}/${repo}`;
 	const startAnalysis = useMutation(api.repos.startAnalysis);
 
 	// Query repository status - THIS IS REACTIVE and auto-updates
 	const repoStatus = useQuery(
 		api.repos.getByFullName,
 		fullName ? { fullName } : "skip",
-	);
+	)
 
-	// Auto-trigger analysis if repo doesn't exist (only once)
-	useEffect(() => {
-		if (repoStatus === null && !analysisTriggered.current) {
-			// Repo not found, start analysis
-			analysisTriggered.current = true;
-			startAnalysis({
-				repoUrl: `https://github.com/${owner}/${name}`,
-			}).catch((error) => {
-				console.error("Failed to start analysis:", error);
-			});
+	const handleStartIndexing = async () => {
+		setIsIndexing(true);
+		try {
+			await startAnalysis({
+				repoUrl: `https://github.com/${owner}/${repo}`,
+			})
+		} catch (error) {
+			console.error("Failed to start analysis:", error);
+			setIsIndexing(false);
 		}
-	}, [repoStatus, owner, name, startAnalysis]);
+	}
 
 	// Processing state - show what we have so far, skeleton for the rest
 	const isProcessing = repoStatus?.indexingStatus === "processing";
@@ -66,7 +65,7 @@ function RepoPage() {
 					{/* Header */}
 					<div className="space-y-2">
 						<h1 className="font-serif text-5xl tracking-tight">
-							{owner}/{name}
+							{owner}/{repo}
 						</h1>
 						<div className="flex flex-wrap items-center gap-4">
 							<div className="flex items-center gap-3">
@@ -208,7 +207,7 @@ function RepoPage() {
 					{/* GitHub link */}
 					<div className="rounded-lg border border-primary/10 bg-card p-4">
 						<a
-							href={`https://github.com/${owner}/${name}`}
+							href={`https://github.com/${owner}/${repo}`}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="font-mono text-primary underline hover:no-underline"
@@ -218,7 +217,7 @@ function RepoPage() {
 					</div>
 				</div>
 			</div>
-		);
+		)
 	}
 
 	// Error state - repo not found or failed
@@ -239,7 +238,55 @@ function RepoPage() {
 					</a>
 				</div>
 			</div>
-		);
+		)
+	}
+
+	// Repository not indexed - show option to index
+	if (repoStatus === null) {
+		return (
+			<div className="container mx-auto max-w-4xl px-4 py-24">
+				<div className="space-y-6 rounded-lg border border-primary/10 bg-card p-8">
+					<h1 className="font-serif text-4xl">Repository Not Indexed</h1>
+					<p className="font-serif text-lg text-muted-foreground">
+						This repository hasn't been analyzed yet. Would you like to index
+						it?
+					</p>
+					<div className="space-y-4">
+						<div className="rounded-lg border border-primary/10 bg-background p-4">
+							<p className="font-mono text-sm">
+								<span className="text-muted-foreground">Repository: </span>
+								{owner}/{repo}
+							</p>
+							<a
+								href={`https://github.com/${owner}/${repo}`}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="mt-2 inline-block font-mono text-primary text-sm underline hover:no-underline"
+							>
+								View on GitHub →
+							</a>
+						</div>
+						<div className="flex gap-4">
+							<button
+								type="button"
+								onClick={handleStartIndexing}
+								disabled={isIndexing}
+								className="border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{isIndexing ? "Starting Analysis..." : "Index This Repository"}
+							</button>
+							<Link
+								to="/$owner"
+								params={{ owner }}
+								className="border border-primary/20 px-6 py-3 font-mono hover:border-primary/40"
+							>
+								Back to {owner}
+							</Link>
+						</div>
+					</div>
+				</div>
+			</div>
+		)
 	}
 
 	// Initial loading state (while checking if repo exists)
@@ -250,5 +297,5 @@ function RepoPage() {
 				<div className="h-6 w-32 animate-pulse rounded bg-muted" />
 			</div>
 		</div>
-	);
+	)
 }

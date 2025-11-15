@@ -99,7 +99,7 @@ function RepoPage() {
 							)}
 						</div>
 						{repoStatus.description && (
-							<p className="font-serif text-lg text-muted-foreground">
+							<p className="font-mono text-base text-muted-foreground">
 								{repoStatus.description}
 							</p>
 						)}
@@ -125,18 +125,18 @@ function RepoPage() {
 
 					{/* Summary Section - Show if exists, skeleton if processing without it */}
 					{repoStatus.summary ? (
-						<div className="space-y-3 rounded-lg border border-primary/10 bg-card p-6">
+						<div className="space-y-6 rounded-lg border border-primary/10 bg-card p-8">
 							<h2 className="font-mono font-semibold text-2xl">Summary</h2>
-							<div className="prose prose-lg dark:prose-invert max-w-none">
+							<div className="markdown-content font-serif text-lg leading-relaxed [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc [&>ul]:space-y-2 [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>ol]:space-y-2 [&>li]:leading-relaxed [&>h1]:mb-4 [&>h1]:font-mono [&>h1]:font-semibold [&>h1]:text-2xl [&>h2]:mb-3 [&>h2]:font-mono [&>h2]:font-semibold [&>h2]:text-xl [&>h3]:mb-2 [&>h3]:font-mono [&>h3]:font-semibold [&>h3]:text-lg [&>strong]:font-semibold [&>strong]:text-foreground [&>code]:rounded [&>code]:bg-muted [&>code]:px-1 [&>code]:py-0.5 [&>code]:font-mono [&>code]:text-sm">
 								<ReactMarkdown>{repoStatus.summary}</ReactMarkdown>
 							</div>
 						</div>
 					) : isProcessing ? (
-						<div className="space-y-3 rounded-lg border border-primary/10 bg-card p-6">
+						<div className="space-y-6 rounded-lg border border-primary/10 bg-card p-8">
 							<h2 className="font-mono font-semibold text-2xl text-muted-foreground">
 								Summary
 							</h2>
-							<div className="space-y-2">
+							<div className="space-y-3">
 								<div className="h-4 w-full animate-pulse rounded bg-muted" />
 								<div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
 								<div className="h-4 w-4/6 animate-pulse rounded bg-muted" />
@@ -149,18 +149,18 @@ function RepoPage() {
 
 					{/* Architecture Section - Show if exists, skeleton if processing without it */}
 					{repoStatus.architecture ? (
-						<div className="space-y-3 rounded-lg border border-primary/10 bg-card p-6">
+						<div className="space-y-6 rounded-lg border border-primary/10 bg-card p-8">
 							<h2 className="font-mono font-semibold text-2xl">Architecture</h2>
-							<div className="prose prose-lg dark:prose-invert max-w-none">
+							<div className="markdown-content font-serif text-lg leading-relaxed [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc [&>ul]:space-y-2 [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>ol]:space-y-2 [&>li]:leading-relaxed [&>h1]:mb-4 [&>h1]:font-mono [&>h1]:font-semibold [&>h1]:text-2xl [&>h2]:mb-3 [&>h2]:font-mono [&>h2]:font-semibold [&>h2]:text-xl [&>h3]:mb-2 [&>h3]:font-mono [&>h3]:font-semibold [&>h3]:text-lg [&>strong]:font-semibold [&>strong]:text-foreground [&>code]:rounded [&>code]:bg-muted [&>code]:px-1 [&>code]:py-0.5 [&>code]:font-mono [&>code]:text-sm">
 								<ReactMarkdown>{repoStatus.architecture}</ReactMarkdown>
 							</div>
 						</div>
 					) : isProcessing ? (
-						<div className="space-y-3 rounded-lg border border-primary/10 bg-card p-6">
+						<div className="space-y-6 rounded-lg border border-primary/10 bg-card p-8">
 							<h2 className="font-mono font-semibold text-2xl text-muted-foreground">
 								Architecture
 							</h2>
-							<div className="space-y-2">
+							<div className="space-y-3">
 								<div className="h-4 w-full animate-pulse rounded bg-muted" />
 								<div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
 							</div>

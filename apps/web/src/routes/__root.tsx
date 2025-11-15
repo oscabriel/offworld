@@ -19,6 +19,7 @@ import { getCookie, getRequest } from "@tanstack/react-start/server";
 import type { ConvexReactClient } from "convex/react";
 import { Toaster } from "@/components/ui/sonner";
 import { authClient } from "@/lib/auth-client";
+import { BackgroundImage } from "../components/background-image";
 import Header from "../components/header";
 import appCss from "../index.css?url";
 
@@ -164,9 +165,12 @@ function RootDocument() {
 				<head>
 					<HeadContent />
 				</head>
-				<body>
-					<Header />
-					<Outlet />
+				<body className="relative min-h-screen">
+					<BackgroundImage />
+					<div className="relative z-10">
+						<Header />
+						<Outlet />
+					</div>
 					<Toaster richColors />
 					<TanStackRouterDevtools position="bottom-left" />
 					<Scripts />

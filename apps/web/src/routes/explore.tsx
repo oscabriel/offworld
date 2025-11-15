@@ -46,15 +46,15 @@ function ExploreComponent() {
 
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-24">
-			<div className="space-y-16">
+			<div className="space-y-14">
 				{/* Header */}
 				<div className="space-y-6">
 					<h1 className="font-serif text-6xl tracking-tight md:text-7xl">
-						Explore Repositories
+						A new codebase awaits you...
 					</h1>
 					<p className="max-w-2xl font-serif text-muted-foreground text-xl">
-						Paste any GitHub repository URL to analyze its codebase, or browse
-						recently analyzed repositories below.
+						Search for a repo to begin again in a golden land of opportunity and
+						adventure!
 					</p>
 				</div>
 
@@ -64,7 +64,7 @@ function ExploreComponent() {
 						htmlFor="repo-url"
 						className="block font-mono text-muted-foreground text-sm uppercase tracking-wide"
 					>
-						Repository URL
+						Github Repo URL
 					</label>
 					<div className="flex gap-3">
 						<input
@@ -73,7 +73,7 @@ function ExploreComponent() {
 							value={repoUrl}
 							onChange={(e) => setRepoUrl(e.target.value)}
 							onKeyDown={handleKeyDown}
-							placeholder="github.com/owner/repo or owner/repo"
+							placeholder={`"https://github.com/owner/repo" or "owner/repo"`}
 							className="flex-1 border border-primary/20 bg-background px-6 py-4 font-mono text-foreground text-lg focus:border-primary focus:outline-none"
 							aria-describedby={error ? "url-error" : undefined}
 						/>
@@ -96,7 +96,7 @@ function ExploreComponent() {
 				{/* Pre-Indexed Repositories Grid */}
 				<div className="space-y-8">
 					<div className="border-primary/10 border-t pt-8">
-						<h2 className="font-serif text-4xl">Recently Analyzed</h2>
+						<h2 className="font-serif text-4xl">Recently Indexed Repos</h2>
 					</div>
 
 					{repos === undefined ? (
@@ -136,7 +136,7 @@ function ExploreComponent() {
 								>
 									{/* Repo name and status */}
 									<div className="flex items-start justify-between gap-2">
-										<h3 className="font-mono font-semibold text-lg group-hover:text-primary">
+										<h3 className="font-semibold font-serif text-xl group-hover:text-primary">
 											{repo.owner}/{repo.name}
 										</h3>
 										{repo.indexingStatus === "completed" && (
@@ -148,7 +148,7 @@ function ExploreComponent() {
 
 									{/* Description */}
 									{repo.description && (
-										<p className="line-clamp-2 font-serif text-muted-foreground text-sm">
+										<p className="line-clamp-2 font-mono text-muted-foreground text-sm">
 											{repo.description}
 										</p>
 									)}

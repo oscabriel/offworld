@@ -15,7 +15,14 @@ import { Route as GithubRouteRouteImport } from './routes/_github/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GithubOwnerRouteImport } from './routes/_github/$owner'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as GithubOwnerRepoRouteImport } from './routes/_github/$owner_.$repo'
+import { Route as GithubOwnerRepoRouteRouteImport } from './routes/_github/$owner_.$repo/route'
+import { Route as GithubOwnerRepoIndexRouteImport } from './routes/_github/$owner_.$repo/index'
+import { Route as GithubOwnerRepoPrIndexRouteImport } from './routes/_github/$owner_.$repo/pr/index'
+import { Route as GithubOwnerRepoIssuesIndexRouteImport } from './routes/_github/$owner_.$repo/issues/index'
+import { Route as GithubOwnerRepoArchIndexRouteImport } from './routes/_github/$owner_.$repo/arch/index'
+import { Route as GithubOwnerRepoPrNumberRouteImport } from './routes/_github/$owner_.$repo/pr/$number'
+import { Route as GithubOwnerRepoIssuesNumberRouteImport } from './routes/_github/$owner_.$repo/issues/$number'
+import { Route as GithubOwnerRepoArchEntrypointRouteImport } from './routes/_github/$owner_.$repo/arch/$entrypoint'
 
 const TestWorkflowRoute = TestWorkflowRouteImport.update({
   id: '/test-workflow',
@@ -46,27 +53,79 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GithubOwnerRepoRoute = GithubOwnerRepoRouteImport.update({
+const GithubOwnerRepoRouteRoute = GithubOwnerRepoRouteRouteImport.update({
   id: '/$owner_/$repo',
   path: '/$owner/$repo',
   getParentRoute: () => GithubRouteRoute,
 } as any)
+const GithubOwnerRepoIndexRoute = GithubOwnerRepoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GithubOwnerRepoRouteRoute,
+} as any)
+const GithubOwnerRepoPrIndexRoute = GithubOwnerRepoPrIndexRouteImport.update({
+  id: '/pr/',
+  path: '/pr/',
+  getParentRoute: () => GithubOwnerRepoRouteRoute,
+} as any)
+const GithubOwnerRepoIssuesIndexRoute =
+  GithubOwnerRepoIssuesIndexRouteImport.update({
+    id: '/issues/',
+    path: '/issues/',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
+const GithubOwnerRepoArchIndexRoute =
+  GithubOwnerRepoArchIndexRouteImport.update({
+    id: '/arch/',
+    path: '/arch/',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
+const GithubOwnerRepoPrNumberRoute = GithubOwnerRepoPrNumberRouteImport.update({
+  id: '/pr/$number',
+  path: '/pr/$number',
+  getParentRoute: () => GithubOwnerRepoRouteRoute,
+} as any)
+const GithubOwnerRepoIssuesNumberRoute =
+  GithubOwnerRepoIssuesNumberRouteImport.update({
+    id: '/issues/$number',
+    path: '/issues/$number',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
+const GithubOwnerRepoArchEntrypointRoute =
+  GithubOwnerRepoArchEntrypointRouteImport.update({
+    id: '/arch/$entrypoint',
+    path: '/arch/$entrypoint',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
   '/test-workflow': typeof TestWorkflowRoute
   '/$owner': typeof GithubOwnerRoute
-  '/$owner/$repo': typeof GithubOwnerRepoRoute
+  '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$owner/$repo/': typeof GithubOwnerRepoIndexRoute
+  '/$owner/$repo/arch/$entrypoint': typeof GithubOwnerRepoArchEntrypointRoute
+  '/$owner/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
+  '/$owner/$repo/pr/$number': typeof GithubOwnerRepoPrNumberRoute
+  '/$owner/$repo/arch': typeof GithubOwnerRepoArchIndexRoute
+  '/$owner/$repo/issues': typeof GithubOwnerRepoIssuesIndexRoute
+  '/$owner/$repo/pr': typeof GithubOwnerRepoPrIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
   '/test-workflow': typeof TestWorkflowRoute
   '/$owner': typeof GithubOwnerRoute
-  '/$owner/$repo': typeof GithubOwnerRepoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$owner/$repo': typeof GithubOwnerRepoIndexRoute
+  '/$owner/$repo/arch/$entrypoint': typeof GithubOwnerRepoArchEntrypointRoute
+  '/$owner/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
+  '/$owner/$repo/pr/$number': typeof GithubOwnerRepoPrNumberRoute
+  '/$owner/$repo/arch': typeof GithubOwnerRepoArchIndexRoute
+  '/$owner/$repo/issues': typeof GithubOwnerRepoIssuesIndexRoute
+  '/$owner/$repo/pr': typeof GithubOwnerRepoPrIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -75,8 +134,15 @@ export interface FileRoutesById {
   '/explore': typeof ExploreRoute
   '/test-workflow': typeof TestWorkflowRoute
   '/_github/$owner': typeof GithubOwnerRoute
-  '/_github/$owner_/$repo': typeof GithubOwnerRepoRoute
+  '/_github/$owner_/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_github/$owner_/$repo/': typeof GithubOwnerRepoIndexRoute
+  '/_github/$owner_/$repo/arch/$entrypoint': typeof GithubOwnerRepoArchEntrypointRoute
+  '/_github/$owner_/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
+  '/_github/$owner_/$repo/pr/$number': typeof GithubOwnerRepoPrNumberRoute
+  '/_github/$owner_/$repo/arch/': typeof GithubOwnerRepoArchIndexRoute
+  '/_github/$owner_/$repo/issues/': typeof GithubOwnerRepoIssuesIndexRoute
+  '/_github/$owner_/$repo/pr/': typeof GithubOwnerRepoPrIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,14 +153,27 @@ export interface FileRouteTypes {
     | '/$owner'
     | '/$owner/$repo'
     | '/api/auth/$'
+    | '/$owner/$repo/'
+    | '/$owner/$repo/arch/$entrypoint'
+    | '/$owner/$repo/issues/$number'
+    | '/$owner/$repo/pr/$number'
+    | '/$owner/$repo/arch'
+    | '/$owner/$repo/issues'
+    | '/$owner/$repo/pr'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/explore'
     | '/test-workflow'
     | '/$owner'
-    | '/$owner/$repo'
     | '/api/auth/$'
+    | '/$owner/$repo'
+    | '/$owner/$repo/arch/$entrypoint'
+    | '/$owner/$repo/issues/$number'
+    | '/$owner/$repo/pr/$number'
+    | '/$owner/$repo/arch'
+    | '/$owner/$repo/issues'
+    | '/$owner/$repo/pr'
   id:
     | '__root__'
     | '/'
@@ -104,6 +183,13 @@ export interface FileRouteTypes {
     | '/_github/$owner'
     | '/_github/$owner_/$repo'
     | '/api/auth/$'
+    | '/_github/$owner_/$repo/'
+    | '/_github/$owner_/$repo/arch/$entrypoint'
+    | '/_github/$owner_/$repo/issues/$number'
+    | '/_github/$owner_/$repo/pr/$number'
+    | '/_github/$owner_/$repo/arch/'
+    | '/_github/$owner_/$repo/issues/'
+    | '/_github/$owner_/$repo/pr/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,20 +248,92 @@ declare module '@tanstack/react-router' {
       id: '/_github/$owner_/$repo'
       path: '/$owner/$repo'
       fullPath: '/$owner/$repo'
-      preLoaderRoute: typeof GithubOwnerRepoRouteImport
+      preLoaderRoute: typeof GithubOwnerRepoRouteRouteImport
       parentRoute: typeof GithubRouteRoute
+    }
+    '/_github/$owner_/$repo/': {
+      id: '/_github/$owner_/$repo/'
+      path: '/'
+      fullPath: '/$owner/$repo/'
+      preLoaderRoute: typeof GithubOwnerRepoIndexRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
+    '/_github/$owner_/$repo/pr/': {
+      id: '/_github/$owner_/$repo/pr/'
+      path: '/pr'
+      fullPath: '/$owner/$repo/pr'
+      preLoaderRoute: typeof GithubOwnerRepoPrIndexRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
+    '/_github/$owner_/$repo/issues/': {
+      id: '/_github/$owner_/$repo/issues/'
+      path: '/issues'
+      fullPath: '/$owner/$repo/issues'
+      preLoaderRoute: typeof GithubOwnerRepoIssuesIndexRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
+    '/_github/$owner_/$repo/arch/': {
+      id: '/_github/$owner_/$repo/arch/'
+      path: '/arch'
+      fullPath: '/$owner/$repo/arch'
+      preLoaderRoute: typeof GithubOwnerRepoArchIndexRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
+    '/_github/$owner_/$repo/pr/$number': {
+      id: '/_github/$owner_/$repo/pr/$number'
+      path: '/pr/$number'
+      fullPath: '/$owner/$repo/pr/$number'
+      preLoaderRoute: typeof GithubOwnerRepoPrNumberRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
+    '/_github/$owner_/$repo/issues/$number': {
+      id: '/_github/$owner_/$repo/issues/$number'
+      path: '/issues/$number'
+      fullPath: '/$owner/$repo/issues/$number'
+      preLoaderRoute: typeof GithubOwnerRepoIssuesNumberRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
+    '/_github/$owner_/$repo/arch/$entrypoint': {
+      id: '/_github/$owner_/$repo/arch/$entrypoint'
+      path: '/arch/$entrypoint'
+      fullPath: '/$owner/$repo/arch/$entrypoint'
+      preLoaderRoute: typeof GithubOwnerRepoArchEntrypointRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
     }
   }
 }
 
+interface GithubOwnerRepoRouteRouteChildren {
+  GithubOwnerRepoIndexRoute: typeof GithubOwnerRepoIndexRoute
+  GithubOwnerRepoArchEntrypointRoute: typeof GithubOwnerRepoArchEntrypointRoute
+  GithubOwnerRepoIssuesNumberRoute: typeof GithubOwnerRepoIssuesNumberRoute
+  GithubOwnerRepoPrNumberRoute: typeof GithubOwnerRepoPrNumberRoute
+  GithubOwnerRepoArchIndexRoute: typeof GithubOwnerRepoArchIndexRoute
+  GithubOwnerRepoIssuesIndexRoute: typeof GithubOwnerRepoIssuesIndexRoute
+  GithubOwnerRepoPrIndexRoute: typeof GithubOwnerRepoPrIndexRoute
+}
+
+const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
+  GithubOwnerRepoIndexRoute: GithubOwnerRepoIndexRoute,
+  GithubOwnerRepoArchEntrypointRoute: GithubOwnerRepoArchEntrypointRoute,
+  GithubOwnerRepoIssuesNumberRoute: GithubOwnerRepoIssuesNumberRoute,
+  GithubOwnerRepoPrNumberRoute: GithubOwnerRepoPrNumberRoute,
+  GithubOwnerRepoArchIndexRoute: GithubOwnerRepoArchIndexRoute,
+  GithubOwnerRepoIssuesIndexRoute: GithubOwnerRepoIssuesIndexRoute,
+  GithubOwnerRepoPrIndexRoute: GithubOwnerRepoPrIndexRoute,
+}
+
+const GithubOwnerRepoRouteRouteWithChildren =
+  GithubOwnerRepoRouteRoute._addFileChildren(GithubOwnerRepoRouteRouteChildren)
+
 interface GithubRouteRouteChildren {
   GithubOwnerRoute: typeof GithubOwnerRoute
-  GithubOwnerRepoRoute: typeof GithubOwnerRepoRoute
+  GithubOwnerRepoRouteRoute: typeof GithubOwnerRepoRouteRouteWithChildren
 }
 
 const GithubRouteRouteChildren: GithubRouteRouteChildren = {
   GithubOwnerRoute: GithubOwnerRoute,
-  GithubOwnerRepoRoute: GithubOwnerRepoRoute,
+  GithubOwnerRepoRouteRoute: GithubOwnerRepoRouteRouteWithChildren,
 }
 
 const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(

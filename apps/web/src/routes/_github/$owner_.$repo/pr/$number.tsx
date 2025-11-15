@@ -9,7 +9,7 @@ function PullRequestDetailPage() {
 
 	return (
 		<div className="space-y-8">
-			<div className="rounded-lg border border-primary/10 bg-card p-8">
+			<div className="border border-primary/10 bg-card p-8">
 				<h2 className="font-mono font-semibold text-2xl">
 					Pull Request #{number}
 				</h2>

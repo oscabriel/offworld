@@ -15,7 +15,7 @@ function Home() {
 				params={{
 					_splat: "",
 				}}
-				className="mx-auto rounded-lg bg-fd-primary px-3 py-2 font-medium text-fd-primary-foreground text-sm"
+				className="mx-auto bg-fd-primary px-3 py-2 font-medium text-fd-primary-foreground text-sm"
 			>
 				Open Docs
 			</Link>

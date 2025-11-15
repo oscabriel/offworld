@@ -9,8 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TestWorkflowRouteImport } from './routes/test-workflow'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as GithubRouteRouteImport } from './routes/_github/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GithubOwnerRouteImport } from './routes/_github/$owner'
@@ -24,14 +25,19 @@ import { Route as GithubOwnerRepoPrNumberRouteImport } from './routes/_github/$o
 import { Route as GithubOwnerRepoIssuesNumberRouteImport } from './routes/_github/$owner_.$repo/issues/$number'
 import { Route as GithubOwnerRepoArchEntrypointRouteImport } from './routes/_github/$owner_.$repo/arch/$entrypoint'
 
-const TestWorkflowRoute = TestWorkflowRouteImport.update({
-  id: '/test-workflow',
-  path: '/test-workflow',
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GithubRouteRoute = GithubRouteRouteImport.update({
@@ -100,8 +106,9 @@ const GithubOwnerRepoArchEntrypointRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
-  '/test-workflow': typeof TestWorkflowRoute
+  '/sign-in': typeof SignInRoute
   '/$owner': typeof GithubOwnerRoute
   '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -115,8 +122,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
-  '/test-workflow': typeof TestWorkflowRoute
+  '/sign-in': typeof SignInRoute
   '/$owner': typeof GithubOwnerRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$owner/$repo': typeof GithubOwnerRepoIndexRoute
@@ -131,8 +139,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_github': typeof GithubRouteRouteWithChildren
+  '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
-  '/test-workflow': typeof TestWorkflowRoute
+  '/sign-in': typeof SignInRoute
   '/_github/$owner': typeof GithubOwnerRoute
   '/_github/$owner_/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -148,8 +157,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/explore'
-    | '/test-workflow'
+    | '/sign-in'
     | '/$owner'
     | '/$owner/$repo'
     | '/api/auth/$'
@@ -163,8 +173,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/explore'
-    | '/test-workflow'
+    | '/sign-in'
     | '/$owner'
     | '/api/auth/$'
     | '/$owner/$repo'
@@ -178,8 +189,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_github'
+    | '/about'
     | '/explore'
-    | '/test-workflow'
+    | '/sign-in'
     | '/_github/$owner'
     | '/_github/$owner_/$repo'
     | '/api/auth/$'
@@ -195,18 +207,19 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GithubRouteRoute: typeof GithubRouteRouteWithChildren
+  AboutRoute: typeof AboutRoute
   ExploreRoute: typeof ExploreRoute
-  TestWorkflowRoute: typeof TestWorkflowRoute
+  SignInRoute: typeof SignInRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/test-workflow': {
-      id: '/test-workflow'
-      path: '/test-workflow'
-      fullPath: '/test-workflow'
-      preLoaderRoute: typeof TestWorkflowRouteImport
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_github': {
@@ -343,8 +363,9 @@ const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GithubRouteRoute: GithubRouteRouteWithChildren,
+  AboutRoute: AboutRoute,
   ExploreRoute: ExploreRoute,
-  TestWorkflowRoute: TestWorkflowRoute,
+  SignInRoute: SignInRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

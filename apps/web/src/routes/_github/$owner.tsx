@@ -63,7 +63,7 @@ function OwnerPage() {
 	if (error) {
 		return (
 			<div className="container mx-auto max-w-6xl px-4 py-24">
-				<div className="space-y-6 rounded-lg border border-red-500/20 bg-card p-8">
+				<div className="space-y-6 border border-red-500/20 bg-card p-8">
 					<h1 className="font-serif text-4xl text-red-600">Error</h1>
 					<p className="font-serif text-lg text-muted-foreground">{error}</p>
 				</div>
@@ -76,9 +76,9 @@ function OwnerPage() {
 		return (
 			<div className="container mx-auto max-w-6xl px-4 py-24">
 				<div className="space-y-6">
-					<div className="h-32 w-32 animate-pulse rounded-full bg-muted" />
-					<div className="h-8 w-64 animate-pulse rounded bg-muted" />
-					<div className="h-6 w-96 animate-pulse rounded bg-muted" />
+					<div className="h-32 w-32 animate-pulse bg-muted" />
+					<div className="h-8 w-64 animate-pulse bg-muted" />
+					<div className="h-6 w-96 animate-pulse bg-muted" />
 				</div>
 			</div>
 		);
@@ -92,7 +92,7 @@ function OwnerPage() {
 					<img
 						src={ownerInfo.avatarUrl}
 						alt={ownerInfo.name}
-						className="h-32 w-32 rounded-full border-2 border-primary/20"
+						className="h-32 w-32 border-2 border-primary/20"
 					/>
 					<div className="flex-1 space-y-3">
 						<h1 className="font-serif text-5xl tracking-tight">
@@ -145,7 +145,7 @@ function OwnerPage() {
 									key={repo.fullName}
 									to="/$owner/$repo"
 									params={{ owner: repo.owner, repo: repo.name }}
-									className="group space-y-3 rounded-lg border border-primary/10 bg-card p-6 transition-colors hover:border-primary/30"
+									className="group space-y-3 border border-primary/10 bg-card p-6 transition-colors hover:border-primary/30"
 								>
 									{/* Repo name and status */}
 									<div className="flex items-start justify-between gap-2">
@@ -154,7 +154,7 @@ function OwnerPage() {
 										</h3>
 										{repo.isIndexed && (
 											<span
-												className={`inline-flex shrink-0 items-center rounded-full px-2 py-1 font-mono text-xs ${
+												className={`inline-flex shrink-0 items-center px-2 py-1 font-mono text-xs ${
 													repo.indexingStatus === "completed"
 														? "bg-green-500/10 text-green-600"
 														: repo.indexingStatus === "processing"

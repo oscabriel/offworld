@@ -43,24 +43,16 @@ function RepoLayout() {
 		return (
 			<div className="container mx-auto max-w-screen-2xl px-4 py-6">
 				<div className="mb-6 space-y-2 border-b pb-6">
-					<div className="h-10 w-64 animate-pulse rounded bg-muted" />
-					<div className="h-4 w-96 animate-pulse rounded bg-muted" />
+					<div className="h-10 w-64 animate-pulse bg-muted" />
+					<div className="h-4 w-96 animate-pulse bg-muted" />
 				</div>
 			</div>
 		);
 	}
 
-	// Repository not found - show minimal error
-	if (repoData === null) {
-		return (
-			<div className="container mx-auto max-w-4xl px-4 py-24">
-				<Outlet />
-			</div>
-		);
-	}
-
-	const isCompleted = repoData.indexingStatus === "completed";
-	const isProcessing = repoData.indexingStatus === "processing";
+	const isCompleted = repoData?.indexingStatus === "completed";
+	const isProcessing = repoData?.indexingStatus === "processing";
+	const isNotIndexed = repoData === null;
 
 	return (
 		<div className="min-h-screen pt-14">
@@ -72,36 +64,40 @@ function RepoLayout() {
 							{owner}/{repo}
 						</h1>
 						<div className="flex flex-wrap items-center gap-4">
-							<div className="flex items-center gap-3">
-								<span className="font-mono text-muted-foreground text-sm">
-									Status:
-								</span>
-								<span
-									className={`inline-flex items-center rounded-full px-3 py-1 font-medium font-mono text-xs ${
-										isCompleted
-											? "bg-green-500/10 text-green-600"
-											: isProcessing
-												? "bg-yellow-500/10 text-yellow-600"
-												: "bg-gray-500/10 text-gray-600"
-									}`}
-								>
-									{repoData.indexingStatus}
-								</span>
-							</div>
-							{isCompleted && repoData.lastAnalyzedAt && (
-								<span className="font-mono text-muted-foreground text-sm">
-									Analyzed {formatTimestamp(repoData.lastAnalyzedAt)}
-								</span>
-							)}
-							{repoData.stars !== undefined && (
-								<span className="font-mono text-muted-foreground text-sm">
-									⭐ {repoData.stars.toLocaleString()} stars
-								</span>
-							)}
-							{repoData.language && (
-								<span className="font-mono text-muted-foreground text-sm">
-									{repoData.language}
-								</span>
+							{!isNotIndexed && (
+								<>
+									<div className="flex items-center gap-3">
+										<span className="font-mono text-muted-foreground text-sm">
+											Status:
+										</span>
+										<span
+											className={`inline-flex items-center px-3 py-1 font-medium font-mono text-xs ${
+												isCompleted
+													? "bg-green-500/10 text-green-600"
+													: isProcessing
+														? "bg-yellow-500/10 text-yellow-600"
+														: "bg-gray-500/10 text-gray-600"
+											}`}
+										>
+											{repoData.indexingStatus}
+										</span>
+									</div>
+									{isCompleted && repoData.lastAnalyzedAt && (
+										<span className="font-mono text-muted-foreground text-sm">
+											Analyzed {formatTimestamp(repoData.lastAnalyzedAt)}
+										</span>
+									)}
+									{repoData.stars !== undefined && (
+										<span className="font-mono text-muted-foreground text-sm">
+											⭐ {repoData.stars.toLocaleString()} stars
+										</span>
+									)}
+									{repoData.language && (
+										<span className="font-mono text-muted-foreground text-sm">
+											{repoData.language}
+										</span>
+									)}
+								</>
 							)}
 							<a
 								href={`https://github.com/${owner}/${repo}`}
@@ -112,7 +108,7 @@ function RepoLayout() {
 								View on GitHub →
 							</a>
 						</div>
-						{repoData.description && (
+						{!isNotIndexed && repoData.description && (
 							<p className="font-mono text-base text-muted-foreground">
 								{repoData.description}
 							</p>
@@ -125,12 +121,12 @@ function RepoLayout() {
 			<div className="container mx-auto flex max-w-screen-2xl gap-6 px-4 py-6">
 				{/* Left Navigation (Desktop only) */}
 				<aside className="sticky top-6 hidden w-60 shrink-0 self-start lg:block">
-					<RepoNavigation />
+					<RepoNavigation disabled={isNotIndexed} />
 				</aside>
 
 				{/* Main Content */}
 				<main className="min-w-0 flex-1">
-					<MobileTabNav className="mb-6 lg:hidden" />
+					<MobileTabNav className="mb-6 lg:hidden" disabled={isNotIndexed} />
 					<Outlet />
 				</main>
 

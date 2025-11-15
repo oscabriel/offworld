@@ -9,7 +9,7 @@ function IssueDetailPage() {
 
 	return (
 		<div className="space-y-8">
-			<div className="rounded-lg border border-primary/10 bg-card p-8">
+			<div className="border border-primary/10 bg-card p-8">
 				<h2 className="font-mono font-semibold text-2xl">Issue #{number}</h2>
 				<p className="mt-4 font-serif text-lg text-muted-foreground">
 					Coming soon: Detailed AI analysis for this issue including difficulty,

@@ -1,4 +1,4 @@
-import { RAG } from "@convex-dev/rag";
+import { RAG, defaultChunker } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
@@ -27,7 +27,7 @@ export const rag = new RAG<FilterTypes>(components.rag, {
 
 /**
  * Ingest repository files into RAG component
- * Replaces custom chunking logic with RAG's auto-chunking
+ * Uses custom chunking with larger chunk sizes (~2000-2500 chars) for better storage efficiency
  */
 export const ingestRepository = internalAction({
 	args: {
@@ -81,17 +81,27 @@ export const ingestRepository = internalAction({
 			// Use pre-calculated importance and get filter values
 			const filterValues = getFilterValues(file.path);
 
-			// Add to RAG with auto-chunking
+			// Custom chunking with larger chunk sizes for better storage efficiency
+			// Target ~2000-2500 chars per chunk (vs default 1000) to reduce total chunk count by ~60%
+			// while maintaining good search quality for code
+			const chunks = defaultChunker(fileData.content, {
+				minCharsSoftLimit: 500, // Increased from 100 - allow larger minimum chunks
+				maxCharsSoftLimit: 2500, // Increased from 1000 - target ~2000-2500 chars per chunk
+				maxCharsHardLimit: 12000, // Increased from 10000 - allow larger chunks if needed
+				delimiter: "\n\n", // Keep default paragraph separator
+			});
+
+			// Add to RAG with custom chunks
 			await rag.add(ctx, {
 				namespace: args.namespace,
 				key: file.path, // Unique key for updates
-				text: fileData.content, // Extract the actual content string
+				chunks, // Use custom chunking instead of auto-chunking
 				importance: file.importance, // Use pre-calculated importance
 				filterValues,
 			});
 
 			filesProcessed++;
-			chunksCreated += Math.ceil(fileData.content.length / 500); // Rough estimate
+			chunksCreated += chunks.length; // Actual chunk count
 		}
 
 		return { filesProcessed, chunksCreated };

@@ -4,7 +4,6 @@ import { useQuery } from "convex/react";
 import { ExternalLink, GitBranch } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
-import { LoadingCard } from "@/components/repo/loading-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -73,7 +72,13 @@ function IssuesPage() {
 	}, [filteredAndSortedIssues]);
 
 	if (!repoData) {
-		return <LoadingCard title="Issues" message="Loading issues..." />;
+		return (
+			<ContentCard title="Issues">
+				<p className="font-mono text-muted-foreground text-sm">
+					Loading issues...
+				</p>
+			</ContentCard>
+		);
 	}
 
 	if (isProcessing) {

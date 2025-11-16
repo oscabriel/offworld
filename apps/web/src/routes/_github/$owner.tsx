@@ -2,6 +2,8 @@ import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAction } from "convex/react";
 import { useEffect, useState } from "react";
+import { OwnerHeader } from "@/components/owner/owner-header";
+import { StatusBadge } from "@/components/repo/status-badge";
 
 type RepoWithStatus = {
 	owner: string;
@@ -62,7 +64,7 @@ function OwnerPage() {
 	// Error state
 	if (error) {
 		return (
-			<div className="container mx-auto max-w-6xl px-4 py-24">
+			<div className="container mx-auto max-w-7xl px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-6 border border-red-500/20 bg-card p-8">
 					<h1 className="font-serif text-4xl text-red-600">Error</h1>
 					<p className="font-serif text-lg text-muted-foreground">{error}</p>
@@ -74,7 +76,7 @@ function OwnerPage() {
 	// Loading state
 	if (ownerInfo === undefined || repos === undefined) {
 		return (
-			<div className="container mx-auto max-w-6xl px-4 py-24">
+			<div className="container mx-auto max-w-7xl px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-6">
 					<div className="h-32 w-32 animate-pulse bg-muted" />
 					<div className="h-8 w-64 animate-pulse bg-muted" />
@@ -85,50 +87,10 @@ function OwnerPage() {
 	}
 
 	return (
-		<div className="container mx-auto max-w-6xl px-4 py-24">
+		<div className="container mx-auto max-w-7xl px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 			<div className="space-y-12">
 				{/* Owner Header */}
-				<div className="flex items-start gap-6">
-					<img
-						src={ownerInfo.avatarUrl}
-						alt={ownerInfo.name}
-						className="h-32 w-32 border-2 border-primary/20"
-					/>
-					<div className="flex-1 space-y-3">
-						<h1 className="font-serif text-5xl tracking-tight">
-							{ownerInfo.name}
-						</h1>
-						<div className="flex flex-wrap items-center gap-4">
-							<span className="font-mono text-muted-foreground text-sm">
-								@{ownerInfo.login}
-							</span>
-							<span className="font-mono text-muted-foreground text-sm capitalize">
-								{ownerInfo.type}
-							</span>
-							<span className="font-mono text-muted-foreground text-sm">
-								{ownerInfo.publicRepos} public repos
-							</span>
-							{ownerInfo.followers !== undefined && (
-								<span className="font-mono text-muted-foreground text-sm">
-									{ownerInfo.followers.toLocaleString()} followers
-								</span>
-							)}
-						</div>
-						{ownerInfo.bio && (
-							<p className="max-w-2xl font-serif text-lg text-muted-foreground">
-								{ownerInfo.bio}
-							</p>
-						)}
-						<a
-							href={ownerInfo.htmlUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-block font-mono text-primary underline hover:no-underline"
-						>
-							View on GitHub →
-						</a>
-					</div>
-				</div>
+				<OwnerHeader ownerInfo={ownerInfo} />
 
 				{/* Repositories Section */}
 				<div className="space-y-6">
@@ -152,22 +114,11 @@ function OwnerPage() {
 										<h3 className="font-mono font-semibold text-lg group-hover:text-primary">
 											{repo.name}
 										</h3>
-										{repo.isIndexed && (
-											<span
-												className={`inline-flex shrink-0 items-center px-2 py-1 font-mono text-xs ${
-													repo.indexingStatus === "completed"
-														? "bg-green-500/10 text-green-600"
-														: repo.indexingStatus === "processing"
-															? "bg-yellow-500/10 text-yellow-600"
-															: "bg-muted text-muted-foreground"
-												}`}
-											>
-												{repo.indexingStatus === "completed"
-													? "Indexed"
-													: repo.indexingStatus === "processing"
-														? "Processing"
-														: "Indexed"}
-											</span>
+										{repo.isIndexed && repo.indexingStatus && (
+											<StatusBadge
+												status={repo.indexingStatus}
+												variant="compact"
+											/>
 										)}
 									</div>
 

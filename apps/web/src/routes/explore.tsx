@@ -1,13 +1,11 @@
 import { api } from "@offworld/backend/convex/_generated/api";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { useState } from "react";
-import { Footer } from "@/components/footer";
+import { RepoUrlInput } from "@/components/explore/repo-url-input";
+import { Footer } from "@/components/layout/footer";
 import { RepoCard } from "@/components/repo/repo-card";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/explore")({
@@ -15,48 +13,17 @@ export const Route = createFileRoute("/explore")({
 });
 
 function ExploreComponent() {
-	const [repoUrl, setRepoUrl] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const navigate = useNavigate();
 
 	// Fetch pre-indexed repositories
 	const repos = useQuery(api.repos.list);
-
-	const handleAnalyze = () => {
-		setError(null);
-
-		// Parse GitHub URL to extract owner/name
-		const match = repoUrl.match(
-			/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/,
-		);
-
-		if (match) {
-			const [, owner, name] = match;
-			navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
-		} else {
-			// Try parsing as just "owner/repo" format
-			const simpleMatch = repoUrl.match(/^([^/]+)\/([^/]+)$/);
-			if (simpleMatch) {
-				const [, owner, name] = simpleMatch;
-				navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
-			} else {
-				setError("Please enter a valid GitHub repository URL");
-			}
-		}
-	};
-
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
-			handleAnalyze();
-		}
-	};
 
 	const completedRepos =
 		repos?.filter((r) => r.indexingStatus === "completed") || [];
 
 	return (
-		<div className="relative min-h-screen">
-			<div className="container mx-auto max-w-7xl px-4 py-24">
+		<div className="relative flex min-h-screen flex-col">
+			<div className="container mx-auto max-w-7xl flex-1 px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-14">
 					{/* Header */}
 					<div className="space-y-6">
@@ -66,38 +33,14 @@ function ExploreComponent() {
 					</div>
 
 					{/* URL Input Section */}
-					<div className="space-y-4">
-						<Label
-							htmlFor="repo-url"
-							className="block font-mono text-muted-foreground text-sm uppercase tracking-wide"
-						>
-							Search for a repository
-						</Label>
-						<div className="flex gap-3">
-							<Input
-								id="repo-url"
-								type="text"
-								value={repoUrl}
-								onChange={(e) => setRepoUrl(e.target.value)}
-								onKeyDown={handleKeyDown}
-								placeholder="github.com/username/repo"
-								className="h-auto flex-1 rounded-none border-2 border-primary/20 bg-background/50 px-6 py-4 font-mono text-foreground text-xl backdrop-blur-sm transition-all duration-300 focus-visible:border-primary focus-visible:bg-background focus-visible:ring-0"
-								aria-describedby={error ? "url-error" : undefined}
-							/>
-							<Button
-								type="button"
-								onClick={handleAnalyze}
-								disabled={!repoUrl}
-								size="lg"
-								className="h-auto rounded-none border-2 border-primary bg-primary px-10 py-4 font-mono text-lg text-primary-foreground transition-all duration-300 hover:bg-background hover:text-primary disabled:cursor-not-allowed"
-							>
-								Search
-							</Button>
-						</div>
+					<div>
+						<RepoUrlInput
+							labelText="Search for a repository"
+							buttonText="Search"
+							onError={setError}
+						/>
 						{error && (
-							<p id="url-error" className="font-mono text-red-500 text-sm">
-								{error}
-							</p>
+							<p className="mt-2 font-mono text-red-500 text-sm">{error}</p>
 						)}
 					</div>
 

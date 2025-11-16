@@ -23,8 +23,8 @@ export function RepoCard({
 			params={{ owner, repo: name }}
 			className="block h-full"
 		>
-			<Card className="group flex h-48 min-w-[320px] flex-col border border-primary/10 bg-card shadow-none transition-colors hover:border-primary/30 md:min-w-[380px]">
-				<CardHeader>
+			<Card className="group flex h-48 min-w-[320px] flex-col gap-4 border border-primary/10 bg-card py-4 shadow-none transition-colors hover:border-primary/30 md:min-w-[380px]">
+				<CardHeader className="gap-0 px-4 py-0 pt-4">
 					<div className="flex items-start justify-between gap-2">
 						<CardTitle className="font-semibold font-serif text-xl group-hover:text-primary">
 							{owner}/{name}
@@ -39,14 +39,14 @@ export function RepoCard({
 				</CardHeader>
 
 				{description && (
-					<CardContent className="pt-0">
-						<p className="line-clamp-2 font-mono text-muted-foreground text-sm">
+					<CardContent className="px-4 py-0">
+						<p className="line-clamp-3 font-mono text-muted-foreground text-sm">
 							{description}
 						</p>
 					</CardContent>
 				)}
 
-				<CardContent className="mt-auto flex flex-wrap items-center gap-4 pt-0">
+				<CardContent className="mt-auto flex flex-wrap items-center gap-4 px-4 py-0 pb-4">
 					{language && (
 						<span className="font-mono text-muted-foreground text-xs">
 							{language}

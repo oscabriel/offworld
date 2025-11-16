@@ -3,20 +3,20 @@ import { Link } from "@tanstack/react-router";
 export function Footer() {
 	return (
 		<div className="relative border-primary/10 border-y bg-background/30 py-16 backdrop-blur-sm">
-			<div className="container relative mx-auto flex items-end justify-between gap-16 px-4">
+			<div className="container relative mx-auto flex max-w-7xl flex-col items-center justify-between gap-16 px-4 lg:max-w-5xl lg:flex-row lg:items-end xl:max-w-6xl 2xl:max-w-7xl">
 				{/* Left - Brand */}
 				<div className="flex shrink-0 items-end">
 					<Link
 						to="/"
-						className="-mb-2 block font-serif text-6xl text-primary leading-none transition-colors hover:text-foreground"
+						className="-mb-2 block font-serif text-7xl text-primary leading-none transition-colors hover:text-foreground lg:text-6xl xl:text-7xl"
 					>
 						offworld.sh
 					</Link>
 				</div>
 
 				{/* Middle - Links */}
-				<div className="-translate-x-1/2 absolute left-1/2 flex items-end gap-20">
-					<div className="space-y-2">
+				<div className="lg:-translate-x-1/2 flex flex-row items-center gap-20 lg:absolute lg:left-1/2 lg:items-end">
+					<div className="space-y-2 text-center lg:text-left">
 						<h3 className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
 							Navigate
 						</h3>
@@ -36,7 +36,7 @@ export function Footer() {
 						</div>
 					</div>
 
-					<div className="space-y-2">
+					<div className="space-y-2 text-center lg:text-left">
 						<h3 className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
 							Learn
 						</h3>
@@ -58,7 +58,7 @@ export function Footer() {
 						</div>
 					</div>
 
-					<div className="space-y-2">
+					<div className="space-y-2 text-center lg:text-left">
 						<h3 className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
 							Connect
 						</h3>
@@ -85,7 +85,7 @@ export function Footer() {
 				</div>
 
 				{/* Right - Tagline & Copyright */}
-				<div className="flex shrink-0 flex-col items-end justify-between gap-4 self-stretch text-right">
+				<div className="flex shrink-0 flex-col items-center justify-between gap-4 self-stretch text-center lg:items-end lg:text-right">
 					<p className="font-serif text-2xl text-primary italic">
 						“Explore distant code.”
 					</p>
@@ -93,7 +93,7 @@ export function Footer() {
 						href="https://oscargabriel.dev"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="font-mono text-muted-foreground text-xs transition-colors hover:text-foreground"
+						className="font-mono text-muted-foreground text-sm transition-colors hover:text-foreground"
 					>
 						© {new Date().getFullYear()} Oscar Gabriel
 					</a>

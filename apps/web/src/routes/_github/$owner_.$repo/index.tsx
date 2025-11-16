@@ -2,7 +2,10 @@ import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { ContentCard } from "@/components/repo/content-card";
+import { LoadingCard } from "@/components/repo/loading-card";
+import { MarkdownContent } from "@/components/repo/markdown-content";
+import { RepoStats } from "@/components/repo/repo-stats";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/")({
 	component: RepoSummaryPage,
@@ -41,7 +44,7 @@ function RepoSummaryPage() {
 			<div className="space-y-8">
 				{/* Processing info box - only show while processing */}
 				{isProcessing && (
-					<div className="border border-yellow-500/20 bg-yellow-500/5 p-6">
+					<ContentCard variant="warning">
 						<h3 className="mb-2 font-mono font-semibold text-lg">
 							⚡ Analysis in Progress
 						</h3>
@@ -54,66 +57,24 @@ function RepoSummaryPage() {
 								Workflow: {repoStatus.workflowId}
 							</p>
 						)}
-					</div>
+					</ContentCard>
 				)}
 
 				{/* Summary Section - Show if exists, skeleton if processing without it */}
 				{repoStatus.summary ? (
-					<div className="space-y-6 border border-primary/10 bg-card p-8">
-						<h2 className="font-mono font-semibold text-2xl">Summary</h2>
-						<div className="markdown-content font-serif text-lg leading-relaxed [&>code]:rounded [&>code]:bg-muted [&>code]:px-1 [&>code]:py-0.5 [&>code]:font-mono [&>code]:text-sm [&>h1]:mb-4 [&>h1]:font-mono [&>h1]:font-semibold [&>h1]:text-2xl [&>h2]:mb-3 [&>h2]:font-mono [&>h2]:font-semibold [&>h2]:text-xl [&>h3]:mb-2 [&>h3]:font-mono [&>h3]:font-semibold [&>h3]:text-lg [&>li]:leading-relaxed [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>ol]:space-y-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>strong]:font-semibold [&>strong]:text-foreground [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc [&>ul]:space-y-2">
-							<ReactMarkdown>{repoStatus.summary}</ReactMarkdown>
-						</div>
-					</div>
+					<ContentCard title="Summary">
+						<MarkdownContent content={repoStatus.summary} />
+					</ContentCard>
 				) : isProcessing ? (
-					<div className="space-y-6 border border-primary/10 bg-card p-8">
-						<h2 className="font-mono font-semibold text-2xl text-muted-foreground">
-							Summary
-						</h2>
-						<div className="space-y-3">
-							<div className="h-4 w-full animate-pulse bg-muted" />
-							<div className="h-4 w-5/6 animate-pulse bg-muted" />
-							<div className="h-4 w-4/6 animate-pulse bg-muted" />
-						</div>
-						<p className="pt-2 font-mono text-muted-foreground text-sm">
-							Generating summary...
-						</p>
-					</div>
+					<LoadingCard title="Summary" message="Generating summary..." />
 				) : null}
 
 				{/* Stats - Show real numbers or placeholders */}
-				<div className="flex gap-6 border border-primary/10 bg-card p-6">
-					<div className="flex flex-col">
-						<span className="font-mono text-muted-foreground text-xs uppercase">
-							Code Chunks
-						</span>
-						{repoStatus.chunkCount !== undefined &&
-						repoStatus.chunkCount > 0 ? (
-							<span className="mt-1 font-mono font-semibold text-3xl">
-								{repoStatus.chunkCount}
-							</span>
-						) : (
-							<span className="mt-1 font-mono text-3xl text-muted-foreground">
-								{isProcessing ? "..." : "0"}
-							</span>
-						)}
-					</div>
-					<div className="flex flex-col">
-						<span className="font-mono text-muted-foreground text-xs uppercase">
-							Issues Analyzed
-						</span>
-						{repoStatus.issueCount !== undefined &&
-						repoStatus.issueCount > 0 ? (
-							<span className="mt-1 font-mono font-semibold text-3xl">
-								{repoStatus.issueCount}
-							</span>
-						) : (
-							<span className="mt-1 font-mono text-3xl text-muted-foreground">
-								{isProcessing ? "..." : "0"}
-							</span>
-						)}
-					</div>
-				</div>
+				<RepoStats
+					chunkCount={repoStatus.chunkCount}
+					issueCount={repoStatus.issueCount}
+					isProcessing={isProcessing}
+				/>
 
 				{/* GitHub link */}
 				<div className="border border-primary/10 bg-card p-4">
@@ -133,7 +94,7 @@ function RepoSummaryPage() {
 	// Error state - repo not found or failed
 	if (repoStatus?.indexingStatus === "failed") {
 		return (
-			<div className="space-y-6 border border-red-500/20 bg-card p-8">
+			<ContentCard variant="error">
 				<h1 className="font-serif text-4xl text-red-600">Analysis Failed</h1>
 				<p className="font-serif text-lg text-muted-foreground">
 					{repoStatus.errorMessage ||
@@ -145,7 +106,7 @@ function RepoSummaryPage() {
 				>
 					Try Another Repository
 				</a>
-			</div>
+			</ContentCard>
 		);
 	}
 
@@ -154,10 +115,7 @@ function RepoSummaryPage() {
 		return (
 			<div className="space-y-8">
 				{/* Main content styled like Summary section */}
-				<div className="space-y-6 border border-primary/10 bg-card p-8">
-					<h2 className="font-mono font-semibold text-2xl">
-						Repository Not Indexed
-					</h2>
+				<ContentCard title="Repository Not Indexed">
 					<p className="font-serif text-lg text-muted-foreground leading-relaxed">
 						This repository hasn't been analyzed yet. Would you like to index
 						it?
@@ -170,7 +128,7 @@ function RepoSummaryPage() {
 					>
 						{isIndexing ? "Starting Analysis..." : "Index This Repository"}
 					</button>
-				</div>
+				</ContentCard>
 			</div>
 		);
 	}

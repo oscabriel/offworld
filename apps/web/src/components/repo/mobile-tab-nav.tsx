@@ -28,6 +28,9 @@ export function MobileTabNav({
 				<TabLink to={`${basePath}/pr`} disabled={disabled}>
 					PRs
 				</TabLink>
+				<TabLink to={`${basePath}/chat`} disabled={disabled}>
+					Chat
+				</TabLink>
 			</div>
 		</div>
 	);
@@ -59,7 +62,8 @@ function TabLink({ to, children, disabled = false }: TabLinkProps) {
 				exact:
 					!to.includes("/arch") &&
 					!to.includes("/issues") &&
-					!to.includes("/pr"),
+					!to.includes("/pr") &&
+					!to.includes("/chat"),
 			}}
 		>
 			{children}

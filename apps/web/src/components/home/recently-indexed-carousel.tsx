@@ -41,11 +41,11 @@ export function RecentlyIndexedCarousel({
 						}}
 						className="w-full"
 					>
-						<CarouselContent className="-ml-6 md:-ml-8">
+						<CarouselContent className="-ml-2">
 							{repos.slice(0, 10).map((repo) => (
 								<CarouselItem
 									key={repo._id}
-									className="pl-6 md:basis-1/2 md:pl-8 lg:basis-1/2 xl:basis-1/3"
+									className="pl-2 md:basis-1/2 lg:basis-1/2 xl:basis-1/3"
 								>
 									<RepoCard
 										owner={repo.owner}

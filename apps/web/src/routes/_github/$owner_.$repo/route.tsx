@@ -50,14 +50,6 @@ function RepoLayout() {
 					<MobileTabNav className="mb-6 lg:hidden" disabled={isNotIndexed} />
 					<Outlet />
 				</main>
-
-				{/* Right Chat Sidebar (Large Desktop + Authenticated - will implement later) */}
-				{/* TODO: Implement ChatSidebar component */}
-				{/* {isCompleted && (
-					<aside className="w-96 shrink-0 sticky top-6 self-start hidden xl:block">
-						<ChatSidebar repoId={repoData._id} />
-					</aside>
-				)} */}
 			</div>
 		</div>
 	);

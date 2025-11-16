@@ -20,6 +20,7 @@ import { Route as GithubOwnerRepoRouteRouteImport } from './routes/_github/$owne
 import { Route as GithubOwnerRepoIndexRouteImport } from './routes/_github/$owner_.$repo/index'
 import { Route as GithubOwnerRepoPrIndexRouteImport } from './routes/_github/$owner_.$repo/pr/index'
 import { Route as GithubOwnerRepoIssuesIndexRouteImport } from './routes/_github/$owner_.$repo/issues/index'
+import { Route as GithubOwnerRepoChatIndexRouteImport } from './routes/_github/$owner_.$repo/chat/index'
 import { Route as GithubOwnerRepoArchIndexRouteImport } from './routes/_github/$owner_.$repo/arch/index'
 import { Route as GithubOwnerRepoPrNumberRouteImport } from './routes/_github/$owner_.$repo/pr/$number'
 import { Route as GithubOwnerRepoIssuesNumberRouteImport } from './routes/_github/$owner_.$repo/issues/$number'
@@ -80,6 +81,12 @@ const GithubOwnerRepoIssuesIndexRoute =
     path: '/issues/',
     getParentRoute: () => GithubOwnerRepoRouteRoute,
   } as any)
+const GithubOwnerRepoChatIndexRoute =
+  GithubOwnerRepoChatIndexRouteImport.update({
+    id: '/chat/',
+    path: '/chat/',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
 const GithubOwnerRepoArchIndexRoute =
   GithubOwnerRepoArchIndexRouteImport.update({
     id: '/arch/',
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
   '/$owner/$repo/pr/$number': typeof GithubOwnerRepoPrNumberRoute
   '/$owner/$repo/arch': typeof GithubOwnerRepoArchIndexRoute
+  '/$owner/$repo/chat': typeof GithubOwnerRepoChatIndexRoute
   '/$owner/$repo/issues': typeof GithubOwnerRepoIssuesIndexRoute
   '/$owner/$repo/pr': typeof GithubOwnerRepoPrIndexRoute
 }
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
   '/$owner/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
   '/$owner/$repo/pr/$number': typeof GithubOwnerRepoPrNumberRoute
   '/$owner/$repo/arch': typeof GithubOwnerRepoArchIndexRoute
+  '/$owner/$repo/chat': typeof GithubOwnerRepoChatIndexRoute
   '/$owner/$repo/issues': typeof GithubOwnerRepoIssuesIndexRoute
   '/$owner/$repo/pr': typeof GithubOwnerRepoPrIndexRoute
 }
@@ -150,6 +159,7 @@ export interface FileRoutesById {
   '/_github/$owner_/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
   '/_github/$owner_/$repo/pr/$number': typeof GithubOwnerRepoPrNumberRoute
   '/_github/$owner_/$repo/arch/': typeof GithubOwnerRepoArchIndexRoute
+  '/_github/$owner_/$repo/chat/': typeof GithubOwnerRepoChatIndexRoute
   '/_github/$owner_/$repo/issues/': typeof GithubOwnerRepoIssuesIndexRoute
   '/_github/$owner_/$repo/pr/': typeof GithubOwnerRepoPrIndexRoute
 }
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/$number'
     | '/$owner/$repo/pr/$number'
     | '/$owner/$repo/arch'
+    | '/$owner/$repo/chat'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/pr'
   fileRoutesByTo: FileRoutesByTo
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/$number'
     | '/$owner/$repo/pr/$number'
     | '/$owner/$repo/arch'
+    | '/$owner/$repo/chat'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/pr'
   id:
@@ -200,6 +212,7 @@ export interface FileRouteTypes {
     | '/_github/$owner_/$repo/issues/$number'
     | '/_github/$owner_/$repo/pr/$number'
     | '/_github/$owner_/$repo/arch/'
+    | '/_github/$owner_/$repo/chat/'
     | '/_github/$owner_/$repo/issues/'
     | '/_github/$owner_/$repo/pr/'
   fileRoutesById: FileRoutesById
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GithubOwnerRepoIssuesIndexRouteImport
       parentRoute: typeof GithubOwnerRepoRouteRoute
     }
+    '/_github/$owner_/$repo/chat/': {
+      id: '/_github/$owner_/$repo/chat/'
+      path: '/chat'
+      fullPath: '/$owner/$repo/chat'
+      preLoaderRoute: typeof GithubOwnerRepoChatIndexRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
     '/_github/$owner_/$repo/arch/': {
       id: '/_github/$owner_/$repo/arch/'
       path: '/arch'
@@ -329,6 +349,7 @@ interface GithubOwnerRepoRouteRouteChildren {
   GithubOwnerRepoIssuesNumberRoute: typeof GithubOwnerRepoIssuesNumberRoute
   GithubOwnerRepoPrNumberRoute: typeof GithubOwnerRepoPrNumberRoute
   GithubOwnerRepoArchIndexRoute: typeof GithubOwnerRepoArchIndexRoute
+  GithubOwnerRepoChatIndexRoute: typeof GithubOwnerRepoChatIndexRoute
   GithubOwnerRepoIssuesIndexRoute: typeof GithubOwnerRepoIssuesIndexRoute
   GithubOwnerRepoPrIndexRoute: typeof GithubOwnerRepoPrIndexRoute
 }
@@ -339,6 +360,7 @@ const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
   GithubOwnerRepoIssuesNumberRoute: GithubOwnerRepoIssuesNumberRoute,
   GithubOwnerRepoPrNumberRoute: GithubOwnerRepoPrNumberRoute,
   GithubOwnerRepoArchIndexRoute: GithubOwnerRepoArchIndexRoute,
+  GithubOwnerRepoChatIndexRoute: GithubOwnerRepoChatIndexRoute,
   GithubOwnerRepoIssuesIndexRoute: GithubOwnerRepoIssuesIndexRoute,
   GithubOwnerRepoPrIndexRoute: GithubOwnerRepoPrIndexRoute,
 }

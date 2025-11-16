@@ -1,5 +1,11 @@
 import { Link, useParams } from "@tanstack/react-router";
-import { AlertCircle, FileText, GitBranch, GitPullRequest } from "lucide-react";
+import {
+	AlertCircle,
+	FileText,
+	GitBranch,
+	GitPullRequest,
+	MessageSquare,
+} from "lucide-react";
 
 interface RepoNavigationProps {
 	disabled?: boolean;
@@ -22,6 +28,9 @@ export function RepoNavigation({ disabled = false }: RepoNavigationProps) {
 			</NavLink>
 			<NavLink to={`${basePath}/pr`} icon={GitPullRequest} disabled={disabled}>
 				PRs
+			</NavLink>
+			<NavLink to={`${basePath}/chat`} icon={MessageSquare} disabled={disabled}>
+				Chat
 			</NavLink>
 		</nav>
 	);
@@ -55,7 +64,8 @@ function NavLink({ to, icon: Icon, children, disabled = false }: NavLinkProps) {
 				exact:
 					!to.includes("/arch") &&
 					!to.includes("/issues") &&
-					!to.includes("/pr"),
+					!to.includes("/pr") &&
+					!to.includes("/chat"),
 			}}
 		>
 			<Icon className="h-4 w-4" />

@@ -71,7 +71,7 @@ export function RepoUrlInput({
 					onChange={(e) => setRepoUrl(e.target.value)}
 					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
-					className="h-auto flex-1 rounded-none border-2 border-primary/20 bg-background/50 px-4 py-3 font-mono text-foreground text-base transition-all duration-300 backdrop-blur-sm focus-visible:border-primary focus-visible:bg-background focus-visible:ring-0 sm:px-6 sm:py-4 sm:text-xl"
+					className="h-auto flex-1 rounded-none border-2 border-primary/20 bg-background/50 px-4 py-3 font-mono text-base text-foreground backdrop-blur-sm transition-all duration-300 focus-visible:border-primary focus-visible:bg-background focus-visible:ring-0 sm:px-6 sm:py-4 sm:text-xl"
 				/>
 				<Button
 					onClick={handleAnalyze}

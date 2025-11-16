@@ -23,7 +23,7 @@ export function RepoCard({
 			params={{ owner, repo: name }}
 			className="block h-full"
 		>
-			<Card className="group flex h-48 min-w-[320px] flex-col gap-4 border border-primary/10 bg-card py-4 shadow-none transition-colors hover:border-primary/30 md:min-w-[380px]">
+			<Card className="group flex h-full min-h-[192px] w-full flex-col gap-4 border border-primary/10 bg-card py-4 shadow-none transition-colors hover:border-primary/30">
 				<CardHeader className="gap-0 px-4 py-0 pt-4">
 					<div className="flex items-start justify-between gap-2">
 						<CardTitle className="font-semibold font-serif text-xl group-hover:text-primary">

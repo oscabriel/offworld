@@ -10,6 +10,7 @@
 
 import type * as agent_codebaseAgent from "../agent/codebaseAgent.js";
 import type * as agent_tools from "../agent/tools.js";
+import type * as architectureEntities from "../architectureEntities.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as gemini from "../gemini.js";
@@ -20,8 +21,10 @@ import type * as importance from "../importance.js";
 import type * as lib_google from "../lib/google.js";
 import type * as maintenance from "../maintenance.js";
 import type * as privateData from "../privateData.js";
+import type * as prompts from "../prompts.js";
 import type * as rag from "../rag.js";
 import type * as repos from "../repos.js";
+import type * as schemas_aiValidation from "../schemas/aiValidation.js";
 import type * as workflows_analyzeRepository from "../workflows/analyzeRepository.js";
 
 import type {
@@ -33,6 +36,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "agent/codebaseAgent": typeof agent_codebaseAgent;
   "agent/tools": typeof agent_tools;
+  architectureEntities: typeof architectureEntities;
   auth: typeof auth;
   chat: typeof chat;
   gemini: typeof gemini;
@@ -43,8 +47,10 @@ declare const fullApi: ApiFromModules<{
   "lib/google": typeof lib_google;
   maintenance: typeof maintenance;
   privateData: typeof privateData;
+  prompts: typeof prompts;
   rag: typeof rag;
   repos: typeof repos;
+  "schemas/aiValidation": typeof schemas_aiValidation;
   "workflows/analyzeRepository": typeof workflows_analyzeRepository;
 }>;
 

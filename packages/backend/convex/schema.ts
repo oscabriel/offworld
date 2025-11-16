@@ -24,10 +24,57 @@ export default defineSchema({
 		projectStructure: v.optional(v.any()), // JSON tree structure
 		workflowId: v.optional(v.string()),
 		errorMessage: v.optional(v.string()),
+		architectureMetadata: v.optional(
+			v.object({
+				totalIterations: v.number(),
+				completedIterations: v.number(),
+				discoveredPackages: v.number(),
+				discoveredModules: v.number(),
+				discoveredComponents: v.number(),
+				lastIterationAt: v.number(),
+			}),
+		),
+		diagrams: v.optional(
+			v.object({
+				architecture: v.optional(v.string()), // Mermaid syntax
+				dataFlow: v.optional(v.string()), // Mermaid syntax
+				routing: v.optional(v.string()), // Mermaid syntax
+			}),
+		),
 	})
 		.index("fullName", ["fullName"])
 		.index("indexingStatus", ["indexingStatus"])
 		.index("lastAnalyzedAt", ["lastAnalyzedAt"]),
+
+	architectureEntities: defineTable({
+		repositoryId: v.id("repositories"),
+		type: v.union(
+			v.literal("package"),
+			v.literal("module"),
+			v.literal("component"),
+			v.literal("service"),
+			v.literal("directory"),
+		),
+		name: v.string(), // Display name: "Button", "api", "react-reconciler"
+		slug: v.string(), // URL-safe: "button", "api", "react-reconciler"
+		path: v.string(), // File/directory path: "packages/react-reconciler"
+		description: v.string(), // AI-generated description
+		purpose: v.string(), // What it does / why it exists
+		dependencies: v.array(v.string()), // What it depends on (names)
+		usedBy: v.array(v.string()), // What uses it (names)
+		keyFiles: v.array(v.string()), // Important files in this entity
+		complexity: v.union(
+			v.literal("low"),
+			v.literal("medium"),
+			v.literal("high"),
+		),
+		iteration: v.number(), // Which analysis iteration discovered this (1-3)
+		codeSnippet: v.optional(v.string()), // Representative code sample
+	})
+		.index("by_repository", ["repositoryId"])
+		.index("by_type", ["repositoryId", "type"])
+		.index("by_slug", ["repositoryId", "slug"])
+		.index("by_iteration", ["repositoryId", "iteration"]),
 
 	issues: defineTable({
 		repositoryId: v.id("repositories"),

@@ -1,10 +1,16 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { api } from "@offworld/backend/convex/_generated/api";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
 import {
 	AlertCircle,
+	FileCode,
 	FileText,
 	GitBranch,
 	GitPullRequest,
+	Layers,
 	MessageSquare,
+	Package,
+	Settings,
 } from "lucide-react";
 
 interface RepoNavigationProps {
@@ -13,7 +19,31 @@ interface RepoNavigationProps {
 
 export function RepoNavigation({ disabled = false }: RepoNavigationProps) {
 	const { owner, repo } = useParams({ from: "/_github/$owner_/$repo" });
+	const location = useLocation();
 	const basePath = `/${owner}/${repo}`;
+	const fullName = `${owner}/${repo}`;
+
+	// Query repository data to get entities
+	const repoData = useQuery(
+		api.repos.getByFullName,
+		fullName && !disabled ? { fullName } : "skip",
+	);
+
+	const entities = useQuery(
+		api.architectureEntities.listByRepo,
+		repoData?._id && !disabled ? { repoId: repoData._id } : "skip",
+	);
+
+	// Check if we're on an arch route
+	const isArchRoute = location.pathname.includes("/arch");
+
+	// Group entities by type
+	const packages =
+		entities?.filter((e) => e.type === "package" || e.type === "directory") ||
+		[];
+	const modules = entities?.filter((e) => e.type === "module") || [];
+	const components = entities?.filter((e) => e.type === "component") || [];
+	const services = entities?.filter((e) => e.type === "service") || [];
 
 	return (
 		<nav className="space-y-1">
@@ -23,6 +53,54 @@ export function RepoNavigation({ disabled = false }: RepoNavigationProps) {
 			<NavLink to={`${basePath}/arch`} icon={GitBranch} disabled={disabled}>
 				Architecture
 			</NavLink>
+
+			{/* Architecture Subroutes - Show when on arch page and entities exist */}
+			{isArchRoute && entities && entities.length > 0 && (
+				<div className="ml-6 space-y-1 border-primary/10 border-l pl-3">
+					{packages.slice(0, 5).map((entity) => (
+						<SubNavLink
+							key={entity._id}
+							to={`${basePath}/arch/${entity.slug}`}
+							icon={Package}
+						>
+							{entity.name}
+						</SubNavLink>
+					))}
+					{modules.slice(0, 5).map((entity) => (
+						<SubNavLink
+							key={entity._id}
+							to={`${basePath}/arch/${entity.slug}`}
+							icon={Layers}
+						>
+							{entity.name}
+						</SubNavLink>
+					))}
+					{components.slice(0, 5).map((entity) => (
+						<SubNavLink
+							key={entity._id}
+							to={`${basePath}/arch/${entity.slug}`}
+							icon={FileCode}
+						>
+							{entity.name}
+						</SubNavLink>
+					))}
+					{services.slice(0, 5).map((entity) => (
+						<SubNavLink
+							key={entity._id}
+							to={`${basePath}/arch/${entity.slug}`}
+							icon={Settings}
+						>
+							{entity.name}
+						</SubNavLink>
+					))}
+					{entities.length > 20 && (
+						<div className="px-2 py-1 font-mono text-muted-foreground text-xs">
+							+{entities.length - 20} more
+						</div>
+					)}
+				</div>
+			)}
+
 			<NavLink to={`${basePath}/issues`} icon={AlertCircle} disabled={disabled}>
 				Issues
 			</NavLink>
@@ -70,6 +148,27 @@ function NavLink({ to, icon: Icon, children, disabled = false }: NavLinkProps) {
 		>
 			<Icon className="h-4 w-4" />
 			<span className="font-mono text-sm">{children}</span>
+		</Link>
+	);
+}
+
+interface SubNavLinkProps {
+	to: string;
+	icon: React.ComponentType<{ className?: string }>;
+	children: React.ReactNode;
+}
+
+function SubNavLink({ to, icon: Icon, children }: SubNavLinkProps) {
+	return (
+		<Link
+			to={to}
+			className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent/50"
+			activeProps={{
+				className: "bg-accent/70 font-medium",
+			}}
+		>
+			<Icon className="h-3.5 w-3.5 text-muted-foreground" />
+			<span className="truncate font-mono text-xs">{children}</span>
 		</Link>
 	);
 }

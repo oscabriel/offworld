@@ -1,4 +1,4 @@
-import { RAG, defaultChunker } from "@convex-dev/rag";
+import { defaultChunker, RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";

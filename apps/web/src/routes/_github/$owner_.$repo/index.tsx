@@ -12,9 +12,11 @@ export const Route = createFileRoute("/_github/$owner_/$repo/")({
 function RepoSummaryPage() {
 	const { owner, repo } = Route.useParams();
 	const [isIndexing, setIsIndexing] = useState(false);
+	const [isRetrying, setIsRetrying] = useState(false);
 
 	const fullName = `${owner}/${repo}`;
 	const startAnalysis = useMutation(api.repos.startAnalysis);
+	const deleteRepository = useMutation(api.repos.deleteRepository);
 
 	// Query repository status - THIS IS REACTIVE and auto-updates
 	const repoStatus = useQuery(
@@ -31,6 +33,25 @@ function RepoSummaryPage() {
 		} catch (error) {
 			console.error("Failed to start analysis:", error);
 			setIsIndexing(false);
+		}
+	};
+
+	const handleRetryAnalysis = async () => {
+		setIsRetrying(true);
+		try {
+			// Delete the failed repository data
+			await deleteRepository({ fullName });
+
+			// Wait a moment for deletion to complete
+			await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// Start fresh analysis
+			await startAnalysis({
+				repoUrl: `https://github.com/${owner}/${repo}`,
+			});
+		} catch (error) {
+			console.error("Failed to retry analysis:", error);
+			setIsRetrying(false);
 		}
 	};
 
@@ -72,17 +93,29 @@ function RepoSummaryPage() {
 	if (repoStatus?.indexingStatus === "failed") {
 		return (
 			<ContentCard variant="error">
-				<h1 className="font-serif text-4xl text-red-600">Analysis Failed</h1>
-				<p className="font-serif text-lg text-muted-foreground">
+				<h1 className="mb-4 font-serif text-4xl text-red-600">
+					Analysis Failed
+				</h1>
+				<p className="mb-6 font-serif text-lg text-muted-foreground">
 					{repoStatus.errorMessage ||
 						"Failed to analyze this repository. It may be private, archived, or unavailable."}
 				</p>
-				<a
-					href="/"
-					className="inline-block border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90"
-				>
-					Try Another Repository
-				</a>
+				<div className="flex gap-4">
+					<button
+						type="button"
+						onClick={handleRetryAnalysis}
+						disabled={isRetrying}
+						className="border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{isRetrying ? "Retrying..." : "Retry Analysis"}
+					</button>
+					<a
+						href="/"
+						className="inline-block border border-primary bg-card px-6 py-3 font-mono text-foreground hover:bg-accent"
+					>
+						Try Another Repository
+					</a>
+				</div>
 			</ContentCard>
 		);
 	}

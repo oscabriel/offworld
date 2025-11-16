@@ -1,7 +1,12 @@
-import { streamText } from "ai";
+import { generateText } from "ai";
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { google } from "./lib/google";
+import {
+	ArchitectureIterationSchema,
+	IssueAnalysisSchema,
+	safeParseAIResponse,
+} from "./schemas/aiValidation";
 
 /**
  * Generate repository summary using Gemini 2.5 Flash Lite
@@ -25,6 +30,7 @@ export const generateRepoSummary = internalAction({
 			query: "README package.json main entry point core",
 			limit: 5,
 			filters: [{ name: "priority", value: "high" }],
+			chunkContext: { before: 1, after: 1 },
 		});
 
 		// Extract file paths and get a representative sample of the codebase
@@ -50,13 +56,12 @@ Please provide:
 
 Keep the summary under 300 words. Focus on clarity and practical understanding.`;
 
-		const result = await streamText({
+		const { text } = await generateText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
 
-		// Consume the full stream for workflow usage
-		return await result.text;
+		return text;
 	},
 });
 
@@ -79,6 +84,7 @@ export const generateArchitecture = internalAction({
 			query: "main entry point core architecture",
 			limit: 50,
 			filters: [{ name: "priority", value: "high" }],
+			chunkContext: { before: 1, after: 1 },
 		});
 
 		// Extract file paths from RAG results
@@ -119,13 +125,354 @@ Please provide:
 
 Keep it under 250 words. Focus on helping developers understand how the code is organized.`;
 
-		const result = await streamText({
+		const { text } = await generateText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
 
-		// Consume the full stream for workflow usage
-		return await result.text;
+		return text;
+	},
+});
+
+/**
+ * Architecture Iteration 1: High-level structure discovery
+ * Discovers packages, top-level directories, and main subsystems
+ */
+export const generateArchitectureIteration1 = internalAction({
+	args: {
+		repoName: v.string(),
+		summary: v.string(),
+		namespace: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const { rag } = await import("./rag");
+		const { ARCHITECTURE_ITERATION_1, renderPrompt, extractJSON } =
+			await import("./prompts");
+
+		// Search for entry points and top-level configuration
+		const results = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: "package.json README entry point index main tsconfig",
+			limit: 20,
+			filters: [{ name: "priority", value: "high" }],
+			chunkContext: { before: 1, after: 1 },
+		});
+
+		const prompt = renderPrompt(ARCHITECTURE_ITERATION_1, {
+			repoName: args.repoName,
+			summary: args.summary,
+			codeContext: results.text.slice(0, 8000),
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		try {
+			const data = extractJSON(text);
+			const validated = safeParseAIResponse(ArchitectureIterationSchema, data, {
+				overview: "Unable to analyze high-level structure",
+				pattern: "Unknown",
+				entities: [],
+			});
+
+			// Filter by iteration-specific types
+			const validTypes = ["package", "directory"];
+			const filteredEntities = validated.entities.filter((e) =>
+				validTypes.includes(e.type),
+			);
+
+			if (filteredEntities.length !== validated.entities.length) {
+				console.warn(
+					`Iteration 1: Filtered out ${validated.entities.length - filteredEntities.length} entities with invalid types`,
+				);
+			}
+
+			return {
+				overview: validated.overview,
+				pattern: validated.pattern || "Unknown",
+				entities: filteredEntities,
+			};
+		} catch (error) {
+			console.error("Failed to parse iteration 1 response:", error);
+			return {
+				overview: "Unable to analyze high-level structure",
+				pattern: "Unknown",
+				entities: [],
+			};
+		}
+	},
+});
+
+/**
+ * Architecture Iteration 2: Module and service discovery
+ * Discovers core modules, services, and subsystems
+ */
+export const generateArchitectureIteration2 = internalAction({
+	args: {
+		repoName: v.string(),
+		summary: v.string(),
+		namespace: v.string(),
+		iteration1Overview: v.string(),
+		previousEntities: v.string(), // JSON string of previous entities
+	},
+	handler: async (ctx, args) => {
+		const { rag } = await import("./rag");
+		const { ARCHITECTURE_ITERATION_2, renderPrompt, extractJSON } =
+			await import("./prompts");
+
+		// Search for modules, services, core directories
+		const results = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: "modules services api router controller handlers middleware",
+			limit: 30,
+			chunkContext: { before: 1, after: 1 },
+		});
+
+		const prompt = renderPrompt(ARCHITECTURE_ITERATION_2, {
+			repoName: args.repoName,
+			summary: args.summary,
+			iteration1Overview: args.iteration1Overview,
+			previousEntities: args.previousEntities,
+			codeContext: results.text.slice(0, 10000),
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		try {
+			const data = extractJSON(text);
+			const validated = safeParseAIResponse(ArchitectureIterationSchema, data, {
+				overview: "Unable to analyze modules and services",
+				entities: [],
+			});
+
+			// Filter by iteration-specific types
+			const validTypes = ["module", "service"];
+			const filteredEntities = validated.entities.filter((e) =>
+				validTypes.includes(e.type),
+			);
+
+			if (filteredEntities.length !== validated.entities.length) {
+				console.warn(
+					`Iteration 2: Filtered out ${validated.entities.length - filteredEntities.length} entities with invalid types`,
+				);
+			}
+
+			return {
+				overview: validated.overview,
+				entities: filteredEntities,
+			};
+		} catch (error) {
+			console.error("Failed to parse iteration 2 response:", error);
+			return {
+				overview: "Unable to analyze modules and services",
+				entities: [],
+			};
+		}
+	},
+});
+
+/**
+ * Architecture Iteration 3: Component and utility discovery
+ * Discovers individual components, utilities, and helpers
+ */
+export const generateArchitectureIteration3 = internalAction({
+	args: {
+		repoName: v.string(),
+		summary: v.string(),
+		namespace: v.string(),
+		previousOverview: v.string(),
+		previousEntities: v.string(), // JSON string of all previous entities
+	},
+	handler: async (ctx, args) => {
+		const { rag } = await import("./rag");
+		const { ARCHITECTURE_ITERATION_3, renderPrompt, extractJSON } =
+			await import("./prompts");
+
+		// Search for components, utilities, helpers
+		const results = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: "components utils helpers hooks utilities lib shared",
+			limit: 25,
+			chunkContext: { before: 1, after: 1 },
+		});
+
+		const prompt = renderPrompt(ARCHITECTURE_ITERATION_3, {
+			repoName: args.repoName,
+			summary: args.summary,
+			previousOverview: args.previousOverview,
+			previousEntities: args.previousEntities,
+			codeContext: results.text.slice(0, 10000),
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		try {
+			const data = extractJSON(text);
+			const validated = safeParseAIResponse(ArchitectureIterationSchema, data, {
+				overview: "Unable to analyze components and utilities",
+				entities: [],
+			});
+
+			// Filter by iteration-specific types
+			const validTypes = ["component"];
+			const filteredEntities = validated.entities.filter((e) =>
+				validTypes.includes(e.type),
+			);
+
+			if (filteredEntities.length !== validated.entities.length) {
+				console.warn(
+					`Iteration 3: Filtered out ${validated.entities.length - filteredEntities.length} entities with invalid types`,
+				);
+			}
+
+			return {
+				overview: validated.overview,
+				entities: filteredEntities,
+			};
+		} catch (error) {
+			console.error("Failed to parse iteration 3 response:", error);
+			return {
+				overview: "Unable to analyze components and utilities",
+				entities: [],
+			};
+		}
+	},
+});
+
+/**
+ * Generate C4 architecture diagram
+ */
+export const generateArchitectureDiagram = internalAction({
+	args: {
+		repoName: v.string(),
+		pattern: v.string(),
+		entities: v.string(), // JSON string of entities
+	},
+	handler: async (_ctx, args) => {
+		const { ARCHITECTURE_DIAGRAM_PROMPT, renderPrompt } = await import(
+			"./prompts"
+		);
+
+		const prompt = renderPrompt(ARCHITECTURE_DIAGRAM_PROMPT, {
+			repoName: args.repoName,
+			pattern: args.pattern,
+			entities: args.entities,
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		// Extract mermaid code (remove markdown fences if present)
+		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
+		if (mermaidMatch) {
+			return mermaidMatch[1].trim();
+		}
+
+		// Return raw text if no code blocks found
+		return text.trim();
+	},
+});
+
+/**
+ * Generate data flow diagram
+ */
+export const generateDataFlowDiagram = internalAction({
+	args: {
+		repoName: v.string(),
+		overview: v.string(),
+		entities: v.string(), // JSON string of entities
+	},
+	handler: async (_ctx, args) => {
+		const { DATA_FLOW_DIAGRAM_PROMPT, renderPrompt } = await import(
+			"./prompts"
+		);
+
+		const prompt = renderPrompt(DATA_FLOW_DIAGRAM_PROMPT, {
+			repoName: args.repoName,
+			overview: args.overview,
+			entities: args.entities,
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		// Extract mermaid code
+		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
+		if (mermaidMatch) {
+			return mermaidMatch[1].trim();
+		}
+
+		return text.trim();
+	},
+});
+
+/**
+ * Generate routing diagram (for frontend applications)
+ */
+export const generateRoutingDiagram = internalAction({
+	args: {
+		repoName: v.string(),
+		namespace: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const { rag } = await import("./rag");
+		const { ROUTING_DIAGRAM_PROMPT, renderPrompt } = await import("./prompts");
+
+		// Search for route files
+		const results = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: "routes pages app router routing navigation",
+			limit: 20,
+			chunkContext: { before: 1, after: 1 },
+		});
+
+		// Extract file paths that look like routes
+		const routeFiles = results.entries
+			.map((e) => e.entryId)
+			.filter(
+				(path) =>
+					path.includes("/routes/") ||
+					path.includes("/pages/") ||
+					path.includes("/app/") ||
+					path.includes("route.ts") ||
+					path.includes("page.tsx"),
+			)
+			.join("\n");
+
+		// Skip routing diagram if no routes found
+		if (!routeFiles || routeFiles.length === 0) {
+			return null;
+		}
+
+		const prompt = renderPrompt(ROUTING_DIAGRAM_PROMPT, {
+			repoName: args.repoName,
+			routeFiles,
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		// Extract mermaid code
+		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
+		if (mermaidMatch) {
+			return mermaidMatch[1].trim();
+		}
+
+		return text.trim();
 	},
 });
 
@@ -158,13 +505,10 @@ Please provide a JSON response with:
 
 Respond ONLY with valid JSON, no additional text.`;
 
-		const result = await streamText({
+		const { text } = await generateText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
-
-		// Consume the full stream for JSON parsing
-		const text = await result.text;
 
 		try {
 			// Extract JSON from response (handle markdown code blocks)
@@ -173,17 +517,22 @@ Respond ONLY with valid JSON, no additional text.`;
 				throw new Error("No JSON found in response");
 			}
 
-			const analysis = JSON.parse(jsonMatch[0]);
+			const data = JSON.parse(jsonMatch[0]);
+			const validated = safeParseAIResponse(IssueAnalysisSchema, data, {
+				difficulty: 3,
+				summary: args.issueTitle,
+				filesLikelyTouched: [],
+				skillsRequired: [],
+			});
 
 			return {
-				difficulty: analysis.difficulty,
-				aiSummary: analysis.summary,
-				filesLikelyTouched: analysis.filesLikelyTouched || [],
-				skillsRequired: analysis.skillsRequired || [],
+				difficulty: validated.difficulty,
+				aiSummary: validated.summary,
+				filesLikelyTouched: validated.filesLikelyTouched,
+				skillsRequired: validated.skillsRequired,
 			};
-		} catch (_error) {
-			console.error("Failed to parse Gemini response:", text);
-			// Return fallback values
+		} catch (error) {
+			console.error("Failed to parse Gemini response:", error);
 			return {
 				difficulty: 3,
 				aiSummary: args.issueTitle,
@@ -242,12 +591,11 @@ Instructions:
 - Keep answers concise but thorough
 - Use markdown formatting for code snippets`;
 
-		const result = await streamText({
+		const { text } = await generateText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
 
-		// Consume the full stream for workflow usage
-		return await result.text;
+		return text;
 	},
 });

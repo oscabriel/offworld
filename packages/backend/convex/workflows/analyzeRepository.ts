@@ -45,6 +45,24 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				},
 			);
 
+			// Determine iteration count based on repo size
+			const fileCount = fileTreeResult.files.length;
+			const iterationCount =
+				fileCount < 50
+					? 2
+					: // Small repos: 2 iterations
+						fileCount < 200
+						? 3
+						: // Medium repos: 3 iterations
+							fileCount < 500
+							? 4
+							: // Large repos: 4 iterations
+								5; // Very large repos: 5 iterations
+
+			console.log(
+				`Repository has ${fileCount} files, using ${iterationCount} iterations for architecture analysis`,
+			);
+
 			// Step 4-7: Ingest repository into RAG component (~2-5 minutes)
 			// Replaces custom chunking with RAG's auto-chunking + embedding generation
 			const namespace = `repo:${args.owner}/${args.name}`;
@@ -76,21 +94,142 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				summary,
 			});
 
-			// Step 9: Generate architecture overview (~30-60 seconds)
+			// Step 9: Generate architecture overview with adaptive iterations
 			// Uses RAG component for context instead of file paths
-			const architecture = await step.runAction(
-				internal.gemini.generateArchitecture,
+			const allEntities: any[] = [];
+			const iterationOverviews: string[] = [];
+			let architecturePattern = "Unknown";
+
+			for (let i = 1; i <= iterationCount; i++) {
+				// Determine which iteration function to call
+				// i=1: iteration1 (packages/directories)
+				// i=2: iteration2 (modules/services)
+				// i>=3: iteration3 (components/utilities) - can be called multiple times
+				const iterationFunc =
+					i === 1
+						? internal.gemini.generateArchitectureIteration1
+						: i === 2
+							? internal.gemini.generateArchitectureIteration2
+							: internal.gemini.generateArchitectureIteration3;
+
+				// Build context from previous iterations
+				const previousContext =
+					i === 1
+						? { repoName: metadata.fullName, summary, namespace }
+						: i === 2
+							? {
+									repoName: metadata.fullName,
+									summary,
+									namespace,
+									iteration1Overview: iterationOverviews[0],
+									previousEntities: JSON.stringify(allEntities),
+								}
+							: {
+									repoName: metadata.fullName,
+									summary,
+									namespace,
+									previousOverview: iterationOverviews.join("\n\n"),
+									previousEntities: JSON.stringify(allEntities),
+								};
+
+				// Run the iteration
+				const result = await step.runAction(iterationFunc, previousContext);
+
+				// Store pattern from first iteration
+				if (i === 1 && result.pattern) {
+					architecturePattern = result.pattern;
+				}
+
+				// Store overview
+				iterationOverviews.push(result.overview);
+
+				// Process and store entities
+				const maxEntities = i === 1 ? 15 : i % 2 === 0 ? 20 : 15;
+				// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
+				const entities = result.entities
+					.slice(0, maxEntities)
+					.map((e: any) => ({
+						...e,
+						iteration: i,
+						usedBy: e.usedBy || [],
+					}));
+
+				allEntities.push(...entities);
+
+				await step.runMutation(internal.architectureEntities.createBatch, {
+					repoId,
+					entities,
+				});
+			}
+
+			// Generate C4 diagrams using discovered entities
+			const architectureDiagram = await step.runAction(
+				internal.gemini.generateArchitectureDiagram,
 				{
 					repoName: metadata.fullName,
-					summary,
+					pattern: architecturePattern,
+					entities: JSON.stringify(allEntities.slice(0, 20)),
+				},
+			);
+
+			const dataFlowDiagram = await step.runAction(
+				internal.gemini.generateDataFlowDiagram,
+				{
+					repoName: metadata.fullName,
+					overview: iterationOverviews.join("\n\n"),
+					entities: JSON.stringify(allEntities.slice(0, 15)),
+				},
+			);
+
+			const routingDiagram = await step.runAction(
+				internal.gemini.generateRoutingDiagram,
+				{
+					repoName: metadata.fullName,
 					namespace,
 				},
 			);
 
-			// Update DB immediately so frontend sees architecture (progressive update)
-			await step.runMutation(internal.repos.updateArchitecture, {
+			// Generate final architecture text dynamically based on iterations
+			let finalArchitecture = `# Architecture Pattern: ${architecturePattern}\n\n`;
+			iterationOverviews.forEach((overview, index) => {
+				const sectionTitle =
+					index === 0
+						? "High-Level Structure"
+						: index === 1
+							? "Module Organization"
+							: index === 2
+								? "Component Structure"
+								: `Iteration ${index + 1}`;
+				finalArchitecture += `## ${sectionTitle}\n\n${overview}\n\n`;
+			});
+			finalArchitecture += `---\n\n*Discovered ${allEntities.length} architectural entities across ${iterationCount} analysis iterations*`;
+
+			// Update DB with architecture, metadata, and diagrams
+			await step.runMutation(internal.repos.updateArchitectureComplete, {
 				repoId,
-				architecture,
+				architecture: finalArchitecture,
+				architectureMetadata: {
+					totalIterations: iterationCount,
+					completedIterations: iterationCount,
+					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
+					discoveredPackages: allEntities.filter(
+						(e: any) => e.type === "package",
+					).length,
+					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
+					discoveredModules: allEntities.filter(
+						(e: any) => e.type === "module" || e.type === "service",
+					).length,
+					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
+					discoveredComponents: allEntities.filter(
+						(e: any) => e.type === "component",
+					).length,
+					lastIterationAt: Date.now(),
+				},
+				diagrams: {
+					architecture: architectureDiagram,
+					dataFlow: dataFlowDiagram,
+					routing: routingDiagram || undefined,
+				},
 			});
 
 			// Step 10: Analyze issues in batches to minimize workflow state

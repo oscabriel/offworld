@@ -140,6 +140,38 @@ export const updateArchitecture = internalMutation({
 });
 
 /**
+ * Update repository architecture with full metadata and diagrams
+ */
+export const updateArchitectureComplete = internalMutation({
+	args: {
+		repoId: v.id("repositories"),
+		architecture: v.string(),
+		architectureMetadata: v.object({
+			totalIterations: v.number(),
+			completedIterations: v.number(),
+			discoveredPackages: v.number(),
+			discoveredModules: v.number(),
+			discoveredComponents: v.number(),
+			lastIterationAt: v.number(),
+		}),
+		diagrams: v.object({
+			architecture: v.string(),
+			dataFlow: v.string(),
+			routing: v.optional(v.string()),
+		}),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.repoId, {
+			architecture: args.architecture,
+			architectureMetadata: args.architectureMetadata,
+			diagrams: args.diagrams,
+		});
+
+		return { success: true };
+	},
+});
+
+/**
  * Finalize repository analysis
  */
 export const finalizeAnalysis = internalMutation({
@@ -171,6 +203,58 @@ export const markAsFailed = internalMutation({
 			errorMessage: args.errorMessage,
 			lastAnalyzedAt: Date.now(),
 		});
+
+		return { success: true };
+	},
+});
+
+/**
+ * Delete repository and all related data (for retry after failure)
+ */
+export const deleteRepository = mutation({
+	args: {
+		fullName: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Get repository
+		const repo = await ctx.db
+			.query("repositories")
+			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) {
+			throw new Error("Repository not found");
+		}
+
+		// Delete all issues
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("repositoryId", (q) => q.eq("repositoryId", repo._id))
+			.collect();
+		for (const issue of issues) {
+			await ctx.db.delete(issue._id);
+		}
+
+		// Delete all architecture entities
+		const entities = await ctx.db
+			.query("architectureEntities")
+			.withIndex("by_repository", (q) => q.eq("repositoryId", repo._id))
+			.collect();
+		for (const entity of entities) {
+			await ctx.db.delete(entity._id);
+		}
+
+		// Delete all conversations
+		const conversations = await ctx.db
+			.query("conversations")
+			.withIndex("by_repo", (q) => q.eq("repositoryId", repo._id))
+			.collect();
+		for (const conversation of conversations) {
+			await ctx.db.delete(conversation._id);
+		}
+
+		// Delete the repository itself
+		await ctx.db.delete(repo._id);
 
 		return { success: true };
 	},

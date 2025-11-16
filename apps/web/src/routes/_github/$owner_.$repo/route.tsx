@@ -1,6 +1,7 @@
 import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { useState } from "react";
 import { MobileTabNav } from "@/components/repo/mobile-tab-nav";
 import { RepoHeader } from "@/components/repo/repo-header";
 import { RepoNavigation } from "@/components/repo/repo-navigation";
@@ -12,12 +13,28 @@ export const Route = createFileRoute("/_github/$owner_/$repo")({
 function RepoLayout() {
 	const { owner, repo } = Route.useParams();
 	const fullName = `${owner}/${repo}`;
+	const [isReindexing, setIsReindexing] = useState(false);
 
 	// Query repository data for header
 	const repoData = useQuery(
 		api.repos.getByFullName,
 		fullName ? { fullName } : "skip",
 	);
+
+	const reindexRepository = useMutation(api.repos.reindexRepository);
+
+	const handleReindex = async () => {
+		if (!repoData?._id) return;
+
+		setIsReindexing(true);
+		try {
+			await reindexRepository({ repoId: repoData._id });
+			// State will update automatically via reactive query
+		} catch (error) {
+			console.error("Failed to re-index repository:", error);
+			setIsReindexing(false);
+		}
+	};
 
 	// Show loading skeleton while fetching
 	if (repoData === undefined) {
@@ -36,7 +53,13 @@ function RepoLayout() {
 	return (
 		<div className="min-h-screen pt-14">
 			{/* Header */}
-			<RepoHeader owner={owner} repo={repo} repoData={repoData} />
+			<RepoHeader
+				owner={owner}
+				repo={repo}
+				repoData={repoData}
+				onReindex={handleReindex}
+				isReindexing={isReindexing}
+			/>
 
 			{/* Two-column layout */}
 			<div className="container mx-auto flex max-w-7xl gap-6 px-4 py-6 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">

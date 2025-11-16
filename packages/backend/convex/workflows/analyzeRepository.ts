@@ -22,6 +22,17 @@ export const analyzeRepositoryWorkflow = workflow.define({
 		userId: v.optional(v.string()),
 	},
 	handler: async (step, args) => {
+		// Step 0: Clear old RAG data if this is a re-index (optional but thorough)
+		// This ensures deleted files don't leave stale chunks
+		const namespace = `repo:${args.owner}/${args.name}`;
+		try {
+			await step.runAction(internal.rag.clearNamespace, { namespace });
+			console.log(`Cleared old RAG data for ${namespace}`);
+		} catch (error) {
+			// If this fails, it's okay - chunks will be overwritten during ingestion
+			console.warn("Failed to clear RAG namespace (non-critical):", error);
+		}
+
 		// Step 1: Fetch & validate GitHub metadata (~5-10 seconds)
 		const metadata = await step.runAction(internal.github.fetchRepoMetadata, {
 			owner: args.owner,

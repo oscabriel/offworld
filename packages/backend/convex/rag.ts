@@ -26,6 +26,57 @@ export const rag = new RAG<FilterTypes>(components.rag, {
 });
 
 /**
+ * Clear all documents from a specific namespace
+ * Used when re-indexing a repository
+ */
+export const clearNamespace = internalAction({
+	args: {
+		namespace: v.string(),
+	},
+	handler: async (ctx, args) => {
+		let totalDeleted = 0;
+		let hasMore = true;
+
+		// Paginate through all documents (max 256 per search due to RAG limit)
+		while (hasMore) {
+			const results = await rag.search(ctx, {
+				namespace: args.namespace,
+				query: "", // Empty query to match all
+				limit: 256, // Max limit for vector queries
+			});
+
+			// If no results, we're done
+			if (results.entries.length === 0) {
+				hasMore = false;
+				break;
+			}
+
+			// Delete this batch
+			for (const entry of results.entries) {
+				try {
+					await rag.delete(ctx, {
+						entryId: entry.entryId,
+					});
+					totalDeleted++;
+				} catch (error) {
+					console.warn(`Failed to delete RAG entry ${entry.entryId}:`, error);
+				}
+			}
+
+			// If we got fewer than 256 results, we're done
+			if (results.entries.length < 256) {
+				hasMore = false;
+			}
+		}
+
+		console.log(
+			`Cleared ${totalDeleted} documents from namespace ${args.namespace}`,
+		);
+		return { deletedCount: totalDeleted };
+	},
+});
+
+/**
  * Ingest repository files into RAG component
  * Uses custom chunking with larger chunk sizes (~2000-2500 chars) for better storage efficiency
  */

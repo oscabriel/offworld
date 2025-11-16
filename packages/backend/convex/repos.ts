@@ -209,6 +209,91 @@ export const markAsFailed = internalMutation({
 });
 
 /**
+ * Re-index repository: Clear all analysis data except conversations, then re-analyze
+ * Preserves the repository record and user conversations
+ */
+export const reindexRepository = mutation({
+	args: {
+		repoId: v.id("repositories"),
+	},
+	handler: async (ctx, args) => {
+		// 1. Get the repository
+		const repo = await ctx.db.get(args.repoId);
+		if (!repo) {
+			throw new Error("Repository not found");
+		}
+
+		// Prevent re-indexing if already processing
+		if (repo.indexingStatus === "processing") {
+			throw new Error(
+				"Repository analysis is already in progress. Please wait for it to complete.",
+			);
+		}
+
+		console.log(
+			`Starting re-index for ${repo.fullName} (repoId: ${args.repoId})`,
+		);
+
+		// 2. Delete architecture entities
+		const deletedEntities = await ctx.runMutation(
+			// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder
+			(internal as any).architectureEntities.deleteByRepo,
+			{ repositoryId: args.repoId },
+		);
+		console.log(`Deleted ${deletedEntities} architecture entities`);
+
+		// 3. Delete issues
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId))
+			.collect();
+		for (const issue of issues) {
+			await ctx.db.delete(issue._id);
+		}
+		console.log(`Deleted ${issues.length} issues`);
+
+		// 4. RAG chunks will be cleared and re-ingested by the workflow
+		// Note: Mutations can't call actions directly, so RAG clearing happens
+		// during re-ingestion (chunks are overwritten with same file paths as keys)
+
+		// 5. Keep conversations (as requested - they stay intact)
+
+		// 6. Reset repository analysis fields
+		await ctx.db.patch(args.repoId, {
+			indexingStatus: "processing",
+			summary: undefined,
+			architecture: undefined,
+			architectureMetadata: undefined,
+			diagrams: undefined,
+			errorMessage: undefined,
+			lastAnalyzedAt: Date.now(),
+		});
+
+		// 7. Start the workflow again
+		const workflowResult = await ctx.runMutation(
+			// biome-ignore lint/suspicious/noExplicitAny: WorkflowManager requires any type
+			(internal as any).workflows.analyzeRepository.start,
+			{
+				owner: repo.owner,
+				name: repo.name,
+			},
+		);
+
+		console.log(
+			`Re-index workflow started for ${repo.fullName}: ${workflowResult.workflowId}`,
+		);
+
+		return {
+			workflowId: workflowResult.workflowId,
+			status: "processing",
+			message: `Re-indexing ${repo.fullName}`,
+			deletedEntities,
+			deletedIssues: issues.length,
+		};
+	},
+});
+
+/**
  * Delete repository and all related data (for retry after failure)
  */
 export const deleteRepository = mutation({

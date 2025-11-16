@@ -103,18 +103,22 @@ Generate a JSON response with this EXACT structure:
       "name": "<Package or top-level directory name>",
       "slug": "<url-safe-name>",
       "type": "package",
-      "path": "<relative path>",
+      "path": "<full path from repository root, exactly as it appears in the code>",
       "description": "<what this package/directory does>",
       "purpose": "<why it exists>",
       "dependencies": [],
-      "keyFiles": ["<important files in this package>"],
+      "keyFiles": ["<full file paths from repository root, EXACTLY as they appear in the code context>"],
       "complexity": "low|medium|high"
     }
   ]
 }
 
-IMPORTANT: The "type" field MUST be one of: "package", "directory"
-DO NOT use "file" as a type - individual files should be listed in keyFiles instead.
+IMPORTANT:
+- The "type" field MUST be one of: "package", "directory"
+- DO NOT use "file" as a type - individual files should be listed in keyFiles instead
+- CRITICAL: All paths in "path" and "keyFiles" must be COMPLETE paths from the repository root
+  Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
+  Copy paths EXACTLY as they appear in the code context above
 
 Focus on discovering:
 - Packages (in monorepos) - use type "package"
@@ -145,19 +149,23 @@ Generate a JSON response continuing the structure:
       "name": "<Module or service name>",
       "slug": "<url-safe-name>",
       "type": "module",
-      "path": "<relative path>",
+      "path": "<full path from repository root, exactly as it appears in the code>",
       "description": "<what this module/service does>",
       "purpose": "<its role in the system>",
       "dependencies": ["<other modules it depends on>"],
       "usedBy": ["<what uses this module>"],
-      "keyFiles": ["<key files>"],
+      "keyFiles": ["<full file paths from repository root, EXACTLY as they appear in the code context>"],
       "complexity": "low|medium|high"
     }
   ]
 }
 
-IMPORTANT: The "type" field MUST be one of: "module", "service"
-DO NOT use "file" as a type - individual files should be listed in keyFiles instead.
+IMPORTANT:
+- The "type" field MUST be one of: "module", "service"
+- DO NOT use "file" as a type - individual files should be listed in keyFiles instead
+- CRITICAL: All paths in "path" and "keyFiles" must be COMPLETE paths from the repository root
+  Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
+  Copy paths EXACTLY as they appear in the code context above
 
 Focus on discovering:
 - Core modules (routing, authentication, data layer, etc.) - use type "module"
@@ -189,19 +197,23 @@ Generate a JSON response continuing the structure:
       "name": "<Component or utility name>",
       "slug": "<url-safe-name>",
       "type": "component",
-      "path": "<relative path>",
+      "path": "<full path from repository root, exactly as it appears in the code>",
       "description": "<what this component/utility does>",
       "purpose": "<its specific use case>",
       "dependencies": ["<what it depends on>"],
       "usedBy": ["<where it's used>"],
-      "keyFiles": ["<implementation files>"],
+      "keyFiles": ["<full file paths from repository root, EXACTLY as they appear in the code context>"],
       "complexity": "low|medium|high"
     }
   ]
 }
 
-IMPORTANT: The "type" field MUST be "component"
-DO NOT use "file" as a type - individual files should be listed in keyFiles instead.
+IMPORTANT:
+- The "type" field MUST be "component"
+- DO NOT use "file" as a type - individual files should be listed in keyFiles instead
+- CRITICAL: All paths in "path" and "keyFiles" must be COMPLETE paths from the repository root
+  Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
+  Copy paths EXACTLY as they appear in the code context above
 
 Focus on discovering:
 - Reusable components (UI components, React components, etc.) - use type "component"

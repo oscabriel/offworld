@@ -22,9 +22,12 @@ function createAuth(
 		baseURL: siteUrl,
 		trustedOrigins: [siteUrl],
 		database: authComponent.adapter(ctx),
-		emailAndPassword: {
-			enabled: true,
-			requireEmailVerification: false,
+		socialProviders: {
+			github: {
+				enabled: true,
+				clientId: process.env.GITHUB_CLIENT_ID || "",
+				clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+			},
 		},
 		plugins: [convex()],
 	});
@@ -36,6 +39,16 @@ export const getCurrentUser = query({
 	args: {},
 	returns: v.any(),
 	handler: async (ctx) => authComponent.getAuthUser(ctx),
+});
+
+/**
+ * Returns the current authenticated user or null if not authenticated.
+ * Safe query version that doesn't throw when user is not authenticated.
+ */
+export const getCurrentUserSafe = query({
+	args: {},
+	returns: v.any(),
+	handler: async (ctx) => authComponent.safeGetAuthUser(ctx),
 });
 
 /**

@@ -31,9 +31,17 @@ interface RepoHeaderProps {
 		language?: string;
 		description?: string;
 	} | null;
+	onReindex?: () => void;
+	isReindexing?: boolean;
 }
 
-export function RepoHeader({ owner, repo, repoData }: RepoHeaderProps) {
+export function RepoHeader({
+	owner,
+	repo,
+	repoData,
+	onReindex,
+	isReindexing,
+}: RepoHeaderProps) {
 	const isCompleted = repoData?.indexingStatus === "completed";
 	const isNotIndexed = repoData === null;
 
@@ -80,9 +88,21 @@ export function RepoHeader({ owner, repo, repoData }: RepoHeaderProps) {
 						)}
 					</div>
 					{!isNotIndexed && repoData?.description && (
-						<p className="font-mono text-base text-muted-foreground">
-							{repoData.description}
-						</p>
+						<div className="flex items-end justify-between gap-4">
+							<p className="font-mono text-base text-muted-foreground">
+								{repoData.description}
+							</p>
+							{isCompleted && onReindex && (
+								<button
+									type="button"
+									onClick={onReindex}
+									disabled={isReindexing}
+									className="shrink-0 border border-primary/20 bg-card px-3 py-1.5 font-mono text-muted-foreground text-sm hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									{isReindexing ? "Re-indexing..." : "Re-index"}
+								</button>
+							)}
+						</div>
 					)}
 				</div>
 			</div>

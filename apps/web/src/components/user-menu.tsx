@@ -1,48 +1,55 @@
 import { api } from "@offworld/backend/convex/_generated/api";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "./ui/button";
 
 export default function UserMenu() {
 	const navigate = useNavigate();
-	const user = useQuery(api.auth.getCurrentUser);
+	const user = useQuery(api.auth.getCurrentUserSafe);
+
+	if (!user) {
+		return (
+			<Link
+				to="/sign-in"
+				className="cursor-pointer font-serif text-lg transition-opacity hover:opacity-70"
+			>
+				Sign In
+			</Link>
+		);
+	}
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">{user?.name}</Button>
+			<DropdownMenuTrigger className="cursor-pointer font-serif text-lg transition-opacity hover:opacity-70 focus:outline-none">
+				{user.name || user.email}
 			</DropdownMenuTrigger>
-			<DropdownMenuContent className="bg-card">
-				<DropdownMenuLabel>My Account</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem>{user?.email}</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Button
-						variant="destructive"
-						className="w-full"
-						onClick={() => {
-							authClient.signOut({
-								fetchOptions: {
-									onSuccess: () => {
-										navigate({
-											to: "/",
-										});
-									},
+			<DropdownMenuContent className="border-primary/10 bg-card/95 backdrop-blur-sm">
+				<DropdownMenuItem className="text-muted-foreground text-sm">
+					{user.email}
+				</DropdownMenuItem>
+				<DropdownMenuSeparator className="bg-primary/10" />
+				<DropdownMenuItem
+					className="cursor-pointer text-destructive focus:text-destructive"
+					onClick={() => {
+						authClient.signOut({
+							fetchOptions: {
+								onSuccess: () => {
+									navigate({
+										to: "/",
+									});
 								},
-							});
-						}}
-					>
-						Sign Out
-					</Button>
+							},
+						});
+					}}
+				>
+					Sign Out
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

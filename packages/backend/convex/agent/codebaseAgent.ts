@@ -1,6 +1,6 @@
 import { Agent } from "@convex-dev/agent";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { components } from "../_generated/api";
+import { google } from "../lib/google";
 import type { CodebaseAgentContext } from "./tools";
 import {
 	explainFile,
@@ -10,13 +10,6 @@ import {
 	listFiles,
 	searchCodeContext,
 } from "./tools";
-
-/**
- * Create Google AI provider with our Gemini API key
- */
-const google = createGoogleGenerativeAI({
-	apiKey: process.env.GEMINI_API_KEY,
-});
 
 /**
  * Codebase Explorer Agent

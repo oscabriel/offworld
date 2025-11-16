@@ -61,14 +61,17 @@ export const sendMessage = action({
 			userId: args.userId,
 		});
 
-		// Generate response using agent
-		const response = await codebaseAgent.generateText(
+		// Generate response using agent (uses streamText internally, await full response)
+		const response = await codebaseAgent.streamText(
 			ctxWithAgent,
 			conversation.threadId,
 			{
 				prompt: args.message,
 			},
 		);
+
+		// Consume full stream for non-streaming API
+		const fullText = await response.text;
 
 		// Update conversation metadata
 		await ctx.runMutation(
@@ -80,7 +83,7 @@ export const sendMessage = action({
 		);
 
 		return {
-			message: response.text,
+			message: fullText,
 			threadId: conversation.threadId,
 		};
 	},

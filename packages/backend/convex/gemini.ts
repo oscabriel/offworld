@@ -1,14 +1,7 @@
-import { generateText } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { streamText } from "ai";
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
-
-/**
- * Create Google AI provider with our Gemini API key
- */
-const google = createGoogleGenerativeAI({
-	apiKey: process.env.GEMINI_API_KEY,
-});
+import { google } from "./lib/google";
 
 /**
  * Generate repository summary using Gemini 2.5 Flash Lite
@@ -57,12 +50,13 @@ Please provide:
 
 Keep the summary under 300 words. Focus on clarity and practical understanding.`;
 
-		const { text } = await generateText({
+		const result = await streamText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
 
-		return text;
+		// Consume the full stream for workflow usage
+		return await result.text;
 	},
 });
 
@@ -125,12 +119,13 @@ Please provide:
 
 Keep it under 250 words. Focus on helping developers understand how the code is organized.`;
 
-		const { text } = await generateText({
+		const result = await streamText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
 
-		return text;
+		// Consume the full stream for workflow usage
+		return await result.text;
 	},
 });
 
@@ -163,10 +158,13 @@ Please provide a JSON response with:
 
 Respond ONLY with valid JSON, no additional text.`;
 
-		const { text } = await generateText({
+		const result = await streamText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
+
+		// Consume the full stream for JSON parsing
+		const text = await result.text;
 
 		try {
 			// Extract JSON from response (handle markdown code blocks)
@@ -244,11 +242,12 @@ Instructions:
 - Keep answers concise but thorough
 - Use markdown formatting for code snippets`;
 
-		const { text } = await generateText({
+		const result = await streamText({
 			model: google("gemini-2.5-flash-lite"),
 			prompt,
 		});
 
-		return text;
+		// Consume the full stream for workflow usage
+		return await result.text;
 	},
 });

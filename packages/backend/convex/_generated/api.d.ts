@@ -17,6 +17,8 @@ import type * as github from "../github.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as importance from "../importance.js";
+import type * as lib_google from "../lib/google.js";
+import type * as maintenance from "../maintenance.js";
 import type * as privateData from "../privateData.js";
 import type * as rag from "../rag.js";
 import type * as repos from "../repos.js";
@@ -38,6 +40,8 @@ declare const fullApi: ApiFromModules<{
   healthCheck: typeof healthCheck;
   http: typeof http;
   importance: typeof importance;
+  "lib/google": typeof lib_google;
+  maintenance: typeof maintenance;
   privateData: typeof privateData;
   rag: typeof rag;
   repos: typeof repos;

@@ -51,8 +51,17 @@ export function shouldExcludeFile(filePath: string, size: number): boolean {
 	// Exclude node_modules (should already be filtered by GitHub)
 	if (/node_modules\//.test(filePath)) return true;
 
-	// Exclude very large files (>200KB)
-	if (size > 200000) return true;
+	// Exclude example/demo/sample files
+	if (/\/(examples?|demos?|samples?)\//.test(filePath)) return true;
+
+	// Exclude migration and seed files
+	if (/\/(migrations?|seeds?)\//.test(filePath)) return true;
+
+	// Exclude generated/vendor code
+	if (/\/(vendor|generated|\.git)\//.test(filePath)) return true;
+
+	// Exclude large files (>100KB) - reduced from 200KB
+	if (size > 100000) return true;
 
 	// Exclude test files (we can search them later if needed)
 	if (/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(filePath)) return true;

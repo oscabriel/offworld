@@ -70,6 +70,12 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				},
 			);
 
+			// Update DB immediately so frontend sees summary (progressive update)
+			await step.runMutation(internal.repos.updateSummary, {
+				repoId,
+				summary,
+			});
+
 			// Step 9: Generate architecture overview (~30-60 seconds)
 			// Uses RAG component for context instead of file paths
 			const architecture = await step.runAction(
@@ -80,6 +86,12 @@ export const analyzeRepositoryWorkflow = workflow.define({
 					namespace,
 				},
 			);
+
+			// Update DB immediately so frontend sees architecture (progressive update)
+			await step.runMutation(internal.repos.updateArchitecture, {
+				repoId,
+				architecture,
+			});
 
 			// Step 10: Analyze issues in batches to minimize workflow state
 			// Fetch, analyze, and store issues without keeping large arrays in memory
@@ -94,11 +106,9 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				},
 			);
 
-			// Step 11: Finalize analysis (atomic mutation)
+			// Step 11: Finalize analysis (mark as completed)
 			await step.runMutation(internal.repos.finalizeAnalysis, {
 				repoId,
-				summary,
-				architecture,
 				status: "completed",
 			});
 

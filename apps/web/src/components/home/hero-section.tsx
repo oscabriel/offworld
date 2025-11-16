@@ -12,10 +12,10 @@ export function HeroSection() {
 	return (
 		<div
 			ref={heroRef}
-			className="relative flex min-h-[80vh] flex-col items-center justify-center px-4 pt-20 pb-32"
+			className="relative flex min-h-[85vh] flex-col items-center justify-center px-4 pt-20 pb-32"
 		>
 			<div
-				className={`flex w-full justify-center transition-all duration-1000 ${
+				className={`mx-auto w-full max-w-7xl transition-all duration-1000 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl ${
 					isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
 				}`}
 				style={{ transitionDelay: "100ms" }}
@@ -28,7 +28,7 @@ export function HeroSection() {
 				<img
 					src="/logotype.svg"
 					alt="OFFWORLD"
-					className="hidden w-full md:block lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl"
+					className="hidden w-full px-4 md:block"
 				/>
 			</div>
 

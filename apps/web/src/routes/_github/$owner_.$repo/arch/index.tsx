@@ -2,7 +2,6 @@ import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ContentCard } from "@/components/repo/content-card";
-import { LoadingCard } from "@/components/repo/loading-card";
 import { MarkdownContent } from "@/components/repo/markdown-content";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/arch/")({
@@ -29,12 +28,17 @@ function ArchitecturePage() {
 		);
 	}
 
+	// Show analyzing state while processing
 	if (isProcessing) {
 		return (
-			<LoadingCard
-				title="Architecture"
-				message="Generating architecture overview..."
-			/>
+			<ContentCard variant="warning">
+				<h3 className="mb-2 font-mono font-semibold text-lg">
+					⚡ Analyzing Architecture
+				</h3>
+				<p className="font-mono text-muted-foreground text-sm">
+					Architecture analysis is in progress. Results will appear when ready.
+				</p>
+			</ContentCard>
 		);
 	}
 

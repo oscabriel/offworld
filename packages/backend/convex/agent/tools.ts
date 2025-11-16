@@ -1,7 +1,7 @@
 import { createTool } from "@convex-dev/agent";
 import { z } from "zod";
-import type { ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { ActionCtx } from "../_generated/server";
 
 /**
  * Context type for codebase agent

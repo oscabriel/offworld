@@ -3,9 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
-import { LoadingCard } from "@/components/repo/loading-card";
 import { MarkdownContent } from "@/components/repo/markdown-content";
-import { RepoStats } from "@/components/repo/repo-stats";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/")({
 	component: RepoSummaryPage,
@@ -41,7 +39,7 @@ function RepoSummaryPage() {
 
 	if (isProcessing || repoStatus?.indexingStatus === "completed") {
 		return (
-			<div className="space-y-8">
+			<div className="space-y-6">
 				{/* Processing info box - only show while processing */}
 				{isProcessing && (
 					<ContentCard variant="warning">
@@ -60,33 +58,12 @@ function RepoSummaryPage() {
 					</ContentCard>
 				)}
 
-				{/* Summary Section - Show if exists, skeleton if processing without it */}
-				{repoStatus.summary ? (
+				{/* Summary Section - Only show when content exists */}
+				{repoStatus.summary && (
 					<ContentCard title="Summary">
 						<MarkdownContent content={repoStatus.summary} />
 					</ContentCard>
-				) : isProcessing ? (
-					<LoadingCard title="Summary" message="Generating summary..." />
-				) : null}
-
-				{/* Stats - Show real numbers or placeholders */}
-				<RepoStats
-					chunkCount={repoStatus.chunkCount}
-					issueCount={repoStatus.issueCount}
-					isProcessing={isProcessing}
-				/>
-
-				{/* GitHub link */}
-				<div className="border border-primary/10 bg-card p-4">
-					<a
-						href={`https://github.com/${owner}/${repo}`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="font-mono text-primary underline hover:no-underline"
-					>
-						View on GitHub →
-					</a>
-				</div>
+				)}
 			</div>
 		);
 	}

@@ -220,7 +220,10 @@ export const fetchIssues = internalAction({
 				direction: "desc",
 			});
 
-			return issues.map((issue) => ({
+			// Filter out pull requests (GitHub API returns PRs as issues)
+			const actualIssues = issues.filter((issue) => !issue.pull_request);
+
+			return actualIssues.map((issue) => ({
 				githubIssueId: issue.id,
 				number: issue.number,
 				title: issue.title,

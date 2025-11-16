@@ -106,19 +106,49 @@ export const storeIssues = internalMutation({
 });
 
 /**
+ * Update repository summary (progressive update)
+ */
+export const updateSummary = internalMutation({
+	args: {
+		repoId: v.id("repositories"),
+		summary: v.string(),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.repoId, {
+			summary: args.summary,
+		});
+
+		return { success: true };
+	},
+});
+
+/**
+ * Update repository architecture (progressive update)
+ */
+export const updateArchitecture = internalMutation({
+	args: {
+		repoId: v.id("repositories"),
+		architecture: v.string(),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.repoId, {
+			architecture: args.architecture,
+		});
+
+		return { success: true };
+	},
+});
+
+/**
  * Finalize repository analysis
  */
 export const finalizeAnalysis = internalMutation({
 	args: {
 		repoId: v.id("repositories"),
-		summary: v.string(),
-		architecture: v.string(),
 		status: v.union(v.literal("completed"), v.literal("failed")),
 	},
 	handler: async (ctx, args) => {
 		await ctx.db.patch(args.repoId, {
-			summary: args.summary,
-			architecture: args.architecture,
 			indexingStatus: args.status,
 			lastAnalyzedAt: Date.now(),
 		});

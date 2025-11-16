@@ -1,4 +1,3 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
@@ -8,6 +7,7 @@ import {
 	getFilterValues,
 	shouldExcludeFile,
 } from "./importance";
+import { google } from "./lib/google";
 
 // Filter types for metadata
 type FilterTypes = {
@@ -15,13 +15,6 @@ type FilterTypes = {
 	priority: "high" | "medium" | "low";
 	extension: string;
 };
-
-/**
- * Create Google AI provider with our Gemini API key
- */
-const google = createGoogleGenerativeAI({
-	apiKey: process.env.GEMINI_API_KEY,
-});
 
 /**
  * RAG instance configured with Gemini embeddings
@@ -55,8 +48,18 @@ export const ingestRepository = internalAction({
 		let filesProcessed = 0;
 		let chunksCreated = 0;
 
-		for (const file of args.files) {
-			// Skip excluded files
+		// Filter and sort files by importance
+		const eligibleFiles = args.files
+			.filter((file) => !shouldExcludeFile(file.path, file.size))
+			.map((file) => ({
+				...file,
+				importance: calculateImportance(file.path),
+			}))
+			.sort((a, b) => b.importance - a.importance)
+			.slice(0, 500); // Limit to top 500 most important files
+
+		for (const file of eligibleFiles) {
+			// Skip excluded files (redundant check but safe)
 			if (shouldExcludeFile(file.path, file.size)) {
 				continue;
 			}
@@ -75,8 +78,7 @@ export const ingestRepository = internalAction({
 			// fetchFileContent returns an object with { path, content, size, sha }
 			if (!fileData || !fileData.content) continue;
 
-			// Calculate importance and get filter values
-			const importance = calculateImportance(file.path);
+			// Use pre-calculated importance and get filter values
 			const filterValues = getFilterValues(file.path);
 
 			// Add to RAG with auto-chunking
@@ -84,7 +86,7 @@ export const ingestRepository = internalAction({
 				namespace: args.namespace,
 				key: file.path, // Unique key for updates
 				text: fileData.content, // Extract the actual content string
-				importance,
+				importance: file.importance, // Use pre-calculated importance
 				filterValues,
 			});
 

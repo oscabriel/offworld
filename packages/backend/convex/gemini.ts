@@ -1,18 +1,14 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 
 /**
- * Initialize Gemini API client
+ * Create Google AI provider with our Gemini API key
  */
-function getGeminiClient() {
-	const apiKey = process.env.GEMINI_API_KEY;
-	if (!apiKey) {
-		throw new Error("GEMINI_API_KEY environment variable is not set");
-	}
-	return new GoogleGenerativeAI(apiKey);
-}
+const google = createGoogleGenerativeAI({
+	apiKey: process.env.GEMINI_API_KEY,
+});
 
 /**
  * Generate repository summary using Gemini 2.5 Flash Lite
@@ -24,31 +20,22 @@ export const generateRepoSummary = internalAction({
 		description: v.optional(v.string()),
 		language: v.optional(v.string()),
 		fileCount: v.number(),
+		namespace: v.string(), // RAG namespace
 	},
 	handler: async (ctx, args) => {
-		const genAI = getGeminiClient();
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+		// Import RAG dynamically to avoid circular dependency
+		const { rag } = await import("./rag");
 
-		// Fetch sample chunks from DB to avoid large data in workflow state
-		const chunks = await ctx.runQuery(
-			// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder for internal
-			(internal as any).repos.getChunksForEmbedding,
-			{ repoId: args.repoId },
-		);
+		// Use RAG to get high-priority files for summary generation
+		const results = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: "README package.json main entry point core",
+			limit: 5,
+			filters: [{ name: "priority", value: "high" }],
+		});
 
-		const sampleFiles = chunks
-			.slice(0, 5)
-			.map(
-				(chunk: {
-					filePath: string;
-					content: string;
-					startLine: number;
-					endLine: number;
-				}) => ({
-					path: chunk.filePath,
-					content: chunk.content,
-				}),
-			);
+		// Extract file paths and get a representative sample of the codebase
+		const sampleContent = results.text.slice(0, 10000); // Limit to 10k chars
 
 		const prompt = `You are an expert code analyst. Analyze this GitHub repository and provide a comprehensive summary.
 
@@ -57,17 +44,10 @@ ${args.description ? `Description: ${args.description}` : ""}
 ${args.language ? `Primary Language: ${args.language}` : ""}
 Total Files Analyzed: ${args.fileCount}
 
-Sample Files:
-${sampleFiles
-	.map(
-		(file: { path: string; content: string }) => `
-File: ${file.path}
+Sample Code from Key Files:
 \`\`\`
-${file.content.slice(0, 2000)}
+${sampleContent}
 \`\`\`
-`,
-	)
-	.join("\n")}
 
 Please provide:
 1. A clear, concise overview of what this project does (2-3 sentences)
@@ -77,9 +57,12 @@ Please provide:
 
 Keep the summary under 300 words. Focus on clarity and practical understanding.`;
 
-		const result = await model.generateContent(prompt);
-		const response = result.response;
-		return response.text();
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		return text;
 	},
 });
 
@@ -90,15 +73,29 @@ export const generateArchitecture = internalAction({
 	args: {
 		repoName: v.string(),
 		summary: v.string(),
-		filePaths: v.array(v.string()),
+		namespace: v.string(),
 	},
-	handler: async (_ctx, args) => {
-		const genAI = getGeminiClient();
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+	handler: async (ctx, args) => {
+		// Import rag dynamically to avoid circular dependency
+		const { rag } = await import("./rag");
+
+		// Search RAG for high-priority files to understand structure
+		const highPriorityResults = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: "main entry point core architecture",
+			limit: 50,
+			filters: [{ name: "priority", value: "high" }],
+		});
+
+		// Extract file paths from RAG results
+		const filePaths = highPriorityResults.entries.map((entry) => {
+			// Extract the key (file path) from entry metadata or content
+			return entry.entryId; // This will be the file path we used as the key
+		});
 
 		// Group files by directory
 		const directoryStructure: Record<string, string[]> = {};
-		for (const path of args.filePaths) {
+		for (const path of filePaths) {
 			const dir = path.split("/").slice(0, -1).join("/") || "root";
 			if (!directoryStructure[dir]) {
 				directoryStructure[dir] = [];
@@ -128,97 +125,12 @@ Please provide:
 
 Keep it under 250 words. Focus on helping developers understand how the code is organized.`;
 
-		const result = await model.generateContent(prompt);
-		const response = result.response;
-		return response.text();
-	},
-});
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
 
-/**
- * Generate embeddings for code chunks using Gemini text-embedding-004
- * With retry logic and rate limiting
- */
-export const generateEmbeddings = internalAction({
-	args: {
-		texts: v.array(v.string()),
-	},
-	handler: async (_ctx, args) => {
-		const genAI = getGeminiClient();
-		const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-
-		const embeddings: number[][] = [];
-
-		// Helper function to retry with exponential backoff
-		async function retryWithBackoff<T>(
-			fn: () => Promise<T>,
-			maxRetries = 3,
-			initialDelayMs = 1000,
-		): Promise<T> {
-			let lastError: Error | undefined;
-			for (let attempt = 0; attempt <= maxRetries; attempt++) {
-				try {
-					return await fn();
-				} catch (error) {
-					lastError = error as Error;
-					const errorMessage =
-						error instanceof Error ? error.message : String(error);
-
-					// Check if it's a retryable error (500, rate limit, etc.)
-					const isRetryable =
-						errorMessage.includes("500") ||
-						errorMessage.includes("Internal Server Error") ||
-						errorMessage.includes("429") ||
-						errorMessage.includes("rate limit");
-
-					if (!isRetryable || attempt === maxRetries) {
-						throw error;
-					}
-
-					// Exponential backoff with jitter
-					const delayMs = initialDelayMs * 2 ** attempt + Math.random() * 1000;
-					console.log(
-						`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms delay`,
-					);
-					await new Promise((resolve) => setTimeout(resolve, delayMs));
-				}
-			}
-			throw lastError;
-		}
-
-		// Process in smaller batches with delays to avoid overwhelming API
-		const batchSize = 5; // Reduced from 10
-		console.log(
-			`Generating embeddings for ${args.texts.length} text chunks...`,
-		);
-
-		for (let i = 0; i < args.texts.length; i += batchSize) {
-			const batch = args.texts.slice(i, i + batchSize);
-			const batchNumber = Math.floor(i / batchSize) + 1;
-			const totalBatches = Math.ceil(args.texts.length / batchSize);
-
-			console.log(
-				`Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)...`,
-			);
-
-			// Process batch sequentially with retry logic
-			for (let j = 0; j < batch.length; j++) {
-				const text = batch[j];
-				const embedding = await retryWithBackoff(async () => {
-					const result = await model.embedContent(text);
-					return result.embedding.values;
-				});
-				embeddings.push(embedding);
-			}
-
-			// Add delay between batches to avoid rate limiting
-			if (i + batchSize < args.texts.length) {
-				console.log("Waiting 500ms before next batch...");
-				await new Promise((resolve) => setTimeout(resolve, 500));
-			}
-		}
-
-		console.log(`Successfully generated ${embeddings.length} embeddings`);
-		return embeddings;
+		return text;
 	},
 });
 
@@ -233,9 +145,6 @@ export const analyzeIssue = internalAction({
 		repoContext: v.string(),
 	},
 	handler: async (_ctx, args) => {
-		const genAI = getGeminiClient();
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-
 		const prompt = `You are an expert developer mentor. Analyze this GitHub issue and provide guidance for potential contributors.
 
 Repository Context: ${args.repoContext}
@@ -254,9 +163,10 @@ Please provide a JSON response with:
 
 Respond ONLY with valid JSON, no additional text.`;
 
-		const result = await model.generateContent(prompt);
-		const response = result.response;
-		const text = response.text();
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
 
 		try {
 			// Extract JSON from response (handle markdown code blocks)
@@ -292,24 +202,29 @@ Respond ONLY with valid JSON, no additional text.`;
 export const generateCodeAnswer = internalAction({
 	args: {
 		question: v.string(),
-		codeChunks: v.array(
-			v.object({
-				filePath: v.string(),
-				content: v.string(),
-			}),
-		),
+		namespace: v.string(),
 		repoName: v.string(),
 	},
-	handler: async (_ctx, args) => {
-		const genAI = getGeminiClient();
-		const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+	handler: async (ctx, args) => {
+		// Import rag dynamically to avoid circular dependency
+		const { rag } = await import("./rag");
 
-		const context = args.codeChunks
+		// Search RAG for relevant code chunks
+		const searchResults = await rag.search(ctx, {
+			namespace: args.namespace,
+			query: args.question,
+			limit: 10,
+			vectorScoreThreshold: 0.7,
+			chunkContext: { before: 1, after: 1 }, // Include surrounding chunks
+		});
+
+		// Format results as code context
+		const context = searchResults.entries
 			.map(
-				(chunk) => `
-File: ${chunk.filePath}
+				(entry) => `
+File: ${entry.entryId}
 \`\`\`
-${chunk.content}
+${searchResults.text}
 \`\`\`
 `,
 			)
@@ -329,8 +244,11 @@ Instructions:
 - Keep answers concise but thorough
 - Use markdown formatting for code snippets`;
 
-		const result = await model.generateContent(prompt);
-		const response = result.response;
-		return response.text();
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		return text;
 	},
 });

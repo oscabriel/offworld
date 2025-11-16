@@ -45,37 +45,19 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				},
 			);
 
-			// Step 4: Prioritize files (for repos >200 files)
-			const maxFiles = 200;
-			const filesToAnalyze = await step.runAction(
-				internal.chunking.prioritizeFiles,
-				{
-					files: fileTreeResult.files,
-					maxFiles,
-				},
-			);
-
-			// Step 5 & 6: Chunk files and store them (~1-2 minutes)
-			// Combined into one action to avoid storing large arrays in workflow state
-			const chunkCount = await step.runAction(
-				internal.chunking.chunkAndStoreFiles,
-				{
-					repoId,
-					owner: args.owner,
-					name: args.name,
-					filePaths: filesToAnalyze,
-					maxFileSize: 100000, // 100KB
-				},
-			);
-
-			// Step 7: Generate and store embeddings in one action to avoid large data in workflow state
-			// This combines prepare + generate + update to minimize workflow state size
-			await step.runAction(internal.chunking.generateAndStoreEmbeddings, {
+			// Step 4-7: Ingest repository into RAG component (~2-5 minutes)
+			// Replaces custom chunking with RAG's auto-chunking + embedding generation
+			const namespace = `repo:${args.owner}/${args.name}`;
+			const ingestResult = await step.runAction(internal.rag.ingestRepository, {
 				repoId,
+				namespace,
+				files: fileTreeResult.files,
+				owner: args.owner,
+				name: args.name,
 			});
 
 			// Step 8: Generate summary with Gemini (~30-60 seconds)
-			// Fetch sample chunks from DB to avoid storing large arrays in workflow state
+			// Uses RAG to fetch high-priority files for context
 			const summary = await step.runAction(
 				internal.gemini.generateRepoSummary,
 				{
@@ -83,18 +65,19 @@ export const analyzeRepositoryWorkflow = workflow.define({
 					repoName: metadata.fullName,
 					description: metadata.description,
 					language: metadata.language,
-					fileCount: filesToAnalyze.length,
+					fileCount: ingestResult.filesProcessed,
+					namespace,
 				},
 			);
 
 			// Step 9: Generate architecture overview (~30-60 seconds)
-			// Only pass file paths, not full file objects, to minimize workflow state
+			// Uses RAG component for context instead of file paths
 			const architecture = await step.runAction(
 				internal.gemini.generateArchitecture,
 				{
 					repoName: metadata.fullName,
 					summary,
-					filePaths: filesToAnalyze,
+					namespace,
 				},
 			);
 
@@ -122,8 +105,8 @@ export const analyzeRepositoryWorkflow = workflow.define({
 			return {
 				repoId,
 				status: "completed",
-				filesAnalyzed: filesToAnalyze.length,
-				chunksCreated: chunkCount,
+				filesAnalyzed: ingestResult.filesProcessed,
+				chunksCreated: ingestResult.chunksCreated,
 				issuesAnalyzed: issueCount,
 			};
 		} catch (error: unknown) {

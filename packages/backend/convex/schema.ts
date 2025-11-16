@@ -19,32 +19,15 @@ export default defineSchema({
 			v.literal("completed"),
 			v.literal("failed"),
 		),
-		// AI-generated content
 		summary: v.optional(v.string()),
 		architecture: v.optional(v.string()),
 		projectStructure: v.optional(v.any()), // JSON tree structure
-		// Workflow tracking
 		workflowId: v.optional(v.string()),
 		errorMessage: v.optional(v.string()),
 	})
 		.index("fullName", ["fullName"])
 		.index("indexingStatus", ["indexingStatus"])
 		.index("lastAnalyzedAt", ["lastAnalyzedAt"]),
-
-	codeChunks: defineTable({
-		repositoryId: v.id("repositories"),
-		filePath: v.string(),
-		content: v.string(),
-		startLine: v.number(),
-		endLine: v.number(),
-		embedding: v.array(v.float64()), // 768 dimensions for Gemini text-embedding-004
-	})
-		.index("repositoryId", ["repositoryId"])
-		.vectorIndex("embedding", {
-			vectorField: "embedding",
-			dimensions: 768,
-			filterFields: ["repositoryId"],
-		}),
 
 	issues: defineTable({
 		repositoryId: v.id("repositories"),
@@ -57,7 +40,6 @@ export default defineSchema({
 		githubUrl: v.string(),
 		createdAt: v.number(),
 		updatedAt: v.number(),
-		// AI-generated analysis
 		aiSummary: v.optional(v.string()),
 		filesLikelyTouched: v.optional(v.array(v.string())),
 		difficulty: v.optional(v.number()), // 1-5 scale
@@ -85,4 +67,16 @@ export default defineSchema({
 		.index("userId", ["userId"])
 		.index("issueId", ["issueId"])
 		.index("userId_issueId", ["userId", "issueId"]),
+
+	conversations: defineTable({
+		userId: v.string(), // From Better Auth
+		repositoryId: v.id("repositories"),
+		title: v.string(),
+		threadId: v.string(), // Agent component's thread ID
+		lastMessageAt: v.number(),
+		messageCount: v.number(),
+	})
+		.index("by_user_time", ["userId", "lastMessageAt"])
+		.index("by_repo", ["repositoryId"])
+		.index("by_thread", ["threadId"]),
 });

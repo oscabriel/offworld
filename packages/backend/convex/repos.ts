@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import {
 	action,
 	internalMutation,
@@ -53,70 +52,6 @@ export const createRepo = internalMutation({
 /**
  * Store code chunks for a repository
  */
-export const storeChunks = internalMutation({
-	args: {
-		repoId: v.id("repositories"),
-		chunks: v.array(
-			v.object({
-				filePath: v.string(),
-				content: v.string(),
-				startLine: v.number(),
-				endLine: v.number(),
-			}),
-		),
-	},
-	handler: async (ctx, args) => {
-		const chunkIds: Id<"codeChunks">[] = [];
-
-		for (const chunk of args.chunks) {
-			const chunkId = await ctx.db.insert("codeChunks", {
-				repositoryId: args.repoId,
-				filePath: chunk.filePath,
-				content: chunk.content,
-				startLine: chunk.startLine,
-				endLine: chunk.endLine,
-				embedding: [], // Will be updated in next step
-			});
-
-			chunkIds.push(chunkId);
-		}
-
-		return chunkIds;
-	},
-});
-
-/**
- * Update chunk embeddings
- */
-export const updateChunkEmbeddings = internalMutation({
-	args: {
-		repoId: v.id("repositories"),
-		embeddings: v.array(v.array(v.float64())),
-	},
-	handler: async (ctx, args) => {
-		// Get all chunks for this repo
-		const chunks = await ctx.db
-			.query("codeChunks")
-			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId))
-			.collect();
-
-		if (chunks.length !== args.embeddings.length) {
-			throw new Error(
-				`Mismatch: ${chunks.length} chunks but ${args.embeddings.length} embeddings`,
-			);
-		}
-
-		// Update each chunk with its embedding
-		for (let i = 0; i < chunks.length; i++) {
-			await ctx.db.patch(chunks[i]._id, {
-				embedding: args.embeddings[i],
-			});
-		}
-
-		return { updated: chunks.length };
-	},
-});
-
 /**
  * Store analyzed issues
  */
@@ -212,28 +147,6 @@ export const markAsFailed = internalMutation({
 });
 
 /**
- * Get chunks for embedding generation (internal query)
- */
-export const getChunksForEmbedding = internalQuery({
-	args: {
-		repoId: v.id("repositories"),
-	},
-	handler: async (ctx, args) => {
-		const chunks = await ctx.db
-			.query("codeChunks")
-			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId))
-			.collect();
-
-		return chunks.map((chunk) => ({
-			filePath: chunk.filePath,
-			content: chunk.content,
-			startLine: chunk.startLine,
-			endLine: chunk.endLine,
-		}));
-	},
-});
-
-/**
  * Get repository by full name (owner/name)
  */
 export const getByFullName = query({
@@ -248,12 +161,6 @@ export const getByFullName = query({
 
 		if (!repo) return null;
 
-		// Get chunk count
-		const chunks = await ctx.db
-			.query("codeChunks")
-			.withIndex("repositoryId", (q) => q.eq("repositoryId", repo._id))
-			.collect();
-
 		// Get issues
 		const issues = await ctx.db
 			.query("issues")
@@ -262,7 +169,6 @@ export const getByFullName = query({
 
 		return {
 			...repo,
-			chunkCount: chunks.length,
 			issueCount: issues.length,
 			issues,
 		};
@@ -297,12 +203,6 @@ export const getById = query({
 		const repo = await ctx.db.get(args.repoId);
 		if (!repo) return null;
 
-		// Get chunk count
-		const chunks = await ctx.db
-			.query("codeChunks")
-			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId))
-			.collect();
-
 		// Get issues
 		const issues = await ctx.db
 			.query("issues")
@@ -311,7 +211,6 @@ export const getById = query({
 
 		return {
 			...repo,
-			chunkCount: chunks.length,
 			issueCount: issues.length,
 			issues,
 		};

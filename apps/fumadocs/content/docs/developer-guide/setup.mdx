@@ -1,0 +1,225 @@
+---
+title: Project Setup
+description: Get Offworld running locally
+icon: Download
+---
+
+import { Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Set up Offworld for local development.
+
+## Prerequisites
+
+- **Bun** v1.3+ - [Install Bun](https://bun.sh)
+- **Git** - Version control
+- **GitHub Account** - For OAuth app setup
+- **Convex Account** - [Sign up free](https://convex.dev)
+- **Google AI API Key** - [Get key](https://ai.google.dev)
+
+<Steps>
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/oscabriel/offworld.git
+cd offworld
+```
+
+### Install Dependencies
+
+```bash
+bun install
+```
+
+Bun installs all workspace dependencies in one command.
+
+### Setup Environment Variables
+
+Create `.env.dev` in project root:
+
+```bash
+# Convex
+CONVEX_SITE_URL=http://localhost:3000
+
+# GitHub OAuth App
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+
+# GitHub App (for API)
+GITHUB_APP_ID=your_app_id
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
+GITHUB_INSTALLATION_ID=your_installation_id
+
+# Google AI
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_key
+```
+
+#### GitHub OAuth App Setup
+
+1. Go to [GitHub Settings → Developer settings → OAuth Apps](https://github.com/settings/developers)
+2. Click **New OAuth App**
+3. Fill in:
+   - **Application name**: Offworld Local
+   - **Homepage URL**: `http://localhost:3000`
+   - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
+4. Copy **Client ID** and **Client Secret** to `.env.dev`
+
+#### GitHub App Setup (API Access)
+
+1. Go to [GitHub Settings → Developer settings → GitHub Apps](https://github.com/settings/apps)
+2. Click **New GitHub App**
+3. Fill in:
+   - **GitHub App name**: Offworld Local API
+   - **Homepage URL**: `http://localhost:3000`
+   - **Permissions**: Repository → Contents (Read-only), Issues (Read-only), Pull requests (Read-only)
+4. Generate a **private key** (download PEM file)
+5. Install the app on your account/org
+6. Copy **App ID**, **Installation ID**, and private key content to `.env.dev`
+
+<Callout type="info">
+Private key must be on one line with `\n` for newlines: `"-----BEGIN...-----\nKEY CONTENT\n-----END...-----"`
+</Callout>
+
+#### Google AI API Key
+
+1. Go to [Google AI Studio](https://ai.google.dev)
+2. Sign in with Google account
+3. Click **Get API Key**
+4. Copy key to `.env.dev`
+
+### Setup Convex Backend
+
+```bash
+bun run dev:setup
+```
+
+This:
+1. Creates a new Convex dev deployment
+2. Pushes schema and functions
+3. Generates API types
+4. Sets up environment variables
+
+When prompted:
+- **Project name**: `offworld-dev`
+- **Team**: Select your team or create new
+
+Copy the **Convex deployment URL** to `.env.dev`:
+
+```bash
+VITE_CONVEX_URL=https://your-deployment-name.convex.cloud
+```
+
+### Set Convex Environment Variables
+
+In Convex dashboard or via CLI:
+
+```bash
+npx convex env set CONVEX_SITE_URL http://localhost:3000
+npx convex env set GITHUB_CLIENT_ID your_client_id
+npx convex env set GITHUB_CLIENT_SECRET your_client_secret
+npx convex env set GITHUB_APP_ID your_app_id
+npx convex env set GITHUB_PRIVATE_KEY "-----BEGIN..."
+npx convex env set GITHUB_INSTALLATION_ID your_installation_id
+npx convex env set GOOGLE_GENERATIVE_AI_API_KEY your_google_key
+```
+
+### Start Development
+
+```bash
+bun run dev
+```
+
+This starts:
+- **Convex dev server** (hot-reloading functions)
+- **TanStack Start dev server** (http://localhost:3000)
+
+</Steps>
+
+## Project Structure
+
+```
+offworld/
+├── apps/
+│   ├── web/              # Frontend (TanStack Start)
+│   └── fumadocs/         # Documentation site
+├── packages/
+│   ├── backend/          # Convex backend
+│   └── config/           # Shared config
+├── .env.dev              # Development environment
+├── package.json          # Root workspace config
+└── turbo.json            # Turborepo config
+```
+
+## Verification
+
+### Check Frontend
+
+Visit http://localhost:3000
+
+- Should see Offworld homepage
+- Sign in with GitHub should work
+- Search for a repository (e.g., `facebook/react`)
+
+### Check Backend
+
+Visit Convex Dashboard (link in terminal output)
+
+- **Data** tab: Should see `repositories`, `architectureEntities`, `conversations` tables
+- **Functions** tab: Should see queries, mutations, actions
+- **Logs** tab: Should see function execution logs
+
+### Test Analysis
+
+1. Sign in on http://localhost:3000
+2. Enter `oscabriel/offworld` in search
+3. Click **Analyze Repository**
+4. Watch workflow in Convex Dashboard → Workflows
+5. Verify progressive updates on frontend
+
+## Troubleshooting Setup
+
+### "Bun not found"
+
+Install Bun:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+### "Convex deployment failed"
+
+Check:
+1. `CONVEX_SITE_URL` is set correctly
+2. Convex CLI is authenticated: `npx convex dev --once`
+3. Internet connection is stable
+
+### "GitHub OAuth failed"
+
+Check:
+1. `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are correct
+2. Callback URL matches: `http://localhost:3000/api/auth/callback/github`
+3. OAuth app is not suspended
+
+### "GitHub API rate limit"
+
+Without GitHub App:
+- Rate limit: 60 requests/hour (unauthenticated)
+
+With GitHub App:
+- Rate limit: 15,000 requests/hour
+
+Ensure `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID` are set.
+
+### "Google AI API error"
+
+Check:
+1. API key is valid (test at https://ai.google.dev)
+2. Billing is enabled (if required)
+3. `GOOGLE_GENERATIVE_AI_API_KEY` is set in Convex env
+
+## Next Steps
+
+- Learn the [Development Workflow](/docs/developer-guide/development-workflow)
+- Understand the [Tech Stack](/docs/developer-guide/tech-stack)
+- Read [Architecture Deep Dive](/docs/developer-guide/architecture)

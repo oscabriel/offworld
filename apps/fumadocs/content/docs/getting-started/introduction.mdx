@@ -1,0 +1,128 @@
+---
+title: Introduction
+description: What is Offworld and why should you use it?
+icon: Info
+---
+
+## What is Offworld?
+
+Offworld is an **AI-powered repository analysis system** that helps developers understand unfamiliar codebases quickly. It combines:
+
+- **GitHub API integration** - Fetches repository metadata, files, issues, and PRs
+- **AI-powered analysis** - Gemini 2.5 Flash Lite generates summaries and architecture docs
+- **RAG (Retrieval Augmented Generation)** - Vector search across up to 500 repository files
+- **Interactive chat** - AI agent with 9 specialized tools for code exploration
+
+## The Problem
+
+Exploring a new codebase is time-consuming:
+
+- Reading through hundreds of files to understand structure
+- Manually mapping out dependencies and components
+- Triaging issues without context on difficulty or required skills
+- Understanding the impact of pull requests
+
+## The Solution
+
+Offworld automates this exploration:
+
+1. **Point to a GitHub repository** (e.g., `facebook/react`)
+2. **AI analyzes the codebase** (11-step workflow, 2-5 minutes)
+3. **Get instant insights**:
+   - 300-word summary
+   - Architecture diagram with key components
+   - Issue difficulty ratings
+   - PR impact analysis
+   - RAG-powered chat for Q&A
+
+## Core Philosophy
+
+**"Explore Distant Code"** - Just like space exploration, Offworld helps you navigate unfamiliar territory (codebases) with advanced tools (AI + RAG).
+
+### Progressive Discovery
+
+Instead of overwhelming you with every file, Offworld uses a **multi-iteration workflow**:
+
+- **Iteration 1**: Discover packages and top-level directories
+- **Iteration 2**: Identify core modules and services
+- **Iteration 3+**: Refine with components, utilities, and integrations
+
+Each iteration builds on the previous context, creating a hierarchical understanding.
+
+### Importance Ranking
+
+Not all code is equally important. Offworld assigns importance scores:
+
+- **1.0** - Entry points (main.ts, app.tsx, CLI entry)
+- **0.7-0.9** - Core subsystems (auth, database, routing)
+- **0.5-0.7** - Secondary features
+- **0.3-0.5** - Utilities and helpers
+
+The final architecture shows only the top 5-15 most critical components.
+
+## How It Works
+
+### 1. GitHub Integration
+
+Offworld uses a **GitHub App** with 15k requests/hour rate limit to:
+
+- Fetch repository metadata (stars, language, description)
+- Download the complete file tree
+- Load issues and pull requests
+- Validate LLM-generated file paths against real structure
+
+### 2. RAG System
+
+Uses `@convex-dev/rag` to:
+
+- Chunk repository files into 768-dimensional vectors
+- Store embeddings in Convex vector database
+- Enable semantic search during chat ("find authentication code")
+
+### 3. AI Analysis
+
+Gemini 2.5 Flash Lite ($0.018-0.025 per repo) generates:
+
+- **Summary**: 300-word overview (no H1 headings, no workflow jargon)
+- **Architecture**: 2-5 iterations of progressive discovery
+- **Entities**: Ranked components with descriptions and GitHub URLs
+- **Diagrams**: Mermaid C4 diagrams with narrative explanations
+- **Issue Analysis**: Difficulty (1-5), skills needed, files touched
+- **PR Analysis**: Impact assessment, file changes, summary
+
+### 4. Durable Workflows
+
+Built on **Convex Workflows** (crash-safe, automatic retries):
+
+- Each step updates the database immediately
+- Frontend sees progressive results in real-time
+- Failed steps retry automatically
+- Workflow state persists across crashes
+
+## When to Use Offworld
+
+✅ **Perfect for:**
+- Exploring open-source repositories before contributing
+- Understanding codebases for code reviews
+- Onboarding to new projects
+- Triaging issues based on difficulty
+- Learning architectural patterns from real-world code
+
+❌ **Not ideal for:**
+- Private repositories (requires GitHub App installation)
+- Very small repos (&lt;10 files) - manual exploration is faster
+- Real-time code editing (Offworld is read-only)
+
+## Cost & Performance
+
+**Analysis Cost**: $0.018-0.025 per repository (Gemini API)
+
+**Analysis Time**: 2-5 minutes depending on size
+
+**Re-indexing**: 7-day cooldown to prevent abuse
+
+**Storage**: Top 500 files indexed into RAG
+
+## Next Steps
+
+Ready to explore? Continue to the [Quick Start](/docs/getting-started/quick-start) guide.

@@ -1,0 +1,350 @@
+---
+title: Key Concepts
+description: Understanding RAG, architecture discovery, and AI agents
+icon: BookOpen
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Learn the core concepts that power Offworld.
+
+## RAG (Retrieval Augmented Generation)
+
+### What is RAG?
+
+**RAG** combines **vector search** with **LLM generation** to answer questions using relevant context from a knowledge base.
+
+Traditional LLM:
+```
+User: "How does auth work in this repo?"
+LLM: "I don't have access to your repository..."
+```
+
+RAG-powered LLM:
+```
+User: "How does auth work in this repo?"
+System: [Searches vectors, finds auth.ts, middleware.ts]
+LLM: "Based on auth.ts:12-45, this repo uses Better Auth with GitHub OAuth..."
+```
+
+### How Offworld Uses RAG
+
+1. **Ingestion** - Repository files are chunked and converted to 768-dim vectors using Google Text Embedding 004
+2. **Storage** - Vectors stored in Convex vector database with `repo:owner/name` namespace
+3. **Search** - User question converted to vector, top-K similar chunks retrieved
+4. **Generation** - LLM generates answer using retrieved context
+
+**Namespace format**: `repo:facebook/react`
+
+**Top files indexed**: 500 most relevant files (by size and extension)
+
+**Embedding model**: `text-embedding-004` (768 dimensions)
+
+### RAG Limitations
+
+- **Static snapshot** - RAG index is from analysis time, not live
+- **Top 500 files** - Very large repos may have missing files
+- **Context window** - Only top-K chunks fit in LLM context (~8k tokens)
+
+<Callout type="info">
+Re-index repositories every 7 days to get updated content (if cooldown allows).
+</Callout>
+
+## Progressive Architecture Discovery
+
+### The Problem
+
+Traditional static analysis tools dump **everything**:
+
+```
+Found 847 files, 1,243 functions, 342 classes...
+```
+
+This is overwhelming and not actionable.
+
+### Offworld's Solution
+
+**Multi-iteration discovery** that builds hierarchical understanding:
+
+#### Iteration 1: Packages & Directories
+```
+Discover:
+- packages/frontend
+- packages/backend
+- apps/web
+```
+
+#### Iteration 2: Modules & Services
+```
+Refine with context from Iteration 1:
+- frontend/src/components
+- backend/src/auth
+- backend/src/database
+```
+
+#### Iteration 3+: Components & Utilities
+```
+Refine with context from Iteration 1-2:
+- components/ui/Button
+- auth/providers/github
+- database/schema
+```
+
+Each iteration uses **previous context** to guide discovery. The LLM knows what's already been found and looks for more specific patterns.
+
+### Importance Ranking
+
+Every discovered entity gets an **importance score** (0.0-1.0):
+
+| Score | Meaning | Examples |
+|-------|---------|----------|
+| 1.0 | Entry points | `main.ts`, `app.tsx`, `index.html` |
+| 0.8-0.9 | Core subsystems | `auth/`, `router/`, `database/` |
+| 0.6-0.7 | Secondary features | `components/`, `utils/`, `api/` |
+| 0.4-0.5 | Utilities | `helpers/`, `constants/`, `types/` |
+| 0.3 | Minor utilities | `lib/utils.ts`, `config/` |
+
+**Final architecture**: Top 5-15 entities by importance
+
+### Entity Metadata
+
+Each discovered component includes:
+
+```typescript
+{
+  name: "frontend/src/components",
+  description: "React component library...",
+  importance: 0.8,
+  layer: "core",
+  path: "/packages/frontend/src/components",
+  githubUrl: "https://github.com/owner/repo/tree/main/packages/frontend/src/components"
+}
+```
+
+**Layers**:
+- `entry-point` - Application entry
+- `core` - Critical subsystems
+- `feature` - Feature modules
+- `utility` - Helper functions
+- `integration` - External integrations
+
+## AI Agent & Tools
+
+### Agent Architecture
+
+Offworld's chat uses `@convex-dev/agent` with **9 specialized tools**:
+
+```typescript
+const agent = new Agent({
+  model: gemini("gemini-2.0-flash-exp"),
+  tools: [
+    searchCodeContext,
+    getArchitecture,
+    getSummary,
+    listFiles,
+    explainFile,
+    findIssues,
+    getIssueByNumber,
+    findPullRequests,
+    getPullRequestByNumber
+  ]
+});
+```
+
+### Tool Descriptions
+
+#### 1. searchCodeContext
+**Purpose**: RAG-powered semantic search
+
+**Example**: "Find authentication logic"
+
+**Returns**: Top 5 relevant file chunks with content
+
+#### 2. getArchitecture
+**Purpose**: Retrieve architecture entities
+
+**Example**: "What are the core components?"
+
+**Returns**: List of entities with descriptions
+
+#### 3. getSummary
+**Purpose**: Get repository overview
+
+**Example**: "What does this repo do?"
+
+**Returns**: 300-word AI summary
+
+#### 4. listFiles
+**Purpose**: Browse file tree
+
+**Example**: "Show me all TypeScript files in src/"
+
+**Returns**: File paths matching glob pattern
+
+#### 5. explainFile
+**Purpose**: Read and explain specific file
+
+**Example**: "Explain src/auth/github.ts"
+
+**Returns**: File content + AI explanation
+
+#### 6. findIssues
+**Purpose**: Search issues by difficulty
+
+**Example**: "Show beginner-friendly issues"
+
+**Returns**: Filtered issues with AI analysis
+
+#### 7. getIssueByNumber
+**Purpose**: Get issue details
+
+**Example**: "Explain issue #123"
+
+**Returns**: Full issue with difficulty, skills, files
+
+#### 8. findPullRequests
+**Purpose**: Search PRs
+
+**Example**: "Show recent PRs"
+
+**Returns**: Filtered PRs with impact analysis
+
+#### 9. getPullRequestByNumber
+**Purpose**: Get PR details
+
+**Example**: "Explain PR #456"
+
+**Returns**: Full PR with summary and changes
+
+### Tool Call Visualization
+
+When the agent uses tools, you see **badges** before the response:
+
+```
+[searchCodeContext] [getArchitecture]
+
+Based on the search results, authentication is handled in src/auth/...
+```
+
+This transparency shows you **what data** the agent retrieved.
+
+### Agent Context
+
+The agent maintains **conversation history**:
+
+```
+User: "How does routing work?"
+Agent: [Uses searchCodeContext]
+
+User: "What about nested routes?"
+Agent: [Uses previous context + new search]
+```
+
+Chat threads are **persistent** and **shareable** via URL.
+
+## Durable Workflows
+
+### What are Workflows?
+
+**Convex Workflows** are crash-safe, long-running processes:
+
+- Each step is a transaction
+- Failed steps retry automatically
+- State persists across crashes
+- Progress visible in real-time
+
+### Offworld's Analysis Workflow
+
+**11 steps** in `analyzeRepository` workflow:
+
+1. Validate & fetch GitHub metadata
+2. Handle re-index (clear RAG, entities, issues)
+3. Fetch complete file tree
+4. Calculate iteration count (based on repo size)
+5. Ingest files into RAG
+6. Generate AI summary
+7. **Progressive architecture** (2-5 iterations)
+8. Consolidate entities (top 5-15 by importance)
+9. Generate C4 diagrams (Mermaid + narrative)
+10. Fetch & analyze issues
+11. Fetch & analyze PRs
+
+### Progressive Updates
+
+**Key pattern**: Update database after each step
+
+```typescript
+await ctx.runMutation(internal.repos.updateSummary, {
+  repoId,
+  summary: aiSummary
+});
+// Frontend sees summary immediately!
+
+await ctx.runMutation(internal.repos.updateArchitecture, {
+  repoId,
+  architecture: entities
+});
+// Frontend sees architecture!
+```
+
+No "loading spinner for 5 minutes" - users see results **as they arrive**.
+
+### Workflow Visualization
+
+Check the **Convex Dashboard** → Workflows to see:
+
+- Current step
+- Completed steps
+- Failed steps (with retry count)
+- Total execution time
+
+## AI Validation
+
+### The Problem
+
+LLMs hallucinate. They might return:
+
+```json
+{
+  "name": "frontend/src/components",
+  "path": "/this/path/does/not/exist"
+}
+```
+
+### Offworld's Solution
+
+**Zod schemas + GitHub validation**:
+
+```typescript
+const ArchitectureEntitySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(50),
+  importance: z.number().min(0).max(1),
+  layer: z.enum(["entry-point", "core", "feature", "utility", "integration"]),
+  path: z.string() // Validated against GitHub file tree
+});
+```
+
+**Path validation**:
+1. LLM suggests path: `/src/auth/github.ts`
+2. Check against file tree fetched from GitHub
+3. If invalid, reject or mark as invalid
+
+This ensures **architecture entities link to real files**.
+
+### Prompt Engineering
+
+Offworld uses **strict prompts** to reduce hallucinations:
+
+- **Forbid workflow jargon** ("iteration", "layer", "consolidated")
+- **Require JSON schema** in prompt
+- **Strip top-level H1** from summaries
+- **Alphanumeric-only** node IDs in Mermaid diagrams
+
+See `packages/backend/convex/prompts.ts` for all prompts.
+
+## Next Steps
+
+- Explore [Use Cases](/docs/getting-started/use-cases)
+- Read the [User Guide](/docs/user-guide)
+- Learn about the [Tech Stack](/docs/technical-reference)

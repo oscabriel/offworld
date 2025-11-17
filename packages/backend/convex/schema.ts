@@ -63,7 +63,15 @@ export default defineSchema({
 		purpose: v.string(), // What it does / why it exists
 		dependencies: v.array(v.string()), // What it depends on (names)
 		usedBy: v.array(v.string()), // What uses it (names)
-		keyFiles: v.array(v.string()), // Important files in this entity
+		keyFiles: v.array(v.string()), // Important files in this entity (paths)
+		keyFileUrls: v.optional(
+			v.array(
+				v.object({
+					path: v.string(), // File path from repository root
+					url: v.string(), // Complete GitHub blob/tree URL
+				}),
+			),
+		), // GitHub URLs for keyFiles
 		complexity: v.union(
 			v.literal("low"),
 			v.literal("medium"),
@@ -117,6 +125,14 @@ export default defineSchema({
 		updatedAt: v.number(),
 		aiSummary: v.optional(v.string()),
 		filesLikelyTouched: v.optional(v.array(v.string())),
+		fileUrls: v.optional(
+			v.array(
+				v.object({
+					path: v.string(), // File path from repository root
+					url: v.string(), // Complete GitHub blob/tree URL
+				}),
+			),
+		), // GitHub URLs for filesLikelyTouched
 		difficulty: v.optional(v.number()), // 1-5 scale
 		skillsRequired: v.optional(v.array(v.string())),
 	})
@@ -172,7 +188,7 @@ export default defineSchema({
 		userId: v.string(), // From Better Auth
 		repositoryId: v.id("repositories"),
 		title: v.string(),
-		threadId: v.string(), // Agent component's thread ID
+		threadId: v.string(), // Agent component's thread ID (string, not Id)
 		lastMessageAt: v.number(),
 		messageCount: v.number(),
 	})

@@ -1,0 +1,179 @@
+---
+title: Pull Requests
+description: AI-powered PR impact analysis
+icon: GitPullRequest
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Understand pull requests with AI-generated summaries and impact analysis.
+
+## PRs Tab Overview
+
+Navigate to `/owner/repo/pr` to browse analyzed pull requests.
+
+### PR List View
+
+```
+┌─────────────────────────────────────────────┐
+│ #456 • Migrate to TypeScript 5.0            │
+│ Impact: High • 83 files changed             │
+│ Summary: Upgrades TypeScript from 4.9...    │
+│ [View on GitHub]                            │
+└─────────────────────────────────────────────┘
+```
+
+## Impact Analysis
+
+### Impact Levels
+
+**Low**: 1-10 files, cosmetic changes
+- Examples: Typo fixes, documentation updates, style tweaks
+
+**Medium**: 11-30 files, feature additions
+- Examples: New components, API endpoints, refactors
+
+**High**: 30+ files, core changes
+- Examples: Architecture refactors, migrations, breaking changes
+
+### How Impact is Calculated
+
+AI considers:
+- **File count**: More files = higher impact
+- **File types**: Core files (router, auth) > utilities
+- **Change scope**: Breaking changes > additive changes
+
+## AI-Generated Summaries
+
+Each PR includes a **1-2 sentence summary**:
+
+Example:
+> This PR migrates the codebase from TypeScript 4.9 to 5.0, updating type definitions and leveraging new const type parameters for improved type inference.
+
+**Summary includes**:
+- What changed
+- Why it changed (if evident from diff)
+- Key improvements or fixes
+
+## Files Changed
+
+View categorized file changes:
+
+```
+Core: 12 files
+  - src/router/index.ts
+  - src/auth/middleware.ts
+
+Features: 23 files
+  - src/components/Button.tsx
+  - src/features/chat/
+
+Tests: 18 files
+  - tests/router.test.ts
+
+Docs: 5 files
+  - docs/migration.md
+```
+
+<Callout type="info">
+File categorization helps identify blast radius of changes.
+</Callout>
+
+## PR Detail Page
+
+**URL format**: `/owner/repo/pr/456`
+
+### Full Analysis
+
+- GitHub PR embed (description, comments, status)
+- AI summary (expanded)
+- Impact level with rationale
+- Complete file change list with GitHub links
+- Related architecture entities
+
+### Action Buttons
+
+- **View on GitHub** - Open PR discussion
+- **Ask in Chat** - Query about the PR
+
+## Using PRs for Code Review
+
+### Review Workflow
+
+1. **Browse PRs tab**: See all open/recent PRs
+2. **Check impact**: Prioritize High impact reviews
+3. **Read AI summary**: Quick understanding of changes
+4. **Review file categories**: Identify affected areas
+5. **Ask questions**:
+   ```
+   "What are the risks of PR #456?"
+   "Which core files were modified?"
+   ```
+6. **Click GitHub link**: Review actual diff
+
+### Example: Migration PR
+
+**PR #456**: TypeScript 4.9 → 5.0
+
+**Impact**: High (83 files)
+
+**AI Summary**:
+> Upgrades TypeScript to 5.0, updating type definitions and leveraging const type parameters for improved inference.
+
+**Files Changed**:
+- **Core** (12): Type files, config
+- **Features** (23): Component type updates
+- **Tests** (18): Test type fixes
+- **Config** (5): tsconfig updates
+
+**Your Review Focus**:
+- Check breaking changes in core types
+- Verify test coverage
+- Ensure backward compatibility
+
+## Filtering PRs
+
+**By Status** (coming soon):
+- Open
+- Closed
+- Merged
+
+**By Impact**:
+- Low (quick reviews)
+- Medium (standard reviews)
+- High (careful review needed)
+
+**By Author** (coming soon):
+- Filter by contributor
+
+## Best Practices
+
+### ✅ Use AI Summary as Starting Point
+
+Read the summary, then verify by checking actual diff on GitHub.
+
+### ✅ Focus on High Impact PRs
+
+These require more careful review and understanding.
+
+### ✅ Ask Follow-Up Questions
+
+```
+"What are the dependencies of the files changed in PR #456?"
+"Show me the current implementation of the router"
+```
+
+### ✅ Check Related Entities
+
+If PR touches core architecture, review entity descriptions to understand impact.
+
+## Limitations
+
+- **Public PRs only** (requires GitHub App for private repos)
+- **Analysis at workflow time** (not real-time)
+- **AI summaries** are estimates (always verify on GitHub)
+
+## Next Steps
+
+- Try the [Chat Interface](/docs/user-guide/chat-interface)
+- Learn about [Sharing & Collaboration](/docs/user-guide/sharing)

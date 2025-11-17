@@ -1,0 +1,366 @@
+---
+title: Chat Interface
+description: RAG-powered Q&A with AI agent
+icon: MessageSquare
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Ask questions about any repository using the AI-powered chat agent.
+
+## Accessing Chat
+
+Navigate to `/owner/repo/chat` to start a new conversation.
+
+**URL format**:
+- New chat: `/owner/repo/chat`
+- Existing thread: `/owner/repo/chat/chatId`
+
+## How It Works
+
+Chat uses an **AI agent** powered by:
+- **Gemini 2.0 Flash Exp** - Fast, capable LLM
+- **@convex-dev/agent** - Agent framework
+- **9 specialized tools** - Code search, architecture, issues, PRs, files
+
+### Agent Flow
+
+```
+1. User asks question
+2. Agent decides which tools to use
+3. Tools retrieve relevant data
+4. Agent synthesizes answer from tool results
+5. Response shown with tool badges
+```
+
+## The 9 Agent Tools
+
+### 1. searchCodeContext
+
+**Purpose**: RAG-powered semantic search
+
+**When used**: Questions about implementation, "how does X work?"
+
+**Example**:
+```
+Q: "How is authentication implemented?"
+Tool: searchCodeContext(query="authentication implementation")
+Result: Top 5 relevant code chunks from RAG
+```
+
+### 2. getArchitecture
+
+**Purpose**: Retrieve discovered architecture entities
+
+**When used**: Questions about structure, components
+
+**Example**:
+```
+Q: "What are the main components?"
+Tool: getArchitecture()
+Result: List of top entities with descriptions
+```
+
+### 3. getSummary
+
+**Purpose**: Get repository overview
+
+**When used**: "What does this repo do?"
+
+**Example**:
+```
+Q: "Explain this repository"
+Tool: getSummary()
+Result: 300-word AI summary
+```
+
+### 4. listFiles
+
+**Purpose**: Browse file tree
+
+**When used**: "Show me all X files", directory exploration
+
+**Example**:
+```
+Q: "Find all TypeScript config files"
+Tool: listFiles(pattern="**/tsconfig*.json")
+Result: List of matching file paths
+```
+
+### 5. explainFile
+
+**Purpose**: Read and explain specific file
+
+**When used**: "What does X file do?"
+
+**Example**:
+```
+Q: "Explain src/router.tsx"
+Tool: explainFile(path="src/router.tsx")
+Result: File content + AI explanation
+```
+
+### 6. findIssues
+
+**Purpose**: Search issues by difficulty
+
+**When used**: "Show me beginner issues"
+
+**Example**:
+```
+Q: "Find easy issues"
+Tool: findIssues(difficulty=2)
+Result: Issues rated 1-2 difficulty
+```
+
+### 7. getIssueByNumber
+
+**Purpose**: Get issue details
+
+**When used**: "Explain issue #123"
+
+**Example**:
+```
+Q: "What's issue #123 about?"
+Tool: getIssueByNumber(number=123)
+Result: Issue title, difficulty, skills, files
+```
+
+### 8. findPullRequests
+
+**Purpose**: Search PRs
+
+**When used**: "Show recent PRs"
+
+**Example**:
+```
+Q: "What PRs are open?"
+Tool: findPullRequests()
+Result: List of PRs with summaries
+```
+
+### 9. getPullRequestByNumber
+
+**Purpose**: Get PR details
+
+**When used**: "Explain PR #456"
+
+**Example**:
+```
+Q: "Summarize PR #456"
+Tool: getPullRequestByNumber(number=456)
+Result: PR summary, impact, files changed
+```
+
+## Tool Call Visualization
+
+Tool calls appear as **badges** before the response:
+
+```
+[searchCodeContext] [getArchitecture]
+
+Based on the search results and architecture,
+authentication is handled in src/auth/...
+```
+
+This shows you **what data** the agent used to answer.
+
+## Example Conversations
+
+### Understanding Architecture
+
+**Q**: "How does routing work in this app?"
+
+**Agent**:
+- Uses `searchCodeContext` to find routing code
+- Uses `getArchitecture` to get router entity
+- Combines results into explanation
+
+**Response**:
+> Based on src/router.tsx and the architecture, this app uses TanStack Router with file-based routing...
+
+### Finding Issues
+
+**Q**: "Show me issues I can contribute to as a React beginner"
+
+**Agent**:
+- Uses `findIssues(difficulty=1-2)`
+- Filters for React-related skills
+- Returns list with descriptions
+
+**Response**:
+> Here are 3 beginner-friendly React issues:
+> 1. #123 - Add dark mode toggle (Difficulty 2)...
+
+### Code Exploration
+
+**Q**: "Where is the database schema defined?"
+
+**Agent**:
+- Uses `listFiles(pattern="**/schema*")`
+- Uses `explainFile` on found files
+- Summarizes structure
+
+**Response**:
+> The database schema is defined in convex/schema.ts. It uses Convex's schema system with 5 tables...
+
+## Chat Features
+
+### Conversation History
+
+Agent maintains context across messages:
+
+```
+User: "How does auth work?"
+Agent: [Explains auth system]
+
+User: "What about OAuth providers?"
+Agent: [Uses previous context to dive deeper into OAuth]
+```
+
+### Persistent Threads
+
+Conversations are **saved** in Convex with unique IDs.
+
+**URL format**: `/owner/repo/chat/abc123`
+
+Share this URL to collaborate with teammates!
+
+### Streaming Responses
+
+Responses stream in **real-time** as the agent thinks:
+
+```
+[searchCodeContext] ← Tool badge appears
+Based on the... ← Response streams word-by-word
+```
+
+## Best Practices
+
+### ✅ Ask Specific Questions
+
+**Good**: "How is GitHub OAuth configured?"
+**Bad**: "Tell me about this repo"
+
+Specific questions help the agent choose the right tools.
+
+### ✅ Follow Up Naturally
+
+The agent remembers context:
+
+```
+Q: "How does the RAG system work?"
+A: [Explains RAG]
+
+Q: "Show me the embedding code"
+A: [Uses context to find relevant files]
+```
+
+### ✅ Reference Issues/PRs by Number
+
+**Good**: "Explain issue #123"
+**Bad**: "What's the dark mode issue about?"
+
+The agent has a dedicated tool for issue numbers.
+
+### ✅ Use File Paths from Responses
+
+Agent provides file paths - use them for follow-up:
+
+```
+Agent: "Auth is in src/auth/github.ts"
+You: "Explain src/auth/github.ts"
+```
+
+### ❌ Don't Ask for Live Data
+
+Agent uses **static snapshot** from analysis time.
+
+**Won't work**: "What commits were made today?"
+
+### ❌ Don't Ask to Modify Code
+
+Offworld is **read-only**. Agent can explain but not edit code.
+
+## Example Use Cases
+
+### Code Review
+
+```
+Q: "Summarize PR #456"
+Q: "What are the risks of merging this PR?"
+Q: "Which core files are affected?"
+```
+
+### Onboarding
+
+```
+Q: "What does this repository do?"
+Q: "What are the main components?"
+Q: "How do I set up authentication?"
+```
+
+### Contributing
+
+```
+Q: "Find beginner-friendly issues"
+Q: "Explain issue #123"
+Q: "Where is the form validation logic?"
+```
+
+### Learning
+
+```
+Q: "How is the workflow system implemented?"
+Q: "Show me examples of RAG usage"
+Q: "What TypeScript patterns are used?"
+```
+
+## Limitations
+
+### RAG Index Scope
+
+- Top 500 files only
+- Snapshot from analysis time (not live)
+- May miss very new or obscure files
+
+### Tool Constraints
+
+- **searchCodeContext**: Limited to RAG-indexed files
+- **listFiles**: Returns paths only (not content)
+- **explainFile**: One file at a time
+
+### LLM Accuracy
+
+- Answers are AI-generated (may have errors)
+- Always verify critical information
+- Click GitHub links to check actual code
+
+<Callout type="warn">
+Use agent responses as **guidance**, not absolute truth. Verify important details in the actual code.
+</Callout>
+
+## Troubleshooting
+
+### "No Results Found"
+
+**Cause**: RAG search didn't find relevant content
+
+**Solution**: Try different keywords or use `listFiles` to browse manually
+
+### "Tool Failed"
+
+**Cause**: API error, invalid input, or missing data
+
+**Solution**: Rephrase question or try a different tool
+
+### "Response Cut Off"
+
+**Cause**: Token limit exceeded
+
+**Solution**: Ask more specific questions to get focused answers
+
+## Next Steps
+
+- Learn about [Sharing & Collaboration](/docs/user-guide/sharing)
+- Read [Developer Guide](/docs/developer-guide) to understand the agent implementation

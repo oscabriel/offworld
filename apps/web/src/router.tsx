@@ -1,4 +1,5 @@
 import { ConvexQueryClient } from "@convex-dev/react-query";
+import * as Sentry from "@sentry/tanstackstart-react";
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routerWithQueryClient } from "@tanstack/react-router-with-query";
@@ -43,6 +44,59 @@ export function getRouter() {
 		}),
 		queryClient,
 	);
+
+	// Initialize Sentry (client-side only) - per official docs
+	if (!router.isServer) {
+		const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+		// Convert to string if it's an object (Vite sometimes does this)
+		const dsnString =
+			typeof SENTRY_DSN === "string" ? SENTRY_DSN : String(SENTRY_DSN || "");
+
+		if (dsnString?.startsWith("https://")) {
+			Sentry.init({
+				dsn: dsnString,
+				sendDefaultPii: true,
+				integrations: [
+					Sentry.tanstackRouterBrowserTracingIntegration(router),
+					Sentry.replayIntegration(),
+					Sentry.feedbackIntegration({
+						colorScheme: "system",
+						autoInject: false, // Manual control via Sentry.getFeedback()
+					}),
+					Sentry.consoleLoggingIntegration({
+						levels: ["log", "warn", "error"],
+					}),
+				],
+				// Enable logs to be sent to Sentry
+				enableLogs: true,
+				tracesSampleRate: 1.0,
+				replaysSessionSampleRate: 0.1,
+				replaysOnErrorSampleRate: 1.0,
+				environment: import.meta.env.MODE,
+				debug: false, // Disable debug logs in all environments
+				// Use tunnel to bypass ad blockers
+				tunnel: "/tunnel",
+				beforeSend(event) {
+					// Only log in dev mode, and only for actual errors (not breadcrumbs/transactions)
+					if (import.meta.env.DEV && event.exception) {
+						console.log("📤 Sentry:", event.exception?.values?.[0]?.value);
+					}
+					return event;
+				},
+			});
+			console.log("✅ Sentry initialized", {
+				environment: import.meta.env.MODE,
+				dsn: `${dsnString.slice(0, 50)}...`,
+				dsnType: typeof dsnString,
+			});
+		} else {
+			console.warn("⚠️ Sentry DSN invalid or missing:", {
+				raw: SENTRY_DSN,
+				converted: dsnString,
+			});
+		}
+	}
+
 	return router;
 }
 

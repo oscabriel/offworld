@@ -1,0 +1,163 @@
+---
+title: Quick Start
+description: Explore a repository in 3 steps
+icon: Zap
+---
+
+import { Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Get started with Offworld in under 5 minutes.
+
+<Steps>
+
+### Sign In with GitHub
+
+Navigate to **[offworld.sh](https://offworld.sh)** and click **"Sign in with GitHub"**.
+
+<Callout type="info">
+Offworld uses GitHub OAuth for authentication. We only request read access to public repositories.
+</Callout>
+
+### Enter a Repository
+
+On the home page, use the search bar to find a repository:
+
+```
+facebook/react
+vercel/next.js
+tailwindlabs/tailwindcss
+```
+
+Or enter the owner/repo directly in the URL:
+
+```
+https://offworld.sh/facebook/react
+```
+
+### Start Analysis
+
+If the repository hasn't been indexed yet, click **"Analyze Repository"**.
+
+The analysis workflow takes 2-5 minutes and includes:
+
+1. Fetching GitHub metadata
+2. Downloading file tree
+3. Ingesting files into RAG (vector embeddings)
+4. Generating AI summary
+5. Progressive architecture discovery (2-5 iterations)
+6. Consolidating top components
+7. Generating C4 diagrams
+8. Fetching and analyzing issues
+9. Fetching and analyzing pull requests
+
+You'll see **progressive updates** as each step completes.
+
+</Steps>
+
+## Exploring the Results
+
+### Summary Tab
+
+The default view shows:
+
+- **Repository stats** (stars, language, last updated)
+- **AI-generated summary** (300-word overview)
+- **Architecture diagram** (Mermaid C4 with narrative)
+- **Quick links** (GitHub, issues, PRs)
+
+### Architecture Tab
+
+Browse discovered components:
+
+- **Name** - Component/package/module identifier
+- **Description** - 4-6 sentence explanation (no jargon)
+- **Importance** - 0.3-1.0 score (higher = more critical)
+- **Layer** - Entry point, core, feature, utility, integration
+- **GitHub link** - Direct link to file/directory
+
+Click any entity to see its full details.
+
+### Issues Tab
+
+View GitHub issues enriched with AI analysis:
+
+- **Difficulty** (1-5 scale: Trivial → Expert)
+- **Skills needed** (e.g., "React, TypeScript, CSS")
+- **Files likely touched** (validated against repo structure)
+- **Filter by difficulty** - Find beginner-friendly issues
+
+### Pull Requests Tab
+
+Explore PRs with AI insights:
+
+- **Impact level** (Low, Medium, High)
+- **Files changed** (count and categories)
+- **AI summary** - What the PR does and why
+
+### Chat Tab
+
+Ask questions about the codebase:
+
+```
+"How does authentication work?"
+"Where is the routing logic?"
+"Find all TypeScript configuration files"
+```
+
+The AI agent has access to:
+
+1. **searchCodeContext** - RAG-powered semantic search
+2. **getArchitecture** - Retrieve architecture entities
+3. **getSummary** - Get repository summary
+4. **listFiles** - Browse file tree
+5. **explainFile** - Read and explain specific files
+6. **findIssues** - Search issues by difficulty
+7. **getIssueByNumber** - Get issue details
+8. **findPullRequests** - Search PRs
+9. **getPullRequestByNumber** - Get PR details
+
+Tool calls are shown as **badges** before the AI response.
+
+## Example: Exploring TanStack Router
+
+Let's explore a real repository:
+
+**[offworld.sh/tanstack/router](https://offworld.sh/tanstack/router)**
+
+1. **Summary**: "TanStack Router is a fully type-safe routing solution for React applications..."
+2. **Architecture**: Discover `@tanstack/react-router` core, file-based routing, code splitting
+3. **Issues**: Find beginner issues (difficulty 1-2) filtered by "good first issue"
+4. **Chat**: Ask "How does file-based routing work?" and get code references
+
+## Tips
+
+### Re-indexing
+
+Repositories have a **7-day cooldown** between analyses to prevent abuse. You'll see a message if you try to re-index too soon.
+
+### Sharing
+
+All pages are **shareable**:
+
+- Architecture entities: `offworld.sh/owner/repo/arch/entity-slug`
+- Issues: `offworld.sh/owner/repo/issues/123`
+- PRs: `offworld.sh/owner/repo/pr/456`
+- Chat threads: `offworld.sh/owner/repo/chat/chatId`
+
+### Best Repositories to Explore
+
+Start with well-structured projects:
+
+- **TanStack Router** - Type-safe routing (`tanstack/router`)
+- **Convex** - Backend as a service (`get-convex/convex-backend`)
+- **shadcn/ui** - Component library (`shadcn-ui/ui`)
+- **Better Auth** - Auth framework (`better-auth/better-auth`)
+
+Avoid very large monorepos (>10k files) - analysis may timeout.
+
+## Next Steps
+
+- Learn about [Key Concepts](/docs/getting-started/key-concepts)
+- Explore [Use Cases](/docs/getting-started/use-cases)
+- Read the [User Guide](/docs/user-guide)

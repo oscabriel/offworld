@@ -5,20 +5,25 @@ import {
 } from "@convex-dev/better-auth/react-start";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { createAuth } from "@offworld/backend/convex/auth";
+import * as Sentry from "@sentry/tanstackstart-react";
 import type { QueryClient } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
+	ErrorComponent,
 	HeadContent,
 	Outlet,
 	Scripts,
 	useRouteContext,
+	useRouter,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequest } from "@tanstack/react-start/server";
 import type { ConvexReactClient } from "convex/react";
+import { useEffect } from "react";
 import { BackgroundImage } from "@/components/layout/background-image";
 import Header from "@/components/layout/header";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { authClient } from "@/lib/auth-client";
 import appCss from "../index.css?url";
@@ -37,6 +42,28 @@ export interface RouterAppContext {
 	queryClient: QueryClient;
 	convexClient: ConvexReactClient;
 	convexQueryClient: ConvexQueryClient;
+}
+
+function DefaultErrorBoundary({ error }: { error: Error }) {
+	const router = useRouter();
+
+	// Report error to Sentry - per official docs
+	useEffect(() => {
+		Sentry.captureException(error);
+	}, [error]);
+
+	return (
+		<div className="container mx-auto px-4 py-16">
+			<ErrorComponent error={error} />
+			<Button
+				variant="outline"
+				onClick={() => router.invalidate()}
+				className="mt-4 bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+			>
+				Try Again
+			</Button>
+		</div>
+	);
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
@@ -144,6 +171,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		],
 	}),
 
+	errorComponent: DefaultErrorBoundary,
 	component: RootDocument,
 	beforeLoad: async (ctx) => {
 		const { userId, token } = await fetchAuth();

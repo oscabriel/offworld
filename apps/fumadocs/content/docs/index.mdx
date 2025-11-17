@@ -1,34 +1,81 @@
 ---
-title: Hello World
-description: Your favourite docs framework.
+title: Welcome to Offworld
+description: AI-powered repository analysis - explore distant code.
 icon: Rocket
 ---
 
-Hey there! Fumadocs is the docs framework that also works on Tanstack Start!
+import { Card, Cards } from 'fumadocs-ui/components/card';
 
-## Heading
+**Offworld** is an AI-powered repository analysis system that explores GitHub codebases, generates architecture documentation, and provides intelligent Q&A via RAG (Retrieval Augmented Generation).
 
-Hello World!
+## Explore Distant Code
+
+Offworld helps you understand unfamiliar repositories quickly by:
+
+- **Generating AI summaries** - 300-word overviews of what the codebase does
+- **Discovering architecture** - Automatically identifies key components, packages, and subsystems
+- **Analyzing issues** - AI-powered difficulty assessment and skill requirements
+- **Understanding PRs** - Impact analysis and file change summaries
+- **Interactive Q&A** - RAG-powered chat agent with 9 specialized tools
+
+## Live Demo
+
+Try Offworld on our own repository:
+
+**[offworld.sh/oscabriel/offworld](https://offworld.sh/oscabriel/offworld)**
 
 <Cards>
   <Card
-    title="Learn more about Tanstack Start"
-    href="https://tanstack.com/start"
+    title="Quick Start"
+    description="Explore a repository in 3 steps"
+    href="/docs/getting-started/quick-start"
   />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card
+    title="User Guide"
+    description="Learn how to navigate Offworld"
+    href="/docs/user-guide"
+  />
+  <Card
+    title="Developer Guide"
+    description="Setup and contribute to Offworld"
+    href="/docs/developer-guide"
+  />
+  <Card
+    title="Tech Stack"
+    description="Learn about our architecture"
+    href="/docs/technical-reference"
+  />
 </Cards>
 
-### CodeBlock
+## Key Features
 
-```ts
-console.log('Hello World');
-```
+### Progressive Architecture Discovery
+Uses a multi-iteration AI workflow to discover and rank the most important components in a codebase (packages → modules → services → components).
 
-#### Table
+### RAG-Powered Search
+Ingests up to 500 files with vector embeddings, enabling semantic search across the entire repository.
 
-| Head                            | Description                         |
-| ------------------------------- | ----------------------------------- |
-| `hello`                         | Hello World                         |
-| very **important**              | Hey                                 |
-| _Surprisingly_                  | Fumadocs                            |
-| very long text that looks weird | hello world hello world hello world |
+### GitHub Integration
+Fetches repository metadata, file trees, issues, and pull requests via GitHub App (15k req/hr rate limit).
+
+### AI Agent Chat
+9 specialized tools: search code, get architecture, list issues/PRs, explain files, and more.
+
+### Triple-Deploy Architecture
+- **Backend**: Convex Cloud (serverless, edge-optimized)
+- **Frontend**: Cloudflare Workers (SSR at the edge)
+- **Docs**: Netlify (static site, instant previews)
+
+## GitHub Repository
+
+Star us on GitHub: **[github.com/oscabriel/offworld](https://github.com/oscabriel/offworld)**
+
+## Tech Stack
+
+**Frontend**: TanStack Start, TanStack Router, shadcn/ui, Tailwind CSS v4
+
+**Backend**: Convex (database + workflows + RAG), Gemini 2.5 Flash Lite
+
+**Auth**: Better Auth v1 with GitHub OAuth
+
+**Deployment**: Cloudflare Workers (Alchemy), Convex Cloud, Netlify

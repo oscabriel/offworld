@@ -1,0 +1,410 @@
+---
+title: AI & RAG System
+description: Embeddings, prompts, and validation
+icon: Brain
+---
+
+Technical details of the AI and RAG system.
+
+## AI Models
+
+### Gemini 2.5 Flash Lite
+
+**Analysis LLM** - Summary, architecture, diagrams
+
+**Model**: `gemini-2.5-flash-exp`
+
+**Usage**:
+```typescript
+import { generateObject } from 'ai';
+import { gemini } from '@ai-sdk/google';
+
+const response = await generateObject({
+  model: gemini("gemini-2.5-flash-exp"),
+  schema: SummarySchema,
+  prompt: SUMMARY_PROMPT
+});
+```
+
+**Cost**: $0.018-0.025 per repo analysis
+
+### Gemini 2.0 Flash Exp
+
+**Chat LLM** - Interactive agent
+
+**Model**: `gemini-2.0-flash-exp`
+
+**Why different**: Better tool use, experimental features
+
+**Context window**: 1M tokens
+
+### Google Text Embedding 004
+
+**Embedding model** for RAG
+
+**Dimensions**: 768
+
+**Usage**:
+```typescript
+import { embed } from 'ai';
+import { google } from '@ai-sdk/google';
+
+const { embedding } = await embed({
+  model: google.textEmbedding('text-embedding-004'),
+  value: fileContent
+});
+```
+
+## RAG System
+
+### Architecture
+
+```
+Files → Chunking → Embedding → Vector DB → Search
+         ↓                        ↓
+      max 500 files         Convex vector store
+```
+
+### Ingestion
+
+**File**: `packages/backend/convex/github.ts`
+
+```typescript
+export const ingestRepository = action({
+  handler: async (ctx, { fullName, files }) => {
+    const namespace = `repo:${fullName}`;
+
+    // Clear old embeddings
+    await ctx.vectorSearch("rag", namespace).clear();
+
+    // Filter to top 500 files
+    const relevantFiles = filterFiles(files); // By size, extension
+
+    // Embed each file
+    for (const file of relevantFiles) {
+      const content = await fetchFileContent(file.path);
+      const chunks = chunkContent(content); // Split large files
+
+      for (const chunk of chunks) {
+        const { embedding } = await embed({
+          model: google.textEmbedding('text-embedding-004'),
+          value: chunk.text
+        });
+
+        await ctx.vectorSearch("rag", namespace).add({
+          embedding,
+          metadata: {
+            path: file.path,
+            chunkIndex: chunk.index
+          }
+        });
+      }
+    }
+  }
+});
+```
+
+### Search
+
+**File**: `agent/tools.ts`
+
+```typescript
+const searchCodeContext = createTool({
+  name: "searchCodeContext",
+  parameters: z.object({
+    query: z.string(),
+    limit: z.number().default(5)
+  }),
+  execute: async ({ query, limit }, ctx) => {
+    const namespace = `repo:${fullName}`;
+
+    const results = await ctx.vectorSearch("rag", namespace)
+      .search(query, { limit });
+
+    return results.map(r => ({
+      path: r.metadata.path,
+      content: r.text,
+      score: r.score
+    }));
+  }
+});
+```
+
+### File Filtering
+
+**Priority files** (indexed first):
+- Source code: `.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.go`, `.rs`
+- Configs: `package.json`, `tsconfig.json`, `README.md`
+- Entry points: `main.ts`, `app.tsx`, `index.html`
+
+**Excluded**:
+- Dependencies: `node_modules/`, `vendor/`
+- Build artifacts: `dist/`, `build/`, `.next/`
+- Large files: >100KB
+
+## Prompts
+
+**File**: `packages/backend/convex/prompts.ts`
+
+### Summary Prompt
+
+```typescript
+export const SUMMARY_PROMPT = `
+Analyze this GitHub repository and generate a 300-word summary.
+
+Repository: {REPO_NAME}
+Description: {DESCRIPTION}
+Language: {LANGUAGE}
+File tree: {FILE_TREE}
+
+Requirements:
+- 300 words maximum
+- Natural language (not marketing copy)
+- No top-level H1 headings
+- No workflow jargon ("iteration", "consolidated", "layer")
+- Cover: what it does, core features, technologies, use cases
+
+Return JSON:
+{
+  "summary": "string"
+}
+`;
+```
+
+### Architecture Discovery Prompt
+
+```typescript
+export const ARCHITECTURE_DISCOVERY_PROMPT = `
+Discover architecture components for iteration {ITERATION}.
+
+Previous discoveries: {PREVIOUS_CONTEXT}
+File tree: {FILE_TREE}
+
+Iteration guidance:
+- Iteration 1: Packages, top-level directories
+- Iteration 2: Modules, services, core subsystems
+- Iteration 3+: Components, utilities, integrations
+
+For each component:
+- Name: e.g., "frontend/src/components" or "@tanstack/react-router"
+- Description: 4-6 sentences (no jargon)
+- Importance: 0.0-1.0 (1.0 = entry points, 0.3 = minor utils)
+- Layer: entry-point | core | feature | utility | integration
+- Path: Exact file/directory path (will be validated against file tree)
+
+Return JSON:
+{
+  "entities": [{ name, description, importance, layer, path }, ...]
+}
+`;
+```
+
+### Mermaid Diagram Prompt
+
+```typescript
+export const MERMAID_PROMPT = `
+Generate a Mermaid C4 diagram for these architecture entities.
+
+Entities: {ENTITIES}
+
+Requirements:
+- Use graph TB (top-bottom) layout
+- Node IDs: alphanumeric only (no spaces, hyphens, slashes)
+- Include top 8-10 entities only
+- Show relationships between components
+- Color-code by layer if possible
+
+Also provide a narrative explanation (2-3 paragraphs):
+- What the diagram shows
+- How components relate
+- Overall architecture patterns
+
+Return JSON:
+{
+  "mermaidCode": "string",
+  "narrative": "string"
+}
+`;
+```
+
+## AI Validation
+
+**File**: `packages/backend/convex/aiValidation.ts`
+
+### Zod Schemas
+
+**Summary**:
+```typescript
+export const SummarySchema = z.object({
+  summary: z.string().min(50).max(2000)
+});
+```
+
+**Architecture Entity**:
+```typescript
+export const ArchitectureEntitySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(50),
+  importance: z.number().min(0).max(1),
+  layer: z.enum(["entry-point", "core", "feature", "utility", "integration"]),
+  path: z.string()
+});
+```
+
+**Issue Analysis**:
+```typescript
+export const IssueAnalysisSchema = z.object({
+  difficulty: z.number().int().min(1).max(5),
+  difficultyRationale: z.string().min(20),
+  skills: z.array(z.string()),
+  filesTouch: z.array(z.string())
+});
+```
+
+### Path Validation
+
+After AI generates paths, validate against GitHub file tree:
+
+```typescript
+function validatePath(llmPath: string, fileTree: string[]): boolean {
+  // Exact match
+  if (fileTree.includes(llmPath)) return true;
+
+  // Directory match (path exists as prefix)
+  if (fileTree.some(f => f.startsWith(llmPath + "/"))) return true;
+
+  console.warn("Invalid LLM path:", llmPath);
+  return false;
+}
+```
+
+**Result**: Invalid paths are filtered out before saving to DB.
+
+## AI Generation Functions
+
+**File**: `packages/backend/convex/gemini.ts`
+
+### generateSummary
+
+```typescript
+export const generateSummary = action({
+  args: { repoName: v.string(), description: v.string(), fileTree: v.string() },
+  handler: async (ctx, args) => {
+    const prompt = SUMMARY_PROMPT
+      .replace("{REPO_NAME}", args.repoName)
+      .replace("{DESCRIPTION}", args.description)
+      .replace("{FILE_TREE}", args.fileTree);
+
+    const response = await generateObject({
+      model: gemini("gemini-2.5-flash-exp"),
+      schema: SummarySchema,
+      prompt
+    });
+
+    return response.object.summary;
+  }
+});
+```
+
+### discoverArchitecture
+
+```typescript
+export const discoverArchitecture = action({
+  args: {
+    iteration: v.number(),
+    fileTree: v.string(),
+    previousContext: v.string()
+  },
+  handler: async (ctx, args) => {
+    const prompt = ARCHITECTURE_DISCOVERY_PROMPT
+      .replace("{ITERATION}", args.iteration.toString())
+      .replace("{PREVIOUS_CONTEXT}", args.previousContext)
+      .replace("{FILE_TREE}", args.fileTree);
+
+    const response = await generateObject({
+      model: gemini("gemini-2.5-flash-exp"),
+      schema: z.object({ entities: z.array(ArchitectureEntitySchema) }),
+      prompt
+    });
+
+    // Validate paths
+    const validEntities = response.object.entities.filter(e =>
+      validatePath(e.path, parseFileTree(args.fileTree))
+    );
+
+    return validEntities;
+  }
+});
+```
+
+### generateDiagram
+
+```typescript
+export const generateDiagram = action({
+  args: { entities: v.array(v.any()) },
+  handler: async (ctx, args) => {
+    const prompt = MERMAID_PROMPT
+      .replace("{ENTITIES}", JSON.stringify(args.entities));
+
+    const response = await generateObject({
+      model: gemini("gemini-2.5-flash-exp"),
+      schema: z.object({
+        mermaidCode: z.string(),
+        narrative: z.string()
+      }),
+      prompt
+    });
+
+    return response.object;
+  }
+});
+```
+
+## Cost Optimization
+
+### Per-Repository Cost
+
+**Analysis** (one-time):
+- Summary: ~0.5K tokens input, 300 tokens output = $0.002
+- Architecture (3 iterations): ~2K tokens × 3 = $0.006
+- Diagram: ~1K tokens = $0.002
+- Issues (10 issues): ~500 tokens × 10 = $0.005
+- PRs (5 PRs): ~500 tokens × 5 = $0.0025
+- **Total**: ~$0.018-0.025
+
+**Chat** (per message):
+- Agent + tools: ~1K-5K tokens = $0.001-0.005
+
+### Embeddings Cost
+
+**Ingestion** (one-time):
+- 500 files × 2KB avg = 1MB text
+- Google embedding: Free tier or ~$0.0001/1K tokens
+- **Total**: ~$0.10 per repo
+
+## Best Practices
+
+### Prompt Engineering
+
+- **Be specific**: Define exact output format
+- **Use examples**: Show desired output
+- **Forbid jargon**: Explicitly ban workflow terms
+- **Validate**: Always use Zod schemas
+
+### RAG Optimization
+
+- **Filter files**: Index only relevant files
+- **Chunk strategically**: ~2KB chunks for code
+- **Namespace clearly**: `repo:owner/name` pattern
+- **Clear on re-index**: Prevent stale embeddings
+
+### Error Handling
+
+- **Retry on failure**: Workflows auto-retry
+- **Validate outputs**: Zod + path validation
+- **Log warnings**: Track LLM hallucinations
+
+## Next Steps
+
+- Check [API Reference](/docs/technical-reference/api-reference)
+- Review [Environment Variables](/docs/technical-reference/environment-variables)

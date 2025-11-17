@@ -1,0 +1,6 @@
+[build]
+  command = "turbo run build --filter fumadocs"
+  publish = "dist/client"
+
+[functions]
+  directory = ".netlify/v1/functions"

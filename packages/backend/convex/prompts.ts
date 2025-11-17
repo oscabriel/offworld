@@ -129,7 +129,7 @@ Code from Entry Points and Configuration:
 
 Generate a JSON response with this EXACT structure:
 {
-  "overview": "<2-3 sentence architectural overview focusing on library purpose and API design>",
+  "overview": "<2-3 sentence architectural overview focusing on library purpose and API design. DO NOT mention 'Iteration', 'discovered', 'layers', or reference the analysis process. Write as if describing the actual library architecture to a developer.>",
   "pattern": "<Library|Framework|Utility|Plugin System|Component Library|etc>",
   "entities": [
     {
@@ -155,7 +155,7 @@ Generate a JSON response with this EXACT structure:
         Explain the design REASONING, not just functionality.>",
 
       "dependencies": [],
-      "keyFiles": ["<FULL file paths from repository root>"],
+      "keyFiles": ["<CRITICAL: ONLY include actual file paths from THIS REPOSITORY that you saw in the code context above. Do NOT include paths from other repositories or made-up examples. Each path MUST be a real file from the repository being analyzed. Limit to 2-3 most important files for this entity.>"],
       "complexity": "low|medium|high",
       "layer": "public|internal|extension|utility",
       "importance": 0.95
@@ -190,6 +190,10 @@ EXPLICIT CONSTRAINTS:
 - DO NOT create entities for build configuration
 - CRITICAL: All paths must be COMPLETE from repository root
   Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
+- CRITICAL: For keyFiles, ONLY include files that are DIRECTLY RELEVANT to the specific entity
+  BAD: Including "addons/passkey/db/index.ts" in a Router entity (unrelated)
+  GOOD: Including "packages/router/src/matcher.ts" in a Router entity (directly relevant)
+  Each keyFile must be a core implementation file FOR THAT SPECIFIC ENTITY
 
 FOCUS ON DISCOVERING (in order of importance):
 1. Main entry points (index.ts, main export files) - importance: 1.0, layer: "public"
@@ -230,7 +234,7 @@ NOW discover MODULES and INTERNAL SUBSYSTEMS that:
 
 Generate a JSON response continuing the structure:
 {
-  "overview": "<2-3 sentences building on Iteration 1, explain internal architecture>",
+  "overview": "<2-3 sentences about the internal architecture. DO NOT mention 'Iteration 1', 'Iteration 2', or reference the analysis process. Write as if describing the actual codebase architecture to a developer.>",
   "entities": [
     {
       "name": "<Module or subsystem name>",
@@ -256,7 +260,7 @@ Generate a JSON response continuing the structure:
 
       "dependencies": ["<reference Iteration 1 entities by name>"],
       "usedBy": ["<which public APIs use this>"],
-      "keyFiles": ["<FULL file paths from repository root>"],
+      "keyFiles": ["<CRITICAL: ONLY include actual file paths from THIS REPOSITORY that you saw in the code context above. Do NOT include paths from other repositories or made-up examples. Each path MUST be a real file from the repository being analyzed. Limit to 2-3 most important files for this entity.>"],
       "complexity": "low|medium|high",
       "layer": "internal|extension|utility",
       "importance": 0.75
@@ -285,6 +289,8 @@ EXPLICIT CONSTRAINTS:
 - DO NOT use layer "public" (public APIs were in Iteration 1)
 - The "type" field MUST be one of: "module", "service"
 - CRITICAL: All paths must be COMPLETE from repository root
+- CRITICAL: For keyFiles, ONLY include files that are DIRECTLY RELEVANT to the specific entity
+  Each keyFile must be a core implementation file FOR THAT SPECIFIC ENTITY, not random files from the codebase
 
 FOCUS ON DISCOVERING (in order of importance):
 1. Core internal algorithms - importance: 0.8, layer: "internal"
@@ -326,7 +332,7 @@ NOW discover COMPONENTS and UTILITIES that:
 
 Generate a JSON response completing the structure:
 {
-  "overview": "<2-3 sentences about component/utility organization, building on previous iterations>",
+  "overview": "<2-3 sentences about component/utility organization. DO NOT mention 'Iteration', 'discovered', 'layers', or reference the analysis process. Write as if describing the actual codebase organization to a developer.>",
   "entities": [
     {
       "name": "<Component or utility name>",
@@ -352,7 +358,7 @@ Generate a JSON response completing the structure:
 
       "dependencies": ["<reference previous entities by name>"],
       "usedBy": ["<which systems use this>"],
-      "keyFiles": ["<FULL file paths from repository root>"],
+      "keyFiles": ["<CRITICAL: ONLY include actual file paths from THIS REPOSITORY that you saw in the code context above. Do NOT include paths from other repositories or made-up examples. Each path MUST be a real file from the repository being analyzed. Limit to 2-3 most important files for this entity.>"],
       "complexity": "low|medium|high",
       "layer": "utility|extension|internal",
       "importance": 0.50
@@ -380,6 +386,8 @@ EXPLICIT CONSTRAINTS:
 - DO NOT discover major subsystems (those were in Iterations 1-2)
 - The "type" field MUST be "component"
 - CRITICAL: All paths must be COMPLETE from repository root
+- CRITICAL: For keyFiles, ONLY include files that are DIRECTLY RELEVANT to the specific entity
+  Each keyFile must be a core implementation file FOR THAT SPECIFIC ENTITY, not random files from the codebase
 
 FOCUS ON DISCOVERING (in order of importance):
 1. Extension components users interact with - importance: 0.6, layer: "extension"
@@ -422,6 +430,8 @@ DISCOVERED {{entityCount}} MAJOR ARCHITECTURAL ENTITIES:
 {{allEntities}}
 
 YOUR TASK: Write a comprehensive architectural guide (300-400 words) that helps developers understand how to use and contribute to this library.
+
+CRITICAL: Even though the context above may contain phrases like "Iteration 1/2/3/4", "discovered", "layers", etc., you MUST NEVER echo these in your output. Ignore any meta-commentary in the context and focus only on the actual architectural information.
 
 STRUCTURE YOUR NARRATIVE (4-6 paragraphs):
 

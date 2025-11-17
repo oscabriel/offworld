@@ -1,0 +1,451 @@
+---
+title: Understanding Issues
+description: AI-powered difficulty analysis and skill assessment
+icon: AlertCircle
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Learn how Offworld analyzes GitHub issues with AI.
+
+## Issues Tab Overview
+
+Navigate to `/owner/repo/issues` to see all analyzed issues.
+
+### Issue List View
+
+Each issue card displays:
+
+```
+┌─────────────────────────────────────────────┐
+│ #123 • Add dark mode toggle                 │
+│ Difficulty: ⭐⭐ (Easy)                       │
+│ Skills: React, CSS, TypeScript              │
+│ Files: src/components/theme-toggle.tsx      │
+│ [View on GitHub]                            │
+└─────────────────────────────────────────────┘
+```
+
+### Issue Metadata
+
+**Number**: GitHub issue number (`#123`)
+
+**Title**: From GitHub issue title
+
+**Difficulty**: 1-5 scale with AI rationale
+
+**Skills**: Required technologies/frameworks
+
+**Files**: Predicted files that will be touched
+
+**Labels**: From GitHub (e.g., "bug", "good first issue")
+
+**GitHub Link**: Direct link to issue discussion
+
+## Difficulty Rating System
+
+### 1 - Trivial ⭐
+
+**Definition**: Can be completed in &lt;1 hour by a beginner.
+
+**Examples**:
+- Fixing typos in documentation
+- Updating broken links
+- Adding simple comments
+- Changing color constants
+
+**Skills**: Basic text editing, Markdown
+
+**Files**: Usually 1 file (`docs/`, `README.md`)
+
+### 2 - Easy ⭐⭐
+
+**Definition**: Requires basic coding but no deep knowledge.
+
+**Examples**:
+- Adding a new UI component (button variant)
+- Simple CSS fixes
+- Adding configuration options
+- Basic prop additions
+
+**Skills**: HTML, CSS, basic JavaScript/TypeScript
+
+**Files**: 1-3 files (components, styles)
+
+### 3 - Moderate ⭐⭐⭐
+
+**Definition**: Requires understanding of architecture and patterns.
+
+**Examples**:
+- Adding new features (form validation)
+- Refactoring components
+- Integrating third-party libraries
+- API endpoint creation
+
+**Skills**: React/framework knowledge, state management, APIs
+
+**Files**: 3-7 files (components, hooks, API routes, tests)
+
+### 4 - Hard ⭐⭐⭐⭐
+
+**Definition**: Requires deep knowledge of codebase and complex patterns.
+
+**Examples**:
+- Performance optimizations
+- Complex state refactoring
+- Authentication system changes
+- Database migrations
+
+**Skills**: Advanced framework patterns, performance tuning, backend
+
+**Files**: 7-15 files (cross-cutting concerns)
+
+### 5 - Expert ⭐⭐⭐⭐⭐
+
+**Definition**: Requires expert-level knowledge and significant time investment.
+
+**Examples**:
+- Core architecture changes
+- Build system modifications
+- Type system refactors
+- Security vulnerability fixes
+
+**Skills**: Deep expertise in multiple domains, design patterns
+
+**Files**: 15+ files (often touching core systems)
+
+## How Difficulty is Determined
+
+Offworld uses **Gemini 2.5 Flash Lite** to analyze each issue based on:
+
+### 1. Issue Description
+
+LLM reads the GitHub issue body:
+
+```
+Issue #123: "Add dark mode toggle"
+
+Users should be able to switch between light and dark themes.
+The toggle should persist across sessions using localStorage.
+```
+
+**Analysis**:
+- Scope: UI component + state persistence
+- Complexity: Medium (localStorage, CSS variables)
+- Files: Theme component, styles, hooks
+
+### 2. Repository Context
+
+AI uses **RAG search** to find relevant code:
+
+```
+Search: "theme toggle dark mode"
+Results:
+  - src/components/theme-provider.tsx (exists)
+  - src/styles/globals.css (has CSS variables)
+```
+
+**Conclusion**: Infrastructure exists → easier implementation.
+
+### 3. Required Skills
+
+Based on technologies in the repo and issue description:
+
+```
+Technologies: React, TypeScript, Tailwind CSS
+Skills needed: React (hooks), CSS (variables), TypeScript (types)
+```
+
+### 4. Files to Touch
+
+LLM predicts files that need changes:
+
+```
+Files likely touched:
+  - src/components/theme-toggle.tsx (new component)
+  - src/components/header.tsx (add toggle to header)
+  - src/styles/app.css (dark mode styles)
+```
+
+**Validation**: Paths checked against GitHub file tree to prevent hallucinations.
+
+### 5. Difficulty Score
+
+Combines all factors:
+
+- Scope (1 file vs 10 files)
+- Complexity (simple UI vs state refactor)
+- Prerequisites (component exists vs new architecture)
+- Skills (HTML/CSS vs Rust/WebAssembly)
+
+**Result**: Difficulty 2 (Easy)
+
+## Skill Assessment
+
+### Skill Tags
+
+Each issue includes **required technologies**:
+
+```
+Skills: React, TypeScript, CSS
+```
+
+**Common skills**:
+- **Frontend**: React, Vue, Angular, HTML, CSS, JavaScript, TypeScript
+- **Backend**: Node.js, Python, Go, Rust, SQL, GraphQL
+- **Mobile**: React Native, Swift, Kotlin
+- **DevOps**: Docker, CI/CD, Kubernetes
+- **Testing**: Jest, Cypress, Playwright
+
+### Skill Matching
+
+Use skills to find issues that match your expertise:
+
+**Beginner**:
+```
+Filter: Difficulty 1-2, Skills: HTML, CSS, Markdown
+Result: Documentation fixes, simple UI updates
+```
+
+**Intermediate**:
+```
+Filter: Difficulty 3, Skills: React, TypeScript
+Result: New features, component refactors
+```
+
+**Expert**:
+```
+Filter: Difficulty 4-5, Skills: Rust, Compiler Design
+Result: Core system changes, performance work
+```
+
+## File Path Predictions
+
+### What Are File Paths?
+
+LLM predicts which files you'll need to modify:
+
+```
+Files likely touched:
+  - src/auth/providers/github.ts
+  - src/auth/middleware.ts
+  - tests/auth/github.test.ts
+```
+
+### Path Validation
+
+Offworld **validates paths** against the GitHub file tree:
+
+**Valid path**: ✅ `src/auth/providers/github.ts` (exists)
+
+**Invalid path**: ❌ `src/auth/github-provider.ts` (LLM hallucination)
+
+Only **valid paths** are shown in the UI.
+
+### Using File Paths
+
+**Navigate quickly**:
+1. See predicted files in issue card
+2. Click GitHub link
+3. Search for file path in repo
+4. Start coding!
+
+**Ask follow-up questions**:
+
+```
+Chat: "Explain src/auth/providers/github.ts"
+Agent: [Uses explainFile tool]
+```
+
+## Filtering Issues
+
+### By Difficulty
+
+Find issues matching your skill level:
+
+**Beginner**:
+```
+Select: Difficulty 1-2 (Trivial, Easy)
+```
+
+**Looking for a challenge**:
+```
+Select: Difficulty 4-5 (Hard, Expert)
+```
+
+### By Skills (Coming Soon)
+
+Filter by technologies you know:
+
+```
+Skills: React, TypeScript
+Result: Only issues requiring React + TypeScript
+```
+
+### By Labels
+
+Use GitHub labels to filter:
+
+```
+Label: "good first issue"
+Label: "bug"
+Label: "feature"
+```
+
+## Issue Detail Page
+
+Click any issue to see full analysis:
+
+**URL format**: `/owner/repo/issues/123`
+
+Example: [offworld.sh/tanstack/router/issues/123](https://offworld.sh/tanstack/router/issues/123)
+
+### Full Detail View
+
+**GitHub Issue Embed** (if supported):
+- Full issue description
+- Comments and discussion
+- Labels and assignees
+
+**AI Analysis**:
+- Detailed difficulty rationale
+- Complete skills breakdown
+- All predicted files with GitHub links
+- Related entities from architecture
+
+**Action Buttons**:
+- **View on GitHub** - Open issue in GitHub
+- **Ask in Chat** - Start conversation about this issue
+
+## Using Issues for OSS Contribution
+
+### Step-by-Step Workflow
+
+1. **Find a repository**: Browse or search on Offworld
+2. **Go to Issues tab**: See AI-analyzed issues
+3. **Filter by difficulty**: Select your comfort level (1-2 for beginners)
+4. **Check skills**: Ensure you have required knowledge
+5. **Read file paths**: Understand scope of changes
+6. **Click GitHub link**: Read full issue discussion
+7. **Ask questions**: Use chat if you need clarification
+8. **Start coding**: Clone repo and implement fix!
+
+### Example: Contributing to TanStack Router
+
+**Issue**: #432 - "Add type safety to route params"
+
+**Offworld Analysis**:
+- **Difficulty**: ⭐⭐⭐ (Moderate)
+- **Skills**: TypeScript, Type System, Generics
+- **Files**:
+  - `packages/react-router/src/route.ts`
+  - `packages/react-router/src/types.ts`
+  - `tests/route-params.test.ts`
+
+**Your Decision**:
+- ✅ You know TypeScript and generics
+- ✅ Only 3 files to modify
+- ✅ Tests exist (guidance for implementation)
+
+**Action**: Comment on GitHub issue, start working!
+
+## Best Practices
+
+### ✅ Start with Low Difficulty
+
+If you're new to a codebase, start with **Difficulty 1-2** to learn the contribution workflow.
+
+### ✅ Read Full Issue on GitHub
+
+Offworld shows AI analysis, but **always read the GitHub discussion** for context, edge cases, and maintainer feedback.
+
+### ✅ Verify Skills Match
+
+Don't attempt issues requiring skills you don't have. The AI is accurate but may misclassify occasionally.
+
+### ✅ Use File Paths as Starting Point
+
+File predictions are **estimates**. You may need to touch additional files during implementation.
+
+### ✅ Ask Questions in Chat
+
+If difficulty or skills are unclear:
+
+```
+"Explain issue #123 in detail"
+"What TypeScript patterns are used in route.ts?"
+```
+
+## Limitations
+
+### Static Analysis
+
+Issue analysis is based on:
+- Issue description
+- Repository code (at analysis time)
+- RAG search results
+
+**Not included**:
+- Real-time comments on the issue
+- Recent commits that might have addressed the issue
+- Maintainer preferences or project roadmap
+
+<Callout type="info">
+Always check GitHub for the **latest updates** before starting work.
+</Callout>
+
+### LLM Accuracy
+
+Difficulty is **AI-generated**:
+- Usually accurate (80-90%)
+- Occasionally misclassifies (e.g., rates hard issue as easy)
+- File paths may be incomplete
+
+**Mitigation**: Use as a **guide**, not absolute truth.
+
+### Public Repos Only
+
+Offworld analyzes **public GitHub issues** only. Private repos require GitHub App installation.
+
+## Troubleshooting
+
+### "No Issues Found"
+
+**Causes**:
+- Repository has no open issues
+- GitHub API failed to fetch issues
+- Analysis step failed
+
+**Solutions**:
+1. Check repository on GitHub for open issues
+2. Re-index repository (7-day cooldown)
+3. Use Chat tab to manually query: `"Show me open issues"`
+
+### "Difficulty Seems Wrong"
+
+**Causes**:
+- LLM misunderstood issue scope
+- Incomplete RAG context
+- Issue description was vague
+
+**Solutions**:
+1. Read full issue on GitHub for context
+2. Trust your judgment over AI rating
+3. Ask in Chat: `"Explain why issue #123 is rated as Easy"`
+
+### "File Paths Don't Exist"
+
+**Causes**:
+- LLM hallucination (path validation failed)
+- File was renamed/deleted after analysis
+
+**Solutions**:
+1. Search for similar file names in repo
+2. Ask in Chat: `"Where is the auth logic located?"`
+3. Use GitHub's search to find related files
+
+## Next Steps
+
+- Learn about [Pull Requests](/docs/user-guide/pull-requests)
+- Try the [Chat Interface](/docs/user-guide/chat-interface) to ask about issues
+- Read [Sharing & Collaboration](/docs/user-guide/sharing) to share issue insights

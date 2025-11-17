@@ -174,6 +174,14 @@ export const createBatch = internalMutation({
 				dependencies: v.array(v.string()),
 				usedBy: v.optional(v.array(v.string())),
 				keyFiles: v.array(v.string()),
+				keyFileUrls: v.optional(
+					v.array(
+						v.object({
+							path: v.string(),
+							url: v.string(),
+						}),
+					),
+				),
 				complexity: v.union(
 					v.literal("low"),
 					v.literal("medium"),
@@ -341,11 +349,23 @@ export const consolidateEntities = internalAction({
 					return validFile || file;
 				}) || [];
 
+			// Generate GitHub URLs for each key file
+			const keyFileUrls = validatedKeyFiles.map((filePath: string) => {
+				// Determine if path is a file (has extension) or directory
+				const isFile = filePath.includes(".");
+				const urlType = isFile ? "blob" : "tree";
+				return {
+					path: filePath,
+					url: `https://github.com/${args.owner}/${args.repoName}/${urlType}/${args.defaultBranch}/${filePath}`,
+				};
+			});
+
 			return {
 				...entity,
 				rank: index + 1,
 				path: finalPath,
 				keyFiles: validatedKeyFiles,
+				keyFileUrls, // NEW: GitHub URLs for each key file
 				githubUrl: `https://github.com/${args.owner}/${args.repoName}/tree/${args.defaultBranch}/${finalPath}`,
 			};
 		});

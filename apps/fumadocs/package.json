@@ -7,29 +7,31 @@
 		"dev": "vite dev --port=4000",
 		"build": "vite build",
 		"start": "node .output/server/index.mjs",
-		"postinstall": "fumadocs-mdx",
-		"check": "biome check --write ."
+		"types:check": "fumadocs-mdx && tsc --noEmit",
+		"postinstall": "fumadocs-mdx"
 	},
 	"dependencies": {
 		"@tanstack/react-router": "catalog:",
 		"@tanstack/react-router-devtools": "catalog:",
 		"@tanstack/react-start": "catalog:",
-		"fumadocs-core": "16.0.11",
-		"fumadocs-mdx": "13.0.8",
-		"fumadocs-ui": "16.0.11",
-		"lucide-static": "^0.553.0",
+		"fumadocs-core": "16.0.13",
+		"fumadocs-mdx": "14.0.1",
+		"fumadocs-ui": "16.0.13",
+		"lucide-static": "^0.552.0",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"tailwind-merge": "catalog:",
 		"vite": "catalog:"
 	},
 	"devDependencies": {
+		"@netlify/vite-plugin-tanstack-start": "^1.2.1",
 		"@tailwindcss/vite": "catalog:",
 		"@types/mdx": "^2.0.13",
 		"@types/node": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
+		"nitro": "3.0.1-alpha.1",
 		"tailwindcss": "catalog:",
 		"typescript": "catalog:",
 		"vite-tsconfig-paths": "catalog:"

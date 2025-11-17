@@ -1,0 +1,337 @@
+---
+title: Architecture Deep Dive
+description: How Offworld works internally
+icon: Box
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Understand Offworld's internal architecture.
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│           Frontend (Cloudflare Workers)      │
+│  TanStack Start + Router + shadcn/ui        │
+└──────────────┬──────────────────────────────┘
+               │ Convex WebSocket
+┌──────────────▼──────────────────────────────┐
+│           Backend (Convex Cloud)             │
+│  Queries, Mutations, Actions, Workflows     │
+├─────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌──────────────┐          │
+│  │  Database   │  │  File Store  │          │
+│  └─────────────┘  └──────────────┘          │
+│  ┌─────────────┐  ┌──────────────┐          │
+│  │ RAG/Vector  │  │  Workflows   │          │
+│  └─────────────┘  └──────────────┘          │
+└──────────────┬──────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────────┐
+│        External APIs                         │
+│  GitHub API • Gemini AI • Embeddings        │
+└─────────────────────────────────────────────┘
+```
+
+## Data Flow
+
+### Repository Analysis Flow
+
+1. **User triggers analysis** → `repos.startAnalysis` mutation
+2. **Workflow launched** → `WorkflowManager.start(analyzeRepository)`
+3. **GitHub data fetched** → Actions call GitHub API
+4. **Files ingested** → RAG embeds and stores top 500 files
+5. **AI analysis** → Gemini generates summary, architecture, diagrams
+6. **Database updated** → Progressive updates after each step
+7. **Frontend re-renders** → Convex subscriptions push updates
+
+### Chat Flow
+
+1. **User sends message** → `conversations.sendMessage` mutation
+2. **Agent invoked** → `actions.chat.processMessage` with Gemini
+3. **Tools called** → Agent decides which tools to use
+4. **Context retrieved** → Tools query RAG, DB, or GitHub
+5. **Response generated** → Gemini synthesizes answer
+6. **Message stored** → Saved to `messages` table
+7. **Frontend updates** → Real-time via subscription
+
+## Backend Architecture
+
+### File Organization
+
+```
+packages/backend/convex/
+├── schema.ts               # Database schema
+├── auth.ts, auth.config.ts # Better Auth setup
+├── repos.ts                # Repository queries/mutations
+├── architectureEntities.ts # Entity queries
+├── issues.ts               # Issue analysis
+├── pullRequests.ts         # PR analysis
+├── chat.ts                 # Chat queries/mutations
+├── gemini.ts               # All AI generation
+├── github.ts               # GitHub API actions
+├── prompts.ts              # AI prompts
+├── aiValidation.ts         # Zod schemas
+├── workflows/
+│   └── analyzeRepository.ts # 11-step workflow
+└── agent/
+    ├── codebaseAgent.ts    # Agent setup
+    └── tools.ts            # 9 agent tools
+```
+
+### Database Schema
+
+**5 main tables**:
+
+1. **repositories** - Repo metadata + analysis results
+   - `fullName`, `stars`, `language`
+   - `summary`, `architecture`, `mermaidDiagram`
+   - `status` (queued, processing, completed, failed)
+
+2. **architectureEntities** - Discovered components
+   - `name`, `description`, `importance`, `layer`
+   - `path`, `githubUrl`
+
+3. **issues** - GitHub issues + AI analysis
+   - `number`, `title`, `difficulty`, `skills`
+   - `filesTouch`, `difficultyRationale`
+
+4. **pullRequests** - PRs + AI analysis
+   - `number`, `title`, `impact`, `summary`
+   - `filesChanged`
+
+5. **conversations** - Chat threads
+   - `title`, `repoId`, `userId`
+   - Related: `messages` table
+
+### Workflow: analyzeRepository
+
+**11 steps** (2-5 minutes):
+
+```typescript
+1. validateRepository()     // Check GitHub API
+2. handleReIndex()          // Clear old data if re-index
+3. fetchFileTree()          // Get all file paths
+4. calculateIterations()    // Based on repo size
+5. ingestToRAG()           // Embed top 500 files
+6. generateSummary()       // 300-word overview
+7. discoverArchitecture()  // 2-5 iterations
+8. consolidateEntities()   // Filter to top 5-15
+9. generateDiagrams()      // Mermaid + narrative
+10. analyzeIssues()        // Fetch & analyze issues
+11. analyzePRs()           // Fetch & analyze PRs
+```
+
+**Progressive updates**: Database updated after each step.
+
+**Error handling**: Failed steps retry automatically.
+
+### Progressive Architecture Discovery
+
+**Iteration loop** (2-5 times):
+
+```typescript
+for (let i = 0; i < iterationCount; i++) {
+  // Get context from previous iterations
+  const previousContext = await getPreviousEntities(ctx, repoId);
+
+  // Ask AI to discover more specific components
+  const newEntities = await discoverIteration(
+    fileTree,
+    previousContext,
+    iterationNumber: i + 1
+  );
+
+  // Save to database
+  await saveEntities(ctx, repoId, newEntities);
+}
+```
+
+**Result**: Hierarchical discovery (packages → modules → components).
+
+### RAG System
+
+**Ingestion**:
+
+```typescript
+// packages/backend/convex/github.ts
+export const ingestRepository = action({
+  handler: async (ctx, { fullName }) => {
+    // 1. Fetch file tree from GitHub
+    const files = await fetchFileTree(fullName);
+
+    // 2. Filter to top 500 files (by size, extension)
+    const topFiles = filterRelevantFiles(files);
+
+    // 3. Chunk and embed
+    for (const file of topFiles) {
+      const content = await fetchFileContent(file.path);
+      await ctx.vectorSearch("rag", `repo:${fullName}`).add({
+        text: content,
+        metadata: { path: file.path }
+      });
+    }
+  }
+});
+```
+
+**Search**:
+
+```typescript
+// agent/tools.ts
+const results = await ctx.vectorSearch("rag", `repo:${fullName}`)
+  .search(query, { limit: 5 });
+```
+
+### AI Integration
+
+**All AI calls in `gemini.ts`**:
+
+```typescript
+export const generateSummary = action({
+  handler: async (ctx, { fileTree, metadata }) => {
+    const response = await generateObject({
+      model: gemini("gemini-2.5-flash-exp"),
+      schema: SummarySchema,
+      prompt: SUMMARY_PROMPT.replace("{FILE_TREE}", fileTree)
+    });
+    return response.object.summary;
+  }
+});
+```
+
+**Validation with Zod** (`aiValidation.ts`):
+
+```typescript
+const ArchitectureEntitySchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(50),
+  importance: z.number().min(0).max(1),
+  layer: z.enum(["entry-point", "core", "feature", "utility", "integration"]),
+  path: z.string()
+});
+```
+
+## Frontend Architecture
+
+### Route Structure
+
+```
+apps/web/src/routes/
+├── __root.tsx              # Root layout (header, auth)
+├── index.tsx               # Home page
+├── _github/                # GitHub layout
+│   └── $owner_.$repo/      # Repo layout
+│       ├── index.tsx       # Summary tab
+│       ├── arch/           # Architecture
+│       │   ├── index.tsx   # Entity list
+│       │   └── $slug.tsx   # Entity detail
+│       ├── issues/
+│       │   ├── index.tsx   # Issue list
+│       │   └── $number.tsx # Issue detail
+│       ├── pr/
+│       │   ├── index.tsx   # PR list
+│       │   └── $number.tsx # PR detail
+│       └── chat/
+│           ├── index.tsx   # New chat
+│           └── $chatId.tsx # Chat thread
+```
+
+### Convex Integration
+
+**Setup** (`router.tsx`):
+
+```typescript
+const convex = new ConvexClient(import.meta.env.VITE_CONVEX_URL);
+const convexQueryClient = new ConvexQueryClient(convex);
+
+export const router = createRouter({
+  context: {
+    queryClient: new QueryClient(),
+    convexReactClient: convex,
+    convexQueryClient
+  }
+});
+```
+
+**Usage** (components):
+
+```tsx
+// Reactive query (auto-subscribes)
+const repo = useQuery(api.repos.getByFullName, { fullName });
+
+// Mutation (one-off)
+const startAnalysis = useMutation(api.repos.startAnalysis);
+
+// Action (async)
+const getOwnerInfo = useAction(api.github.getOwnerInfo);
+```
+
+### Component Patterns
+
+**Loading states**:
+
+```tsx
+if (!repo) return <Skeleton />;
+if (repo.status === "processing") return <ProgressIndicator />;
+return <RepoContent repo={repo} />;
+```
+
+**Progressive rendering**:
+
+```tsx
+{repo.summary && <SummaryCard summary={repo.summary} />}
+{repo.entities && <ArchitectureList entities={repo.entities} />}
+{repo.diagram && <MermaidDiagram code={repo.diagram} />}
+```
+
+## Key Patterns
+
+### Progressive Updates
+
+Instead of "loading for 5 minutes", update UI after each workflow step:
+
+```typescript
+// Backend
+await ctx.runMutation(internal.repos.updateSummary, { summary });
+// Frontend sees update immediately via Convex subscription
+
+await ctx.runMutation(internal.repos.updateArchitecture, { entities });
+// Frontend sees architecture!
+```
+
+### Case-Insensitive Lookups
+
+All repo queries handle case variations:
+
+```typescript
+const repo = await ctx.db
+  .query("repositories")
+  .withIndex("by_fullName_lower", (q) =>
+    q.eq("fullNameLower", fullName.toLowerCase())
+  )
+  .first();
+```
+
+### Path Validation
+
+LLM-generated paths checked against GitHub file tree:
+
+```typescript
+const validPath = fileTree.some(f => f.path === llmPath);
+if (!validPath) {
+  console.warn("Invalid path from LLM:", llmPath);
+  return null; // Skip invalid entity
+}
+```
+
+<Callout type="info">
+This prevents hallucinated file paths from breaking GitHub links.
+</Callout>
+
+## Next Steps
+
+- Learn about [Deployment](/docs/developer-guide/deployment)
+- Read [Contributing](/docs/developer-guide/contributing) guidelines
+- Check [Technical Reference](/docs/technical-reference) for API details

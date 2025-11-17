@@ -1,0 +1,315 @@
+---
+title: Environment Variables
+description: All environment variables explained
+icon: Settings
+---
+
+Complete reference for all environment variables in Offworld.
+
+## Backend (Convex)
+
+Set in **Convex Dashboard** → Settings → Environment Variables or via CLI:
+
+```bash
+npx convex env set VARIABLE_NAME value --prod
+```
+
+### `CONVEX_SITE_URL`
+
+**Required**: Yes
+
+**Description**: Frontend URL for Better Auth callbacks
+
+**Dev**: `http://localhost:3000`
+
+**Prod**: `https://offworld.sh`
+
+**Usage**: Better Auth redirects after OAuth flow
+
+### `GITHUB_CLIENT_ID`
+
+**Required**: Yes
+
+**Description**: GitHub OAuth app client ID
+
+**Obtain**: [GitHub Settings → Developer settings → OAuth Apps](https://github.com/settings/developers)
+
+**Example**: `Iv1.abc123def456`
+
+### `GITHUB_CLIENT_SECRET`
+
+**Required**: Yes
+
+**Description**: GitHub OAuth app client secret
+
+**Obtain**: Same as Client ID
+
+**Example**: `ghp_abc123def456...`
+
+**Security**: Never commit to git
+
+### `GITHUB_APP_ID`
+
+**Required**: Yes
+
+**Description**: GitHub App ID for API access (15k req/hr)
+
+**Obtain**: [GitHub Settings → Developer settings → GitHub Apps](https://github.com/settings/apps)
+
+**Example**: `123456`
+
+### `GITHUB_PRIVATE_KEY`
+
+**Required**: Yes
+
+**Description**: GitHub App private key (PEM format)
+
+**Obtain**: Generate in GitHub App settings
+
+**Format**: Single-line with `\n` for newlines
+
+**Example**:
+```
+"-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIB...\n-----END RSA PRIVATE KEY-----"
+```
+
+**Security**: Never commit to git
+
+### `GITHUB_INSTALLATION_ID`
+
+**Required**: Yes
+
+**Description**: GitHub App installation ID
+
+**Obtain**: Install app on account/org, check URL: `github.com/settings/installations/{ID}`
+
+**Example**: `12345678`
+
+### `GOOGLE_GENERATIVE_AI_API_KEY`
+
+**Required**: Yes
+
+**Description**: Google AI API key for Gemini and embeddings
+
+**Obtain**: [Google AI Studio](https://ai.google.dev)
+
+**Example**: `AIzaSy...`
+
+**Security**: Never commit to git
+
+## Frontend (Cloudflare)
+
+Set in **`apps/web/alchemy.env`** (not committed):
+
+### `VITE_CONVEX_URL`
+
+**Required**: Yes
+
+**Description**: Convex deployment URL for client connection
+
+**Dev**: From `npx convex dev` output
+
+**Prod**: From Convex Dashboard → Production deployment
+
+**Example**: `https://your-deployment.convex.cloud`
+
+### `VITE_CONVEX_SITE_URL`
+
+**Required**: Yes
+
+**Description**: Frontend URL for auth callbacks
+
+**Dev**: `http://localhost:3000`
+
+**Prod**: `https://offworld.sh`
+
+**Must match**: Backend `CONVEX_SITE_URL`
+
+### `VITE_SENTRY_DSN`
+
+**Required**: No (optional for error tracking)
+
+**Description**: Sentry project DSN for error monitoring
+
+**Obtain**: [Sentry.io](https://sentry.io) → Create project → Copy DSN
+
+**Example**: `https://abc123@o123456.ingest.sentry.io/7890123`
+
+## Development vs Production
+
+### Development (`.env.dev`)
+
+```bash
+# Frontend
+VITE_CONVEX_URL=https://your-dev-deployment.convex.cloud
+VITE_CONVEX_SITE_URL=http://localhost:3000
+
+# Backend (set in Convex dev deployment)
+CONVEX_SITE_URL=http://localhost:3000
+GITHUB_CLIENT_ID=dev_client_id
+GITHUB_CLIENT_SECRET=dev_client_secret
+GITHUB_APP_ID=123456
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+GITHUB_INSTALLATION_ID=12345678
+GOOGLE_GENERATIVE_AI_API_KEY=AIzaSy...
+```
+
+### Production (Alchemy + Convex)
+
+**Frontend** (`alchemy.env`):
+```bash
+VITE_CONVEX_URL=https://your-prod-deployment.convex.cloud
+VITE_CONVEX_SITE_URL=https://offworld.sh
+VITE_SENTRY_DSN=https://...@sentry.io/...
+```
+
+**Backend** (Convex prod deployment):
+```bash
+npx convex env set CONVEX_SITE_URL https://offworld.sh --prod
+npx convex env set GITHUB_CLIENT_ID prod_client_id --prod
+npx convex env set GITHUB_CLIENT_SECRET prod_secret --prod
+# ... (rest same as dev)
+```
+
+## Security Best Practices
+
+### Never Commit Secrets
+
+**Add to `.gitignore`**:
+```
+.env*
+!.env.example
+alchemy.env
+```
+
+### Use Environment-Specific Secrets
+
+- **Dev**: Separate OAuth app, GitHub App, API keys
+- **Prod**: Different credentials with production URLs
+
+### Rotate Keys Regularly
+
+- GitHub App private key: Regenerate every 6-12 months
+- API keys: Rotate if compromised
+
+### Limit Scope
+
+**GitHub OAuth**: Only request needed scopes (`read:user`, `user:email`)
+
+**GitHub App**: Only enable needed permissions (Contents, Issues, PRs - read-only)
+
+## Verification
+
+### Check Convex Env Vars
+
+```bash
+npx convex env list --prod
+```
+
+### Test GitHub OAuth
+
+1. Sign in on frontend
+2. Check Convex logs for successful auth
+3. Verify session created in `sessions` table
+
+### Test GitHub API
+
+```bash
+# In Convex Dashboard → Functions → Run
+# Action: github.getOwnerInfo
+{
+  "owner": "facebook"
+}
+# Should return Facebook org info
+```
+
+### Test Google AI
+
+```bash
+# In Convex Dashboard → Functions → Run
+# Action: gemini.generateSummary
+{
+  "repoName": "test",
+  "description": "A test repo",
+  "fileTree": "src/\n  main.ts"
+}
+# Should return AI-generated summary
+```
+
+## Troubleshooting
+
+### "CONVEX_SITE_URL mismatch"
+
+**Issue**: Auth redirects fail
+
+**Fix**: Ensure frontend and backend `CONVEX_SITE_URL` match exactly
+
+### "GitHub API rate limit"
+
+**Issue**: Hit 60 req/hr limit (unauthenticated)
+
+**Fix**: Verify `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID` are set correctly
+
+### "Google AI API error"
+
+**Issue**: AI generation fails
+
+**Fix**:
+1. Check API key is valid (test at https://ai.google.dev)
+2. Verify billing enabled (if required)
+3. Check quota not exceeded
+
+### "Alchemy deploy env vars not found"
+
+**Issue**: Frontend can't connect to Convex
+
+**Fix**: Ensure `alchemy.env` exists with `VITE_CONVEX_URL`
+
+## Environment File Templates
+
+### `.env.example` (commit this)
+
+```bash
+# Convex
+VITE_CONVEX_URL=
+VITE_CONVEX_SITE_URL=
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# GitHub App
+GITHUB_APP_ID=
+GITHUB_PRIVATE_KEY=
+GITHUB_INSTALLATION_ID=
+
+# Google AI
+GOOGLE_GENERATIVE_AI_API_KEY=
+
+# Optional
+VITE_SENTRY_DSN=
+```
+
+### Setup Script
+
+```bash
+#!/bin/bash
+# setup-env.sh
+
+echo "Setting up Convex environment variables..."
+
+npx convex env set CONVEX_SITE_URL "$CONVEX_SITE_URL"
+npx convex env set GITHUB_CLIENT_ID "$GITHUB_CLIENT_ID"
+npx convex env set GITHUB_CLIENT_SECRET "$GITHUB_CLIENT_SECRET"
+npx convex env set GITHUB_APP_ID "$GITHUB_APP_ID"
+npx convex env set GITHUB_PRIVATE_KEY "$GITHUB_PRIVATE_KEY"
+npx convex env set GITHUB_INSTALLATION_ID "$GITHUB_INSTALLATION_ID"
+npx convex env set GOOGLE_GENERATIVE_AI_API_KEY "$GOOGLE_GENERATIVE_AI_API_KEY"
+
+echo "Done!"
+```
+
+## Next Steps
+
+- Review [Backend Architecture](/docs/technical-reference/backend-architecture)
+- Read [Deployment Guide](/docs/developer-guide/deployment)

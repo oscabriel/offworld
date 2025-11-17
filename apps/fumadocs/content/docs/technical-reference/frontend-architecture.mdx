@@ -1,0 +1,349 @@
+---
+title: Frontend Architecture
+description: TanStack Start, Router, and Convex integration
+icon: Layout
+---
+
+Technical reference for the frontend architecture.
+
+## Stack
+
+- **TanStack Start** - SSR React framework
+- **TanStack Router v1** - Type-safe routing
+- **shadcn/ui** - UI component library
+- **Tailwind CSS v4** - Utility-first CSS
+- **@convex-dev/react-query** - Convex + React Query
+
+## File Structure
+
+```
+apps/web/src/
+├── router.tsx              # Router config
+├── routeTree.gen.ts        # Auto-generated routes
+├── routes/                 # File-based routes
+│   ├── __root.tsx          # Root layout
+│   ├── index.tsx           # Home page
+│   └── _github/            # GitHub routes
+├── components/             # React components
+│   ├── layout/             # Header, footer
+│   ├── repo/               # Repo-specific
+│   ├── chat/               # Chat UI
+│   └── ui/                 # shadcn components
+├── lib/                    # Utilities
+└── styles/                 # Global styles
+```
+
+## Router Configuration
+
+**File**: `apps/web/src/router.tsx`
+
+```typescript
+import { createRouter } from '@tanstack/react-router';
+import { ConvexQueryClient } from '@convex-dev/react-query';
+
+const convex = new ConvexClient(import.meta.env.VITE_CONVEX_URL);
+const convexQueryClient = new ConvexQueryClient(convex);
+
+export const router = createRouter({
+  routeTree,
+  context: {
+    queryClient: new QueryClient(),
+    convexReactClient: convex,
+    convexQueryClient
+  }
+});
+```
+
+## Complete Route Tree
+
+```
+/ (root)
+├── /                                  # Home
+├── /explore                           # Explore repos
+├── /sign-in                           # Sign in
+├── /about                             # About page
+├── /api/auth/$                        # Better Auth API
+│
+└── /_github/                          # GitHub layout
+    ├── /$owner                        # Owner profile
+    │
+    └── /$owner/$repo/                 # Repo layout
+        ├── /                          # Summary
+        ├── /refresh                   # Re-index
+        │
+        ├── /arch/                     # Architecture
+        │   ├── /                      # Entity list
+        │   └── /$slug                 # Entity detail
+        │
+        ├── /issues/                   # Issues
+        │   ├── /                      # Issue list
+        │   └── /$number               # Issue detail
+        │
+        ├── /pr/                       # Pull requests
+        │   ├── /                      # PR list
+        │   └── /$number               # PR detail
+        │
+        └── /chat/                     # Chat
+            ├── /                      # New chat
+            └── /$chatId               # Chat thread
+```
+
+## Route Patterns
+
+### Layout Routes
+
+**File**: `route.tsx`
+
+Defines layout for child routes:
+
+```tsx
+// routes/_github/$owner_.$repo/route.tsx
+export const Route = createFileRoute('/_github/$owner_/$repo')({
+  component: RepoLayout
+});
+
+function RepoLayout() {
+  return (
+    <div className="grid grid-cols-[250px,1fr]">
+      <Sidebar />
+      <Outlet /> {/* Child routes render here */}
+    </div>
+  );
+}
+```
+
+### Page Routes
+
+**File**: `index.tsx`
+
+Renders page content:
+
+```tsx
+// routes/_github/$owner_.$repo/index.tsx
+export const Route = createFileRoute('/_github/$owner_/$repo/')({
+  component: RepoSummary
+});
+
+function RepoSummary() {
+  const { owner, repo } = Route.useParams();
+  const fullName = `${owner}/${repo}`;
+  const repoData = useQuery(api.repos.getByFullName, { fullName });
+
+  if (!repoData) return <Skeleton />;
+  return <SummaryView repo={repoData} />;
+}
+```
+
+## Convex Integration
+
+### Setup
+
+**Context providers** (`routes/__root.tsx`):
+
+```tsx
+import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react';
+
+export const Route = createRootRoute({
+  component: RootLayout
+});
+
+function RootLayout() {
+  const { convexReactClient, convexQueryClient } = useRouterContext();
+
+  return (
+    <ConvexBetterAuthProvider client={convexReactClient}>
+      <Outlet />
+    </ConvexBetterAuthProvider>
+  );
+}
+```
+
+### Queries (Read)
+
+**Reactive subscriptions**:
+
+```tsx
+import { useQuery } from '@convex-dev/react-query';
+import { api } from '@offworld/backend';
+
+const repo = useQuery(api.repos.getByFullName, {
+  fullName: "facebook/react"
+});
+// Auto-subscribes, updates on DB changes
+```
+
+### Mutations (Write)
+
+**One-off updates**:
+
+```tsx
+import { useMutation } from '@convex-dev/react-query';
+
+const startAnalysis = useMutation(api.repos.startAnalysis);
+
+// Trigger mutation
+await startAnalysis.mutateAsync({ fullName: "facebook/react" });
+```
+
+### Actions (Async)
+
+**Long-running operations**:
+
+```tsx
+import { useAction } from '@convex-dev/react-query';
+
+const getOwnerInfo = useAction(api.github.getOwnerInfo);
+
+// Trigger action
+const ownerData = await getOwnerInfo({ owner: "facebook" });
+```
+
+## Component Patterns
+
+### Loading States
+
+```tsx
+function RepoPage() {
+  const repo = useQuery(api.repos.getByFullName, { fullName });
+
+  if (!repo) return <Skeleton />;
+  if (repo.status === "queued") return <QueuedState />;
+  if (repo.status === "processing") return <ProgressIndicator />;
+  if (repo.status === "failed") return <ErrorState />;
+
+  return <RepoContent repo={repo} />;
+}
+```
+
+### Progressive Rendering
+
+```tsx
+function ArchitectureTab() {
+  const entities = useQuery(api.architectureEntities.getByRepo, { repoId });
+
+  return (
+    <div>
+      {entities?.map(entity => (
+        <EntityCard key={entity._id} entity={entity} />
+      ))}
+      {!entities && <EmptyState />}
+    </div>
+  );
+}
+```
+
+## Type Safety
+
+### Route Params
+
+**Fully typed**:
+
+```tsx
+// TypeScript knows owner and repo are strings
+const { owner, repo } = Route.useParams();
+```
+
+### Convex Functions
+
+**Auto-generated types**:
+
+```tsx
+// packages/backend/convex/_generated/api.d.ts
+import { api } from '@offworld/backend';
+
+// TypeScript knows this function expects { fullName: string }
+useQuery(api.repos.getByFullName, { fullName });
+```
+
+## Navigation
+
+### Programmatic
+
+```tsx
+import { useNavigate } from '@tanstack/react-router';
+
+const navigate = useNavigate();
+
+// Navigate to route
+navigate({
+  to: '/_github/$owner/$repo',
+  params: { owner: 'facebook', repo: 'react' }
+});
+```
+
+### Link Component
+
+```tsx
+import { Link } from '@tanstack/react-router';
+
+<Link
+  to="/_github/$owner/$repo/issues/$number"
+  params={{ owner, repo, number: 123 }}
+>
+  Issue #123
+</Link>
+```
+
+## Styling
+
+### Tailwind CSS v4
+
+**Usage**:
+
+```tsx
+<div className="flex items-center gap-4 p-6 bg-card rounded-lg">
+  <Button variant="outline" size="sm">Click</Button>
+</div>
+```
+
+### Dark Mode
+
+**Automatic** via `tailwind.config.ts`:
+
+```typescript
+export default {
+  darkMode: ['class'],
+  // dark: prefix automatically applied
+}
+```
+
+**Usage**:
+
+```tsx
+<div className="bg-white dark:bg-gray-900">
+  Content
+</div>
+```
+
+## Key Files
+
+### `router.tsx`
+
+Router configuration, context setup.
+
+**Location**: `apps/web/src/router.tsx`
+
+### `routeTree.gen.ts`
+
+Auto-generated route tree.
+
+**Location**: `apps/web/src/routeTree.gen.ts`
+
+**Regenerates**: Automatically on route file changes.
+
+### `__root.tsx`
+
+Root layout with providers.
+
+**Location**: `apps/web/src/routes/__root.tsx`
+
+### Component Index
+
+**shadcn components**: `apps/web/src/components/ui/`
+
+**Custom components**: `apps/web/src/components/`
+
+## Next Steps
+
+- Read [Backend Architecture](/docs/technical-reference/backend-architecture)
+- Check [API Reference](/docs/technical-reference/api-reference)

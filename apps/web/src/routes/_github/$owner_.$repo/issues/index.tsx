@@ -106,8 +106,8 @@ function IssuesPage() {
 						Issues ({filteredAndSortedIssues.length})
 					</h2>
 					<p className="mt-1 font-mono text-muted-foreground text-sm">
-						Top {issues.filter((i) => i.state === "open").length} open issues
-						analyzed by AI for difficulty and required skills
+						Top {issues.filter((i) => i.state === "open").length} open issues in
+						this repository chosen for difficulty and skills required.
 					</p>
 				</div>
 
@@ -183,11 +183,6 @@ function IssuesPage() {
 													{issue.title}
 												</span>
 											</div>
-											{issue.aiSummary && (
-												<p className="mt-1 line-clamp-1 font-serif text-muted-foreground text-xs">
-													{issue.aiSummary}
-												</p>
-											)}
 										</Link>
 									</td>
 									<td className="p-4">

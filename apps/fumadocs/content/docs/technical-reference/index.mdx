@@ -1,0 +1,100 @@
+---
+title: Technical Reference
+description: API documentation and technical details
+icon: FileCode
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+Complete technical reference for Offworld's architecture, APIs, and systems.
+
+## Reference Documentation
+
+<Cards>
+  <Card
+    title="Frontend Architecture"
+    description="TanStack Start, Router, and Convex integration"
+    href="/docs/technical-reference/frontend-architecture"
+  />
+  <Card
+    title="Backend Architecture"
+    description="Convex functions, workflows, and schema"
+    href="/docs/technical-reference/backend-architecture"
+  />
+  <Card
+    title="AI & RAG System"
+    description="Embeddings, prompts, and validation"
+    href="/docs/technical-reference/ai-rag-system"
+  />
+  <Card
+    title="API Reference"
+    description="All Convex queries, mutations, and actions"
+    href="/docs/technical-reference/api-reference"
+  />
+  <Card
+    title="Environment Variables"
+    description="Complete env var reference"
+    href="/docs/technical-reference/environment-variables"
+  />
+</Cards>
+
+## Tech Stack Summary
+
+### Frontend
+- **TanStack Start** - SSR React framework
+- **TanStack Router v1** - Type-safe routing
+- **shadcn/ui** - 50+ UI components
+- **Tailwind CSS v4** - Utility-first styling
+
+### Backend
+- **Convex Cloud** - Serverless backend
+- **Convex Workflows** - Durable workflows
+- **@convex-dev/rag** - Vector search
+- **@convex-dev/agent** - AI agent framework
+
+### AI/ML
+- **Gemini 2.5 Flash Lite** - Analysis LLM
+- **Gemini 2.0 Flash Exp** - Chat LLM
+- **Google Text Embedding 004** - RAG embeddings
+
+### Auth
+- **Better Auth v1** - Modern auth framework
+- **GitHub OAuth** - Social login
+
+## Quick Reference
+
+### Key Files
+
+**Frontend**:
+- `apps/web/src/router.tsx` - Router config
+- `apps/web/src/routes/` - File-based routes
+
+**Backend**:
+- `packages/backend/convex/schema.ts` - Database schema
+- `packages/backend/convex/workflows/` - Durable workflows
+- `packages/backend/convex/agent/` - AI agent
+
+### Common Patterns
+
+**Query Data**:
+```tsx
+const repo = useQuery(api.repos.getByFullName, { fullName });
+```
+
+**Mutate Data**:
+```tsx
+const start = useMutation(api.repos.startAnalysis);
+await start.mutateAsync({ fullName });
+```
+
+**Run Action**:
+```tsx
+const getOwner = useAction(api.github.getOwnerInfo);
+const data = await getOwner({ owner });
+```
+
+## For Developers
+
+- **Building features?** → [Developer Guide](/docs/developer-guide)
+- **Setting up locally?** → [Project Setup](/docs/developer-guide/setup)
+- **Understanding workflows?** → [Backend Architecture](/docs/technical-reference/backend-architecture)

@@ -325,6 +325,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 					repoId,
 					owner: args.owner,
 					name: args.name,
+					defaultBranch: metadata.defaultBranch,
 					summary,
 					maxIssues: 10,
 					actualFilePaths: fileTreeResult.files.map(

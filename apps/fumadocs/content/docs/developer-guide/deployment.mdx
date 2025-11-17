@@ -1,0 +1,347 @@
+---
+title: Deployment
+description: Triple-deploy architecture explained
+icon: Rocket
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Deploy Offworld using the triple-deploy architecture.
+
+## Triple-Deploy Architecture
+
+Offworld deploys to **three separate platforms**:
+
+1. **Backend** → Convex Cloud (serverless database + functions)
+2. **Frontend** → Cloudflare Workers via Alchemy (edge SSR)
+3. **Docs** → Netlify (static site)
+
+### Why Three Platforms?
+
+**Convex Cloud** - Best for:
+- Real-time database with subscriptions
+- Serverless functions (queries, mutations, actions)
+- Durable workflows
+- Vector search (RAG)
+
+**Cloudflare Workers** - Best for:
+- Edge SSR (fast global routing)
+- &lt;50ms cold starts
+- Global CDN
+- Low cost
+
+**Netlify** - Best for:
+- Static site hosting
+- Branch previews
+- Instant rollbacks
+- Simple deployments
+
+## Backend Deployment (Convex Cloud)
+
+### Deploy Backend
+
+```bash
+bun run deploy:backend
+```
+
+This runs:
+
+```bash
+npx convex deploy --yes
+```
+
+**What happens**:
+1. Pushes functions to Convex Cloud
+2. Applies schema migrations
+3. Deploys to production deployment
+4. Generates new API URL
+
+### Setup Production Env Vars
+
+Set in Convex Dashboard or via CLI:
+
+```bash
+npx convex env set CONVEX_SITE_URL https://offworld.sh --prod
+npx convex env set GITHUB_CLIENT_ID your_prod_client_id --prod
+npx convex env set GITHUB_CLIENT_SECRET your_prod_secret --prod
+npx convex env set GITHUB_APP_ID your_app_id --prod
+npx convex env set GITHUB_PRIVATE_KEY "-----BEGIN..." --prod
+npx convex env set GITHUB_INSTALLATION_ID your_install_id --prod
+npx convex env set GOOGLE_GENERATIVE_AI_API_KEY your_key --prod
+```
+
+<Callout type="warn">
+Use `--prod` flag for production deployment (not dev).
+</Callout>
+
+### Verify Backend
+
+1. Check Convex Dashboard → Production deployment
+2. Verify functions are deployed (Data, Functions tabs)
+3. Test a query: Click function → Run with test input
+
+## Frontend Deployment (Cloudflare via Alchemy)
+
+### Setup Alchemy
+
+Install Alchemy CLI:
+
+```bash
+bun add -g @alchemy-framework/cli
+```
+
+Login:
+
+```bash
+alchemy login
+```
+
+### Configure Alchemy
+
+**File**: `apps/web/alchemy.run.ts`
+
+```typescript
+import { defineProject } from "@alchemy-framework/core";
+
+export default defineProject({
+  name: "offworld-web",
+  domains: ["offworld.sh"],
+  build: {
+    command: "bun run build",
+    outputDir: ".output"
+  },
+  env: {
+    VITE_CONVEX_URL: process.env.VITE_CONVEX_URL,
+    VITE_CONVEX_SITE_URL: process.env.VITE_CONVEX_SITE_URL,
+    VITE_SENTRY_DSN: process.env.VITE_SENTRY_DSN
+  }
+});
+```
+
+### Create alchemy.env
+
+**File**: `apps/web/alchemy.env` (not committed):
+
+```bash
+VITE_CONVEX_URL=https://your-prod-deployment.convex.cloud
+VITE_CONVEX_SITE_URL=https://offworld.sh
+VITE_SENTRY_DSN=https://your-sentry-dsn@sentry.io/project
+```
+
+### Deploy Frontend
+
+```bash
+bun run deploy:web
+```
+
+This runs:
+
+```bash
+cd apps/web && bun run deploy
+```
+
+Which executes:
+
+```bash
+alchemy deploy
+```
+
+**What happens**:
+1. Builds frontend with TanStack Start
+2. Bundles for Cloudflare Workers
+3. Uploads to Cloudflare
+4. Binds environment variables
+5. Maps to domain (offworld.sh)
+
+### Verify Frontend
+
+1. Visit https://offworld.sh
+2. Test sign-in flow
+3. Analyze a repository
+4. Check Cloudflare dashboard for metrics
+
+## Docs Deployment (Netlify)
+
+### Setup Netlify
+
+**File**: `apps/fumadocs/netlify.toml`
+
+```toml
+[build]
+  command = "turbo run build --filter fumadocs"
+  publish = "apps/fumadocs/.next"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+### Deploy Docs
+
+```bash
+bun run deploy:docs
+```
+
+Or push to GitHub - Netlify auto-deploys.
+
+### Configure Netlify
+
+1. Connect GitHub repo to Netlify
+2. Set build command: `turbo run build --filter fumadocs`
+3. Set publish directory: `apps/fumadocs/.next`
+4. Add custom domain (optional)
+
+### Verify Docs
+
+Visit docs URL (e.g., `offworld-docs.netlify.app`).
+
+## All-in-One Deployment
+
+Deploy everything sequentially:
+
+```bash
+bun run deploy:all
+```
+
+Runs:
+1. `deploy:backend` (Convex)
+2. `deploy:web` (Cloudflare)
+3. `deploy:docs` (Netlify)
+
+<Callout type="info">
+Always deploy backend **before** frontend to ensure latest functions are available.
+</Callout>
+
+## Environment Variables Summary
+
+### Backend (Convex)
+
+Set in Convex Dashboard or via `npx convex env set`:
+
+- `CONVEX_SITE_URL` - Frontend URL (for auth)
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` - OAuth
+- `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID` - GitHub API
+- `GOOGLE_GENERATIVE_AI_API_KEY` - Gemini AI
+
+### Frontend (Cloudflare)
+
+Set in `alchemy.env`:
+
+- `VITE_CONVEX_URL` - Convex deployment URL
+- `VITE_CONVEX_SITE_URL` - Frontend URL (for auth)
+- `VITE_SENTRY_DSN` - Error tracking
+
+### Docs (Netlify)
+
+No env vars needed (static site).
+
+## Domain Configuration
+
+### Cloudflare Domain (offworld.sh)
+
+**DNS Setup**:
+1. Point domain to Cloudflare nameservers
+2. Alchemy automatically configures Workers route
+
+**SSL**:
+- Automatic via Cloudflare SSL
+
+### Custom Docs Domain
+
+In Netlify:
+1. Dashboard → Domain settings
+2. Add custom domain
+3. Configure DNS (CNAME to Netlify)
+
+## Monitoring & Logs
+
+### Backend (Convex)
+
+**Convex Dashboard** → Production deployment:
+- **Logs** - Function execution logs
+- **Workflows** - Workflow runs
+- **Data** - Database tables
+- **Metrics** - Request counts, latency
+
+### Frontend (Cloudflare)
+
+**Cloudflare Dashboard** → Workers:
+- **Analytics** - Request volume, latency
+- **Logs** - Real-time logs (requires log push)
+
+**Sentry**:
+- Frontend error tracking
+- Performance monitoring
+- Release tracking
+
+### Docs (Netlify)
+
+**Netlify Dashboard**:
+- **Deploys** - Build history
+- **Analytics** - Page views (optional)
+
+## Rollback
+
+### Backend Rollback
+
+Convex doesn't support automatic rollback. To revert:
+
+1. Revert git commit with function changes
+2. Run `bun run deploy:backend`
+
+### Frontend Rollback
+
+**Cloudflare**:
+
+```bash
+alchemy rollback
+```
+
+Or redeploy previous git commit.
+
+### Docs Rollback
+
+**Netlify**:
+1. Dashboard → Deploys
+2. Click previous deploy → Publish
+
+## CI/CD (Optional)
+
+### GitHub Actions
+
+**File**: `.github/workflows/deploy.yml`
+
+```yaml
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run deploy:backend
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run deploy:web
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+```
+
+## Next Steps
+
+- Learn [Contributing](/docs/developer-guide/contributing) guidelines
+- Check [Troubleshooting](/docs/developer-guide/troubleshooting) for common issues

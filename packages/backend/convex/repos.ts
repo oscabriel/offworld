@@ -73,6 +73,14 @@ export const storeIssues = internalMutation({
 				updatedAt: v.number(),
 				aiSummary: v.optional(v.string()),
 				filesLikelyTouched: v.optional(v.array(v.string())),
+				fileUrls: v.optional(
+					v.array(
+						v.object({
+							path: v.string(),
+							url: v.string(),
+						}),
+					),
+				),
 				difficulty: v.optional(v.number()),
 				skillsRequired: v.optional(v.array(v.string())),
 			}),
@@ -95,6 +103,7 @@ export const storeIssues = internalMutation({
 				updatedAt: issue.updatedAt,
 				aiSummary: issue.aiSummary,
 				filesLikelyTouched: issue.filesLikelyTouched,
+				fileUrls: issue.fileUrls,
 				difficulty: issue.difficulty,
 				skillsRequired: issue.skillsRequired,
 			});

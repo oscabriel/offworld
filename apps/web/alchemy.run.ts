@@ -8,7 +8,9 @@ export const web = await TanStackStart("web", {
 	bindings: {
 		VITE_CONVEX_URL: alchemy.env.VITE_CONVEX_URL,
 		VITE_CONVEX_SITE_URL: alchemy.env.VITE_CONVEX_SITE_URL,
+		VITE_SENTRY_DSN: alchemy.env.VITE_SENTRY_DSN,
 	},
+	domains: ["offworld.sh"],
 });
 
 console.log(`Web    -> ${web.url}`);

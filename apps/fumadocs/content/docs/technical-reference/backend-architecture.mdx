@@ -1,0 +1,359 @@
+---
+title: Backend Architecture
+description: Convex functions, workflows, and schema
+icon: Server
+---
+
+Technical reference for the Convex backend.
+
+## File Structure
+
+```
+packages/backend/convex/
+├── schema.ts               # Database schema
+├── _generated/             # Auto-generated types
+├── auth.ts                 # Better Auth helpers
+├── auth.config.ts          # Auth configuration
+├── repos.ts                # Repository queries/mutations
+├── architectureEntities.ts # Entity queries
+├── issues.ts               # Issue queries
+├── pullRequests.ts         # PR queries
+├── chat.ts                 # Chat queries/mutations
+├── gemini.ts               # AI generation
+├── github.ts               # GitHub API actions
+├── prompts.ts              # AI prompts
+├── aiValidation.ts         # Zod schemas
+├── workflows/
+│   └── analyzeRepository.ts # Main workflow
+└── agent/
+    ├── codebaseAgent.ts    # Agent setup
+    └── tools.ts            # 9 tools
+```
+
+## Schema
+
+**File**: `packages/backend/convex/schema.ts`
+
+### Tables
+
+**repositories**:
+```typescript
+{
+  fullName: string,              // "facebook/react"
+  fullNameLower: string,         // For case-insensitive search
+  owner: string,                 // "facebook"
+  name: string,                  // "react"
+  stars: number,
+  language: string,
+  description: string,
+  summary: string?,              // AI-generated
+  architecture: string?,         // Architecture narrative
+  mermaidDiagram: string?,       // C4 diagram
+  status: "queued" | "processing" | "completed" | "failed",
+  lastAnalyzedAt: number?,
+  userId: Id<"users">?,          // Who triggered analysis
+}
+```
+
+**architectureEntities**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  name: string,                  // "frontend/src/components"
+  description: string,           // 4-6 sentences
+  importance: number,            // 0.3-1.0
+  layer: "entry-point" | "core" | "feature" | "utility" | "integration",
+  path: string,                  // "/packages/frontend/src/components"
+  githubUrl: string,             // Direct link
+}
+```
+
+**issues**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  number: number,                // Issue #123
+  title: string,
+  difficulty: 1 | 2 | 3 | 4 | 5,
+  difficultyRationale: string,
+  skills: string[],              // ["React", "TypeScript"]
+  filesTouch: string[],          // Predicted files
+}
+```
+
+**pullRequests**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  number: number,                // PR #456
+  title: string,
+  summary: string,               // AI-generated
+  impact: "Low" | "Medium" | "High",
+  filesChanged: number,
+}
+```
+
+**conversations**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  userId: Id<"users">,
+  title: string,
+  lastMessageAt: number,
+}
+```
+
+### Indexes
+
+```typescript
+.index("by_fullName_lower", ["fullNameLower"])
+.index("by_repo", ["repoId"])
+.index("by_conversation", ["conversationId"])
+```
+
+## Function Types
+
+### Queries
+
+**Read-only**, real-time subscriptions:
+
+```typescript
+export const getByFullName = query({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("repositories")
+      .withIndex("by_fullName_lower", (q) =>
+        q.eq("fullNameLower", args.fullName.toLowerCase())
+      )
+      .first();
+  }
+});
+```
+
+**Frontend usage**:
+```tsx
+const repo = useQuery(api.repos.getByFullName, { fullName });
+```
+
+### Mutations
+
+**Write operations**, transactional:
+
+```typescript
+export const startAnalysis = mutation({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx); // Auth check
+
+    const repoId = await ctx.db.insert("repositories", {
+      fullName: args.fullName,
+      status: "queued",
+      userId: user._id
+    });
+
+    await ctx.scheduler.runAfter(0, internal.workflows.analyzeRepository, {
+      repoId
+    });
+
+    return repoId;
+  }
+});
+```
+
+### Actions
+
+**External API calls**, non-transactional:
+
+```typescript
+export const fetchFromGitHub = action({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    const response = await fetch(`https://api.github.com/repos/${args.fullName}`);
+    const data = await response.json();
+    return data;
+  }
+});
+```
+
+### Internal Functions
+
+**Workflow-only**, not client-accessible:
+
+```typescript
+export const updateSummary = internalMutation({
+  args: { repoId: v.id("repositories"), summary: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.repoId, { summary: args.summary });
+  }
+});
+```
+
+## Workflow: analyzeRepository
+
+**File**: `packages/backend/convex/workflows/analyzeRepository.ts`
+
+### Workflow Steps
+
+```typescript
+export const analyzeRepository = workflow({
+  args: { repoId: v.id("repositories") },
+  handler: async (ctx, { repoId }) => {
+    // 1. Validate & fetch GitHub metadata
+    const metadata = await ctx.runAction(internal.github.fetchMetadata, { ... });
+
+    // 2. Handle re-index (clear old data)
+    await ctx.runMutation(internal.repos.clearOldData, { repoId });
+
+    // 3. Fetch file tree
+    const fileTree = await ctx.runAction(internal.github.fetchFileTree, { ... });
+
+    // 4. Calculate iterations (based on repo size)
+    const iterationCount = calculateIterations(fileTree.length);
+
+    // 5. Ingest files to RAG
+    await ctx.runAction(internal.github.ingestRepository, { fileTree });
+
+    // 6. Generate summary
+    const summary = await ctx.runAction(internal.gemini.generateSummary, { ... });
+    await ctx.runMutation(internal.repos.updateSummary, { repoId, summary });
+
+    // 7. Progressive architecture discovery (2-5 iterations)
+    for (let i = 0; i < iterationCount; i++) {
+      const entities = await ctx.runAction(internal.gemini.discoverArchitecture, {
+        iteration: i,
+        previousContext: ...
+      });
+      await ctx.runMutation(internal.repos.saveEntities, { repoId, entities });
+    }
+
+    // 8. Consolidate entities (top 5-15 by importance)
+    await ctx.runMutation(internal.repos.consolidateEntities, { repoId });
+
+    // 9. Generate diagrams
+    const diagram = await ctx.runAction(internal.gemini.generateDiagram, { ... });
+    await ctx.runMutation(internal.repos.updateDiagram, { repoId, diagram });
+
+    // 10. Analyze issues
+    await ctx.runAction(internal.github.analyzeIssues, { repoId });
+
+    // 11. Analyze PRs
+    await ctx.runAction(internal.github.analyzePRs, { repoId });
+
+    // Mark complete
+    await ctx.runMutation(internal.repos.markComplete, { repoId });
+  }
+});
+```
+
+### Workflow Features
+
+- **Crash-safe**: Steps resume on failure
+- **Automatic retries**: Failed steps retry with backoff
+- **Progressive updates**: DB updated after each step
+- **Visualize**: Convex Dashboard → Workflows tab
+
+## Authentication
+
+**Better Auth** with Convex adapter:
+
+```typescript
+// auth.config.ts
+export const auth = createAuth({
+  database: convexAdapter(ctx),
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!
+    }
+  }
+});
+```
+
+**Auth helpers** (`auth.ts`):
+
+```typescript
+export async function getUser(ctx: MutationCtx) {
+  const user = await getCurrentUser(ctx);
+  if (!user) throw new Error("Unauthorized");
+  return user;
+}
+```
+
+## Agent System
+
+**File**: `agent/codebaseAgent.ts`
+
+```typescript
+import { Agent } from '@convex-dev/agent';
+import { gemini } from '@ai-sdk/google';
+
+export const agent = new Agent({
+  model: gemini("gemini-2.0-flash-exp"),
+  tools: [
+    searchCodeContext,
+    getArchitecture,
+    getSummary,
+    listFiles,
+    explainFile,
+    findIssues,
+    getIssueByNumber,
+    findPullRequests,
+    getPullRequestByNumber
+  ]
+});
+```
+
+**Tool pattern** (`agent/tools.ts`):
+
+```typescript
+export const searchCodeContext = createTool({
+  name: "searchCodeContext",
+  description: "Search codebase using RAG",
+  parameters: z.object({
+    query: z.string(),
+    limit: z.number().optional()
+  }),
+  execute: async ({ query, limit = 5 }, ctx) => {
+    const results = await ctx.vectorSearch("rag", namespace)
+      .search(query, { limit });
+    return formatResults(results);
+  }
+});
+```
+
+## Key Patterns
+
+### Case-Insensitive Queries
+
+```typescript
+const repo = await ctx.db
+  .query("repositories")
+  .withIndex("by_fullName_lower", (q) =>
+    q.eq("fullNameLower", fullName.toLowerCase())
+  )
+  .first();
+```
+
+### Progressive Updates
+
+```typescript
+// Update DB immediately after each workflow step
+await ctx.runMutation(internal.repos.updateSummary, { repoId, summary });
+// Frontend sees update via subscription
+```
+
+### Path Validation
+
+```typescript
+const validPath = fileTree.some(f => f.path === llmPath);
+if (!validPath) {
+  console.warn("Invalid LLM path:", llmPath);
+  return null;
+}
+```
+
+## Next Steps
+
+- Read [AI & RAG System](/docs/technical-reference/ai-rag-system)
+- Check [API Reference](/docs/technical-reference/api-reference)

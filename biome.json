@@ -27,7 +27,8 @@
 			"!**/.source",
 			"!**/convex/_generated",
 			"!**/src/components/ui",
-			"!**/src/index.css"
+			"!**/src/index.css",
+			"!**/fumadocs/src"
 		]
 	},
 	"formatter": {

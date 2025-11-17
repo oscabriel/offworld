@@ -1,0 +1,221 @@
+---
+title: Contributing
+description: How to contribute to Offworld
+icon: GitPullRequest
+---
+
+Thank you for considering contributing to Offworld! This guide will help you get started.
+
+## Getting Started
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork**:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/offworld.git
+   ```
+3. **Follow [Project Setup](/docs/developer-guide/setup)** to get running locally
+4. **Create a branch**:
+   ```bash
+   git checkout -b feature/your-feature
+   ```
+
+## Development Workflow
+
+1. **Make your changes**
+2. **Run quality checks**:
+   ```bash
+   bun run check      # Lint + format
+   bun run typecheck  # Type checking
+   ```
+3. **Test manually** (see [Development Workflow](/docs/developer-guide/development-workflow))
+4. **Commit your changes** (see Commit Guidelines below)
+5. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature
+   ```
+6. **Open a Pull Request** on GitHub
+
+## Commit Guidelines
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>: <description>
+
+[optional body]
+```
+
+### Types
+
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code refactoring
+- `docs:` - Documentation changes
+- `chore:` - Maintenance tasks
+- `test:` - Test changes
+- `perf:` - Performance improvements
+
+### Examples
+
+```bash
+git commit -m "feat: add difficulty filter to issues tab"
+git commit -m "fix: resolve Mermaid diagram rendering bug"
+git commit -m "docs: update README with deployment instructions"
+```
+
+## Code Style
+
+### Linting & Formatting
+
+**Biome** handles both linting and formatting.
+
+**Auto-fix**:
+```bash
+bun run check
+```
+
+**Config**: `biome.json` (root)
+
+### TypeScript
+
+- **Strict mode** enabled
+- Avoid `any` - use `unknown` or proper types
+- Prefer `const` over `let`
+- Use type inference when possible
+
+### React
+
+- **Functional components** with hooks
+- Use `const` for components
+- Extract complex logic to custom hooks
+- Prefer named exports
+
+### Convex Functions
+
+- Export with `query()`, `mutation()`, or `action()`
+- Add input validation with `v.object({})`
+- Mark internal functions clearly (prefix `_` or in `_file.ts`)
+- Document complex queries
+
+## Pull Request Guidelines
+
+### PR Title
+
+Use conventional commit format:
+
+```
+feat: add difficulty filter to issues tab
+```
+
+### PR Description
+
+Include:
+
+1. **What** - What changes did you make?
+2. **Why** - Why were these changes needed?
+3. **How** - How did you implement it?
+4. **Testing** - How did you test it?
+
+### Example PR Description
+
+```markdown
+## What
+Added difficulty filter to issues tab
+
+## Why
+Users requested ability to filter issues by difficulty level to find beginner-friendly issues
+
+## How
+- Added filter UI in `issues/index.tsx`
+- Updated query in `repos.ts` to accept difficulty param
+- Added URL param for shareable filtered views
+
+## Testing
+- Tested filtering by each difficulty level
+- Verified URL params persist on refresh
+- Checked mobile responsive design
+```
+
+### Before Submitting
+
+- [ ] Code passes `bun run check`
+- [ ] Code passes `bun run typecheck`
+- [ ] Changes tested locally
+- [ ] Documentation updated (if needed)
+- [ ] No console.logs or debug code left
+
+## Areas to Contribute
+
+### 🟢 Good First Issues
+
+- Documentation improvements
+- UI polish (spacing, colors, typography)
+- Adding missing error messages
+- Writing tests
+
+### 🟡 Intermediate
+
+- New UI features (filters, sorting)
+- Additional agent tools
+- Performance optimizations
+- Better error handling
+
+### 🔴 Advanced
+
+- Core architecture changes
+- Workflow improvements
+- New AI prompts
+- RAG system enhancements
+
+Check [GitHub Issues](https://github.com/oscabriel/offworld/issues) for current tasks.
+
+## Project Structure
+
+```
+offworld/
+├── apps/
+│   ├── web/              # Frontend
+│   └── fumadocs/         # Docs
+├── packages/
+│   ├── backend/          # Convex backend
+│   └── config/           # Shared config
+```
+
+**See [Architecture](/docs/developer-guide/architecture) for details.**
+
+## Testing
+
+Currently **manual testing** (see [Development Workflow](/docs/developer-guide/development-workflow)).
+
+**Future**: Unit tests, integration tests, E2E tests.
+
+## Documentation
+
+When adding features, update:
+
+- **README.md** - If user-facing feature
+- **CLAUDE.md** - If architectural change
+- **Fumadocs** (`apps/fumadocs/content/docs/`) - For user guides
+
+## Community
+
+- **GitHub Discussions** - Ask questions, share ideas
+- **GitHub Issues** - Report bugs, request features
+- **Pull Requests** - Contribute code
+
+## Code of Conduct
+
+Be respectful, inclusive, and constructive. We're all here to build something great together.
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the project's license (see LICENSE file).
+
+## Questions?
+
+Open a GitHub Discussion or reach out to [@oscabriel](https://github.com/oscabriel).
+
+## Next Steps
+
+- Check [Troubleshooting](/docs/developer-guide/troubleshooting) if you encounter issues
+- Read [Technical Reference](/docs/technical-reference) for API details

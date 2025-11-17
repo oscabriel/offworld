@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TunnelRouteImport } from './routes/tunnel'
+import { Route as TestErrorRouteImport } from './routes/test-error'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as AboutRouteImport } from './routes/about'
@@ -26,7 +28,18 @@ import { Route as GithubOwnerRepoArchIndexRouteImport } from './routes/_github/$
 import { Route as GithubOwnerRepoPrNumberRouteImport } from './routes/_github/$owner_.$repo/pr/$number'
 import { Route as GithubOwnerRepoIssuesNumberRouteImport } from './routes/_github/$owner_.$repo/issues/$number'
 import { Route as GithubOwnerRepoArchSlugRouteImport } from './routes/_github/$owner_.$repo/arch/$slug'
+import { Route as GithubOwnerRepoChatChatIdIndexRouteImport } from './routes/_github/$owner_.$repo/chat/$chatId/index'
 
+const TunnelRoute = TunnelRouteImport.update({
+  id: '/tunnel',
+  path: '/tunnel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestErrorRoute = TestErrorRouteImport.update({
+  id: '/test-error',
+  path: '/test-error',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -115,12 +128,20 @@ const GithubOwnerRepoArchSlugRoute = GithubOwnerRepoArchSlugRouteImport.update({
   path: '/arch/$slug',
   getParentRoute: () => GithubOwnerRepoRouteRoute,
 } as any)
+const GithubOwnerRepoChatChatIdIndexRoute =
+  GithubOwnerRepoChatChatIdIndexRouteImport.update({
+    id: '/chat/$chatId/',
+    path: '/chat/$chatId/',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
+  '/test-error': typeof TestErrorRoute
+  '/tunnel': typeof TunnelRoute
   '/$owner': typeof GithubOwnerRoute
   '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -133,12 +154,15 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/chat': typeof GithubOwnerRepoChatIndexRoute
   '/$owner/$repo/issues': typeof GithubOwnerRepoIssuesIndexRoute
   '/$owner/$repo/pr': typeof GithubOwnerRepoPrIndexRoute
+  '/$owner/$repo/chat/$chatId': typeof GithubOwnerRepoChatChatIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
+  '/test-error': typeof TestErrorRoute
+  '/tunnel': typeof TunnelRoute
   '/$owner': typeof GithubOwnerRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/$owner/$repo/refresh': typeof GithubOwnerRepoRefreshRoute
@@ -150,6 +174,7 @@ export interface FileRoutesByTo {
   '/$owner/$repo/chat': typeof GithubOwnerRepoChatIndexRoute
   '/$owner/$repo/issues': typeof GithubOwnerRepoIssuesIndexRoute
   '/$owner/$repo/pr': typeof GithubOwnerRepoPrIndexRoute
+  '/$owner/$repo/chat/$chatId': typeof GithubOwnerRepoChatChatIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -158,6 +183,8 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
+  '/test-error': typeof TestErrorRoute
+  '/tunnel': typeof TunnelRoute
   '/_github/$owner': typeof GithubOwnerRoute
   '/_github/$owner_/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -170,6 +197,7 @@ export interface FileRoutesById {
   '/_github/$owner_/$repo/chat/': typeof GithubOwnerRepoChatIndexRoute
   '/_github/$owner_/$repo/issues/': typeof GithubOwnerRepoIssuesIndexRoute
   '/_github/$owner_/$repo/pr/': typeof GithubOwnerRepoPrIndexRoute
+  '/_github/$owner_/$repo/chat/$chatId/': typeof GithubOwnerRepoChatChatIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -178,6 +206,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/explore'
     | '/sign-in'
+    | '/test-error'
+    | '/tunnel'
     | '/$owner'
     | '/$owner/$repo'
     | '/api/auth/$'
@@ -190,12 +220,15 @@ export interface FileRouteTypes {
     | '/$owner/$repo/chat'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/pr'
+    | '/$owner/$repo/chat/$chatId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/explore'
     | '/sign-in'
+    | '/test-error'
+    | '/tunnel'
     | '/$owner'
     | '/api/auth/$'
     | '/$owner/$repo/refresh'
@@ -207,6 +240,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/chat'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/pr'
+    | '/$owner/$repo/chat/$chatId'
   id:
     | '__root__'
     | '/'
@@ -214,6 +248,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/explore'
     | '/sign-in'
+    | '/test-error'
+    | '/tunnel'
     | '/_github/$owner'
     | '/_github/$owner_/$repo'
     | '/api/auth/$'
@@ -226,6 +262,7 @@ export interface FileRouteTypes {
     | '/_github/$owner_/$repo/chat/'
     | '/_github/$owner_/$repo/issues/'
     | '/_github/$owner_/$repo/pr/'
+    | '/_github/$owner_/$repo/chat/$chatId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -234,11 +271,27 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   ExploreRoute: typeof ExploreRoute
   SignInRoute: typeof SignInRoute
+  TestErrorRoute: typeof TestErrorRoute
+  TunnelRoute: typeof TunnelRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tunnel': {
+      id: '/tunnel'
+      path: '/tunnel'
+      fullPath: '/tunnel'
+      preLoaderRoute: typeof TunnelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test-error': {
+      id: '/test-error'
+      path: '/test-error'
+      fullPath: '/test-error'
+      preLoaderRoute: typeof TestErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
@@ -358,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GithubOwnerRepoArchSlugRouteImport
       parentRoute: typeof GithubOwnerRepoRouteRoute
     }
+    '/_github/$owner_/$repo/chat/$chatId/': {
+      id: '/_github/$owner_/$repo/chat/$chatId/'
+      path: '/chat/$chatId'
+      fullPath: '/$owner/$repo/chat/$chatId'
+      preLoaderRoute: typeof GithubOwnerRepoChatChatIdIndexRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
   }
 }
 
@@ -371,6 +431,7 @@ interface GithubOwnerRepoRouteRouteChildren {
   GithubOwnerRepoChatIndexRoute: typeof GithubOwnerRepoChatIndexRoute
   GithubOwnerRepoIssuesIndexRoute: typeof GithubOwnerRepoIssuesIndexRoute
   GithubOwnerRepoPrIndexRoute: typeof GithubOwnerRepoPrIndexRoute
+  GithubOwnerRepoChatChatIdIndexRoute: typeof GithubOwnerRepoChatChatIdIndexRoute
 }
 
 const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
@@ -383,6 +444,7 @@ const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
   GithubOwnerRepoChatIndexRoute: GithubOwnerRepoChatIndexRoute,
   GithubOwnerRepoIssuesIndexRoute: GithubOwnerRepoIssuesIndexRoute,
   GithubOwnerRepoPrIndexRoute: GithubOwnerRepoPrIndexRoute,
+  GithubOwnerRepoChatChatIdIndexRoute: GithubOwnerRepoChatChatIdIndexRoute,
 }
 
 const GithubOwnerRepoRouteRouteWithChildren =
@@ -408,6 +470,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   ExploreRoute: ExploreRoute,
   SignInRoute: SignInRoute,
+  TestErrorRoute: TestErrorRoute,
+  TunnelRoute: TunnelRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

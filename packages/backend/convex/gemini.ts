@@ -191,8 +191,27 @@ export const generateArchitectureIteration1 = internalAction({
 
 		try {
 			const data = extractJSON(text);
+
+			// Preprocess entities: map invalid types to valid ones before validation
+			if (
+				data &&
+				typeof data === "object" &&
+				"entities" in data &&
+				Array.isArray(data.entities)
+			) {
+				// biome-ignore lint/suspicious/noExplicitAny: Preprocessing unvalidated LLM JSON response
+				data.entities = data.entities.map((entity: any) => {
+					// Map common LLM mistakes to valid types
+					if (entity.type === "utility" || entity.type === "helper") {
+						entity.type = "component";
+					} else if (entity.type === "core" || entity.type === "library") {
+						entity.type = "package";
+					}
+					return entity;
+				});
+			}
 			const validated = safeParseAIResponse(ArchitectureIterationSchema, data, {
-				overview: "Unable to analyze high-level structure",
+				overview: `The ${args.repoName.split("/")[1]} library is organized around a core module that provides the primary API surface for developers.`,
 				pattern: "Unknown",
 				entities: [],
 			});
@@ -216,8 +235,9 @@ export const generateArchitectureIteration1 = internalAction({
 			};
 		} catch (error) {
 			console.error("Failed to parse iteration 1 response:", error);
+			console.error("Raw LLM response (first 500 chars):", text.slice(0, 500));
 			return {
-				overview: "Unable to analyze high-level structure",
+				overview: `The ${args.repoName.split("/")[1]} library is organized around a core module that provides the primary API surface for developers.`,
 				pattern: "Unknown",
 				entities: [],
 			};

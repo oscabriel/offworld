@@ -102,7 +102,7 @@ function PRsPage() {
 						Pull Requests ({filteredAndSortedPRs.length})
 					</h2>
 					<p className="mt-1 font-mono text-muted-foreground text-sm">
-						Recent PRs analyzed by AI for review complexity and impact
+						Recent PRs chosen due to review complexity and impact
 					</p>
 				</div>
 
@@ -181,11 +181,6 @@ function PRsPage() {
 												</span>
 												<PRStateBadge state={pr.state} />
 											</div>
-											{pr.aiSummary && (
-												<p className="mt-1 line-clamp-1 font-serif text-muted-foreground text-xs">
-													{pr.aiSummary}
-												</p>
-											)}
 										</Link>
 									</td>
 									<td className="p-4">

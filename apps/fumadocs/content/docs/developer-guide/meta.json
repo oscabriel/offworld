@@ -1,0 +1,5 @@
+{
+  "title": "Developer Guide",
+  "icon": "Code",
+  "pages": ["setup", "development-workflow", "tech-stack", "architecture", "deployment", "contributing", "troubleshooting"]
+}

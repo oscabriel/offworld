@@ -10,6 +10,15 @@ interface RepoCardProps {
 	stars: number;
 }
 
+function formatStars(stars: number): string {
+	if (stars < 10) return stars.toString();
+	if (stars < 100) return `${Math.floor(stars / 10) * 10}+`;
+	if (stars < 1000) return `${Math.floor(stars / 100) * 100}+`;
+	if (stars < 10000) return `${Math.floor(stars / 1000)}K+`;
+	if (stars < 100000) return `${Math.floor(stars / 10000) * 10}K+`;
+	return `${Math.floor(stars / 10000) * 10}K+`;
+}
+
 export function RepoCard({
 	owner,
 	name,
@@ -53,7 +62,7 @@ export function RepoCard({
 						</span>
 					)}
 					<span className="font-mono text-muted-foreground text-xs">
-						⭐ {stars.toLocaleString()}
+						⭐ {formatStars(stars)}
 					</span>
 				</CardContent>
 			</Card>

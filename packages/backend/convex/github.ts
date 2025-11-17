@@ -100,7 +100,18 @@ export const fetchFileTree = internalAction({
 			});
 
 			// Filter to only files (not trees/subdirectories) with supported extensions
-			const supportedExtensions = [".ts", ".tsx", ".js", ".jsx", ".md"];
+			const supportedExtensions = [
+				".ts",
+				".tsx",
+				".js",
+				".jsx",
+				".md",
+				".json",
+				".mjs",
+				".cjs",
+				".mts",
+				".cts",
+			];
 			const files = tree.tree
 				.filter((item) => {
 					if (item.type !== "blob") return false;
@@ -118,6 +129,8 @@ export const fetchFileTree = internalAction({
 						/\.lock$/,
 						/package-lock\.json$/,
 						/yarn\.lock$/,
+						/bun\.lockb$/,
+						/pnpm-lock\.yaml$/,
 						/\.github\//,
 						/dist\//,
 						/build\//,
@@ -251,6 +264,7 @@ export const analyzeAndStoreIssues = internalAction({
 		repoId: v.id("repositories"),
 		owner: v.string(),
 		name: v.string(),
+		defaultBranch: v.string(),
 		summary: v.string(),
 		maxIssues: v.number(),
 		actualFilePaths: v.array(v.string()),
@@ -282,6 +296,7 @@ export const analyzeAndStoreIssues = internalAction({
 			updatedAt: number;
 			aiSummary?: string;
 			filesLikelyTouched?: string[];
+			fileUrls?: Array<{ path: string; url: string }>;
 			difficulty?: number;
 			skillsRequired?: string[];
 		}> = [];
@@ -314,10 +329,22 @@ export const analyzeAndStoreIssues = internalAction({
 					})
 					.filter(Boolean) || [];
 
+			// Generate GitHub URLs for each file (similar to architecture entities)
+			const fileUrls = validatedFiles.map((filePath) => {
+				// Determine if path is a file (has extension) or directory
+				const isFile = filePath.includes(".");
+				const urlType = isFile ? "blob" : "tree";
+				return {
+					path: filePath,
+					url: `https://github.com/${args.owner}/${args.name}/${urlType}/${args.defaultBranch}/${filePath}`,
+				};
+			});
+
 			analyzedIssues.push({
 				...issue,
 				...analysis,
 				filesLikelyTouched: validatedFiles,
+				fileUrls,
 				repositoryId: args.repoId,
 			});
 		}
@@ -333,7 +360,7 @@ export const analyzeAndStoreIssues = internalAction({
 });
 
 /**
- * Fetch pull requests from GitHub
+ * Fetch pull requests from GitHub with detailed stats
  */
 export const fetchPullRequests = internalAction({
 	args: {
@@ -357,21 +384,57 @@ export const fetchPullRequests = internalAction({
 				per_page: args.perPage || 30,
 			});
 
-			return prs.map((pr) => ({
-				githubPrId: pr.id,
-				number: pr.number,
-				title: pr.title,
-				body: pr.body || undefined,
-				state: pr.state,
-				author: pr.user?.login || "unknown",
-				createdAt: new Date(pr.created_at).getTime(),
-				mergedAt: pr.merged_at ? new Date(pr.merged_at).getTime() : undefined,
-				githubUrl: pr.html_url,
-				filesChanged: [],
-				// Note: additions/deletions not available in list endpoint, must fetch individual PR
-				linesAdded: 0,
-				linesDeleted: 0,
-			}));
+			// Fetch individual PR details to get additions/deletions
+			const prsWithStats = await Promise.all(
+				prs.map(async (pr) => {
+					try {
+						const { data: prDetail } = await octokit.pulls.get({
+							owner: args.owner,
+							repo: args.name,
+							pull_number: pr.number,
+						});
+
+						return {
+							githubPrId: pr.id,
+							number: pr.number,
+							title: pr.title,
+							body: pr.body || undefined,
+							state: pr.state,
+							author: pr.user?.login || "unknown",
+							createdAt: new Date(pr.created_at).getTime(),
+							mergedAt: pr.merged_at
+								? new Date(pr.merged_at).getTime()
+								: undefined,
+							githubUrl: pr.html_url,
+							filesChanged: [],
+							linesAdded: prDetail.additions || 0,
+							linesDeleted: prDetail.deletions || 0,
+						};
+					} catch (_error: unknown) {
+						console.warn(
+							`Failed to fetch details for PR #${pr.number}, using fallback`,
+						);
+						return {
+							githubPrId: pr.id,
+							number: pr.number,
+							title: pr.title,
+							body: pr.body || undefined,
+							state: pr.state,
+							author: pr.user?.login || "unknown",
+							createdAt: new Date(pr.created_at).getTime(),
+							mergedAt: pr.merged_at
+								? new Date(pr.merged_at).getTime()
+								: undefined,
+							githubUrl: pr.html_url,
+							filesChanged: [],
+							linesAdded: 0,
+							linesDeleted: 0,
+						};
+					}
+				}),
+			);
+
+			return prsWithStats;
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : "Unknown error";
 			throw new Error(`Failed to fetch pull requests: ${message}`);

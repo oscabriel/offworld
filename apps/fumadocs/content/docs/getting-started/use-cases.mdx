@@ -1,0 +1,256 @@
+---
+title: Use Cases
+description: When and how to use Offworld
+icon: Lightbulb
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Discover how Offworld can help you in different scenarios.
+
+## Open Source Contribution
+
+### Scenario
+
+You want to contribute to **TanStack Router** but don't know where to start.
+
+### Offworld Solution
+
+1. **Analyze the repository**: [offworld.sh/tanstack/router](https://offworld.sh/tanstack/router)
+2. **Read the summary**: Understand what TanStack Router does in 300 words
+3. **Explore architecture**: See core packages (`@tanstack/react-router`, file-based routing)
+4. **Find beginner issues**: Filter by difficulty 1-2 ("Trivial" or "Easy")
+5. **Check required skills**: "React, TypeScript, Routing"
+6. **Ask questions**: "How does file-based routing work?" in chat
+
+**Result**: You find issue #432 (difficulty 2) that requires TypeScript knowledge. The AI tells you it likely touches `packages/react-router/src/fileRoute.ts`. You feel confident to start contributing!
+
+## Code Review
+
+### Scenario
+
+Your team submitted a PR to migrate from Express to Fastify. You need to review but aren't familiar with the codebase.
+
+### Offworld Solution
+
+1. **Analyze your repository** (if private, requires GitHub App installation)
+2. **Review architecture**: Understand where routing and middleware live
+3. **Check PR analysis**: Offworld shows "High impact, 47 files changed"
+4. **Ask specific questions**:
+   - "What files handle HTTP middleware?"
+   - "Where is request validation logic?"
+   - "Show me all Express-related imports"
+5. **Use tool responses**: Agent uses `searchCodeContext` and `listFiles` to find relevant code
+
+**Result**: You understand the blast radius of the migration and can review the PR with full context.
+
+## Onboarding to New Projects
+
+### Scenario
+
+You joined a new company and need to understand their Next.js monorepo.
+
+### Offworld Solution
+
+1. **Start with summary**: Get a 300-word overview of what the project does
+2. **Study architecture diagram**: Visualize packages, apps, and shared libraries
+3. **Identify entry points**: Offworld ranks `apps/web/src/app/layout.tsx` as importance 1.0
+4. **Explore components**: Click through architecture entities to see descriptions
+5. **Chat for specifics**:
+   - "How is authentication implemented?"
+   - "Where are API routes defined?"
+   - "Show me the database schema"
+
+**Result**: You understand the codebase structure in 30 minutes instead of 3 days.
+
+## Learning Architectural Patterns
+
+### Scenario
+
+You're learning **Convex** and want to see real-world examples of workflows and RAG.
+
+### Offworld Solution
+
+1. **Analyze Offworld itself**: [offworld.sh/oscabriel/offworld](https://offworld.sh/oscabriel/offworld)
+2. **Read architecture**: Discover `packages/backend/convex/workflows/analyzeRepository.ts`
+3. **Ask questions**:
+   - "How does the RAG system work?"
+   - "Show me the Convex schema"
+   - "How are workflows implemented?"
+4. **Read file explanations**: Use `explainFile` tool to understand complex files
+
+**Result**: You learn Convex patterns from a production codebase, not toy examples.
+
+## Triaging Issues
+
+### Scenario
+
+Your OSS project has 200 open issues. You want to find good first issues for newcomers.
+
+### Offworld Solution
+
+1. **Analyze your repository**
+2. **Go to Issues tab**
+3. **Filter by difficulty**: Select "Trivial" and "Easy" (1-2)
+4. **Review AI analysis**:
+   - **Skills needed**: "HTML, CSS" (vs "Rust, WebAssembly")
+   - **Files touched**: `docs/` (vs `core/engine/`)
+   - **Estimated difficulty**: AI rationale for the score
+5. **Label issues**: Use Offworld's insights to add "good first issue" labels on GitHub
+
+**Result**: New contributors find approachable issues, increasing OSS velocity.
+
+## Understanding Pull Requests
+
+### Scenario
+
+A contributor submitted a PR titled "Refactor state management" with 83 files changed. You don't know if it's safe to merge.
+
+### Offworld Solution
+
+1. **Go to PR tab**: [offworld.sh/yourorg/yourrepo/pr/789](https://offworld.sh/yourorg/yourrepo/pr/789)
+2. **Check AI summary**: "This PR migrates from Context API to Zustand for state management..."
+3. **Review impact**: "High impact - core state logic refactored"
+4. **Check files changed**: See categories (components, hooks, tests)
+5. **Ask questions**:
+   - "What are the risks of this PR?"
+   - "Which components are affected?"
+
+**Result**: You understand the PR's scope and can make an informed merge decision.
+
+## Comparing Technologies
+
+### Scenario
+
+You're choosing between **TanStack Router** and **React Router** for your project.
+
+### Offworld Solution
+
+1. **Analyze both**:
+   - [offworld.sh/tanstack/router](https://offworld.sh/tanstack/router)
+   - [offworld.sh/remix-run/react-router](https://offworld.sh/remix-run/react-router)
+2. **Compare architectures**:
+   - TanStack: Type-safe, file-based, code splitting
+   - React Router: Component-based, nested routes, loaders
+3. **Check complexity**: Compare importance scores and entity counts
+4. **Ask questions** in both:
+   - "How does type safety work?"
+   - "How do I handle nested layouts?"
+5. **Compare issue difficulty**: Are beginner contributions easier in one vs the other?
+
+**Result**: You have architectural insights to make an informed technology choice.
+
+## Exploring Dependencies
+
+### Scenario
+
+Your project depends on `@convex-dev/react-query` but you don't understand how it works internally.
+
+### Offworld Solution
+
+1. **Analyze the dependency**: [offworld.sh/get-convex/convex-helpers](https://offworld.sh/get-convex/convex-helpers)
+2. **Read the summary**: Understand the library's purpose
+3. **Explore architecture**: See how React Query is integrated with Convex
+4. **Chat for details**:
+   - "How does useConvexQuery work?"
+   - "Show me the implementation of subscription caching"
+5. **Read source**: Use `explainFile` to understand specific hooks
+
+**Result**: You can confidently use the library and debug issues when they arise.
+
+## Auditing Security
+
+### Scenario
+
+You're auditing a third-party library for security vulnerabilities before adding it as a dependency.
+
+### Offworld Solution
+
+1. **Analyze the library**
+2. **Check architecture**: Look for suspicious patterns (eval, exec, network calls)
+3. **Ask targeted questions**:
+   - "Where is user input sanitized?"
+   - "Show me all network request code"
+   - "Find uses of eval or Function constructor"
+4. **Review issues**: Check for security-related issues (XSS, injection, etc.)
+5. **Examine dependencies**: Use `listFiles` to find `package.json` and check deps
+
+<Callout type="warn">
+Offworld is not a substitute for professional security audits. Use it as an initial triage tool.
+</Callout>
+
+**Result**: You identify potential risks and decide whether the library meets your security standards.
+
+## Documentation Writing
+
+### Scenario
+
+You're writing documentation for your project but need to understand how features work.
+
+### Offworld Solution
+
+1. **Analyze your repository**
+2. **Use architecture as outline**: Each entity becomes a doc section
+3. **Ask clarifying questions**:
+   - "How do I configure authentication?"
+   - "What are the available API endpoints?"
+   - "Show me example usage of the CLI"
+4. **Copy AI explanations**: Use agent responses as starting points for docs
+5. **Link to source**: Architecture entities include GitHub URLs for reference
+
+**Result**: You write accurate, comprehensive documentation faster.
+
+## When NOT to Use Offworld
+
+### ❌ Real-time Code Editing
+
+Offworld is **read-only**. Use an IDE for writing code.
+
+### ❌ Very Small Repositories
+
+Repos with &lt;10 files are faster to explore manually.
+
+### ❌ Live Codebases
+
+RAG index is a **snapshot** from analysis time. Use your IDE's search for current code.
+
+### ❌ Private Repositories (without setup)
+
+Requires GitHub App installation with repo permissions. Public repos work out of the box.
+
+### ❌ Performance Profiling
+
+Offworld doesn't analyze runtime behavior or performance metrics.
+
+## Best Practices
+
+### ✅ Start with Summary
+
+Always read the AI summary first to get high-level context.
+
+### ✅ Follow the Hierarchy
+
+Start with architecture overview → entities → specific files.
+
+### ✅ Use Chat for Specifics
+
+General questions ("What does this repo do?") → use summary.
+Specific questions ("How is auth implemented?") → use chat.
+
+### ✅ Validate Answers
+
+Offworld uses AI - always verify critical information by reading the actual code (click GitHub links).
+
+### ✅ Share URLs
+
+Architecture entities, issues, PRs, and chat threads are all **shareable**. Use them for team collaboration.
+
+### ✅ Re-index Periodically
+
+Repositories evolve. Re-index every 7+ days to keep insights current.
+
+## Next Steps
+
+- Try the [Quick Start](/docs/getting-started/quick-start) guide
+- Read the [User Guide](/docs/user-guide) for detailed features
+- Learn about [Development Setup](/docs/developer-guide) if you want to contribute

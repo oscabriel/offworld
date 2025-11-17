@@ -1,0 +1,217 @@
+---
+title: Tech Stack Overview
+description: Technologies powering Offworld
+icon: Layers
+---
+
+Complete overview of Offworld's tech stack.
+
+## Frontend Stack
+
+### TanStack Start
+**SSR React framework** with file-based routing
+
+- **Why**: Type-safe, modern, edge-ready SSR
+- **Alternatives considered**: Next.js (too opinionated), Remix (less flexible)
+
+### TanStack Router v1
+**Type-safe routing** with auto-generated route tree
+
+- **Why**: Full TypeScript inference, great DX
+- **Key files**: `apps/web/src/routes/`, `routeTree.gen.ts`
+
+### shadcn/ui
+**50+ UI components** built on Radix UI
+
+- **Why**: Beautiful, accessible, customizable
+- **Components**: Button, Card, Dialog, Table, etc.
+
+### Tailwind CSS v4
+**Utility-first CSS**
+
+- **Why**: Fast styling, dark mode support, small bundle
+- **Config**: `apps/web/tailwind.config.ts`
+
+### Convex Integration
+
+**@convex-dev/react-query** - React Query adapter for Convex
+
+```tsx
+const repo = useQuery(api.repos.getByFullName, { fullName });
+```
+
+## Backend Stack
+
+### Convex Cloud
+**Serverless backend** with real-time database
+
+- **Why**: Zero ops, real-time subscriptions, edge-optimized
+- **Features**: Database, workflows, file storage, vector search
+
+### Convex Workflows
+**Durable workflows** - crash-safe, auto-retry
+
+- **Why**: Long-running analysis (2-5 min) needs reliability
+- **Workflow**: `analyzeRepository` (11 steps)
+
+### @convex-dev/rag
+**RAG system** with vector embeddings
+
+- **Embeddings**: Google Text Embedding 004 (768-dim)
+- **Storage**: Convex vector database
+- **Namespace**: `repo:owner/name`
+
+### @convex-dev/agent
+**AI agent framework**
+
+- **LLM**: Gemini 2.0 Flash Exp
+- **Tools**: 9 specialized tools
+- **Framework**: Vercel AI SDK
+
+## AI & ML Stack
+
+### Gemini 2.5 Flash Lite
+**Primary LLM** for analysis
+
+- **Cost**: $0.018-0.025 per repo
+- **Speed**: Fast (2-5 min full analysis)
+- **Uses**: Summaries, architecture, diagrams, issue analysis
+
+### Gemini 2.0 Flash Exp
+**Chat agent LLM**
+
+- **Why**: Experimental features, better tool use
+- **Context**: 1M token window
+
+### Google Text Embedding 004
+**Embedding model** for RAG
+
+- **Dimensions**: 768
+- **Quality**: High-quality semantic embeddings
+
+## Authentication Stack
+
+### Better Auth v1
+**Modern auth framework**
+
+- **Why**: Type-safe, plugin system, Convex adapter
+- **Provider**: GitHub OAuth
+- **Session**: Database-backed (Convex)
+
+### GitHub OAuth
+**Social login**
+
+- **Scopes**: `read:user`, `user:email`
+- **Rate limit**: Standard OAuth limits
+
+### GitHub App
+**API access** - 15k req/hr
+
+- **Permissions**: Repo contents (read), issues (read), PRs (read)
+- **Why**: Higher rate limits than OAuth
+
+## Deployment Stack
+
+### Triple-Deploy Architecture
+
+**1. Backend** → Convex Cloud
+- Serverless, edge-optimized
+- Automatic scaling
+- Global deployment
+
+**2. Frontend** → Cloudflare Workers (via Alchemy)
+- Edge SSR (&lt;50ms cold starts)
+- Global CDN
+- Domain: offworld.sh
+
+**3. Docs** → Netlify
+- Static site (Fumadocs)
+- Instant previews
+- Branch deploys
+
+### Alchemy
+**Cloudflare Workers deployment CLI**
+
+- **Config**: `apps/web/alchemy.run.ts`
+- **Features**: Env bindings, domain management
+- **Deploy**: `bun run deploy:web`
+
+## Development Stack
+
+### Bun v1.3+
+**Package manager & runtime**
+
+- **Why**: Fast installs, native TypeScript, workspace support
+- **Uses**: Install deps, run scripts, build
+
+### Turborepo
+**Monorepo orchestration**
+
+- **Why**: Task caching, parallel execution
+- **Config**: `turbo.json`
+
+### Biome
+**Linter & formatter**
+
+- **Why**: Fast (replaces ESLint + Prettier), minimal config
+- **Config**: `biome.json`
+
+### TypeScript 5.x
+**Type checking**
+
+- **Mode**: Strict
+- **Config**: `tsconfig.json` per workspace
+
+## Observability Stack
+
+### Sentry
+**Frontend error tracking**
+
+- **Integration**: `@sentry/tanstackstart-react`
+- **Env**: `VITE_SENTRY_DSN`
+
+### Convex Dashboard
+**Backend monitoring**
+
+- **Features**: Logs, metrics, workflow visualization
+- **Access**: Via Convex Cloud console
+
+## Why These Choices?
+
+### Type Safety Everywhere
+TanStack Router + Convex + TypeScript = End-to-end type safety
+
+### Edge-First
+Cloudflare Workers (frontend) + Convex Cloud (backend) = Global performance
+
+### AI-Native
+Gemini + RAG + Agent = Purpose-built for code analysis
+
+### Zero Ops
+Convex (backend) + Cloudflare (frontend) + Netlify (docs) = No servers to manage
+
+### Developer Experience
+Bun + Biome + Hot-reloading = Fast development loops
+
+## Alternatives Considered
+
+**Instead of Convex**:
+- ❌ Supabase - No workflows, manual RAG setup
+- ❌ Firebase - Limited querying, no vector search
+- ✅ Convex - Built-in workflows, RAG, real-time
+
+**Instead of TanStack Start**:
+- ❌ Next.js - Too opinionated, larger bundle
+- ❌ Remix - Less flexible routing
+- ✅ TanStack Start - Type-safe, modern, edge-ready
+
+**Instead of Gemini**:
+- ❌ OpenAI - More expensive ($0.15 per repo)
+- ❌ Claude - API limits, higher cost
+- ✅ Gemini - Cost-effective, fast, good quality
+
+## Next Steps
+
+- Deep dive into [Architecture](/docs/developer-guide/architecture)
+- Learn about [Deployment](/docs/developer-guide/deployment)
+- Check [Technical Reference](/docs/technical-reference) for API details

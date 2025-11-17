@@ -1,0 +1,249 @@
+---
+title: Sharing & Collaboration
+description: Share insights with shareable URLs
+icon: Share2
+---
+
+All Offworld pages are **shareable** via URL. Collaborate with your team by sharing links to architectures, issues, PRs, and chat threads.
+
+## Shareable URLs
+
+### Repository Summary
+
+**Format**: `/owner/repo`
+
+**Example**: [offworld.sh/tanstack/router](https://offworld.sh/tanstack/router)
+
+**Contains**:
+- Repository stats
+- AI summary
+- Architecture diagram
+- Quick links
+
+**Use case**: Share repository overview with teammates
+
+### Architecture Entity
+
+**Format**: `/owner/repo/arch/entity-slug`
+
+**Example**: [offworld.sh/tanstack/router/arch/tanstack-react-router](https://offworld.sh/tanstack/router/arch/tanstack-react-router)
+
+**Contains**:
+- Entity name and description
+- Importance score and layer
+- GitHub link to code
+
+**Use case**: Reference specific component in discussions
+
+### Issue Detail
+
+**Format**: `/owner/repo/issues/123`
+
+**Example**: [offworld.sh/tanstack/router/issues/123](https://offworld.sh/tanstack/router/issues/123)
+
+**Contains**:
+- Issue title and description
+- Difficulty rating and rationale
+- Required skills
+- Predicted files
+
+**Use case**: Share beginner-friendly issues with contributors
+
+### Pull Request Detail
+
+**Format**: `/owner/repo/pr/456`
+
+**Example**: [offworld.sh/tanstack/router/pr/456](https://offworld.sh/tanstack/router/pr/456)
+
+**Contains**:
+- PR summary
+- Impact level
+- Files changed
+- AI analysis
+
+**Use case**: Share PR analysis with reviewers
+
+### Chat Thread
+
+**Format**: `/owner/repo/chat/chatId`
+
+**Example**: [offworld.sh/tanstack/router/chat/abc123](https://offworld.sh/tanstack/router/chat/abc123)
+
+**Contains**:
+- Full conversation history
+- Tool calls and responses
+- Contextual Q&A
+
+**Use case**: Share research or Q&A with teammates
+
+## Collaboration Workflows
+
+### Onboarding New Developers
+
+**Step 1**: Analyze team's main repository
+
+**Step 2**: Share summary URL in onboarding docs:
+```markdown
+Explore our codebase: https://offworld.sh/yourorg/yourrepo
+```
+
+**Step 3**: Link to key architecture entities:
+```markdown
+- [Authentication System](https://offworld.sh/yourorg/yourrepo/arch/auth)
+- [API Layer](https://offworld.sh/yourorg/yourrepo/arch/api)
+```
+
+**Result**: New devs get instant architectural overview
+
+### Planning Sprints
+
+**Step 1**: Browse issues tab, filter by difficulty
+
+**Step 2**: Share issue links in sprint planning:
+```
+Beginner tasks:
+- #123 (Difficulty 2): https://offworld.sh/yourorg/yourrepo/issues/123
+- #125 (Difficulty 1): https://offworld.sh/yourorg/yourrepo/issues/125
+```
+
+**Step 3**: Assign based on skill assessment
+
+**Result**: Better task allocation based on difficulty
+
+### Code Review Collaboration
+
+**Step 1**: Reviewer analyzes PR on Offworld
+
+**Step 2**: Starts chat thread with questions:
+```
+Q: "What are the risks of this migration?"
+Q: "Which core files are affected?"
+```
+
+**Step 3**: Shares chat thread with author:
+```
+I have some questions about your PR:
+https://offworld.sh/yourorg/yourrepo/chat/xyz789
+```
+
+**Result**: Context-rich review discussions
+
+### OSS Contribution Campaigns
+
+**Step 1**: Analyze OSS project
+
+**Step 2**: Create "Good First Issues" list:
+```markdown
+# Contribute to TanStack Router
+
+Beginner-friendly issues:
+1. [Add docs example](https://offworld.sh/tanstack/router/issues/123) - Difficulty 1
+2. [Fix typo in README](https://offworld.sh/tanstack/router/issues/125) - Difficulty 1
+```
+
+**Step 3**: Share in community Discord/Slack
+
+**Result**: More contributions from newcomers
+
+## Privacy Considerations
+
+### Public Repositories
+
+All analysis is **public** if the GitHub repo is public.
+
+Anyone with the URL can view:
+- Repository analysis
+- Issues and PRs
+- Chat threads
+
+### Private Repositories
+
+Requires **GitHub App installation** with repo access.
+
+Analysis is only visible to:
+- Authenticated users with GitHub access to the repo
+- Team members (if deployed internally)
+
+### Chat History
+
+Chat threads are **persistent** and **publicly accessible** via URL.
+
+**Be careful not to share**:
+- Internal discussions
+- Unreleased feature plans
+- Security-sensitive queries
+
+## Best Practices
+
+### ✅ Use Descriptive Chat Questions
+
+When sharing chat threads, ask clear questions so others understand the context.
+
+**Good**:
+```
+Q: "How is user authentication implemented in this repo?"
+```
+
+**Bad**:
+```
+Q: "How does this work?"
+```
+
+### ✅ Link to Entities in Docs
+
+Use architecture entity URLs in your project documentation:
+
+```markdown
+## Architecture
+
+Our codebase consists of:
+- [Backend API](https://offworld.sh/yourorg/yourrepo/arch/api)
+- [Frontend App](https://offworld.sh/yourorg/yourrepo/arch/frontend)
+```
+
+### ✅ Create Issue Templates with Offworld Links
+
+Add Offworld links to GitHub issue templates:
+
+```markdown
+**Difficulty**: See AI analysis: https://offworld.sh/yourorg/yourrepo/issues/[number]
+**Skills needed**: Check AI assessment above
+```
+
+### ✅ Share PRs Before Review
+
+Send Offworld PR link to reviewers before review meeting:
+
+```
+Please review: https://offworld.sh/yourorg/yourrepo/pr/456
+AI says "High impact, 83 files changed"
+```
+
+## URL Shortening
+
+Long URLs can be cumbersome. Use a URL shortener for Slack/Discord:
+
+**Before**:
+```
+https://offworld.sh/facebook/react/arch/packages-react-reconciler
+```
+
+**After** (via bit.ly):
+```
+https://bit.ly/react-reconciler
+```
+
+## Embedding (Future)
+
+**Coming soon**: Embed Offworld cards in docs:
+
+```html
+<offworld-card repo="tanstack/router" />
+```
+
+Renders interactive repository summary card.
+
+## Next Steps
+
+- Start with [Quick Start](/docs/getting-started/quick-start)
+- Read [Developer Guide](/docs/developer-guide) to contribute to Offworld

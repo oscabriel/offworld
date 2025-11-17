@@ -1,0 +1,432 @@
+---
+title: API Reference
+description: Convex queries, mutations, and actions
+icon: Code2
+---
+
+Complete reference for all Convex functions.
+
+## Repositories API
+
+### `repos.getByFullName`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{ fullName: string } // "facebook/react"
+```
+
+**Returns**:
+```typescript
+{
+  _id: Id<"repositories">,
+  fullName: string,
+  owner: string,
+  name: string,
+  stars: number,
+  language: string,
+  description: string,
+  summary?: string,
+  architecture?: string,
+  mermaidDiagram?: string,
+  status: "queued" | "processing" | "completed" | "failed",
+  lastAnalyzedAt?: number
+} | null
+```
+
+**Usage**:
+```tsx
+const repo = useQuery(api.repos.getByFullName, {
+  fullName: "facebook/react"
+});
+```
+
+### `repos.startAnalysis`
+
+**Type**: Mutation
+
+**Auth**: Required
+
+**Args**:
+```typescript
+{ fullName: string }
+```
+
+**Returns**: `Id<"repositories">`
+
+**Usage**:
+```tsx
+const start = useMutation(api.repos.startAnalysis);
+await start.mutateAsync({ fullName: "facebook/react" });
+```
+
+### `repos.listIndexed`
+
+**Type**: Query
+
+**Args**: None
+
+**Returns**:
+```typescript
+Array<{
+  fullName: string,
+  stars: number,
+  language: string,
+  lastAnalyzedAt: number
+}>
+```
+
+**Usage**:
+```tsx
+const indexed = useQuery(api.repos.listIndexed);
+```
+
+## Architecture Entities API
+
+### `architectureEntities.getByRepo`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{ repoId: Id<"repositories"> }
+```
+
+**Returns**:
+```typescript
+Array<{
+  _id: Id<"architectureEntities">,
+  name: string,
+  description: string,
+  importance: number,
+  layer: "entry-point" | "core" | "feature" | "utility" | "integration",
+  path: string,
+  githubUrl: string
+}>
+```
+
+### `architectureEntities.getBySlug`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  slug: string
+}
+```
+
+**Returns**: Single entity or `null`
+
+## Issues API
+
+### `issues.getByRepo`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  difficulty?: 1 | 2 | 3 | 4 | 5  // Optional filter
+}
+```
+
+**Returns**:
+```typescript
+Array<{
+  _id: Id<"issues">,
+  number: number,
+  title: string,
+  difficulty: 1 | 2 | 3 | 4 | 5,
+  difficultyRationale: string,
+  skills: string[],
+  filesTouch: string[]
+}>
+```
+
+### `issues.getByNumber`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  number: number
+}
+```
+
+**Returns**: Single issue or `null`
+
+## Pull Requests API
+
+### `pullRequests.getByRepo`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{ repoId: Id<"repositories"> }
+```
+
+**Returns**:
+```typescript
+Array<{
+  _id: Id<"pullRequests">,
+  number: number,
+  title: string,
+  summary: string,
+  impact: "Low" | "Medium" | "High",
+  filesChanged: number
+}>
+```
+
+### `pullRequests.getByNumber`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  number: number
+}
+```
+
+**Returns**: Single PR or `null`
+
+## Chat API
+
+### `chat.getConversation`
+
+**Type**: Query
+
+**Args**:
+```typescript
+{ conversationId: Id<"conversations"> }
+```
+
+**Returns**:
+```typescript
+{
+  _id: Id<"conversations">,
+  repoId: Id<"repositories">,
+  title: string,
+  messages: Array<{
+    role: "user" | "assistant",
+    content: string,
+    toolCalls?: Array<{ name: string, args: any }>
+  }>
+}
+```
+
+### `chat.sendMessage`
+
+**Type**: Mutation
+
+**Auth**: Required
+
+**Args**:
+```typescript
+{
+  conversationId: Id<"conversations">,
+  message: string
+}
+```
+
+**Returns**: `Id<"messages">`
+
+**Usage**:
+```tsx
+const send = useMutation(api.chat.sendMessage);
+await send.mutateAsync({
+  conversationId,
+  message: "How does auth work?"
+});
+```
+
+### `chat.createConversation`
+
+**Type**: Mutation
+
+**Auth**: Required
+
+**Args**:
+```typescript
+{
+  repoId: Id<"repositories">,
+  initialMessage?: string
+}
+```
+
+**Returns**: `Id<"conversations">`
+
+## GitHub API (Actions)
+
+### `github.getOwnerInfo`
+
+**Type**: Action
+
+**Args**:
+```typescript
+{ owner: string }
+```
+
+**Returns**:
+```typescript
+{
+  login: string,
+  name?: string,
+  avatarUrl: string,
+  type: "User" | "Organization"
+}
+```
+
+### `github.searchRepositories`
+
+**Type**: Action
+
+**Args**:
+```typescript
+{
+  query: string,
+  limit?: number  // Default 10
+}
+```
+
+**Returns**:
+```typescript
+Array<{
+  fullName: string,
+  description: string,
+  stars: number,
+  language: string
+}>
+```
+
+## Agent Tools (Internal)
+
+These tools are used by the AI agent, not directly callable by clients.
+
+### `searchCodeContext`
+
+**Parameters**:
+```typescript
+{
+  query: string,
+  limit?: number  // Default 5
+}
+```
+
+**Returns**: Top-K file chunks with paths and scores
+
+### `getArchitecture`
+
+**Parameters**: None
+
+**Returns**: List of architecture entities
+
+### `listFiles`
+
+**Parameters**:
+```typescript
+{
+  pattern?: string,  // Glob pattern
+  directory?: string
+}
+```
+
+**Returns**: Matching file paths
+
+### `explainFile`
+
+**Parameters**:
+```typescript
+{ path: string }
+```
+
+**Returns**: File content + AI explanation
+
+### `findIssues`
+
+**Parameters**:
+```typescript
+{ difficulty?: 1 | 2 | 3 | 4 | 5 }
+```
+
+**Returns**: Filtered issues
+
+### `getIssueByNumber`
+
+**Parameters**:
+```typescript
+{ number: number }
+```
+
+**Returns**: Issue details
+
+### `findPullRequests`
+
+**Parameters**: None
+
+**Returns**: List of PRs
+
+### `getPullRequestByNumber`
+
+**Parameters**:
+```typescript
+{ number: number }
+```
+
+**Returns**: PR details
+
+## Auth API
+
+### `auth.getCurrentUser`
+
+**Type**: Query
+
+**Returns**:
+```typescript
+{
+  _id: Id<"users">,
+  name: string,
+  email: string,
+  image?: string
+} | null
+```
+
+**Usage**:
+```tsx
+const user = useQuery(api.auth.getCurrentUser);
+```
+
+## Error Codes
+
+### `UNAUTHORIZED`
+
+User not authenticated. Call `authClient.signIn.social({ provider: "github" })`.
+
+### `NOT_FOUND`
+
+Resource doesn't exist (repo, issue, PR, etc.).
+
+### `RATE_LIMIT`
+
+GitHub API rate limit exceeded. Wait or use GitHub App.
+
+### `VALIDATION_ERROR`
+
+Invalid input args. Check arg types.
+
+### `ANALYSIS_FAILED`
+
+Workflow failed. Check Convex logs for details.
+
+## Next Steps
+
+- Review [Environment Variables](/docs/technical-reference/environment-variables)
+- Read [Backend Architecture](/docs/technical-reference/backend-architecture)

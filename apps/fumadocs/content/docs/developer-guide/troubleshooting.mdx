@@ -1,0 +1,356 @@
+---
+title: Troubleshooting
+description: Common issues and solutions
+icon: AlertTriangle
+---
+
+Solutions to common development issues.
+
+## Setup Issues
+
+### "Bun not found"
+
+**Solution**:
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+### "Convex deployment failed"
+
+**Check**:
+1. `npx convex dev --once` - Authenticate Convex CLI
+2. Internet connection stable
+3. Convex Dashboard accessible
+
+**Solution**:
+```bash
+cd packages/backend
+npx convex dev --reset  # Reset local deployment
+```
+
+### "GitHub OAuth redirect mismatch"
+
+**Check OAuth app settings**:
+- Callback URL: `http://localhost:3000/api/auth/callback/github`
+- Homepage URL: `http://localhost:3000`
+
+**Solution**: Update URLs in GitHub OAuth app settings.
+
+### "CORS error on auth"
+
+**Check**:
+- `CONVEX_SITE_URL` matches frontend URL
+- Better Auth callback URLs configured correctly
+
+**Solution**:
+```bash
+# In Convex Dashboard or CLI
+npx convex env set CONVEX_SITE_URL http://localhost:3000
+```
+
+## Development Issues
+
+### "Route not found" after adding new route
+
+**Cause**: Route tree not regenerated.
+
+**Solution**:
+```bash
+# Restart dev server
+# TanStack Router will auto-regenerate routeTree.gen.ts
+```
+
+### "Convex function not found"
+
+**Check**:
+1. Function exported in `convex/[file].ts`
+2. `convex dev` is running
+3. Types regenerated in `_generated/api.d.ts`
+
+**Solution**:
+```bash
+# Restart Convex dev server
+cd packages/backend
+npx convex dev
+```
+
+### "TypeScript errors after schema change"
+
+**Cause**: Stale generated types.
+
+**Solution**:
+```bash
+# Stop dev server
+# Run setup to regenerate
+bun run dev:setup
+```
+
+### "React Query not updating"
+
+**Check**:
+1. Query key matches function signature
+2. Convex dev deployment URL correct
+3. Network tab shows WebSocket connection
+
+**Solution**:
+```tsx
+// Force refetch
+const { refetch } = useQuery(api.repos.getByFullName, { fullName });
+refetch();
+```
+
+## Workflow Issues
+
+### "Workflow stuck in 'queued'"
+
+**Check Convex Dashboard**:
+- Workflows tab → Click workflow
+- Check for error messages
+
+**Solution**:
+1. Check backend logs for errors
+2. Verify env vars (GitHub tokens, AI keys)
+3. Restart workflow (re-analyze repo)
+
+### "Workflow failed at step X"
+
+**Common causes**:
+- **Step 1-3**: GitHub API rate limit or invalid repo
+- **Step 5**: RAG ingestion timeout (too many files)
+- **Step 6-9**: AI API error or validation failure
+- **Step 10-11**: GitHub API rate limit
+
+**Solution**:
+1. Check error in Convex Dashboard → Workflows → Failed step
+2. Fix issue (env var, rate limit, etc.)
+3. Re-analyze repository (workflow resumes)
+
+### "Analysis timeout"
+
+**Cause**: Repository too large (>10k files).
+
+**Solution**: Offworld currently best for repos &lt;5k files. Use Chat with manual queries for larger repos.
+
+## RAG Issues
+
+### "RAG search returns no results"
+
+**Check**:
+1. Repository was fully ingested (check `rag` table in Convex)
+2. Namespace correct: `repo:owner/name`
+3. Query has relevant keywords
+
+**Solution**:
+```typescript
+// Test RAG directly in Convex Dashboard
+// Run action: rag.search
+{
+  "namespace": "repo:facebook/react",
+  "query": "component rendering",
+  "limit": 5
+}
+```
+
+### "Embeddings failed"
+
+**Cause**: Google AI API error or quota exceeded.
+
+**Check**:
+- `GOOGLE_GENERATIVE_AI_API_KEY` is valid
+- API quota not exceeded (check Google Cloud Console)
+
+**Solution**: Verify API key and quota, then re-analyze.
+
+## AI Issues
+
+### "LLM returned invalid JSON"
+
+**Cause**: AI failed to follow JSON schema.
+
+**Check**: Convex logs for validation errors.
+
+**Solution**: Re-analyze repository (workflow retries).
+
+### "Difficulty ratings seem wrong"
+
+**Cause**: AI misunderstood issue scope or incomplete context.
+
+**Solution**: Use as guidance, not absolute truth. Always verify on GitHub.
+
+### "Architecture entities have wrong paths"
+
+**Cause**: LLM hallucinated paths not in repo.
+
+**Check**: Convex logs for "Invalid path from LLM" warnings.
+
+**Solution**: Path validation filters these out. Report issue if many invalid paths.
+
+## Frontend Issues
+
+### "White screen / blank page"
+
+**Check browser console** for errors.
+
+**Common causes**:
+- Convex connection failed (wrong URL)
+- JavaScript syntax error
+- React error boundary triggered
+
+**Solution**:
+```bash
+# Check Convex URL
+echo $VITE_CONVEX_URL
+
+# Rebuild
+bun run build
+```
+
+### "Infinite loading spinner"
+
+**Cause**: Query never resolves.
+
+**Check**:
+1. Network tab - WebSocket connected?
+2. Convex Dashboard - Function logs show execution?
+
+**Solution**: Check Convex deployment status and logs.
+
+### "Styles not updating"
+
+**Cause**: Tailwind not rebuilding.
+
+**Solution**:
+```bash
+# Restart dev server
+bun run dev:web
+```
+
+## Auth Issues
+
+### "Sign in redirects to error page"
+
+**Check**:
+1. GitHub OAuth app credentials correct
+2. Callback URL matches
+3. `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in Convex env
+
+**Solution**: Verify env vars in Convex Dashboard → Settings → Environment Variables.
+
+### "User not authenticated after sign-in"
+
+**Cause**: Session not persisted.
+
+**Check**:
+1. Browser allows cookies
+2. Better Auth session table has entries (Convex Dashboard → Data → sessions)
+
+**Solution**: Clear browser cookies and retry.
+
+## Deployment Issues
+
+### "Alchemy deploy failed"
+
+**Check**:
+1. `alchemy.env` has all required vars
+2. Alchemy CLI authenticated: `alchemy login`
+3. Domain configured correctly
+
+**Solution**:
+```bash
+alchemy deploy --verbose  # See detailed logs
+```
+
+### "Cloudflare Workers 502 error"
+
+**Cause**: Workers failed to start.
+
+**Check Cloudflare Dashboard**:
+- Workers → Logs (if enabled)
+- Build succeeded?
+
+**Solution**: Check Alchemy logs, verify env vars.
+
+### "Convex production deploy failed"
+
+**Cause**: Schema migration issue or env vars missing.
+
+**Solution**:
+```bash
+# Deploy with verbose output
+npx convex deploy --verbose
+```
+
+## Performance Issues
+
+### "Analysis takes >10 minutes"
+
+**Cause**: Repository too large or AI API slow.
+
+**Solution**:
+- Use smaller repos (&lt;5k files)
+- Check Google AI API status
+- Consider rate limiting
+
+### "Chat responses slow"
+
+**Cause**: RAG search + LLM latency.
+
+**Solution**:
+- Normal latency: 3-10 seconds
+- If >30 seconds, check network and API status
+
+## Database Issues
+
+### "Data not showing in Convex Dashboard"
+
+**Check**:
+1. Correct deployment selected (dev vs prod)
+2. Table exists
+3. Indexes built
+
+**Solution**: Verify deployment and check schema.
+
+### "Duplicate entries in database"
+
+**Cause**: Re-analysis without clearing old data.
+
+**Solution**: Workflow handles this automatically with `handleReIndex` step.
+
+## Build Issues
+
+### "Turbo build failed"
+
+**Check**:
+1. All dependencies installed: `bun install`
+2. TypeScript errors: `bun run typecheck`
+
+**Solution**:
+```bash
+# Clean and rebuild
+rm -rf node_modules .turbo
+bun install
+bun run build
+```
+
+### "Out of memory during build"
+
+**Solution**:
+```bash
+# Increase Node memory
+NODE_OPTIONS=--max_old_space_size=4096 bun run build
+```
+
+## Still Stuck?
+
+1. **Check GitHub Issues** - Someone may have reported this
+2. **Open a Discussion** - Ask the community
+3. **File an Issue** - Report bugs with:
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Environment (OS, Bun version, etc.)
+   - Logs/screenshots
+
+## Next Steps
+
+- Review [Architecture](/docs/developer-guide/architecture) for deeper understanding
+- Check [Technical Reference](/docs/technical-reference) for API details

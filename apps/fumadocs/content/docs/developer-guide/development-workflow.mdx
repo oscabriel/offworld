@@ -1,0 +1,211 @@
+---
+title: Development Workflow
+description: Commands, testing, and debugging
+icon: GitBranch
+---
+
+Essential commands and workflows for developing Offworld.
+
+## Development Commands
+
+### Start All
+
+```bash
+bun run dev
+```
+
+Starts both frontend and backend with hot-reloading.
+
+### Start Frontend Only
+
+```bash
+bun run dev:web
+```
+
+### Start Backend Only
+
+```bash
+bun run dev:server
+```
+
+### Quality Checks
+
+**IMPORTANT**: Run before committing:
+
+```bash
+# Lint and format (auto-fixes)
+bun run check
+
+# Type check all workspaces
+bun run typecheck
+```
+
+### Build
+
+```bash
+# Build all apps/packages
+bun run build
+
+# Build specific workspace
+bun run build --filter web
+```
+
+## File Watching
+
+All dev commands have **hot-reloading**:
+
+**Frontend** (TanStack Start):
+- Edit `apps/web/src/**/*.tsx` → instant refresh
+- Route changes auto-regenerate route tree
+
+**Backend** (Convex):
+- Edit `packages/backend/convex/**/*.ts` → auto-push to Convex
+- Schema changes require restart
+
+## Testing Workflow
+
+### Manual Testing
+
+1. **Start analysis** on small repo (&lt;50 files)
+2. **Watch Convex Dashboard** → Workflows tab
+3. **Verify progressive updates** on frontend
+4. **Test chat** with sample questions
+5. **Check auth flow** (sign in/out)
+
+### Test Repositories
+
+Good test repos:
+- `oscabriel/offworld` - Self-reference
+- `shadcn-ui/ui` - Medium complexity
+- `tanstack/router` - Well-structured
+
+Avoid:
+- Very large repos (>5k files) - may timeout
+- Repos with unusual structures
+
+### Debugging
+
+**Frontend**:
+```bash
+# Browser DevTools → Console
+# Check React Query devtools
+# Network tab for Convex calls
+```
+
+**Backend**:
+```bash
+# Convex Dashboard → Logs
+# Filter by function name
+# Check workflow execution steps
+```
+
+## Common Development Tasks
+
+### Adding a New Route
+
+1. Create `apps/web/src/routes/your-route/index.tsx`
+2. Route tree regenerates automatically
+3. Add to navigation in layout if needed
+
+### Adding a New Convex Function
+
+1. Create/edit `packages/backend/convex/[feature].ts`
+2. Export with `query()`, `mutation()`, or `action()`
+3. Import in frontend: `import { api } from "@offworld/backend"`
+4. Use: `useQuery(api.feature.yourFunction, args)`
+
+### Adding an Agent Tool
+
+1. Define in `packages/backend/convex/agent/tools.ts`:
+```typescript
+export const yourTool = createTool({
+  name: "yourTool",
+  description: "What this tool does",
+  parameters: z.object({ ... }),
+  execute: async (args, ctx) => {
+    // Tool logic
+  }
+});
+```
+2. Add to agent in `agent/codebaseAgent.ts`
+
+### Modifying Schema
+
+1. Edit `packages/backend/convex/schema.ts`
+2. Run `bun run dev:setup` to apply
+3. Clear data if breaking change: Convex Dashboard → Data → Delete table
+
+## Git Workflow
+
+### Branching
+
+```bash
+git checkout -b feature/your-feature
+```
+
+### Committing
+
+```bash
+# Stage changes
+git add .
+
+# Check before commit
+bun run check
+bun run typecheck
+
+# Commit (Biome runs on pre-commit hook)
+git commit -m "feat: your feature description"
+```
+
+### Commit Message Format
+
+Follow conventional commits:
+
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code refactoring
+- `docs:` - Documentation changes
+- `chore:` - Maintenance tasks
+
+### Pull Requests
+
+1. Push branch: `git push origin feature/your-feature`
+2. Create PR on GitHub
+3. Ensure CI passes (check, typecheck)
+4. Request review
+
+## Debugging Tips
+
+### Convex Function Not Found
+
+Check:
+1. Function is exported in `convex/[file].ts`
+2. `convex dev` is running
+3. Types are regenerated: `packages/backend/convex/_generated/api.d.ts`
+
+### React Query Not Updating
+
+Check:
+1. Query key matches function signature
+2. Convex is in dev mode (not production URL)
+3. Browser has network connection
+
+### Workflow Failed
+
+Check Convex Dashboard → Workflows:
+1. Which step failed?
+2. Error message in logs
+3. Retry workflow or fix issue and restart
+
+### RAG Search Returns Nothing
+
+Check:
+1. Repository was fully ingested (check `rag` table in Convex)
+2. Namespace is correct: `repo:owner/name`
+3. Query has relevant keywords
+
+## Next Steps
+
+- Understand the [Tech Stack](/docs/developer-guide/tech-stack)
+- Read [Architecture Deep Dive](/docs/developer-guide/architecture)
+- Learn about [Deployment](/docs/developer-guide/deployment)

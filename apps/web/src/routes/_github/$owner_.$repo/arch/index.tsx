@@ -31,6 +31,26 @@ function ArchitecturePage() {
 	);
 
 	const isProcessing = repoStatus?.indexingStatus === "processing";
+	const isNotIndexed = repoStatus === null;
+
+	// Show "Repository Not Indexed" for unindexed repos
+	if (isNotIndexed) {
+		return (
+			<ContentCard title="Repository Not Indexed">
+				<p className="mb-4 font-serif text-lg text-muted-foreground leading-relaxed">
+					This repository hasn't been analyzed yet. Please index the repository
+					first to view architecture.
+				</p>
+				<Link
+					to="/$owner/$repo"
+					params={{ owner, repo }}
+					className="inline-block border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90"
+				>
+					Go to Summary to Index
+				</Link>
+			</ContentCard>
+		);
+	}
 
 	// Show analyzing state while processing
 	if (isProcessing) {
@@ -232,6 +252,7 @@ function EntityCard({ entity, owner, repo }: EntityCardProps) {
 			to="/$owner/$repo/arch/$slug"
 			params={{ owner, repo, slug: entity.slug }}
 			className="group block rounded-md border border-primary/10 bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card/80"
+			preload="intent" // Prefetch on hover
 		>
 			<div className="flex items-start justify-between">
 				<div className="flex-1">

@@ -2,7 +2,7 @@ import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { useState } from "react";
-import { RepoUrlInput } from "@/components/explore/repo-url-input";
+import { RepoUrlInput } from "@/components/home/repo-url-input";
 import { Footer } from "@/components/layout/footer";
 import { RepoCard } from "@/components/repo/repo-card";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";

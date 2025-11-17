@@ -59,13 +59,12 @@ export const fetchRepoMetadata = internalAction({
 				defaultBranch: repo.default_branch,
 			};
 		} catch (error: unknown) {
-			if (
-				error &&
-				typeof error === "object" &&
-				"status" in error &&
-				error.status === 404
-			) {
-				throw new Error(`Repository ${args.owner}/${args.name} not found`);
+			if (error && typeof error === "object" && "status" in error) {
+				if (error.status === 404 || error.status === 403) {
+					throw new Error(
+						"Repository not found. It may be private on GitHub or not exist. Please try again.",
+					);
+				}
 			}
 			const message = error instanceof Error ? error.message : "Unknown error";
 			throw new Error(`Failed to fetch repository: ${message}`);
@@ -254,8 +253,12 @@ export const analyzeAndStoreIssues = internalAction({
 		name: v.string(),
 		summary: v.string(),
 		maxIssues: v.number(),
+		actualFilePaths: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
+		// Import path validation helper
+		const { findBestPathMatch } = await import("./architectureEntities");
+
 		// Fetch issues
 		const issuesData = await ctx.runAction(internal.github.fetchIssues, {
 			owner: args.owner,
@@ -293,9 +296,28 @@ export const analyzeAndStoreIssues = internalAction({
 				repoContext: args.summary,
 			});
 
+			// Validate and correct file paths using same logic as architecture entities
+			const validatedFiles =
+				analysis.filesLikelyTouched
+					?.map((file) => {
+						const validatedPath = findBestPathMatch(file, args.actualFilePaths);
+						if (validatedPath && validatedPath !== file) {
+							console.log(
+								`✓ Issue #${issue.number} file path corrected: ${file} → ${validatedPath}`,
+							);
+						} else if (!validatedPath && !args.actualFilePaths.includes(file)) {
+							console.warn(
+								`⚠ Issue #${issue.number} could not validate path: ${file}`,
+							);
+						}
+						return validatedPath || file;
+					})
+					.filter(Boolean) || [];
+
 			analyzedIssues.push({
 				...issue,
 				...analysis,
+				filesLikelyTouched: validatedFiles,
 				repositoryId: args.repoId,
 			});
 		}
@@ -307,6 +329,145 @@ export const analyzeAndStoreIssues = internalAction({
 		});
 
 		return analyzedIssues.length;
+	},
+});
+
+/**
+ * Fetch pull requests from GitHub
+ */
+export const fetchPullRequests = internalAction({
+	args: {
+		owner: v.string(),
+		name: v.string(),
+		state: v.optional(
+			v.union(v.literal("open"), v.literal("closed"), v.literal("all")),
+		),
+		perPage: v.optional(v.number()),
+	},
+	handler: async (_ctx, args) => {
+		const octokit = getOctokit();
+
+		try {
+			const { data: prs } = await octokit.pulls.list({
+				owner: args.owner,
+				repo: args.name,
+				state: args.state || "all",
+				sort: "updated",
+				direction: "desc",
+				per_page: args.perPage || 30,
+			});
+
+			return prs.map((pr) => ({
+				githubPrId: pr.id,
+				number: pr.number,
+				title: pr.title,
+				body: pr.body || undefined,
+				state: pr.state,
+				author: pr.user?.login || "unknown",
+				createdAt: new Date(pr.created_at).getTime(),
+				mergedAt: pr.merged_at ? new Date(pr.merged_at).getTime() : undefined,
+				githubUrl: pr.html_url,
+				filesChanged: [],
+				// Note: additions/deletions not available in list endpoint, must fetch individual PR
+				linesAdded: 0,
+				linesDeleted: 0,
+			}));
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			throw new Error(`Failed to fetch pull requests: ${message}`);
+		}
+	},
+});
+
+/**
+ * Fetch, analyze, and store pull requests
+ */
+export const analyzeAndStorePullRequests = internalAction({
+	args: {
+		repoId: v.id("repositories"),
+		owner: v.string(),
+		name: v.string(),
+		summary: v.string(),
+		maxPRs: v.number(),
+		actualFilePaths: v.array(v.string()),
+	},
+	handler: async (ctx, args) => {
+		// Import path validation helper
+		const { findBestPathMatch } = await import("./architectureEntities");
+
+		// Fetch PRs
+		const prsData = await ctx.runAction(internal.github.fetchPullRequests, {
+			owner: args.owner,
+			name: args.name,
+			state: "all",
+			perPage: 30,
+		});
+
+		// Analyze PRs in batches
+		const analyzedPRs: Array<{
+			repositoryId: Id<"repositories">;
+			githubPrId: number;
+			number: number;
+			title: string;
+			body?: string;
+			state: string;
+			author: string;
+			createdAt: number;
+			mergedAt?: number;
+			githubUrl: string;
+			filesChanged: string[];
+			linesAdded: number;
+			linesDeleted: number;
+			aiSummary?: string;
+			difficulty?: number;
+			impactAreas?: string[];
+			reviewComplexity?: string;
+		}> = [];
+
+		const prsToAnalyze = prsData.slice(0, args.maxPRs);
+
+		for (const pr of prsToAnalyze) {
+			const analysis = await ctx.runAction(internal.gemini.analyzePullRequest, {
+				prTitle: pr.title,
+				prBody: pr.body,
+				linesAdded: pr.linesAdded,
+				linesDeleted: pr.linesDeleted,
+				repoContext: args.summary,
+			});
+
+			// Validate and correct file paths
+			const validatedFiles =
+				analysis.filesChanged
+					?.map((file: string) => {
+						const validatedPath = findBestPathMatch(file, args.actualFilePaths);
+						if (validatedPath && validatedPath !== file) {
+							console.log(
+								`✓ PR #${pr.number} file path corrected: ${file} → ${validatedPath}`,
+							);
+						} else if (!validatedPath && !args.actualFilePaths.includes(file)) {
+							console.warn(
+								`⚠ PR #${pr.number} could not validate path: ${file}`,
+							);
+						}
+						return validatedPath || file;
+					})
+					.filter(Boolean) || [];
+
+			analyzedPRs.push({
+				...pr,
+				...analysis,
+				filesChanged: validatedFiles,
+				repositoryId: args.repoId,
+			});
+		}
+
+		// Store PRs
+		await ctx.runMutation(internal.repos.storePullRequests, {
+			repoId: args.repoId,
+			pullRequests: analyzedPRs,
+		});
+
+		return analyzedPRs.length;
 	},
 });
 

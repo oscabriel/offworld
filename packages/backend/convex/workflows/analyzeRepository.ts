@@ -211,6 +211,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 
 			// Consolidate entities: Filter 50+ → 5-15 major architectural entities
 			// Based on repo size and importance scores
+			// Pass actual file paths for GitHub URL validation
 			const consolidatedEntities = await step.runAction(
 				internal.architectureEntities.consolidateEntities,
 				{
@@ -219,6 +220,9 @@ export const analyzeRepositoryWorkflow = workflow.define({
 					repoName: args.name,
 					defaultBranch: metadata.defaultBranch,
 					fileCount: ingestResult.filesProcessed,
+					actualFilePaths: fileTreeResult.files.map(
+						(f: { path: string }) => f.path,
+					), // NEW: Validate paths against actual GitHub tree
 				},
 			);
 
@@ -323,10 +327,28 @@ export const analyzeRepositoryWorkflow = workflow.define({
 					name: args.name,
 					summary,
 					maxIssues: 10,
+					actualFilePaths: fileTreeResult.files.map(
+						(f: { path: string }) => f.path,
+					),
 				},
 			);
 
-			// Step 11: Finalize analysis (mark as completed)
+			// Step 11: Analyze pull requests
+			const prCount = await step.runAction(
+				internal.github.analyzeAndStorePullRequests,
+				{
+					repoId,
+					owner: args.owner,
+					name: args.name,
+					summary,
+					maxPRs: 10,
+					actualFilePaths: fileTreeResult.files.map(
+						(f: { path: string }) => f.path,
+					),
+				},
+			);
+
+			// Step 12: Finalize analysis (mark as completed)
 			await step.runMutation(internal.repos.finalizeAnalysis, {
 				repoId,
 				status: "completed",
@@ -338,6 +360,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				filesAnalyzed: ingestResult.filesProcessed,
 				chunksCreated: ingestResult.chunksCreated,
 				issuesAnalyzed: issueCount,
+				pullRequestsAnalyzed: prCount,
 			};
 		} catch (error: unknown) {
 			// Mark repo as failed

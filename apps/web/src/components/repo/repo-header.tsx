@@ -1,5 +1,3 @@
-import { api } from "@offworld/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import { StatusBadge } from "./status-badge";
 
@@ -33,23 +31,26 @@ interface RepoHeaderProps {
 		language?: string;
 		description?: string;
 	} | null;
-	onReindex?: () => void;
-	isReindexing?: boolean;
+	githubMetadata?: {
+		description?: string;
+		stars?: number;
+		language?: string;
+		githubUrl?: string;
+	} | null;
 }
 
 export function RepoHeader({
 	owner,
 	repo,
 	repoData,
-	onReindex,
-	isReindexing,
+	githubMetadata,
 }: RepoHeaderProps) {
 	const isCompleted = repoData?.indexingStatus === "completed";
 	const isNotIndexed = repoData === null;
 
-	// Check authentication status
-	const currentUser = useQuery(api.auth.getCurrentUserSafe);
-	const isAuthenticated = currentUser !== null && currentUser !== undefined;
+	// Use GitHub metadata for unindexed repos, DB data for indexed repos
+	const displayData =
+		isNotIndexed && githubMetadata ? githubMetadata : repoData;
 
 	return (
 		<header>
@@ -80,35 +81,24 @@ export function RepoHeader({
 										Analyzed {formatTimestamp(repoData.lastAnalyzedAt)}
 									</span>
 								)}
-								{repoData.stars !== undefined && (
-									<span className="font-mono text-muted-foreground text-sm">
-										⭐ {repoData.stars.toLocaleString()} stars
-									</span>
-								)}
-								{repoData.language && (
-									<span className="font-mono text-muted-foreground text-sm">
-										{repoData.language}
-									</span>
-								)}
 							</>
 						)}
+						{/* Show metadata from GitHub or DB */}
+						{displayData?.stars !== undefined && (
+							<span className="font-mono text-muted-foreground text-sm">
+								⭐ {displayData.stars.toLocaleString()} stars
+							</span>
+						)}
+						{displayData?.language && (
+							<span className="font-mono text-muted-foreground text-sm">
+								{displayData.language}
+							</span>
+						)}
 					</div>
-					{!isNotIndexed && repoData?.description && (
-						<div className="flex items-end justify-between gap-4">
-							<p className="font-mono text-base text-muted-foreground">
-								{repoData.description}
-							</p>
-							{isCompleted && onReindex && isAuthenticated && (
-								<button
-									type="button"
-									onClick={onReindex}
-									disabled={isReindexing}
-									className="shrink-0 border border-primary/20 bg-card px-3 py-1.5 font-mono text-muted-foreground text-sm hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-								>
-									{isReindexing ? "Re-indexing..." : "Re-index"}
-								</button>
-							)}
-						</div>
+					{displayData?.description && (
+						<p className="font-mono text-base text-muted-foreground">
+							{displayData.description}
+						</p>
 					)}
 				</div>
 			</div>

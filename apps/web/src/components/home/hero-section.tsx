@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RepoUrlInput } from "@/components/explore/repo-url-input";
+import { RepoUrlInput } from "@/components/home/repo-url-input";
 
 export function HeroSection() {
 	const heroRef = useRef<HTMLDivElement>(null);
@@ -33,7 +33,7 @@ export function HeroSection() {
 			</div>
 
 			<div
-				className={`mx-auto mt-16 w-full max-w-3xl px-4 transition-all duration-1000 md:mt-20 ${
+				className={`mx-auto mt-16 w-full max-w-3xl px-4 transition-all duration-1000 md:mt-32 ${
 					isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
 				}`}
 				style={{ transitionDelay: "500ms" }}

@@ -10,6 +10,7 @@ import {
 	Layers,
 	MessageSquare,
 	Package,
+	RefreshCw,
 	Settings,
 } from "lucide-react";
 
@@ -37,14 +38,6 @@ export function RepoNavigation({ disabled = false }: RepoNavigationProps) {
 	// Check if we're on an arch route
 	const isArchRoute = location.pathname.includes("/arch");
 
-	// Group entities by type
-	const packages =
-		entities?.filter((e) => e.type === "package" || e.type === "directory") ||
-		[];
-	const modules = entities?.filter((e) => e.type === "module") || [];
-	const components = entities?.filter((e) => e.type === "component") || [];
-	const services = entities?.filter((e) => e.type === "service") || [];
-
 	return (
 		<nav className="space-y-1">
 			<NavLink to={basePath} icon={FileText} disabled={disabled}>
@@ -57,45 +50,32 @@ export function RepoNavigation({ disabled = false }: RepoNavigationProps) {
 			{/* Architecture Subroutes - Show when on arch page and entities exist */}
 			{isArchRoute && entities && entities.length > 0 && (
 				<div className="ml-6 space-y-1 border-primary/10 border-l pl-3">
-					{packages.slice(0, 5).map((entity) => (
-						<SubNavLink
-							key={entity._id}
-							to={`${basePath}/arch/${entity.slug}`}
-							icon={Package}
-						>
-							{entity.name}
-						</SubNavLink>
-					))}
-					{modules.slice(0, 5).map((entity) => (
-						<SubNavLink
-							key={entity._id}
-							to={`${basePath}/arch/${entity.slug}`}
-							icon={Layers}
-						>
-							{entity.name}
-						</SubNavLink>
-					))}
-					{components.slice(0, 5).map((entity) => (
-						<SubNavLink
-							key={entity._id}
-							to={`${basePath}/arch/${entity.slug}`}
-							icon={FileCode}
-						>
-							{entity.name}
-						</SubNavLink>
-					))}
-					{services.slice(0, 5).map((entity) => (
-						<SubNavLink
-							key={entity._id}
-							to={`${basePath}/arch/${entity.slug}`}
-							icon={Settings}
-						>
-							{entity.name}
-						</SubNavLink>
-					))}
-					{entities.length > 20 && (
+					{/* Show top entities by rank (limit to 15 total) */}
+					{entities
+						.sort((a, b) => (a.rank || 999) - (b.rank || 999))
+						.slice(0, 15)
+						.map((entity) => {
+							const Icon = {
+								package: Package,
+								directory: Package,
+								module: Layers,
+								component: FileCode,
+								service: Settings,
+							}[entity.type];
+
+							return (
+								<SubNavLink
+									key={entity._id}
+									to={`${basePath}/arch/${entity.slug}`}
+									icon={Icon}
+								>
+									{entity.name}
+								</SubNavLink>
+							);
+						})}
+					{entities.length > 15 && (
 						<div className="px-2 py-1 font-mono text-muted-foreground text-xs">
-							+{entities.length - 20} more
+							+{entities.length - 15} more
 						</div>
 					)}
 				</div>
@@ -109,6 +89,9 @@ export function RepoNavigation({ disabled = false }: RepoNavigationProps) {
 			</NavLink>
 			<NavLink to={`${basePath}/chat`} icon={MessageSquare} disabled={disabled}>
 				Chat
+			</NavLink>
+			<NavLink to={`${basePath}/refresh`} icon={RefreshCw} disabled={disabled}>
+				Refresh
 			</NavLink>
 		</nav>
 	);
@@ -143,7 +126,8 @@ function NavLink({ to, icon: Icon, children, disabled = false }: NavLinkProps) {
 					!to.includes("/arch") &&
 					!to.includes("/issues") &&
 					!to.includes("/pr") &&
-					!to.includes("/chat"),
+					!to.includes("/chat") &&
+					!to.includes("/refresh"),
 			}}
 		>
 			<Icon className="h-4 w-4" />
@@ -166,6 +150,7 @@ function SubNavLink({ to, icon: Icon, children }: SubNavLinkProps) {
 			activeProps={{
 				className: "bg-accent/70 font-medium",
 			}}
+			preload="intent" // Prefetch on hover for instant navigation
 		>
 			<Icon className="h-3.5 w-3.5 text-muted-foreground" />
 			<span className="truncate font-mono text-xs">{children}</span>

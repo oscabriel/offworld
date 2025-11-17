@@ -78,7 +78,33 @@ Create a final summary (250 words max) that:
 2. Explains how it's built (iteration 2)
 3. Highlights what makes it unique (iteration 3)
 4. Flows as one coherent narrative
-5. Is useful for developers evaluating or contributing to this project`;
+5. Is useful for developers evaluating or contributing to this project
+
+CRITICAL OUTPUT REQUIREMENTS:
+- DO NOT include top-level H1 headings (single #)
+- DO use H2/H3 headings (##, ###) to structure content
+- Standardize on heading-based structure (NOT numbered lists)
+- Start directly with content (no "Summary:", "Overview:", "Repository Analysis:" labels)
+- Use headings like "## Key Features", "## Architecture", "## Getting Started"
+- Make headings descriptive and useful (not generic)
+
+GOOD EXAMPLE:
+## What It Does
+[Description of library purpose...]
+
+## Core Architecture
+[How it's organized...]
+
+## Key Features
+[Unique capabilities...]
+
+BAD EXAMPLE:
+# Summary
+Repository Analysis: [library name]
+1. Overview
+2. Features
+
+Return prose text with H2/H3 structure. No top-level H1, no numbered lists, no redundant labels.`;
 
 // ============================================================================
 // ARCHITECTURE GENERATION PROMPTS (3 iterations)
@@ -110,17 +136,36 @@ Generate a JSON response with this EXACT structure:
       "name": "<Package or major subsystem name>",
       "slug": "<url-safe-name>",
       "type": "package",
-      "path": "<full path from repository root>",
-      "description": "<what this component does for library users>",
-      "purpose": "<why it exists in the library architecture>",
+      "path": "<COMPLETE path from repository root>",
+
+      "description": "<COMPREHENSIVE 4-6 sentence description:
+        - WHAT this component does for library users (be specific)
+        - Key responsibilities and capabilities it provides
+        - HOW it fits into the broader library architecture
+        - What developers would use this for
+        - Technical implementation approach or patterns used
+        Make this detailed enough that a developer can understand this component's role WITHOUT reading the code.>",
+
+      "purpose": "<DETAILED 3-5 sentence explanation:
+        - WHY this exists in the library's architecture
+        - What architectural problem or need it solves
+        - How it enables the library's core functionality
+        - What would be missing or broken without it
+        - Design decisions or trade-offs made
+        Explain the design REASONING, not just functionality.>",
+
       "dependencies": [],
-      "keyFiles": ["<full file paths from repository root>"],
+      "keyFiles": ["<FULL file paths from repository root>"],
       "complexity": "low|medium|high",
       "layer": "public|internal|extension|utility",
       "importance": 0.95
     }
   ]
 }
+
+DESCRIPTION QUALITY REQUIREMENTS:
+- BAD: "The core routing logic and APIs for TanStack Router."
+- GOOD: "The Router component serves as the central orchestrator for TanStack Router, managing navigation state, route matching, and browser history integration. It provides the primary API surface that developers interact with through hooks like useRouter() and useNavigate(). The router maintains a tree of route definitions and efficiently matches URLs to components while handling lazy loading and code splitting. This is the foundation that all other routing features build upon, implementing the core navigation lifecycle from URL changes to component rendering."
 
 REQUIRED NEW FIELDS:
 - "layer": MUST be one of:
@@ -191,12 +236,27 @@ Generate a JSON response continuing the structure:
       "name": "<Module or subsystem name>",
       "slug": "<url-safe-name>",
       "type": "module",
-      "path": "<full path from repository root>",
-      "description": "<what this internal system does>",
-      "purpose": "<its role in making the library work>",
+      "path": "<COMPLETE path from repository root>",
+
+      "description": "<COMPREHENSIVE 4-6 sentence description:
+        - WHAT this internal system does (be specific)
+        - Key responsibilities and how it processes data
+        - HOW it connects to public APIs from Iteration 1
+        - Technical algorithms or patterns it implements
+        - Performance or architectural benefits it provides
+        Make this detailed enough to understand the system's role and implementation.>",
+
+      "purpose": "<DETAILED 3-5 sentence explanation:
+        - WHY this internal system exists
+        - What problem it solves architecturally
+        - How it enables the library to function
+        - Design decisions and why they were made
+        - Trade-offs considered in its implementation
+        Explain the architectural REASONING and necessity.>",
+
       "dependencies": ["<reference Iteration 1 entities by name>"],
       "usedBy": ["<which public APIs use this>"],
-      "keyFiles": ["<full file paths from repository root>"],
+      "keyFiles": ["<FULL file paths from repository root>"],
       "complexity": "low|medium|high",
       "layer": "internal|extension|utility",
       "importance": 0.75
@@ -272,12 +332,27 @@ Generate a JSON response completing the structure:
       "name": "<Component or utility name>",
       "slug": "<url-safe-name>",
       "type": "component",
-      "path": "<full path from repository root>",
-      "description": "<what this component/utility provides>",
-      "purpose": "<its specific use case in the library>",
+      "path": "<COMPLETE path from repository root>",
+
+      "description": "<COMPREHENSIVE 4-6 sentence description:
+        - WHAT this component or utility provides
+        - Specific capabilities and use cases
+        - HOW it integrates with other systems
+        - When developers would use this
+        - Implementation approach or patterns
+        Make this detailed and practical for understanding the component's role.>",
+
+      "purpose": "<DETAILED 3-5 sentence explanation:
+        - WHY this component exists
+        - What functionality it enables
+        - How it supports the overall architecture
+        - Design rationale behind its implementation
+        - What benefit it provides to the library
+        Explain the architectural value and reasoning.>",
+
       "dependencies": ["<reference previous entities by name>"],
       "usedBy": ["<which systems use this>"],
-      "keyFiles": ["<full file paths from repository root>"],
+      "keyFiles": ["<FULL file paths from repository root>"],
       "complexity": "low|medium|high",
       "layer": "utility|extension|internal",
       "importance": 0.50
@@ -327,74 +402,83 @@ Return ONLY valid JSON, no markdown blocks, no code fences, no explanatory text.
 // ARCHITECTURE SYNTHESIS PROMPT (Final step - DeepWiki pattern)
 // ============================================================================
 
-export const ARCHITECTURE_SYNTHESIS = `You are synthesizing multi-iteration architecture analysis into a cohesive narrative.
-
-CAREFULLY REVIEW THE ENTIRE ANALYSIS:
-
-Iteration 1 - Public APIs & Entry Points:
-{{iteration1Overview}}
-
-Iteration 2 - Internal Subsystems & Modules:
-{{iteration2Overview}}
-
-Iteration 3 - Components & Utilities:
-{{iteration3Overview}}
+export const ARCHITECTURE_SYNTHESIS = `You are writing THE DEFINITIVE architectural guide for developers exploring this open source library.
 
 Repository: {{repoName}}
-Architecture Pattern: {{pattern}}
-Total Entities Discovered: {{entityCount}}
+Pattern: {{pattern}}
 
-ALL DISCOVERED ENTITIES (for reference):
+You have analyzed this library through multiple perspectives:
+
+HIGH-LEVEL VIEW:
+{{iteration1Overview}}
+
+INTERNAL SYSTEMS:
+{{iteration2Overview}}
+
+SUPPORTING COMPONENTS:
+{{iteration3Overview}}
+
+DISCOVERED {{entityCount}} MAJOR ARCHITECTURAL ENTITIES:
 {{allEntities}}
 
-TASK: Synthesize ALL findings from the 3 iterations into ONE comprehensive architectural narrative.
+YOUR TASK: Write a comprehensive architectural guide (300-400 words) that helps developers understand how to use and contribute to this library.
 
-Your narrative should:
+STRUCTURE YOUR NARRATIVE (4-6 paragraphs):
 
-1. **START with the library's purpose** (from Iteration 1)
-   - What this library does for developers
-   - Primary use cases and target audience
+**Paragraph 1-2: What developers need to know**
+- Start with: "This library provides..." or "[Name] is designed to..."
+- Explain the core value proposition
+- Describe the primary API surface developers interact with
+- Mention key exports and entry points by name
 
-2. **EXPLAIN the architecture** (combine all 3 iterations)
-   - How the library is organized (pattern, structure)
-   - Public API surface (what developers import)
-   - Internal subsystems (how it works under the hood)
-   - Extension points (how developers can extend it)
+**Paragraph 3-4: How it works internally**
+- Explain the internal architecture in natural terms
+- Describe data flow naturally (how requests transform into results)
+- Reference specific architectural entities by name
+- Explain why the architecture is designed this way
 
-3. **HIGHLIGHT what makes it unique** (synthesis insight)
-   - Key architectural decisions
-   - Notable design patterns
-   - What makes this library special
+**Paragraph 5: What makes it special**
+- Highlight unique design decisions
+- Explain architectural trade-offs
+- Mention extension mechanisms if applicable
 
-4. **GUIDE contributors** (actionable insights)
-   - Where to start exploring the code
-   - How the major pieces connect
-   - What to understand before contributing
+**Paragraph 6: Guidance for contributors**
+- Where to start reading the code
+- How the major pieces connect
+- What patterns to understand before contributing
 
-SYNTHESIS REQUIREMENTS:
-- Write 4-6 paragraphs (300-400 words total)
-- Flow as one coherent narrative (not bullet points)
-- Reference specific major entities by name
-- Emphasize library-specific architecture (public API → internal → extensions)
-- Build from overview → details → unique insights → contributor guidance
-- Use clear, direct language for developers
+CRITICAL WRITING RULES (ANTI-JARGON):
+- NEVER mention "iterations", "iteration 1/2/3", "discovered across N iterations"
+- NEVER mention "layers", "public layer", "internal layer", "layer classification"
+- NEVER mention "importance scores", "consolidated entities", "filtered to top N"
+- NEVER say "The public API includes..." - instead say "Developers interact with..."
+- NEVER say "The internal subsystems handle..." - instead say "Under the hood..."
+- NEVER reference the analysis process - write as if you designed the architecture
 
-CRITICAL INSTRUCTIONS:
-- CAREFULLY review ALL three iteration overviews above
-- Synthesize insights, don't just concatenate
-- Focus on the architectural STORY, not just entity lists
-- Reference the {{pattern}} and how it's implemented
-- Make it useful for developers evaluating or contributing
+Write as if you're explaining the codebase to a colleague, not documenting a workflow.
 
-This is the DEFINITIVE architectural summary - make it comprehensive and insightful.
+EXAMPLES OF GOOD PHRASING:
+✅ "TanStack Router provides type-safe routing through its core Router component..."
+✅ "The matching engine transforms URL patterns into resolved routes..."
+✅ "Developers can extend routing behavior through custom matchers..."
+✅ "At its core, the library uses a declarative configuration system..."
 
-Return ONLY the narrative text, no markdown formatting, no section headers, no code blocks.`;
+EXAMPLES OF BAD PHRASING:
+❌ "Iteration 1 discovered the public API layer..."
+❌ "The internal subsystems include..."
+❌ "This entity has importance score 0.9..."
+❌ "Consolidated to 8 major entities from 45 discovered..."
+❌ "The public layer exposes..."
+
+Use natural transitions between paragraphs. Reference entities by name in context.
+
+Return ONLY the flowing prose narrative (4-6 paragraphs). No markdown headings, no section labels, just coherent paragraphs.`;
 
 // ============================================================================
 // DIAGRAM GENERATION PROMPTS
 // ============================================================================
 
-export const ARCHITECTURE_DIAGRAM_PROMPT = `Generate a Mermaid C4Context diagram showing the high-level architecture.
+export const ARCHITECTURE_DIAGRAM_PROMPT = `Generate a Mermaid diagram showing the high-level architecture.
 
 Repository: {{repoName}}
 Architecture Pattern: {{pattern}}
@@ -402,32 +486,41 @@ Architecture Pattern: {{pattern}}
 Discovered Entities:
 {{entities}}
 
-Create a C4Context diagram using Mermaid syntax that shows:
-- Main system components as boxes
-- Relationships between components
-- External systems if any
-- Clear hierarchy and grouping
+Create a diagram showing main components and their relationships.
 
-Example format:
+CRITICAL MERMAID SYNTAX REQUIREMENTS:
+1. Use ONLY these diagram types: "graph TB", "graph LR", "graph TD"
+2. Node IDs must be alphanumeric (A-Z, 0-9, underscore ONLY)
+3. Node labels use square brackets: A[Label Text]
+4. Arrows use --> for directed, --- for undirected
+5. NO special characters in node IDs (no dashes, spaces, slashes, dots)
+6. Subgraphs must have unique alphanumeric IDs
+7. Keep simple - max 15 nodes for readability
+
+VALID EXAMPLE:
 \`\`\`mermaid
 graph TB
-    subgraph "System Name"
-        A[Component A]
-        B[Component B]
-        C[Component C]
+    subgraph PublicAPI
+        A[Router API]
+        B[Route Matcher]
     end
-
-    A -->|uses| B
-    B -->|depends on| C
-
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#f0f0f0
+    subgraph Internal
+        C[Navigation Engine]
+        D[State Manager]
+    end
+    A --> C
+    B --> D
 \`\`\`
 
-Keep under 20 nodes for readability.
-Use subgraphs to show containment (like packages containing modules).
-Return ONLY the mermaid diagram code, no explanation or markdown fences.`;
+INVALID (DO NOT USE):
+- Node IDs with spaces: Router API (wrong, must be RouterAPI or A)
+- Node IDs with slashes: src/router (wrong, must be SrcRouter or A)
+- Node IDs with dashes: router-core (wrong, must be RouterCore or A)
+- Complex syntax that might fail parsing
+
+Use simple single-letter IDs (A, B, C...) if in doubt.
+
+Return ONLY the mermaid code block with triple backticks.`;
 
 export const DATA_FLOW_DIAGRAM_PROMPT = `Generate a Mermaid flowchart showing data/request flow through the system.
 
@@ -437,13 +530,16 @@ Architecture Overview: {{overview}}
 Discovered Entities:
 {{entities}}
 
-Create a flowchart showing:
-- How requests enter the system
-- How data flows between components
-- Processing stages
-- Data storage/retrieval
+CRITICAL MERMAID SYNTAX REQUIREMENTS:
+1. Use "graph LR" or "graph TD" only
+2. Node IDs must be ALPHANUMERIC ONLY (A, B, C, D1, D2...)
+3. NO dashes, spaces, slashes in node IDs
+4. Use {} for decision nodes: C{Decision?}
+5. Labels in square brackets: A[User Request]
+6. Simple arrows only: -->
+7. Max 12 nodes for clarity
 
-Example format:
+VALID EXAMPLE:
 \`\`\`mermaid
 graph LR
     A[User Request] --> B[Router]
@@ -454,9 +550,11 @@ graph LR
     F --> G[Response]
 \`\`\`
 
-Keep under 15 nodes.
-Use decision diamonds for conditional flows.
-Return ONLY the mermaid diagram code, no explanation or markdown fences.`;
+INVALID - DO NOT USE:
+- auth-check{Decision} (wrong, use C{Decision})
+- src/router[Router] (wrong, use A[Router])
+
+Return ONLY the mermaid code block with triple backticks.`;
 
 export const ROUTING_DIAGRAM_PROMPT = `Generate a Mermaid graph showing the routing/navigation structure.
 
@@ -464,13 +562,15 @@ Repository: {{repoName}}
 Route Files Found:
 {{routeFiles}}
 
-Create a graph showing:
-- Main routes and subroutes
-- Route hierarchy
-- Dynamic routes (with params)
-- Special routes (auth, error pages, etc.)
+CRITICAL MERMAID SYNTAX REQUIREMENTS:
+1. Use "graph TD" only (top-down tree)
+2. Node IDs must be ALPHANUMERIC (Root, Home, Auth1, Auth2...)
+3. NO slashes, colons, or dashes in node IDs
+4. Labels in square brackets can contain routes: A[/dashboard/:id]
+5. Simple arrows only: -->
+6. Max 15 routes for readability
 
-Example format:
+VALID EXAMPLE:
 \`\`\`mermaid
 graph TD
     Root[/] --> Home[/home]
@@ -481,9 +581,12 @@ graph TD
     Dashboard --> Profile[/dashboard/:userId]
 \`\`\`
 
-Keep under 20 routes.
-Show hierarchy clearly.
-Return ONLY the mermaid diagram code, no explanation or markdown fences.`;
+INVALID - DO NOT USE:
+- /auth[Auth] (wrong, use Auth[/auth])
+- auth-page[Auth] (wrong, use AuthPage[Auth])
+- :userId[Dynamic] (wrong, use A[Dynamic :userId])
+
+Return ONLY the mermaid code block with triple backticks.`;
 
 // ============================================================================
 // HELPER FUNCTIONS

@@ -61,9 +61,29 @@ Keep the summary under 300 words. Focus on clarity and practical understanding.`
 			prompt,
 		});
 
-		return text;
+		// Strip top-level headings as fallback (prompt should prevent this)
+		return stripTopLevelHeadings(text);
 	},
 });
+
+/**
+ * Helper: Strip redundant top-level H1 headings from LLM output
+ */
+function stripTopLevelHeadings(text: string): string {
+	// Remove only top-level H1 headings (single #)
+	let cleaned = text.replace(/^#\s+.+$/gm, "");
+
+	// Remove standalone redundant labels at start
+	cleaned = cleaned.replace(
+		/^(Summary|Overview|Repository Analysis|Introduction):\s*/im,
+		"",
+	);
+
+	// Trim excessive newlines
+	cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+	return cleaned.trim();
+}
 
 /**
  * Generate architecture overview using Gemini 2.5 Flash Lite
@@ -410,13 +430,24 @@ export const generateArchitectureDiagram = internalAction({
 		});
 
 		// Extract mermaid code (remove markdown fences if present)
+		let diagram = text.trim();
 		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
 		if (mermaidMatch) {
-			return mermaidMatch[1].trim();
+			diagram = mermaidMatch[1].trim();
 		}
 
-		// Return raw text if no code blocks found
-		return text.trim();
+		// Basic validation
+		if (!diagram.startsWith("graph ")) {
+			console.warn(
+				"Invalid mermaid diagram (no graph keyword), using fallback",
+			);
+			return generateFallbackDiagram(args.repoName, "architecture");
+		}
+
+		// Sanitize node IDs (replace problematic characters)
+		diagram = sanitizeMermaidDiagram(diagram);
+
+		return diagram;
 	},
 });
 
@@ -446,12 +477,22 @@ export const generateDataFlowDiagram = internalAction({
 		});
 
 		// Extract mermaid code
+		let diagram = text.trim();
 		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
 		if (mermaidMatch) {
-			return mermaidMatch[1].trim();
+			diagram = mermaidMatch[1].trim();
 		}
 
-		return text.trim();
+		// Basic validation
+		if (!diagram.startsWith("graph ")) {
+			console.warn("Invalid data flow diagram, using fallback");
+			return generateFallbackDiagram(args.repoName, "dataFlow");
+		}
+
+		// Sanitize
+		diagram = sanitizeMermaidDiagram(diagram);
+
+		return diagram;
 	},
 });
 
@@ -504,14 +545,76 @@ export const generateRoutingDiagram = internalAction({
 		});
 
 		// Extract mermaid code
+		let diagram = text.trim();
 		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
 		if (mermaidMatch) {
-			return mermaidMatch[1].trim();
+			diagram = mermaidMatch[1].trim();
 		}
 
-		return text.trim();
+		// Basic validation
+		if (!diagram.startsWith("graph ")) {
+			console.warn("Invalid routing diagram, using fallback");
+			return generateFallbackDiagram(args.repoName, "routing");
+		}
+
+		// Sanitize
+		diagram = sanitizeMermaidDiagram(diagram);
+
+		return diagram;
 	},
 });
+
+/**
+ * Sanitize Mermaid diagram by fixing common issues
+ */
+function sanitizeMermaidDiagram(diagram: string): string {
+	// Replace problematic characters in node definitions
+	// Pattern: NodeID[Label] - keep label as-is, clean ID
+	return diagram.replace(
+		/([A-Za-z][\w-]*)\[([^\]]+)\]/g,
+		(_match, id, label) => {
+			// Clean the ID: remove all non-alphanumeric except underscore
+			const cleanId = id.replace(/[^A-Za-z0-9_]/g, "");
+			return `${cleanId}[${label}]`;
+		},
+	);
+}
+
+/**
+ * Generate fallback diagram when LLM output is invalid
+ */
+function generateFallbackDiagram(repoName: string, type: string): string {
+	if (type === "architecture") {
+		return `graph TB
+    A[${repoName}]
+    B[Core Logic]
+    C[API Surface]
+    D[Utilities]
+
+    A --> B
+    A --> C
+    B --> D
+
+    style A fill:#e1f5ff
+    style B fill:#fff3e0`;
+	}
+
+	if (type === "dataFlow") {
+		return `graph LR
+    A[Input] --> B[Process]
+    B --> C[Output]
+
+    style A fill:#e1f5ff
+    style C fill:#e8f5e9`;
+	}
+
+	// routing
+	return `graph TD
+    A[Root] --> B[Main Routes]
+    B --> C[Sub Routes]
+
+    style A fill:#e1f5ff`;
+}
 
 /**
  * Analyze an issue to determine difficulty and required skills
@@ -575,6 +678,71 @@ Respond ONLY with valid JSON, no additional text.`;
 				aiSummary: args.issueTitle,
 				filesLikelyTouched: [],
 				skillsRequired: [],
+			};
+		}
+	},
+});
+
+/**
+ * Analyze pull request impact for contributors
+ */
+export const analyzePullRequest = internalAction({
+	args: {
+		prTitle: v.string(),
+		prBody: v.optional(v.string()),
+		linesAdded: v.number(),
+		linesDeleted: v.number(),
+		repoContext: v.string(),
+	},
+	handler: async (_ctx, args) => {
+		const prompt = `You are an expert code reviewer. Analyze this pull request and provide insights for potential reviewers.
+
+Repository Context: ${args.repoContext}
+
+PR Title: ${args.prTitle}
+Lines: +${args.linesAdded} -${args.linesDeleted}
+${args.prBody ? `Description: ${args.prBody.slice(0, 1000)}` : ""}
+
+Please provide a JSON response with:
+{
+  "difficulty": <number 1-5, where 1 is easiest to review and 5 is hardest>,
+  "summary": "<2-3 sentence plain English explanation of what this PR changes>",
+  "filesChanged": ["<list of 2-5 file paths or directory patterns that were likely changed>"],
+  "impactAreas": ["<list of 2-4 functional areas affected, e.g., 'Authentication', 'Database', 'UI'>"],
+  "reviewComplexity": "<'simple' | 'moderate' | 'complex' based on review effort needed>"
+}
+
+Respond ONLY with valid JSON, no additional text.`;
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		try {
+			// Extract JSON from response (handle markdown code blocks)
+			const jsonMatch = text.match(/\{[\s\S]*\}/);
+			if (!jsonMatch) {
+				throw new Error("No JSON found in response");
+			}
+
+			const data = JSON.parse(jsonMatch[0]);
+
+			return {
+				difficulty: data.difficulty || 3,
+				aiSummary: data.summary || args.prTitle,
+				filesChanged: data.filesChanged || [],
+				impactAreas: data.impactAreas || [],
+				reviewComplexity: data.reviewComplexity || "moderate",
+			};
+		} catch (error) {
+			console.error("Failed to parse PR analysis response:", error);
+			return {
+				difficulty: 3,
+				aiSummary: args.prTitle,
+				filesChanged: [],
+				impactAreas: [],
+				reviewComplexity: "moderate",
 			};
 		}
 	},

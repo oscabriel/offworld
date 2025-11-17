@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import UserMenu from "@/components/user-menu";
+import UserMenu from "@/components/layout/user-menu";
 
 export default function Header() {
 	return (

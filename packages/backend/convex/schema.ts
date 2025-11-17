@@ -143,6 +143,31 @@ export default defineSchema({
 		.index("issueId", ["issueId"])
 		.index("userId_issueId", ["userId", "issueId"]),
 
+	pullRequests: defineTable({
+		repositoryId: v.id("repositories"),
+		githubPrId: v.number(),
+		number: v.number(), // PR number (e.g., #456)
+		title: v.string(),
+		body: v.optional(v.string()),
+		state: v.string(), // "open", "closed", "merged"
+		author: v.string(),
+		createdAt: v.number(),
+		mergedAt: v.optional(v.number()),
+		githubUrl: v.string(),
+
+		// AI Analysis
+		aiSummary: v.optional(v.string()),
+		filesChanged: v.array(v.string()),
+		linesAdded: v.number(),
+		linesDeleted: v.number(),
+		difficulty: v.optional(v.number()), // 1-5
+		impactAreas: v.optional(v.array(v.string())), // ["auth", "database"]
+		reviewComplexity: v.optional(v.string()), // "simple" | "moderate" | "complex"
+	})
+		.index("by_repository", ["repositoryId"])
+		.index("by_repository_state", ["repositoryId", "state"])
+		.index("by_number", ["repositoryId", "number"]),
+
 	conversations: defineTable({
 		userId: v.string(), // From Better Auth
 		repositoryId: v.id("repositories"),

@@ -107,6 +107,65 @@ export const storeIssues = internalMutation({
 });
 
 /**
+ * Store pull requests for a repository
+ */
+export const storePullRequests = internalMutation({
+	args: {
+		repoId: v.id("repositories"),
+		pullRequests: v.array(
+			v.object({
+				repositoryId: v.id("repositories"),
+				githubPrId: v.number(),
+				number: v.number(),
+				title: v.string(),
+				body: v.optional(v.string()),
+				state: v.string(),
+				author: v.string(),
+				createdAt: v.number(),
+				mergedAt: v.optional(v.number()),
+				githubUrl: v.string(),
+				filesChanged: v.array(v.string()),
+				linesAdded: v.number(),
+				linesDeleted: v.number(),
+				aiSummary: v.optional(v.string()),
+				difficulty: v.optional(v.number()),
+				impactAreas: v.optional(v.array(v.string())),
+				reviewComplexity: v.optional(v.string()),
+			}),
+		),
+	},
+	handler: async (ctx, args) => {
+		const prIds = [];
+
+		for (const pr of args.pullRequests) {
+			const prId = await ctx.db.insert("pullRequests", {
+				repositoryId: args.repoId,
+				githubPrId: pr.githubPrId,
+				number: pr.number,
+				title: pr.title,
+				body: pr.body,
+				state: pr.state,
+				author: pr.author,
+				createdAt: pr.createdAt,
+				mergedAt: pr.mergedAt,
+				githubUrl: pr.githubUrl,
+				filesChanged: pr.filesChanged,
+				linesAdded: pr.linesAdded,
+				linesDeleted: pr.linesDeleted,
+				aiSummary: pr.aiSummary,
+				difficulty: pr.difficulty,
+				impactAreas: pr.impactAreas,
+				reviewComplexity: pr.reviewComplexity,
+			});
+
+			prIds.push(prId);
+		}
+
+		return prIds;
+	},
+});
+
+/**
  * Delete all issues for a repository
  */
 export const deleteIssuesByRepo = internalMutation({
@@ -280,55 +339,68 @@ export const markAsFailed = internalMutation({
  */
 export const reindexRepository = mutation({
 	args: {
-		repoId: v.id("repositories"),
+		fullName: v.string(),
 	},
 	handler: async (ctx, args) => {
 		// Require authentication
 		await getUser(ctx);
 
-		// 1. Get the repository
-		const repo = await ctx.db.get(args.repoId);
+		// 1. Get the repository (case-insensitive)
+		const allRepos = await ctx.db.query("repositories").collect();
+		const repo = allRepos.find(
+			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+		);
+
 		if (!repo) {
 			throw new Error("Repository not found");
 		}
 
-		// Prevent re-indexing if already processing
+		// 2. Check if repository was analyzed in the last 7 days
+		const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+		if (
+			repo.indexingStatus === "completed" &&
+			repo.lastAnalyzedAt > sevenDaysAgo
+		) {
+			throw new Error(
+				"Repository was analyzed less than 7 days ago. Please wait before re-indexing.",
+			);
+		}
+
+		// 3. Prevent re-indexing if already processing
 		if (repo.indexingStatus === "processing") {
 			throw new Error(
 				"Repository analysis is already in progress. Please wait for it to complete.",
 			);
 		}
 
-		console.log(
-			`Starting re-index for ${repo.fullName} (repoId: ${args.repoId})`,
-		);
+		console.log(`Starting re-index for ${repo.fullName} (repoId: ${repo._id})`);
 
-		// 2. Delete architecture entities
+		// 4. Delete architecture entities
 		const deletedEntities = await ctx.runMutation(
 			// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder
 			(internal as any).architectureEntities.deleteByRepo,
-			{ repositoryId: args.repoId },
+			{ repositoryId: repo._id },
 		);
 		console.log(`Deleted ${deletedEntities} architecture entities`);
 
-		// 3. Delete issues
+		// 5. Delete issues
 		const issues = await ctx.db
 			.query("issues")
-			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId))
+			.withIndex("repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.collect();
 		for (const issue of issues) {
 			await ctx.db.delete(issue._id);
 		}
 		console.log(`Deleted ${issues.length} issues`);
 
-		// 4. RAG chunks will be cleared and re-ingested by the workflow
+		// 6. RAG chunks will be cleared and re-ingested by the workflow
 		// Note: Mutations can't call actions directly, so RAG clearing happens
 		// during re-ingestion (chunks are overwritten with same file paths as keys)
 
-		// 5. Keep conversations (as requested - they stay intact)
+		// 7. Keep conversations (as requested - they stay intact)
 
-		// 6. Reset repository analysis fields
-		await ctx.db.patch(args.repoId, {
+		// 8. Reset repository analysis fields
+		await ctx.db.patch(repo._id, {
 			indexingStatus: "processing",
 			summary: undefined,
 			architecture: undefined,
@@ -338,7 +410,7 @@ export const reindexRepository = mutation({
 			lastAnalyzedAt: Date.now(),
 		});
 
-		// 7. Start the workflow again
+		// 9. Start the workflow again
 		const workflowResult = await ctx.runMutation(
 			// biome-ignore lint/suspicious/noExplicitAny: WorkflowManager requires any type
 			(internal as any).workflows.analyzeRepository.start,
@@ -438,10 +510,18 @@ export const getByFullName = query({
 			.withIndex("repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.collect();
 
+		// Get pull requests
+		const pullRequests = await ctx.db
+			.query("pullRequests")
+			.withIndex("by_repository", (q) => q.eq("repositoryId", repo._id))
+			.collect();
+
 		return {
 			...repo,
 			issueCount: issues.length,
 			issues,
+			pullRequestCount: pullRequests.length,
+			pullRequests,
 		};
 	},
 });
@@ -482,10 +562,18 @@ export const getById = query({
 			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId))
 			.collect();
 
+		// Get pull requests
+		const pullRequests = await ctx.db
+			.query("pullRequests")
+			.withIndex("by_repository", (q) => q.eq("repositoryId", args.repoId))
+			.collect();
+
 		return {
 			...repo,
 			issueCount: issues.length,
 			issues,
+			pullRequestCount: pullRequests.length,
+			pullRequests,
 		};
 	},
 });
@@ -596,6 +684,95 @@ export const getOwnerInfo = action({
 		);
 
 		return ownerInfo;
+	},
+});
+
+/**
+ * Validate and fetch repository metadata from GitHub
+ * Used for client-side validation before navigation
+ */
+export const validateRepo = action({
+	args: {
+		owner: v.string(),
+		name: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Call the internal action to fetch from GitHub
+		const metadata = await ctx.runAction(
+			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
+			(internal as any).github.fetchRepoMetadata,
+			{
+				owner: args.owner,
+				name: args.name,
+			},
+		);
+
+		return metadata;
+	},
+});
+
+/**
+ * Get repository metadata for display - fetches from DB if indexed, otherwise from GitHub
+ * Caches GitHub metadata temporarily until repo is indexed
+ */
+export const getRepoMetadata = query({
+	args: {
+		owner: v.string(),
+		name: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const fullName = `${args.owner}/${args.name}`;
+
+		// Check if repo exists in DB (case-insensitive)
+		const allRepos = await ctx.db.query("repositories").collect();
+		const repo = allRepos.find(
+			(r) => r.fullName.toLowerCase() === fullName.toLowerCase(),
+		);
+
+		if (repo) {
+			// Return DB data if indexed
+			const issues = await ctx.db
+				.query("issues")
+				.withIndex("repositoryId", (q) => q.eq("repositoryId", repo._id))
+				.collect();
+
+			return {
+				...repo,
+				issueCount: issues.length,
+				issues,
+			};
+		}
+
+		// If not indexed, return null and let the action fetch from GitHub
+		return null;
+	},
+});
+
+/**
+ * Fetch fresh GitHub metadata for unindexed repos
+ */
+export const fetchUnindexedRepoMetadata = action({
+	args: {
+		owner: v.string(),
+		name: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Call the internal action to fetch from GitHub
+		const metadata = await ctx.runAction(
+			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
+			(internal as any).github.fetchRepoMetadata,
+			{
+				owner: args.owner,
+				name: args.name,
+			},
+		);
+
+		return {
+			description: metadata.description,
+			stars: metadata.stars,
+			language: metadata.language,
+			githubUrl: metadata.githubUrl,
+		};
 	},
 });
 

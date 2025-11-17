@@ -1,4 +1,6 @@
+import { api } from "@offworld/backend/convex/_generated/api";
 import { useNavigate } from "@tanstack/react-router";
+import { useAction } from "convex/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,28 +22,52 @@ export function RepoUrlInput({
 	variant = "standard",
 }: RepoUrlInputProps) {
 	const [repoUrl, setRepoUrl] = useState("");
+	const [isValidating, setIsValidating] = useState(false);
+	const [error, setError] = useState<string>("");
 	const navigate = useNavigate();
+	const validateRepo = useAction(api.repos.validateRepo);
 
-	const handleAnalyze = () => {
+	const handleAnalyze = async () => {
+		setError("");
+
 		// Parse GitHub URL to extract owner/name
 		const match = repoUrl.match(
 			/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/,
 		);
 
+		let owner: string;
+		let name: string;
+
 		if (match) {
-			const [, owner, name] = match;
-			// Navigate directly - backend query is now case-insensitive
-			// The route component will handle canonical case redirect if needed
-			navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
+			[, owner, name] = match;
 		} else {
 			// Try parsing as just "owner/repo" format
 			const simpleMatch = repoUrl.match(/^([^/]+)\/([^/]+)$/);
 			if (simpleMatch) {
-				const [, owner, name] = simpleMatch;
-				navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
-			} else if (onError) {
-				onError("Please enter a valid GitHub repository URL");
+				[, owner, name] = simpleMatch;
+			} else {
+				const errorMsg =
+					"Please enter a valid GitHub repository URL (e.g., owner/repo)";
+				setError(errorMsg);
+				if (onError) onError(errorMsg);
+				return;
 			}
+		}
+
+		// Validate repo exists on GitHub before navigating
+		setIsValidating(true);
+		try {
+			await validateRepo({ owner, name });
+			// Repo exists, navigate to it
+			navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
+		} catch {
+			// Always show friendly default message for Convex errors
+			const errorMsg =
+				"Repository not found. It may be private on GitHub or not exist. Please try again.";
+			setError(errorMsg);
+			if (onError) onError(errorMsg);
+		} finally {
+			setIsValidating(false);
 		}
 	};
 
@@ -70,20 +96,30 @@ export function RepoUrlInput({
 					id="repo-url"
 					type="text"
 					value={repoUrl}
-					onChange={(e) => setRepoUrl(e.target.value)}
+					onChange={(e) => {
+						setRepoUrl(e.target.value);
+						setError(""); // Clear error on input change
+					}}
 					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
 					className="h-auto flex-1 rounded-none border-2 border-primary/20 bg-background/50 px-4 py-3 font-mono text-base text-foreground backdrop-blur-sm transition-all duration-300 focus-visible:border-primary focus-visible:bg-background focus-visible:ring-0 sm:px-6 sm:py-4 sm:text-xl"
 				/>
 				<Button
 					onClick={handleAnalyze}
-					disabled={!repoUrl}
+					disabled={!repoUrl || isValidating}
 					size="lg"
 					className="h-auto rounded-none border-2 border-primary bg-primary px-6 py-3 font-mono text-base text-primary-foreground transition-all duration-300 hover:bg-background hover:text-primary disabled:cursor-not-allowed sm:px-10 sm:py-4 sm:text-lg"
 				>
-					{buttonText}
+					{isValidating ? "Validating..." : buttonText}
 				</Button>
 			</div>
+			{error && (
+				<div className="mt-3 border-2 border-red-500/20 bg-red-500/10 p-3">
+					<p className="font-mono text-red-600 text-sm dark:text-red-400">
+						{error}
+					</p>
+				</div>
+			)}
 		</div>
 	);
 }

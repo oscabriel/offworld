@@ -1,11 +1,17 @@
 import { api } from "@offworld/backend/convex/_generated/api";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { ExternalLink, GitBranch } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/issues/")({
 	component: IssuesPage,
@@ -14,10 +20,9 @@ export const Route = createFileRoute("/_github/$owner_/$repo/issues/")({
 function IssuesPage() {
 	const { owner, repo } = Route.useParams();
 	const fullName = `${owner}/${repo}`;
-	const [difficultyFilter, setDifficultyFilter] = useState<number | null>(null);
+	const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
 	const [sortBy, setSortBy] = useState<"difficulty" | "number">("difficulty");
 
-	// Query repository and issues
 	const repoData = useQuery(
 		api.repos.getByFullName,
 		fullName ? { fullName } : "skip",
@@ -28,55 +33,41 @@ function IssuesPage() {
 
 	// Filter and sort issues
 	const filteredAndSortedIssues = useMemo(() => {
-		let filtered = issues;
+		let filtered = issues.filter((issue) => issue.state === "open");
 
-		// Filter by difficulty if selected
-		if (difficultyFilter !== null) {
+		// Filter by difficulty
+		if (difficultyFilter !== "all") {
+			const targetDifficulty = Number.parseInt(difficultyFilter, 10);
 			filtered = filtered.filter(
-				(issue) => issue.difficulty === difficultyFilter,
+				(issue) => issue.difficulty === targetDifficulty,
 			);
 		}
 
-		// Only show open issues
-		filtered = filtered.filter((issue) => issue.state === "open");
-
-		// Sort issues
+		// Sort
 		const sorted = [...filtered].sort((a, b) => {
 			if (sortBy === "difficulty") {
 				return (a.difficulty || 5) - (b.difficulty || 5);
 			}
-			return b.number - a.number; // Newest first
+			return b.number - a.number;
 		});
 
 		return sorted;
 	}, [issues, difficultyFilter, sortBy]);
 
-	// Group issues by difficulty
-	const groupedIssues = useMemo(() => {
-		const groups: Record<number, typeof issues> = {
-			1: [],
-			2: [],
-			3: [],
-			4: [],
-			5: [],
-		};
-
-		for (const issue of filteredAndSortedIssues) {
-			const difficulty = issue.difficulty || 3;
-			if (groups[difficulty]) {
-				groups[difficulty].push(issue);
-			}
-		}
-
-		return groups;
-	}, [filteredAndSortedIssues]);
-
 	if (!repoData) {
 		return (
-			<ContentCard title="Issues">
-				<p className="font-mono text-muted-foreground text-sm">
-					Loading issues...
+			<ContentCard title="Repository Not Indexed">
+				<p className="mb-4 font-serif text-lg text-muted-foreground leading-relaxed">
+					This repository hasn't been analyzed yet. Please index the repository
+					first to view issues.
 				</p>
+				<Link
+					to="/$owner/$repo"
+					params={{ owner, repo }}
+					className="inline-block border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90"
+				>
+					Go to Summary to Index
+				</Link>
 			</ContentCard>
 		);
 	}
@@ -108,204 +99,163 @@ function IssuesPage() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header with filters */}
+			{/* Header with dropdown filters */}
 			<div className="flex flex-col gap-4 border border-primary/10 bg-card p-6 md:flex-row md:items-center md:justify-between">
 				<div>
 					<h2 className="font-mono font-semibold text-2xl">
 						Issues ({filteredAndSortedIssues.length})
 					</h2>
 					<p className="mt-1 font-mono text-muted-foreground text-sm">
-						AI-analyzed contribution opportunities
+						Top {issues.filter((i) => i.state === "open").length} open issues
+						analyzed by AI for difficulty and required skills
 					</p>
 				</div>
 
-				<div className="flex flex-wrap gap-2">
-					{/* Difficulty Filter */}
-					<Button
-						variant={difficultyFilter === null ? "default" : "outline"}
-						size="sm"
-						onClick={() => setDifficultyFilter(null)}
-					>
-						All
-					</Button>
-					{[1, 2, 3, 4, 5].map((diff) => (
-						<Button
-							key={diff}
-							variant={difficultyFilter === diff ? "default" : "outline"}
-							size="sm"
-							onClick={() => setDifficultyFilter(diff)}
-						>
-							{getDifficultyLabel(diff)}
-						</Button>
-					))}
+				<div className="flex flex-wrap gap-3">
+					{/* Difficulty Filter Dropdown */}
+					<Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+						<SelectTrigger className="w-48">
+							<SelectValue placeholder="Filter by difficulty" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Difficulties</SelectItem>
+							<SelectItem value="1">Good First Issue</SelectItem>
+							<SelectItem value="2">Easy</SelectItem>
+							<SelectItem value="3">Moderate</SelectItem>
+							<SelectItem value="4">Challenging</SelectItem>
+							<SelectItem value="5">Advanced</SelectItem>
+						</SelectContent>
+					</Select>
 
-					{/* Sort Toggle */}
-					<div className="ml-4 flex gap-2">
-						<Button
-							variant={sortBy === "difficulty" ? "default" : "outline"}
-							size="sm"
-							onClick={() => setSortBy("difficulty")}
-						>
-							By Difficulty
-						</Button>
-						<Button
-							variant={sortBy === "number" ? "default" : "outline"}
-							size="sm"
-							onClick={() => setSortBy("number")}
-						>
-							Newest
-						</Button>
-					</div>
+					{/* Sort Dropdown */}
+					<Select
+						value={sortBy}
+						onValueChange={(v) => setSortBy(v as "difficulty" | "number")}
+					>
+						<SelectTrigger className="w-40">
+							<SelectValue placeholder="Sort by" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="difficulty">By Difficulty</SelectItem>
+							<SelectItem value="number">Newest First</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
 			</div>
 
-			{/* Issues grouped by difficulty */}
-			{difficultyFilter === null ? (
-				<div className="space-y-8">
-					{[1, 2, 3, 4, 5].map((difficulty) => {
-						const difficultyIssues = groupedIssues[difficulty];
-						if (difficultyIssues.length === 0) return null;
-
-						return (
-							<div key={difficulty}>
-								<h3 className="mb-4 font-mono font-semibold text-lg">
-									{getDifficultyLabel(difficulty)} ({difficultyIssues.length})
-								</h3>
-								<div className="space-y-4">
-									{difficultyIssues.map((issue) => (
-										<IssueCard key={issue._id} issue={issue} />
-									))}
-								</div>
-							</div>
-						);
-					})}
-				</div>
-			) : (
-				<div className="space-y-4">
-					{filteredAndSortedIssues.map((issue) => (
-						<IssueCard key={issue._id} issue={issue} />
-					))}
-				</div>
-			)}
-		</div>
-	);
-}
-
-interface IssueCardProps {
-	issue: {
-		_id: string;
-		number: number;
-		title: string;
-		difficulty?: number;
-		aiSummary?: string;
-		skillsRequired?: string[];
-		filesLikelyTouched?: string[];
-		githubUrl: string;
-		labels: string[];
-	};
-}
-
-function IssueCard({ issue }: IssueCardProps) {
-	return (
-		<div className="group border border-primary/10 bg-card p-6 transition-colors hover:border-primary/20">
-			<div className="flex items-start justify-between gap-4">
-				<div className="flex-1">
-					{/* Title and number */}
-					<div className="mb-3 flex items-center gap-3">
-						<span className="font-mono text-muted-foreground text-sm">
-							#{issue.number}
-						</span>
-						<h3 className="font-mono font-semibold text-lg leading-tight">
-							{issue.title}
-						</h3>
-					</div>
-
-					{/* AI Summary */}
-					{issue.aiSummary && (
-						<p className="mb-4 font-serif text-muted-foreground leading-relaxed">
-							{issue.aiSummary}
-						</p>
-					)}
-
-					{/* Skills and Files */}
-					<div className="space-y-3">
-						{issue.skillsRequired && issue.skillsRequired.length > 0 && (
-							<div>
-								<span className="mb-2 inline-block font-mono text-muted-foreground text-xs uppercase tracking-wider">
-									Skills Required
-								</span>
-								<div className="flex flex-wrap gap-2">
-									{issue.skillsRequired.map((skill) => (
-										<Badge key={skill} variant="outline">
-											{skill}
-										</Badge>
-									))}
-								</div>
-							</div>
-						)}
-
-						{issue.filesLikelyTouched &&
-							issue.filesLikelyTouched.length > 0 && (
-								<div>
-									<span className="mb-2 inline-block font-mono text-muted-foreground text-xs uppercase tracking-wider">
-										Files Likely Touched
-									</span>
-									<div className="flex flex-wrap gap-2">
-										{issue.filesLikelyTouched.map((file) => (
-											<Badge key={file} variant="secondary">
-												<GitBranch className="size-3" />
-												{file}
-											</Badge>
-										))}
-									</div>
-								</div>
-							)}
-					</div>
-				</div>
-
-				{/* Right side: Difficulty badge and GitHub link */}
-				<div className="flex shrink-0 flex-col items-end gap-3">
-					<DifficultyBadge difficulty={issue.difficulty || 3} />
-
-					<a
-						href={issue.githubUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1 font-mono text-muted-foreground text-sm transition-colors hover:text-foreground"
-					>
-						View on GitHub
-						<ExternalLink className="size-3" />
-					</a>
+			{/* Issues Table */}
+			<div className="overflow-hidden border border-primary/10 bg-card">
+				<div className="overflow-x-auto">
+					<table className="w-full">
+						<thead>
+							<tr className="border-primary/10 border-b bg-muted/50">
+								<th className="p-4 text-left font-mono text-muted-foreground text-xs uppercase tracking-wider">
+									Issue
+								</th>
+								<th className="p-4 text-left font-mono text-muted-foreground text-xs uppercase tracking-wider">
+									Difficulty
+								</th>
+								<th className="hidden p-4 text-left font-mono text-muted-foreground text-xs uppercase tracking-wider md:table-cell">
+									Skills
+								</th>
+								<th className="w-20 p-4 text-center font-mono text-muted-foreground text-xs uppercase tracking-wider">
+									GitHub
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{filteredAndSortedIssues.map((issue) => (
+								<tr
+									key={issue._id}
+									className="border-primary/10 border-b transition-colors hover:bg-accent/50"
+								>
+									<td className="p-4">
+										<Link
+											to="/$owner/$repo/issues/$number"
+											params={{ owner, repo, number: issue.number.toString() }}
+											className="group block"
+										>
+											<div className="mb-1 flex items-center gap-3">
+												<span className="font-mono text-muted-foreground text-sm">
+													#{issue.number}
+												</span>
+												<span className="font-mono font-semibold text-sm transition-colors group-hover:text-primary">
+													{issue.title}
+												</span>
+											</div>
+											{issue.aiSummary && (
+												<p className="mt-1 line-clamp-1 font-serif text-muted-foreground text-xs">
+													{issue.aiSummary}
+												</p>
+											)}
+										</Link>
+									</td>
+									<td className="p-4">
+										<DifficultyBadge
+											difficulty={issue.difficulty || 3}
+											size="sm"
+										/>
+									</td>
+									<td className="hidden p-4 md:table-cell">
+										{issue.skillsRequired &&
+											issue.skillsRequired.length > 0 && (
+												<div className="flex flex-wrap gap-1">
+													{issue.skillsRequired.slice(0, 3).map((skill) => (
+														<Badge
+															key={skill}
+															variant="outline"
+															className="text-xs"
+														>
+															{skill}
+														</Badge>
+													))}
+													{issue.skillsRequired.length > 3 && (
+														<Badge variant="outline" className="text-xs">
+															+{issue.skillsRequired.length - 3}
+														</Badge>
+													)}
+												</div>
+											)}
+									</td>
+									<td className="p-4 text-center">
+										<a
+											href={issue.githubUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="inline-flex items-center justify-center text-muted-foreground transition-colors hover:text-primary"
+											onClick={(e) => e.stopPropagation()}
+										>
+											<ExternalLink className="size-4" />
+										</a>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
 	);
 }
 
-function DifficultyBadge({ difficulty }: { difficulty: number }) {
+function DifficultyBadge({
+	difficulty,
+	size = "default",
+}: {
+	difficulty: number;
+	size?: "sm" | "default";
+}) {
 	const config = getDifficultyConfig(difficulty);
+	const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-xs";
 
 	return (
 		<div
-			className={`flex items-center gap-2 rounded-full border px-3 py-1 ${config.bgClass} ${config.borderClass}`}
+			className={`inline-flex items-center gap-2 rounded-full border ${sizeClass} ${config.bgClass} ${config.borderClass}`}
 		>
 			<div className={`size-2 rounded-full ${config.dotClass}`} />
-			<span className={`font-mono text-xs ${config.textClass}`}>
-				{config.label}
-			</span>
+			<span className={`font-mono ${config.textClass}`}>{config.label}</span>
 		</div>
 	);
-}
-
-function getDifficultyLabel(difficulty: number): string {
-	const labels: Record<number, string> = {
-		1: "Good First Issue",
-		2: "Easy",
-		3: "Moderate",
-		4: "Challenging",
-		5: "Advanced",
-	};
-	return labels[difficulty] || "Moderate";
 }
 
 function getDifficultyConfig(difficulty: number) {

@@ -1,7 +1,7 @@
 import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useAction, useQuery } from "convex/react";
+import { useEffect, useState } from "react";
 import { MobileTabNav } from "@/components/repo/mobile-tab-nav";
 import { RepoHeader } from "@/components/repo/repo-header";
 import { RepoNavigation } from "@/components/repo/repo-navigation";
@@ -13,7 +13,6 @@ export const Route = createFileRoute("/_github/$owner_/$repo")({
 function RepoLayout() {
 	const { owner, repo } = Route.useParams();
 	const fullName = `${owner}/${repo}`;
-	const [isReindexing, setIsReindexing] = useState(false);
 
 	// Query repository data for header
 	const repoData = useQuery(
@@ -21,20 +20,28 @@ function RepoLayout() {
 		fullName ? { fullName } : "skip",
 	);
 
-	const reindexRepository = useMutation(api.repos.reindexRepository);
+	// For unindexed repos, fetch fresh GitHub metadata
+	const fetchGitHubMetadata = useAction(api.repos.fetchUnindexedRepoMetadata);
+	const [githubMetadata, setGithubMetadata] = useState<{
+		description?: string;
+		stars?: number;
+		language?: string;
+		githubUrl?: string;
+	} | null>(null);
 
-	const handleReindex = async () => {
-		if (!repoData?._id) return;
+	const isNotIndexed = repoData === null;
 
-		setIsReindexing(true);
-		try {
-			await reindexRepository({ repoId: repoData._id });
-			// State will update automatically via reactive query
-		} catch (error) {
-			console.error("Failed to re-index repository:", error);
-			setIsReindexing(false);
+	useEffect(() => {
+		if (repoData === null && owner && repo) {
+			// Repo not indexed, fetch from GitHub
+			fetchGitHubMetadata({ owner, name: repo })
+				.then((metadata) => setGithubMetadata(metadata))
+				.catch((err) => {
+					console.error("Failed to fetch GitHub metadata:", err);
+					setGithubMetadata(null);
+				});
 		}
-	};
+	}, [repoData, owner, repo, fetchGitHubMetadata]);
 
 	// Show loading skeleton while fetching
 	if (repoData === undefined) {
@@ -48,8 +55,6 @@ function RepoLayout() {
 		);
 	}
 
-	const isNotIndexed = repoData === null;
-
 	return (
 		<div className="min-h-screen pt-14">
 			{/* Header */}
@@ -57,8 +62,7 @@ function RepoLayout() {
 				owner={owner}
 				repo={repo}
 				repoData={repoData}
-				onReindex={handleReindex}
-				isReindexing={isReindexing}
+				githubMetadata={githubMetadata}
 			/>
 
 			{/* Two-column layout */}

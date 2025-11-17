@@ -18,6 +18,7 @@ import { Route as GithubOwnerRouteImport } from './routes/_github/$owner'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as GithubOwnerRepoRouteRouteImport } from './routes/_github/$owner_.$repo/route'
 import { Route as GithubOwnerRepoIndexRouteImport } from './routes/_github/$owner_.$repo/index'
+import { Route as GithubOwnerRepoRefreshRouteImport } from './routes/_github/$owner_.$repo/refresh'
 import { Route as GithubOwnerRepoPrIndexRouteImport } from './routes/_github/$owner_.$repo/pr/index'
 import { Route as GithubOwnerRepoIssuesIndexRouteImport } from './routes/_github/$owner_.$repo/issues/index'
 import { Route as GithubOwnerRepoChatIndexRouteImport } from './routes/_github/$owner_.$repo/chat/index'
@@ -70,6 +71,11 @@ const GithubOwnerRepoIndexRoute = GithubOwnerRepoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => GithubOwnerRepoRouteRoute,
 } as any)
+const GithubOwnerRepoRefreshRoute = GithubOwnerRepoRefreshRouteImport.update({
+  id: '/refresh',
+  path: '/refresh',
+  getParentRoute: () => GithubOwnerRepoRouteRoute,
+} as any)
 const GithubOwnerRepoPrIndexRoute = GithubOwnerRepoPrIndexRouteImport.update({
   id: '/pr/',
   path: '/pr/',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/$owner': typeof GithubOwnerRoute
   '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$owner/$repo/refresh': typeof GithubOwnerRepoRefreshRoute
   '/$owner/$repo/': typeof GithubOwnerRepoIndexRoute
   '/$owner/$repo/arch/$slug': typeof GithubOwnerRepoArchSlugRoute
   '/$owner/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/$owner': typeof GithubOwnerRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/$owner/$repo/refresh': typeof GithubOwnerRepoRefreshRoute
   '/$owner/$repo': typeof GithubOwnerRepoIndexRoute
   '/$owner/$repo/arch/$slug': typeof GithubOwnerRepoArchSlugRoute
   '/$owner/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_github/$owner': typeof GithubOwnerRoute
   '/_github/$owner_/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_github/$owner_/$repo/refresh': typeof GithubOwnerRepoRefreshRoute
   '/_github/$owner_/$repo/': typeof GithubOwnerRepoIndexRoute
   '/_github/$owner_/$repo/arch/$slug': typeof GithubOwnerRepoArchSlugRoute
   '/_github/$owner_/$repo/issues/$number': typeof GithubOwnerRepoIssuesNumberRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/$owner'
     | '/$owner/$repo'
     | '/api/auth/$'
+    | '/$owner/$repo/refresh'
     | '/$owner/$repo/'
     | '/$owner/$repo/arch/$slug'
     | '/$owner/$repo/issues/$number'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/$owner'
     | '/api/auth/$'
+    | '/$owner/$repo/refresh'
     | '/$owner/$repo'
     | '/$owner/$repo/arch/$slug'
     | '/$owner/$repo/issues/$number'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/_github/$owner'
     | '/_github/$owner_/$repo'
     | '/api/auth/$'
+    | '/_github/$owner_/$repo/refresh'
     | '/_github/$owner_/$repo/'
     | '/_github/$owner_/$repo/arch/$slug'
     | '/_github/$owner_/$repo/issues/$number'
@@ -290,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GithubOwnerRepoIndexRouteImport
       parentRoute: typeof GithubOwnerRepoRouteRoute
     }
+    '/_github/$owner_/$repo/refresh': {
+      id: '/_github/$owner_/$repo/refresh'
+      path: '/refresh'
+      fullPath: '/$owner/$repo/refresh'
+      preLoaderRoute: typeof GithubOwnerRepoRefreshRouteImport
+      parentRoute: typeof GithubOwnerRepoRouteRoute
+    }
     '/_github/$owner_/$repo/pr/': {
       id: '/_github/$owner_/$repo/pr/'
       path: '/pr'
@@ -343,6 +362,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface GithubOwnerRepoRouteRouteChildren {
+  GithubOwnerRepoRefreshRoute: typeof GithubOwnerRepoRefreshRoute
   GithubOwnerRepoIndexRoute: typeof GithubOwnerRepoIndexRoute
   GithubOwnerRepoArchSlugRoute: typeof GithubOwnerRepoArchSlugRoute
   GithubOwnerRepoIssuesNumberRoute: typeof GithubOwnerRepoIssuesNumberRoute
@@ -354,6 +374,7 @@ interface GithubOwnerRepoRouteRouteChildren {
 }
 
 const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
+  GithubOwnerRepoRefreshRoute: GithubOwnerRepoRefreshRoute,
   GithubOwnerRepoIndexRoute: GithubOwnerRepoIndexRoute,
   GithubOwnerRepoArchSlugRoute: GithubOwnerRepoArchSlugRoute,
   GithubOwnerRepoIssuesNumberRoute: GithubOwnerRepoIssuesNumberRoute,

@@ -502,10 +502,11 @@ CRITICAL MERMAID SYNTAX REQUIREMENTS:
 1. Use ONLY these diagram types: "graph TB", "graph LR", "graph TD"
 2. Node IDs must be alphanumeric (A-Z, 0-9, underscore ONLY)
 3. Node labels use square brackets: A[Label Text]
-4. Arrows use --> for directed, --- for undirected
-5. NO special characters in node IDs (no dashes, spaces, slashes, dots)
-6. Subgraphs must have unique alphanumeric IDs
-7. Keep simple - max 15 nodes for readability
+4. NO parentheses in labels - use dashes instead (e.g., "LSP Client" not "Language Server Protocol (LSP)")
+5. Arrows use --> for directed, --- for undirected
+6. NO special characters in node IDs (no dashes, spaces, slashes, dots)
+7. Subgraphs must have unique alphanumeric IDs
+8. Keep simple - max 15 nodes for readability
 
 VALID EXAMPLE:
 \`\`\`mermaid
@@ -546,8 +547,9 @@ CRITICAL MERMAID SYNTAX REQUIREMENTS:
 3. NO dashes, spaces, slashes in node IDs
 4. Use {} for decision nodes: C{Decision?}
 5. Labels in square brackets: A[User Request]
-6. Simple arrows only: -->
-7. Max 12 nodes for clarity
+6. NO parentheses in labels - use dashes or omit acronyms (e.g., "Auth System" not "Authentication (Auth)")
+7. Simple arrows only: -->
+8. Max 12 nodes for clarity
 
 VALID EXAMPLE:
 \`\`\`mermaid
@@ -577,8 +579,9 @@ CRITICAL MERMAID SYNTAX REQUIREMENTS:
 2. Node IDs must be ALPHANUMERIC (Root, Home, Auth1, Auth2...)
 3. NO slashes, colons, or dashes in node IDs
 4. Labels in square brackets can contain routes: A[/dashboard/:id]
-5. Simple arrows only: -->
-6. Max 15 routes for readability
+5. NO parentheses in labels anywhere
+6. Simple arrows only: -->
+7. Max 15 routes for readability
 
 VALID EXAMPLE:
 \`\`\`mermaid

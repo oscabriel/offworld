@@ -84,144 +84,311 @@ Create a final summary (250 words max) that:
 // ARCHITECTURE GENERATION PROMPTS (3 iterations)
 // ============================================================================
 
-export const ARCHITECTURE_ITERATION_1 = `You are an expert software architect analyzing code structure.
+export const ARCHITECTURE_ITERATION_1 = `You are an expert software architect analyzing LIBRARY/FRAMEWORK code structure.
 
-Analyze the HIGH-LEVEL STRUCTURE of this codebase:
+CRITICAL - THIS IS LIBRARY CODE, NOT APPLICATION CODE:
+- Focus on PUBLIC API SURFACE (what developers import and use)
+- Identify CORE SUBSYSTEMS (internal algorithms that power the library)
+- Find EXTENSION POINTS (plugins, middleware, adapters)
+- DO NOT analyze like an application (no routes/controllers/database layers)
+
+Analyze the HIGH-LEVEL STRUCTURE of this library/framework:
 
 Repository: {{repoName}}
 Summary: {{summary}}
+Type: OSS Library/Framework
 
 Code from Entry Points and Configuration:
 {{codeContext}}
 
 Generate a JSON response with this EXACT structure:
 {
-  "overview": "<2-3 sentence architectural overview>",
-  "pattern": "<MVC|Microservices|Monorepo|Layered|Plugin|Event-Driven|etc>",
+  "overview": "<2-3 sentence architectural overview focusing on library purpose and API design>",
+  "pattern": "<Library|Framework|Utility|Plugin System|Component Library|etc>",
   "entities": [
     {
-      "name": "<Package or top-level directory name>",
+      "name": "<Package or major subsystem name>",
       "slug": "<url-safe-name>",
       "type": "package",
-      "path": "<full path from repository root, exactly as it appears in the code>",
-      "description": "<what this package/directory does>",
-      "purpose": "<why it exists>",
+      "path": "<full path from repository root>",
+      "description": "<what this component does for library users>",
+      "purpose": "<why it exists in the library architecture>",
       "dependencies": [],
-      "keyFiles": ["<full file paths from repository root, EXACTLY as they appear in the code context>"],
-      "complexity": "low|medium|high"
+      "keyFiles": ["<full file paths from repository root>"],
+      "complexity": "low|medium|high",
+      "layer": "public|internal|extension|utility",
+      "importance": 0.95
     }
   ]
 }
 
-IMPORTANT:
+REQUIRED NEW FIELDS:
+- "layer": MUST be one of:
+  * "public" - Public API surface (what developers import: z.string(), useState, createRouter)
+  * "internal" - Core subsystems (internal algorithms: Parser, Reconciler, Matcher)
+  * "extension" - Plugin/middleware systems (how developers extend the library)
+  * "utility" - Internal helpers (type utils, formatters, dev warnings)
+
+- "importance": MUST be a number 0.0-1.0 based on:
+  * 1.0: Main entry points (index.ts, main exports from package.json)
+  * 0.9: Primary public APIs (what devs primarily use)
+  * 0.8: Secondary public APIs (less common but important)
+  * 0.7: Core internal algorithms (how it works under the hood)
+  * 0.6: Extension systems (plugin interfaces)
+  * 0.5: Internal utilities (helpers used across codebase)
+  * 0.4: Configuration (build config, tsconfig)
+
+EXPLICIT CONSTRAINTS:
 - The "type" field MUST be one of: "package", "directory"
-- DO NOT use "file" as a type - individual files should be listed in keyFiles instead
-- CRITICAL: All paths in "path" and "keyFiles" must be COMPLETE paths from the repository root
+- DO NOT create entities for individual files (use keyFiles array instead)
+- DO NOT create entities for utility files (those come in Iteration 3)
+- DO NOT create entities for build configuration
+- CRITICAL: All paths must be COMPLETE from repository root
   Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
-  Copy paths EXACTLY as they appear in the code context above
 
-Focus on discovering:
-- Packages (in monorepos) - use type "package"
-- Top-level directories (src/, packages/, apps/, lib/, etc.) - use type "directory"
-- Main subsystems - use type "package" or "directory"
+FOCUS ON DISCOVERING (in order of importance):
+1. Main entry points (index.ts, main export files) - importance: 1.0, layer: "public"
+2. Primary public API packages/directories - importance: 0.9, layer: "public"
+3. Core algorithm implementations - importance: 0.7-0.8, layer: "internal"
+4. Extension/plugin systems - importance: 0.6-0.7, layer: "extension"
 
-Limit to top 15 most important entities. Return ONLY valid JSON, no markdown blocks.`;
+ANTI-DRIFT INSTRUCTIONS:
+- DO NOT include general repository information unless directly architectural
+- DO NOT create more than 15 entities
+- DO NOT duplicate what's already in package.json "exports" field
+- FOCUS EXCLUSIVELY on major architectural components
 
-export const ARCHITECTURE_ITERATION_2 = `Continue the architectural analysis by discovering MODULES and SERVICES:
+Limit to top 15 most important entities by importance score.
+Return ONLY valid JSON, no markdown blocks, no code fences, no explanatory text.`;
 
-Repository: {{repoName}}
-Summary: {{summary}}
+export const ARCHITECTURE_ITERATION_2 = `Continue the library architecture analysis by discovering INTERNAL SUBSYSTEMS and MODULES.
 
+CONTEXT FROM ITERATION 1:
 Previous Architectural Overview:
 {{iteration1Overview}}
 
-Previously Discovered Entities:
+Previously Discovered Entities (DO NOT REPEAT THESE):
 {{previousEntities}}
 
-Code from Core Modules and Services:
+Repository: {{repoName}}
+Summary: {{summary}}
+Type: OSS Library/Framework
+
+Code from Core Modules and Internal Systems:
 {{codeContext}}
+
+NOW discover MODULES and INTERNAL SUBSYSTEMS that:
+1. Connect to Iteration 1 entities (use "dependencies" field to reference them)
+2. Are NOT already discovered (check previous entities list above)
+3. Add architectural DEPTH (how things work internally), not breadth (more top-level categories)
+4. Focus on INTERNAL ALGORITHMS and CORE SYSTEMS
 
 Generate a JSON response continuing the structure:
 {
-  "overview": "<2-3 sentences about module organization and service architecture>",
+  "overview": "<2-3 sentences building on Iteration 1, explain internal architecture>",
   "entities": [
     {
-      "name": "<Module or service name>",
+      "name": "<Module or subsystem name>",
       "slug": "<url-safe-name>",
       "type": "module",
-      "path": "<full path from repository root, exactly as it appears in the code>",
-      "description": "<what this module/service does>",
-      "purpose": "<its role in the system>",
-      "dependencies": ["<other modules it depends on>"],
-      "usedBy": ["<what uses this module>"],
-      "keyFiles": ["<full file paths from repository root, EXACTLY as they appear in the code context>"],
-      "complexity": "low|medium|high"
+      "path": "<full path from repository root>",
+      "description": "<what this internal system does>",
+      "purpose": "<its role in making the library work>",
+      "dependencies": ["<reference Iteration 1 entities by name>"],
+      "usedBy": ["<which public APIs use this>"],
+      "keyFiles": ["<full file paths from repository root>"],
+      "complexity": "low|medium|high",
+      "layer": "internal|extension|utility",
+      "importance": 0.75
     }
   ]
 }
 
-IMPORTANT:
+REQUIRED NEW FIELDS:
+- "layer": MUST be one of:
+  * "internal" - Core algorithms/engines (Parser, Reconciler, Compiler, Router Matcher)
+  * "extension" - Plugin systems (middleware interfaces, adapter patterns)
+  * "utility" - Internal helpers (don't use for major systems)
+
+- "importance": MUST be a number 0.0-1.0:
+  * 0.8: Critical internal systems (can't work without these)
+  * 0.7: Major internal algorithms (core functionality)
+  * 0.6: Extension/plugin systems
+  * 0.5: Internal utilities
+  * 0.4: Helper modules
+
+EXPLICIT CONSTRAINTS:
+- Maximum 20 entities
+- MUST reference at least 1 Iteration 1 entity in "dependencies"
+- DO NOT create duplicate entities (check previousEntities list)
+- DO NOT create entities for utility files (those come in Iteration 3)
+- DO NOT use layer "public" (public APIs were in Iteration 1)
 - The "type" field MUST be one of: "module", "service"
-- DO NOT use "file" as a type - individual files should be listed in keyFiles instead
-- CRITICAL: All paths in "path" and "keyFiles" must be COMPLETE paths from the repository root
-  Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
-  Copy paths EXACTLY as they appear in the code context above
+- CRITICAL: All paths must be COMPLETE from repository root
 
-Focus on discovering:
-- Core modules (routing, authentication, data layer, etc.) - use type "module"
-- Services (API services, background workers, etc.) - use type "service"
-- Major subsystems within packages - use type "module"
+FOCUS ON DISCOVERING (in order of importance):
+1. Core internal algorithms - importance: 0.8, layer: "internal"
+2. Processing engines/compilers - importance: 0.7-0.8, layer: "internal"
+3. Plugin/extension systems - importance: 0.6-0.7, layer: "extension"
+4. Service layers - importance: 0.6, layer: "internal"
 
-Limit to top 20 most important entities. Do NOT repeat entities from iteration 1.
-Return ONLY valid JSON, no markdown blocks.`;
+ANTI-DRIFT INSTRUCTIONS:
+- BUILD ON Iteration 1, do NOT repeat its entities
+- CAREFULLY review the previousEntities list before creating new ones
+- DO NOT drift to unrelated topics
+- DO NOT create more than 20 entities
+- FOCUS EXCLUSIVELY on internal systems and modules
 
-export const ARCHITECTURE_ITERATION_3 = `Complete the architectural analysis by discovering COMPONENTS and UTILITIES:
+Limit to top 20 most important entities by importance score.
+Return ONLY valid JSON, no markdown blocks, no code fences, no explanatory text.`;
+
+export const ARCHITECTURE_ITERATION_3 = `Complete the library architecture analysis by discovering COMPONENTS, UTILITIES, and HELPERS.
+
+COMPLETE CONTEXT FROM PREVIOUS ITERATIONS:
+Full Architectural Overview:
+{{previousOverview}}
+
+All Previously Discovered Entities (DO NOT REPEAT ANY OF THESE):
+{{previousEntities}}
 
 Repository: {{repoName}}
 Summary: {{summary}}
+Type: OSS Library/Framework
 
-Complete Architectural Context:
-{{previousOverview}}
-
-Previously Discovered Entities:
-{{previousEntities}}
-
-Code from Components and Utilities:
+Code from Components, Utilities, and Helpers:
 {{codeContext}}
 
-Generate a JSON response continuing the structure:
+NOW discover COMPONENTS and UTILITIES that:
+1. Connect to previous entities (reference them in "dependencies")
+2. Are NOT already discovered (carefully check the long list above)
+3. Complete the architectural picture with SUPPORTING COMPONENTS
+4. Focus on REUSABLE PARTS and SHARED UTILITIES
+
+Generate a JSON response completing the structure:
 {
-  "overview": "<2-3 sentences about component architecture and utility organization>",
+  "overview": "<2-3 sentences about component/utility organization, building on previous iterations>",
   "entities": [
     {
       "name": "<Component or utility name>",
       "slug": "<url-safe-name>",
       "type": "component",
-      "path": "<full path from repository root, exactly as it appears in the code>",
-      "description": "<what this component/utility does>",
-      "purpose": "<its specific use case>",
-      "dependencies": ["<what it depends on>"],
-      "usedBy": ["<where it's used>"],
-      "keyFiles": ["<full file paths from repository root, EXACTLY as they appear in the code context>"],
-      "complexity": "low|medium|high"
+      "path": "<full path from repository root>",
+      "description": "<what this component/utility provides>",
+      "purpose": "<its specific use case in the library>",
+      "dependencies": ["<reference previous entities by name>"],
+      "usedBy": ["<which systems use this>"],
+      "keyFiles": ["<full file paths from repository root>"],
+      "complexity": "low|medium|high",
+      "layer": "utility|extension|internal",
+      "importance": 0.50
     }
   ]
 }
 
-IMPORTANT:
+REQUIRED NEW FIELDS:
+- "layer": MUST be one of:
+  * "utility" - Shared utilities/helpers (type utils, formatters, validators)
+  * "extension" - Extension components (hooks, adapters that users can use)
+  * "internal" - Internal components (only if truly core to library operation)
+
+- "importance": MUST be a number 0.0-1.0:
+  * 0.6: Important extension components (custom hooks, adapters users interact with)
+  * 0.5: Shared utilities used across library
+  * 0.4: Helper functions and formatters
+  * 0.3: Development utilities (warnings, debug tools)
+
+EXPLICIT CONSTRAINTS:
+- Maximum 15 entities
+- MUST reference at least 1 previous entity in "dependencies"
+- DO NOT create duplicate entities (check the LONG previousEntities list carefully)
+- DO NOT use layer "public" (those were in Iteration 1)
+- DO NOT discover major subsystems (those were in Iterations 1-2)
 - The "type" field MUST be "component"
-- DO NOT use "file" as a type - individual files should be listed in keyFiles instead
-- CRITICAL: All paths in "path" and "keyFiles" must be COMPLETE paths from the repository root
-  Example: Use "packages/zod/src/core.ts" NOT "src/core.ts"
-  Copy paths EXACTLY as they appear in the code context above
+- CRITICAL: All paths must be COMPLETE from repository root
 
-Focus on discovering:
-- Reusable components (UI components, React components, etc.) - use type "component"
-- Core utilities and helpers - use type "component"
-- Shared libraries - use type "component"
+FOCUS ON DISCOVERING (in order of importance):
+1. Extension components users interact with - importance: 0.6, layer: "extension"
+2. Shared utilities used across library - importance: 0.5, layer: "utility"
+3. Helper functions and formatters - importance: 0.4, layer: "utility"
+4. Development/debugging tools - importance: 0.3, layer: "utility"
 
-Limit to top 15 most important entities. Do NOT repeat entities from previous iterations.
-Return ONLY valid JSON, no markdown blocks.`;
+ANTI-DRIFT INSTRUCTIONS:
+- CAREFULLY review ALL previousEntities (from both iterations 1 & 2) before creating new ones
+- BUILD ON previous iterations, do NOT repeat or contradict them
+- DO NOT drift to unrelated topics
+- DO NOT create more than 15 entities
+- FOCUS EXCLUSIVELY on supporting components and utilities
+- This is the FINAL iteration - wrap up the architecture picture cohesively
+
+Limit to top 15 most important entities by importance score.
+Return ONLY valid JSON, no markdown blocks, no code fences, no explanatory text.`;
+
+// ============================================================================
+// ARCHITECTURE SYNTHESIS PROMPT (Final step - DeepWiki pattern)
+// ============================================================================
+
+export const ARCHITECTURE_SYNTHESIS = `You are synthesizing multi-iteration architecture analysis into a cohesive narrative.
+
+CAREFULLY REVIEW THE ENTIRE ANALYSIS:
+
+Iteration 1 - Public APIs & Entry Points:
+{{iteration1Overview}}
+
+Iteration 2 - Internal Subsystems & Modules:
+{{iteration2Overview}}
+
+Iteration 3 - Components & Utilities:
+{{iteration3Overview}}
+
+Repository: {{repoName}}
+Architecture Pattern: {{pattern}}
+Total Entities Discovered: {{entityCount}}
+
+ALL DISCOVERED ENTITIES (for reference):
+{{allEntities}}
+
+TASK: Synthesize ALL findings from the 3 iterations into ONE comprehensive architectural narrative.
+
+Your narrative should:
+
+1. **START with the library's purpose** (from Iteration 1)
+   - What this library does for developers
+   - Primary use cases and target audience
+
+2. **EXPLAIN the architecture** (combine all 3 iterations)
+   - How the library is organized (pattern, structure)
+   - Public API surface (what developers import)
+   - Internal subsystems (how it works under the hood)
+   - Extension points (how developers can extend it)
+
+3. **HIGHLIGHT what makes it unique** (synthesis insight)
+   - Key architectural decisions
+   - Notable design patterns
+   - What makes this library special
+
+4. **GUIDE contributors** (actionable insights)
+   - Where to start exploring the code
+   - How the major pieces connect
+   - What to understand before contributing
+
+SYNTHESIS REQUIREMENTS:
+- Write 4-6 paragraphs (300-400 words total)
+- Flow as one coherent narrative (not bullet points)
+- Reference specific major entities by name
+- Emphasize library-specific architecture (public API → internal → extensions)
+- Build from overview → details → unique insights → contributor guidance
+- Use clear, direct language for developers
+
+CRITICAL INSTRUCTIONS:
+- CAREFULLY review ALL three iteration overviews above
+- Synthesize insights, don't just concatenate
+- Focus on the architectural STORY, not just entity lists
+- Reference the {{pattern}} and how it's implemented
+- Make it useful for developers evaluating or contributing
+
+This is the DEFINITIVE architectural summary - make it comprehensive and insightful.
+
+Return ONLY the narrative text, no markdown formatting, no section headers, no code blocks.`;
 
 // ============================================================================
 // DIAGRAM GENERATION PROMPTS

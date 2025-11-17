@@ -77,6 +77,54 @@ export const clearNamespace = internalAction({
 });
 
 /**
+ * Complete cascading delete for a repository
+ * Clears RAG entries, architecture entities, issues, and conversations
+ */
+export const clearNamespaceComplete = internalAction({
+	args: {
+		namespace: v.string(),
+		repositoryId: v.id("repositories"),
+	},
+	handler: async (ctx, args) => {
+		const results = {
+			ragEntries: 0,
+			architectureEntities: 0,
+			issues: 0,
+			conversations: 0,
+		};
+
+		// 1. Clear RAG entries
+		const ragResult = await ctx.runAction(internal.rag.clearNamespace, {
+			namespace: args.namespace,
+		});
+		results.ragEntries = ragResult.deletedCount;
+
+		// 2. Clear architecture entities
+		results.architectureEntities = await ctx.runMutation(
+			internal.architectureEntities.deleteByRepo,
+			{ repositoryId: args.repositoryId },
+		);
+
+		// 3. Clear issues
+		results.issues = await ctx.runMutation(internal.repos.deleteIssuesByRepo, {
+			repositoryId: args.repositoryId,
+		});
+
+		// 4. Clear conversations
+		results.conversations = await ctx.runMutation(
+			internal.chat.deleteConversationsByRepo,
+			{ repositoryId: args.repositoryId },
+		);
+
+		console.log(
+			`Complete clear for ${args.namespace}: ${results.ragEntries} RAG entries, ${results.architectureEntities} entities, ${results.issues} issues, ${results.conversations} conversations`,
+		);
+
+		return results;
+	},
+});
+
+/**
  * Ingest repository files into RAG component
  * Uses custom chunking with larger chunk sizes (~2000-2500 chars) for better storage efficiency
  */

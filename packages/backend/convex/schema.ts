@@ -21,6 +21,7 @@ export default defineSchema({
 		),
 		summary: v.optional(v.string()),
 		architecture: v.optional(v.string()),
+		architectureNarrative: v.optional(v.string()), // Synthesized narrative from all iterations (Phase 4C)
 		projectStructure: v.optional(v.any()), // JSON tree structure
 		workflowId: v.optional(v.string()),
 		errorMessage: v.optional(v.string()),
@@ -70,11 +71,38 @@ export default defineSchema({
 		),
 		iteration: v.number(), // Which analysis iteration discovered this (1-3)
 		codeSnippet: v.optional(v.string()), // Representative code sample
+
+		// NEW FIELDS (Phase 4C) - Library-focused architecture analysis
+		dataFlow: v.optional(
+			v.object({
+				entry: v.string(), // Where data enters: "Function call", "Import", "CLI command"
+				processing: v.array(v.string()), // Processing steps: ["Parse", "Validate", "Transform"]
+				output: v.string(), // Where data goes: "Return value", "DOM update", "Side effect"
+				narrative: v.string(), // 1-2 sentence LLM-generated flow description
+			}),
+		),
+		githubUrl: v.optional(v.string()), // Complete GitHub tree/blob URL
+		layer: v.optional(
+			v.union(
+				v.literal("public"), // Public API surface (what developers import)
+				v.literal("internal"), // Core subsystems (internal algorithms)
+				v.literal("extension"), // Plugin/middleware systems
+				v.literal("utility"), // Internal utilities
+			),
+		),
+		importance: v.optional(v.number()), // 0-1 score for ranking (1.0 = entry points, 0.3 = utilities)
+		rank: v.optional(v.number()), // 1-N final ranking within repository
+		relatedGroup: v.optional(v.string()), // Group ID for related entities: "auth-system", "validation-api"
+		relatedEntities: v.optional(v.array(v.string())), // Links to related entity slugs
 	})
 		.index("by_repository", ["repositoryId"])
 		.index("by_type", ["repositoryId", "type"])
 		.index("by_slug", ["repositoryId", "slug"])
-		.index("by_iteration", ["repositoryId", "iteration"]),
+		.index("by_iteration", ["repositoryId", "iteration"])
+		.index("by_importance", ["repositoryId", "importance"])
+		.index("by_rank", ["repositoryId", "rank"])
+		.index("by_layer", ["repositoryId", "layer"])
+		.index("by_group", ["repositoryId", "relatedGroup"]),
 
 	issues: defineTable({
 		repositoryId: v.id("repositories"),

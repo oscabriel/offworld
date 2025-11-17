@@ -348,6 +348,43 @@ export const generateArchitectureIteration3 = internalAction({
 });
 
 /**
+ * Architecture Synthesis: Final narrative generation
+ * Synthesizes all iteration overviews into a cohesive architectural narrative
+ */
+export const synthesizeArchitecture = internalAction({
+	args: {
+		repoName: v.string(),
+		pattern: v.string(),
+		iteration1Overview: v.string(),
+		iteration2Overview: v.string(),
+		iteration3Overview: v.string(),
+		entityCount: v.number(),
+		allEntities: v.string(), // JSON string of all entities
+	},
+	handler: async (_ctx, args) => {
+		const { ARCHITECTURE_SYNTHESIS, renderPrompt } = await import("./prompts");
+
+		const prompt = renderPrompt(ARCHITECTURE_SYNTHESIS, {
+			repoName: args.repoName,
+			pattern: args.pattern,
+			iteration1Overview: args.iteration1Overview,
+			iteration2Overview: args.iteration2Overview,
+			iteration3Overview: args.iteration3Overview,
+			entityCount: args.entityCount.toString(),
+			allEntities: args.allEntities,
+		});
+
+		const { text } = await generateText({
+			model: google("gemini-2.5-flash-lite"),
+			prompt,
+		});
+
+		// Return raw narrative text (no extraction needed)
+		return text.trim();
+	},
+});
+
+/**
  * Generate C4 architecture diagram
  */
 export const generateArchitectureDiagram = internalAction({

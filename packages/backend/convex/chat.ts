@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, mutation, query } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import { codebaseAgent } from "./agent/codebaseAgent";
 
 /**
@@ -244,6 +244,27 @@ export const deleteConversation = mutation({
 		await ctx.db.delete(args.conversationId);
 
 		return { success: true };
+	},
+});
+
+/**
+ * Delete all conversations for a repository (internal use only)
+ */
+export const deleteConversationsByRepo = internalMutation({
+	args: {
+		repositoryId: v.id("repositories"),
+	},
+	handler: async (ctx, args) => {
+		const conversations = await ctx.db
+			.query("conversations")
+			.withIndex("by_repo", (q) => q.eq("repositoryId", args.repositoryId))
+			.collect();
+
+		for (const conversation of conversations) {
+			await ctx.db.delete(conversation._id);
+		}
+
+		return conversations.length;
 	},
 });
 

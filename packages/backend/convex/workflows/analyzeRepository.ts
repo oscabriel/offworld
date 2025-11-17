@@ -22,15 +22,37 @@ export const analyzeRepositoryWorkflow = workflow.define({
 		userId: v.optional(v.string()),
 	},
 	handler: async (step, args) => {
-		// Step 0: Clear old RAG data if this is a re-index (optional but thorough)
-		// This ensures deleted files don't leave stale chunks
+		// Step 0: Complete cascading delete if this is a re-index
+		// Clears RAG entries, architecture entities, issues, and conversations
 		const namespace = `repo:${args.owner}/${args.name}`;
+		const fullName = `${args.owner}/${args.name}`;
+
 		try {
-			await step.runAction(internal.rag.clearNamespace, { namespace });
-			console.log(`Cleared old RAG data for ${namespace}`);
+			// Check if repository already exists
+			const existingRepo = await step.runQuery(
+				internal.repos.getByFullNameInternal,
+				{ fullName },
+			);
+
+			if (existingRepo) {
+				// Repository exists - perform complete cascading delete
+				const clearResults = await step.runAction(
+					internal.rag.clearNamespaceComplete,
+					{
+						namespace,
+						repositoryId: existingRepo._id,
+					},
+				);
+				console.log(
+					`Complete clear for ${fullName}: ${clearResults.ragEntries} RAG entries, ${clearResults.architectureEntities} entities, ${clearResults.issues} issues, ${clearResults.conversations} conversations`,
+				);
+			} else {
+				// First-time index - no clearing needed
+				console.log(`First-time index for ${fullName} - no clearing needed`);
+			}
 		} catch (error) {
-			// If this fails, it's okay - chunks will be overwritten during ingestion
-			console.warn("Failed to clear RAG namespace (non-critical):", error);
+			// If clearing fails, log warning but continue (non-critical)
+			console.warn("Failed to clear existing data (non-critical):", error);
 		}
 
 		// Step 1: Fetch & validate GitHub metadata (~5-10 seconds)
@@ -107,6 +129,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 
 			// Step 9: Generate architecture overview with adaptive iterations
 			// Uses RAG component for context instead of file paths
+			// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
 			const allEntities: any[] = [];
 			const iterationOverviews: string[] = [];
 			let architecturePattern = "Unknown";
@@ -156,9 +179,9 @@ export const analyzeRepositoryWorkflow = workflow.define({
 
 				// Process and store entities
 				const maxEntities = i === 1 ? 15 : i % 2 === 0 ? 20 : 15;
-				// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
 				const entities = result.entities
 					.slice(0, maxEntities)
+					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
 					.map((e: any) => ({
 						...e,
 						iteration: i,
@@ -166,20 +189,48 @@ export const analyzeRepositoryWorkflow = workflow.define({
 					}));
 
 				allEntities.push(...entities);
-
-				await step.runMutation(internal.architectureEntities.createBatch, {
-					repoId,
-					entities,
-				});
 			}
 
-			// Generate C4 diagrams using discovered entities
+			// Consolidate entities: Filter 50+ → 5-15 major architectural entities
+			// Based on repo size and importance scores
+			const consolidatedEntities = await step.runAction(
+				internal.architectureEntities.consolidateEntities,
+				{
+					entities: allEntities,
+					owner: args.owner,
+					repoName: args.name,
+					defaultBranch: metadata.defaultBranch,
+					fileCount: ingestResult.filesProcessed,
+				},
+			);
+
+			// Store consolidated entities (not all discovered entities)
+			await step.runMutation(internal.architectureEntities.createBatch, {
+				repoId,
+				entities: consolidatedEntities,
+			});
+
+			// Synthesize architecture narrative from all iterations (DeepWiki pattern)
+			const architectureNarrative = await step.runAction(
+				internal.gemini.synthesizeArchitecture,
+				{
+					repoName: metadata.fullName,
+					pattern: architecturePattern,
+					iteration1Overview: iterationOverviews[0] || "",
+					iteration2Overview: iterationOverviews[1] || "",
+					iteration3Overview: iterationOverviews[2] || "",
+					entityCount: consolidatedEntities.length,
+					allEntities: JSON.stringify(consolidatedEntities),
+				},
+			);
+
+			// Generate C4 diagrams using consolidated entities
 			const architectureDiagram = await step.runAction(
 				internal.gemini.generateArchitectureDiagram,
 				{
 					repoName: metadata.fullName,
 					pattern: architecturePattern,
-					entities: JSON.stringify(allEntities.slice(0, 20)),
+					entities: JSON.stringify(consolidatedEntities),
 				},
 			);
 
@@ -188,7 +239,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				{
 					repoName: metadata.fullName,
 					overview: iterationOverviews.join("\n\n"),
-					entities: JSON.stringify(allEntities.slice(0, 15)),
+					entities: JSON.stringify(consolidatedEntities),
 				},
 			);
 
@@ -213,25 +264,26 @@ export const analyzeRepositoryWorkflow = workflow.define({
 								: `Iteration ${index + 1}`;
 				finalArchitecture += `## ${sectionTitle}\n\n${overview}\n\n`;
 			});
-			finalArchitecture += `---\n\n*Discovered ${allEntities.length} architectural entities across ${iterationCount} analysis iterations*`;
+			finalArchitecture += `---\n\n*Consolidated to ${consolidatedEntities.length} major architectural entities (from ${allEntities.length} discovered across ${iterationCount} iterations)*`;
 
-			// Update DB with architecture, metadata, and diagrams
+			// Update DB with architecture, narrative, metadata, and diagrams
 			await step.runMutation(internal.repos.updateArchitectureComplete, {
 				repoId,
 				architecture: finalArchitecture,
+				architectureNarrative,
 				architectureMetadata: {
 					totalIterations: iterationCount,
 					completedIterations: iterationCount,
-					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
-					discoveredPackages: allEntities.filter(
+					discoveredPackages: consolidatedEntities.filter(
+						// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
 						(e: any) => e.type === "package",
 					).length,
-					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
-					discoveredModules: allEntities.filter(
+					discoveredModules: consolidatedEntities.filter(
+						// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
 						(e: any) => e.type === "module" || e.type === "service",
 					).length,
-					// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
-					discoveredComponents: allEntities.filter(
+					discoveredComponents: consolidatedEntities.filter(
+						// biome-ignore lint/suspicious/noExplicitAny: Architecture entities are not typed
 						(e: any) => e.type === "component",
 					).length,
 					lastIterationAt: Date.now(),

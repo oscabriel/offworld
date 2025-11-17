@@ -18,6 +18,22 @@ export const ArchitectureEntitySchema = z.object({
 	keyFiles: z.array(z.string()).default([]),
 	complexity: z.enum(["low", "medium", "high"]),
 	codeSnippet: z.string().optional(),
+
+	// Phase 4C fields - Optional to allow gradual adoption
+	layer: z.enum(["public", "internal", "extension", "utility"]).optional(),
+	importance: z.number().min(0).max(1).optional(),
+	dataFlow: z
+		.object({
+			entry: z.string(),
+			processing: z.array(z.string()),
+			output: z.string(),
+			narrative: z.string(),
+		})
+		.optional(),
+	githubUrl: z.string().optional(),
+	rank: z.number().optional(),
+	relatedGroup: z.string().optional(),
+	relatedEntities: z.array(z.string()).default([]),
 });
 
 // Architecture iteration response schema

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, query } from "./_generated/server";
+import { internalAction, internalMutation, query } from "./_generated/server";
 
 /**
  * Architecture Entities CRUD Operations
@@ -181,6 +181,29 @@ export const createBatch = internalMutation({
 				),
 				iteration: v.number(),
 				codeSnippet: v.optional(v.string()),
+
+				// NEW OPTIONAL FIELDS (Phase 4C)
+				dataFlow: v.optional(
+					v.object({
+						entry: v.string(),
+						processing: v.array(v.string()),
+						output: v.string(),
+						narrative: v.string(),
+					}),
+				),
+				githubUrl: v.optional(v.string()),
+				layer: v.optional(
+					v.union(
+						v.literal("public"),
+						v.literal("internal"),
+						v.literal("extension"),
+						v.literal("utility"),
+					),
+				),
+				importance: v.optional(v.number()),
+				rank: v.optional(v.number()),
+				relatedGroup: v.optional(v.string()),
+				relatedEntities: v.optional(v.array(v.string())),
 			}),
 		),
 	},
@@ -192,6 +215,7 @@ export const createBatch = internalMutation({
 				repositoryId: args.repoId,
 				...entity,
 				usedBy: entity.usedBy || [],
+				relatedEntities: entity.relatedEntities || [],
 			});
 			ids.push(id);
 		}
@@ -244,5 +268,60 @@ export const updateRelationships = internalMutation({
 		}
 
 		await ctx.db.patch(args.entityId, updates);
+	},
+});
+
+// ============================================================================
+// ACTIONS
+// ============================================================================
+
+/**
+ * Consolidate entities to top N most important
+ * Filters from 50+ entities down to 5-15 major architectural entities
+ * Generates GitHub URLs and ranks entities by importance
+ */
+export const consolidateEntities = internalAction({
+	args: {
+		entities: v.array(v.any()),
+		owner: v.string(),
+		repoName: v.string(),
+		defaultBranch: v.string(),
+		fileCount: v.number(),
+	},
+	handler: async (_ctx, args) => {
+		// 1. Calculate dynamic entity limit based on repo size
+		const maxEntities =
+			args.fileCount < 50
+				? 5
+				: args.fileCount < 200
+					? 8
+					: args.fileCount < 500
+						? 12
+						: 15;
+
+		// 2. Sort all entities by importance score (descending)
+		// biome-ignore lint/suspicious/noExplicitAny: Entity structure is validated by aiValidation.ts
+		const sorted = [...args.entities].sort((a: any, b: any) => {
+			const importanceA = a.importance ?? 0;
+			const importanceB = b.importance ?? 0;
+			return importanceB - importanceA;
+		});
+
+		// 3. Filter to top N by importance
+		const topEntities = sorted.slice(0, maxEntities);
+
+		// 4. Generate GitHub URLs and add rank field
+		// biome-ignore lint/suspicious/noExplicitAny: Entity structure is validated by aiValidation.ts
+		const withUrls = topEntities.map((entity: any, index: number) => ({
+			...entity,
+			rank: index + 1,
+			githubUrl: `https://github.com/${args.owner}/${args.repoName}/tree/${args.defaultBranch}/${entity.path}`,
+		}));
+
+		console.log(
+			`Consolidated ${args.entities.length} entities → ${withUrls.length} major entities (limit: ${maxEntities} for ${args.fileCount} files)`,
+		);
+
+		return withUrls;
 	},
 });

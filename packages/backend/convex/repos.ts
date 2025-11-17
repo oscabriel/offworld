@@ -106,6 +106,27 @@ export const storeIssues = internalMutation({
 });
 
 /**
+ * Delete all issues for a repository
+ */
+export const deleteIssuesByRepo = internalMutation({
+	args: {
+		repositoryId: v.id("repositories"),
+	},
+	handler: async (ctx, args) => {
+		const issues = await ctx.db
+			.query("issues")
+			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repositoryId))
+			.collect();
+
+		for (const issue of issues) {
+			await ctx.db.delete(issue._id);
+		}
+
+		return issues.length;
+	},
+});
+
+/**
  * Update repository summary (progressive update)
  */
 export const updateSummary = internalMutation({
@@ -146,6 +167,7 @@ export const updateArchitectureComplete = internalMutation({
 	args: {
 		repoId: v.id("repositories"),
 		architecture: v.string(),
+		architectureNarrative: v.optional(v.string()), // Phase 4C: Synthesized narrative
 		architectureMetadata: v.object({
 			totalIterations: v.number(),
 			completedIterations: v.number(),
@@ -163,6 +185,7 @@ export const updateArchitectureComplete = internalMutation({
 	handler: async (ctx, args) => {
 		await ctx.db.patch(args.repoId, {
 			architecture: args.architecture,
+			architectureNarrative: args.architectureNarrative,
 			architectureMetadata: args.architectureMetadata,
 			diagrams: args.diagrams,
 		});

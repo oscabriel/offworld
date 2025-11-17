@@ -7,7 +7,8 @@
 		"dev": "vite dev --port=4000",
 		"build": "vite build",
 		"start": "node .output/server/index.mjs",
-		"postinstall": "fumadocs-mdx"
+		"postinstall": "fumadocs-mdx",
+		"check": "biome check --write ."
 	},
 	"dependencies": {
 		"@tanstack/react-router": "catalog:",

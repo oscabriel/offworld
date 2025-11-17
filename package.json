@@ -30,7 +30,7 @@
 		}
 	},
 	"scripts": {
-		"check": "biome check --write .",
+		"check": "turbo check",
 		"ruler:apply": "bunx @intellectronica/ruler@latest apply --local-only",
 		"dev": "turbo dev",
 		"build": "turbo build",

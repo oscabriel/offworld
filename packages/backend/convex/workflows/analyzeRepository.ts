@@ -12,8 +12,20 @@ const internal = internalApi as any;
 const workflow = new WorkflowManager(components.workflow as any);
 
 /**
- * 11-Step Durable Workflow for Repository Analysis
+ * Multi-Step Durable Workflow for Repository Analysis
  * Survives crashes, resumes from last completed step
+ *
+ * Steps:
+ * 1. Fetch GitHub metadata
+ * 2. Check if repo exists (determines new index vs re-index)
+ * 3. Create/reset repo record + clear old data
+ * 4. Fetch file tree
+ * 5. Ingest files into RAG
+ * 6. Generate summary
+ * 7. Generate architecture (iterative)
+ * 8. Analyze issues
+ * 9. Analyze pull requests
+ * 10. Finalize
  */
 export const analyzeRepositoryWorkflow = workflow.define({
 	args: {
@@ -22,22 +34,21 @@ export const analyzeRepositoryWorkflow = workflow.define({
 		userId: v.optional(v.string()),
 	},
 	handler: async (step, args) => {
-		// Step 0: Complete cascading delete if this is a re-index
-		// Clears RAG entries, architecture entities, issues, and conversations
 		const namespace = `repo:${args.owner}/${args.name}`;
 		const fullName = `${args.owner}/${args.name}`;
 
-		// Step 0: Check if repository already exists
-		const existingRepo = await step.runQuery(
-			internal.repos.getByFullNameInternal,
-			{ fullName },
-		);
-
 		// Step 1: Fetch & validate GitHub metadata (~5-10 seconds)
+		// Do this FIRST before any mutations to avoid holding transactions
 		const metadata = await step.runAction(internal.github.fetchRepoMetadata, {
 			owner: args.owner,
 			name: args.name,
 		});
+
+		// Step 2: Check if repository already exists
+		const existingRepo = await step.runQuery(
+			internal.repos.getByFullNameInternal,
+			{ fullName },
+		);
 
 		let repoId: string;
 
@@ -65,7 +76,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				);
 			}
 
-			// Step 2a: Reset repository metadata (reuse existing _id)
+			// Step 3a: Reset repository metadata (reuse existing _id)
 			await step.runMutation(internal.repos.resetForReindex, {
 				repoId: existingRepo._id,
 				...metadata,
@@ -78,7 +89,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				`First-time index for ${fullName} - creating new repo record`,
 			);
 
-			// Step 2b: Create new repo record
+			// Step 3b: Create new repo record
 			repoId = await step.runMutation(internal.repos.createRepo, {
 				...metadata,
 				indexingStatus: "processing",
@@ -86,7 +97,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 		}
 
 		try {
-			// Step 3: Fetch file tree from GitHub (~10-30 seconds)
+			// Step 4: Fetch file tree from GitHub (~10-30 seconds)
 			const fileTreeResult = await step.runAction(
 				internal.github.fetchFileTree,
 				{
@@ -114,7 +125,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				`Repository has ${fileCount} files, using ${iterationCount} iterations for architecture analysis`,
 			);
 
-			// Step 4-7: Ingest repository into RAG component (~2-5 minutes)
+			// Step 5: Ingest repository into RAG component (~2-5 minutes)
 			// Replaces custom chunking with RAG's auto-chunking + embedding generation
 			const namespace = `repo:${args.owner}/${args.name}`;
 			const ingestResult = await step.runAction(internal.rag.ingestRepository, {
@@ -125,7 +136,7 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				name: args.name,
 			});
 
-			// Step 8: Generate summary with Gemini (~30-60 seconds)
+			// Step 6: Generate summary with Gemini (~30-60 seconds)
 			// Uses RAG to fetch high-priority files for context
 			const summary = await step.runAction(
 				internal.gemini.generateRepoSummary,
@@ -274,6 +285,8 @@ export const analyzeRepositoryWorkflow = workflow.define({
 			);
 
 			// Generate final architecture text dynamically based on iterations
+			// NOTE: This finalArchitecture is only for internal metadata/debugging
+			// The user-facing architecture is the synthesized narrative
 			let finalArchitecture = `# Architecture Pattern: ${architecturePattern}\n\n`;
 			iterationOverviews.forEach((overview, index) => {
 				const sectionTitle =
@@ -283,7 +296,9 @@ export const analyzeRepositoryWorkflow = workflow.define({
 							? "Module Organization"
 							: index === 2
 								? "Component Structure"
-								: `Iteration ${index + 1}`;
+								: index === 3
+									? "Shared Utilities"
+									: "Supporting Components";
 				finalArchitecture += `## ${sectionTitle}\n\n${overview}\n\n`;
 			});
 			finalArchitecture += `---\n\n*Consolidated to ${consolidatedEntities.length} major architectural entities (from ${allEntities.length} discovered across ${iterationCount} iterations)*`;

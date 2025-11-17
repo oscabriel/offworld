@@ -74,7 +74,7 @@ function ArchitecturePage() {
 	}
 
 	// No architecture yet
-	if (!repoStatus?.architecture) {
+	if (!repoStatus?.architectureNarrative && !repoStatus?.architecture) {
 		return (
 			<div className="space-y-8">
 				<ContentCard title="Architecture Overview">
@@ -99,9 +99,15 @@ function ArchitecturePage() {
 
 	return (
 		<div className="space-y-8">
-			{/* Architecture Overview Text */}
+			{/* Architecture Overview Text - Use narrative (clean) over raw architecture (internal) */}
 			<ContentCard title="Architecture Overview">
-				<MarkdownContent content={repoStatus.architecture} />
+				<MarkdownContent
+					content={
+						repoStatus.architectureNarrative ||
+						repoStatus.architecture ||
+						"No architecture overview available."
+					}
+				/>
 			</ContentCard>
 
 			{/* Diagrams */}

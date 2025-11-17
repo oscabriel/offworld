@@ -2,7 +2,7 @@
 
 *"Explore distant code."*
 
-AI-powered repository analysis system that explores GitHub codebases, generates architecture documentation, and provides intelligent Q&A via conversational AI agent.
+AI-powered codebase analysis platform that explores GitHub repos, generates architecture docs and diagrams, and provides conversational project navigation. Built primarily on [Tanstack Start](https://tanstack.com/start) and [Convex](https://convex.dev).
 
 ## Features
 

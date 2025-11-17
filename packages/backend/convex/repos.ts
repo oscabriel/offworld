@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { MutationCtx } from "./_generated/server";
 import {
 	action,
 	internalMutation,
@@ -376,15 +377,13 @@ export const reindexRepositoryAdmin = internalMutation({
  * Shared re-index logic
  */
 async function reindexRepositoryInternal(
-	// biome-ignore lint/suspicious/noExplicitAny: Context type varies between mutation/internalMutation
-	ctx: any,
+	ctx: MutationCtx,
 	args: { fullName: string; force?: boolean },
 ) {
 	// 1. Get the repository (case-insensitive)
 	const allRepos = await ctx.db.query("repositories").collect();
 	const repo = allRepos.find(
-		// biome-ignore lint/suspicious/noExplicitAny: Query result type
-		(r: any) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+		(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
 	);
 
 	if (!repo) {
@@ -423,7 +422,7 @@ async function reindexRepositoryInternal(
 	// 5. Delete issues
 	const issues = await ctx.db
 		.query("issues")
-		.withIndex("repositoryId", (q: any) => q.eq("repositoryId", repo._id))
+		.withIndex("repositoryId", (q) => q.eq("repositoryId", repo._id))
 		.collect();
 	for (const issue of issues) {
 		await ctx.db.delete(issue._id);

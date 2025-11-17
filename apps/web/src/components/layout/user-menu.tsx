@@ -46,7 +46,11 @@ export default function UserMenu() {
 	// Show Sign In button while loading or when not authenticated
 	if (!user) {
 		return (
-			<Button variant="outline" onClick={() => navigate({ to: "/sign-in" })}>
+			<Button
+				variant="outline"
+				className="bg-background text-primary"
+				onClick={() => navigate({ to: "/sign-in" })}
+			>
 				<span className="font-semibold font-serif text-base">Sign In</span>
 			</Button>
 		);

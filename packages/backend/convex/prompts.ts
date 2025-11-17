@@ -129,7 +129,7 @@ Code from Entry Points and Configuration:
 
 Generate a JSON response with this EXACT structure:
 {
-  "overview": "<2-3 sentence architectural overview focusing on library purpose and API design. DO NOT mention 'Iteration', 'discovered', 'layers', or reference the analysis process. Write as if describing the actual library architecture to a developer.>",
+  "overview": "<2-3 sentence architectural overview focusing on library purpose and API design. CRITICAL: DO NOT mention 'Iteration 1/2/3/4/5', 'discovered', 'layers', 'public/internal/extension/utility', or reference the analysis process. Write ONLY about the actual library architecture as if explaining it to a developer.>",
   "pattern": "<Library|Framework|Utility|Plugin System|Component Library|etc>",
   "entities": [
     {
@@ -234,7 +234,7 @@ NOW discover MODULES and INTERNAL SUBSYSTEMS that:
 
 Generate a JSON response continuing the structure:
 {
-  "overview": "<2-3 sentences about the internal architecture. DO NOT mention 'Iteration 1', 'Iteration 2', or reference the analysis process. Write as if describing the actual codebase architecture to a developer.>",
+  "overview": "<2-3 sentences about the internal architecture. CRITICAL: DO NOT mention 'Iteration 1/2/3/4/5', 'discovered', 'layers', or reference the analysis process. Write ONLY about the actual codebase architecture as if explaining it to a developer.>",
   "entities": [
     {
       "name": "<Module or subsystem name>",
@@ -332,7 +332,7 @@ NOW discover COMPONENTS and UTILITIES that:
 
 Generate a JSON response completing the structure:
 {
-  "overview": "<2-3 sentences about component/utility organization. DO NOT mention 'Iteration', 'discovered', 'layers', or reference the analysis process. Write as if describing the actual codebase organization to a developer.>",
+  "overview": "<2-3 sentences about component/utility organization. CRITICAL: DO NOT mention 'Iteration 1/2/3/4/5', 'discovered', 'layers', or reference the analysis process. Write ONLY about the actual codebase architecture. Imagine you are explaining the library's organization to a developer who wants to use it.>",
   "entities": [
     {
       "name": "<Component or utility name>",
@@ -431,7 +431,13 @@ DISCOVERED {{entityCount}} MAJOR ARCHITECTURAL ENTITIES:
 
 YOUR TASK: Write a comprehensive architectural guide (300-400 words) that helps developers understand how to use and contribute to this library.
 
-CRITICAL: Even though the context above may contain phrases like "Iteration 1/2/3/4", "discovered", "layers", etc., you MUST NEVER echo these in your output. Ignore any meta-commentary in the context and focus only on the actual architectural information.
+CRITICAL FILTERING RULES - YOU MUST FOLLOW THESE EXACTLY:
+1. The context above may contain meta-phrases like "Iteration 1", "Iteration 2", "Iteration 3", "Iteration 4", "Iteration 5", etc.
+2. YOU MUST COMPLETELY IGNORE AND NEVER INCLUDE THESE ITERATION REFERENCES IN YOUR OUTPUT
+3. Extract only the actual architectural content from each section
+4. If a section starts with "Iteration X", skip that heading and use only the content that follows
+5. Rewrite any content that references the analysis process - focus on describing the actual codebase
+6. NEVER echo workflow terminology like "discovered", "layers", "public layer", "importance scores", "consolidated"
 
 STRUCTURE YOUR NARRATIVE (4-6 paragraphs):
 

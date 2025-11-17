@@ -7,6 +7,7 @@ import {
 	mutation,
 	query,
 } from "./_generated/server";
+import { getUser } from "./auth";
 
 /**
  * Create a new repository record
@@ -283,7 +284,6 @@ export const reindexRepository = mutation({
 	},
 	handler: async (ctx, args) => {
 		// Require authentication
-		const { getUser } = await import("./auth");
 		await getUser(ctx);
 
 		// 1. Get the repository
@@ -515,7 +515,6 @@ export const startAnalysis = mutation({
 	},
 	handler: async (ctx, args) => {
 		// Require authentication
-		const { getUser } = await import("./auth");
 		await getUser(ctx);
 
 		// Parse GitHub URL

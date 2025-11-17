@@ -1,3 +1,5 @@
+import { api } from "@offworld/backend/convex/_generated/api";
+import { useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import { StatusBadge } from "./status-badge";
 
@@ -44,6 +46,10 @@ export function RepoHeader({
 }: RepoHeaderProps) {
 	const isCompleted = repoData?.indexingStatus === "completed";
 	const isNotIndexed = repoData === null;
+
+	// Check authentication status
+	const currentUser = useQuery(api.auth.getCurrentUserSafe);
+	const isAuthenticated = currentUser !== null && currentUser !== undefined;
 
 	return (
 		<header>
@@ -92,7 +98,7 @@ export function RepoHeader({
 							<p className="font-mono text-base text-muted-foreground">
 								{repoData.description}
 							</p>
-							{isCompleted && onReindex && (
+							{isCompleted && onReindex && isAuthenticated && (
 								<button
 									type="button"
 									onClick={onReindex}

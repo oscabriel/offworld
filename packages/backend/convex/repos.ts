@@ -127,6 +127,48 @@ export const deleteIssuesByRepo = internalMutation({
 });
 
 /**
+ * Reset repository metadata for re-indexing
+ */
+export const resetForReindex = internalMutation({
+	args: {
+		repoId: v.id("repositories"),
+		owner: v.string(),
+		name: v.string(),
+		fullName: v.string(),
+		description: v.optional(v.string()),
+		stars: v.number(),
+		language: v.optional(v.string()),
+		githubUrl: v.string(),
+		defaultBranch: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const now = Date.now();
+
+		await ctx.db.patch(args.repoId, {
+			owner: args.owner,
+			name: args.name,
+			fullName: args.fullName,
+			description: args.description,
+			stars: args.stars,
+			language: args.language,
+			githubUrl: args.githubUrl,
+			defaultBranch: args.defaultBranch,
+			indexingStatus: "processing",
+			summary: undefined,
+			architecture: undefined,
+			architectureNarrative: undefined,
+			architectureMetadata: undefined,
+			diagrams: undefined,
+			errorMessage: undefined,
+			indexedAt: now,
+			lastAnalyzedAt: now,
+		});
+
+		return { success: true };
+	},
+});
+
+/**
  * Update repository summary (progressive update)
  */
 export const updateSummary = internalMutation({
@@ -240,6 +282,10 @@ export const reindexRepository = mutation({
 		repoId: v.id("repositories"),
 	},
 	handler: async (ctx, args) => {
+		// Require authentication
+		const { getUser } = await import("./auth");
+		await getUser(ctx);
+
 		// 1. Get the repository
 		const repo = await ctx.db.get(args.repoId);
 		if (!repo) {
@@ -324,11 +370,11 @@ export const deleteRepository = mutation({
 		fullName: v.string(),
 	},
 	handler: async (ctx, args) => {
-		// Get repository
-		const repo = await ctx.db
-			.query("repositories")
-			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
+		// Get repository (case-insensitive)
+		const allRepos = await ctx.db.query("repositories").collect();
+		const repo = allRepos.find(
+			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+		);
 
 		if (!repo) {
 			throw new Error("Repository not found");
@@ -370,16 +416,19 @@ export const deleteRepository = mutation({
 
 /**
  * Get repository by full name (owner/name)
+ * Case-insensitive: "tanstack/router" will find "TanStack/router"
  */
 export const getByFullName = query({
 	args: {
 		fullName: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const repo = await ctx.db
-			.query("repositories")
-			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
+		// Collect all repos and do case-insensitive comparison
+		// This is acceptable since we have few repos; can optimize with fullNameLower index later
+		const allRepos = await ctx.db.query("repositories").collect();
+		const repo = allRepos.find(
+			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+		);
 
 		if (!repo) return null;
 
@@ -399,18 +448,20 @@ export const getByFullName = query({
 
 /**
  * Get repository by full name (owner/name) - INTERNAL VERSION for actions
+ * Case-insensitive: "tanstack/router" will find "TanStack/router"
  */
 export const getByFullNameInternal = internalQuery({
 	args: {
 		fullName: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const repo = await ctx.db
-			.query("repositories")
-			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
+		// Collect all repos and do case-insensitive comparison
+		const allRepos = await ctx.db.query("repositories").collect();
+		const repo = allRepos.find(
+			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+		);
 
-		return repo;
+		return repo || null;
 	},
 });
 
@@ -463,6 +514,10 @@ export const startAnalysis = mutation({
 		repoUrl: v.string(),
 	},
 	handler: async (ctx, args) => {
+		// Require authentication
+		const { getUser } = await import("./auth");
+		await getUser(ctx);
+
 		// Parse GitHub URL
 		const urlPattern =
 			/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(?:\.git)?$/;
@@ -474,11 +529,12 @@ export const startAnalysis = mutation({
 
 		const [, owner, name] = match;
 
-		// Check if already exists
-		const existing = await ctx.db
-			.query("repositories")
-			.withIndex("fullName", (q) => q.eq("fullName", `${owner}/${name}`))
-			.first();
+		// Check if already exists (case-insensitive)
+		const fullNameToCheck = `${owner}/${name}`;
+		const allRepos = await ctx.db.query("repositories").collect();
+		const existing = allRepos.find(
+			(r) => r.fullName.toLowerCase() === fullNameToCheck.toLowerCase(),
+		);
 
 		if (existing) {
 			// If completed less than 7 days ago, return existing

@@ -27,15 +27,27 @@ export const analyzeRepositoryWorkflow = workflow.define({
 		const namespace = `repo:${args.owner}/${args.name}`;
 		const fullName = `${args.owner}/${args.name}`;
 
-		try {
-			// Check if repository already exists
-			const existingRepo = await step.runQuery(
-				internal.repos.getByFullNameInternal,
-				{ fullName },
+		// Step 0: Check if repository already exists
+		const existingRepo = await step.runQuery(
+			internal.repos.getByFullNameInternal,
+			{ fullName },
+		);
+
+		// Step 1: Fetch & validate GitHub metadata (~5-10 seconds)
+		const metadata = await step.runAction(internal.github.fetchRepoMetadata, {
+			owner: args.owner,
+			name: args.name,
+		});
+
+		let repoId: string;
+
+		if (existingRepo) {
+			// Repository exists - perform complete cascading delete and reset
+			console.log(
+				`Re-indexing ${fullName} - reusing existing repo ${existingRepo._id}`,
 			);
 
-			if (existingRepo) {
-				// Repository exists - perform complete cascading delete
+			try {
 				const clearResults = await step.runAction(
 					internal.rag.clearNamespaceComplete,
 					{
@@ -46,26 +58,32 @@ export const analyzeRepositoryWorkflow = workflow.define({
 				console.log(
 					`Complete clear for ${fullName}: ${clearResults.ragEntries} RAG entries, ${clearResults.architectureEntities} entities, ${clearResults.issues} issues, ${clearResults.conversations} conversations`,
 				);
-			} else {
-				// First-time index - no clearing needed
-				console.log(`First-time index for ${fullName} - no clearing needed`);
+			} catch (error) {
+				// If clearing fails, this is critical - throw error
+				throw new Error(
+					`Failed to clear existing data: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			}
-		} catch (error) {
-			// If clearing fails, log warning but continue (non-critical)
-			console.warn("Failed to clear existing data (non-critical):", error);
+
+			// Step 2a: Reset repository metadata (reuse existing _id)
+			await step.runMutation(internal.repos.resetForReindex, {
+				repoId: existingRepo._id,
+				...metadata,
+			});
+
+			repoId = existingRepo._id;
+		} else {
+			// First-time index - create new repository
+			console.log(
+				`First-time index for ${fullName} - creating new repo record`,
+			);
+
+			// Step 2b: Create new repo record
+			repoId = await step.runMutation(internal.repos.createRepo, {
+				...metadata,
+				indexingStatus: "processing",
+			});
 		}
-
-		// Step 1: Fetch & validate GitHub metadata (~5-10 seconds)
-		const metadata = await step.runAction(internal.github.fetchRepoMetadata, {
-			owner: args.owner,
-			name: args.name,
-		});
-
-		// Step 2: Create repo record (atomic mutation)
-		const repoId = await step.runMutation(internal.repos.createRepo, {
-			...metadata,
-			indexingStatus: "processing",
-		});
 
 		try {
 			// Step 3: Fetch file tree from GitHub (~10-30 seconds)

@@ -34,39 +34,52 @@ export const clearNamespace = internalAction({
 		namespace: v.string(),
 	},
 	handler: async (ctx, args) => {
+		// First, get the namespaceId for this namespace
+		const namespace = await rag.getNamespace(ctx, {
+			namespace: args.namespace,
+		});
+
+		// If namespace doesn't exist, nothing to clear
+		if (!namespace) {
+			console.log(`Namespace ${args.namespace} not found - nothing to clear`);
+			return { deletedCount: 0 };
+		}
+
 		let totalDeleted = 0;
 		let hasMore = true;
+		let cursor = null;
 
-		// Paginate through all documents (max 256 per search due to RAG limit)
+		// Paginate through all entries using list() instead of search()
+		// list() is more efficient since it doesn't compute vector similarity
 		while (hasMore) {
-			const results = await rag.search(ctx, {
-				namespace: args.namespace,
-				query: "", // Empty query to match all
-				limit: 256, // Max limit for vector queries
+			const results = await rag.list(ctx, {
+				namespaceId: namespace.namespaceId,
+				paginationOpts: {
+					cursor,
+					numItems: 100, // Batch size
+				},
+				status: "ready", // Only delete ready entries
 			});
 
 			// If no results, we're done
-			if (results.entries.length === 0) {
-				hasMore = false;
+			if (results.page.length === 0) {
 				break;
 			}
 
-			// Delete this batch
-			for (const entry of results.entries) {
-				try {
-					await rag.delete(ctx, {
-						entryId: entry.entryId,
-					});
-					totalDeleted++;
-				} catch (error) {
+			// Delete this batch in parallel using Promise.all()
+			const deletePromises = results.page.map((entry) =>
+				rag.delete(ctx, { entryId: entry.entryId }).catch((error) => {
 					console.warn(`Failed to delete RAG entry ${entry.entryId}:`, error);
-				}
-			}
+					return null; // Continue with other deletions
+				}),
+			);
 
-			// If we got fewer than 256 results, we're done
-			if (results.entries.length < 256) {
-				hasMore = false;
-			}
+			await Promise.all(deletePromises);
+			totalDeleted += results.page.length;
+
+			// Check if we have more pages
+			hasMore = !results.isDone;
+			cursor = results.continueCursor;
 		}
 
 		console.log(

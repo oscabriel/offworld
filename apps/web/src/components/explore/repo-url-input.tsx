@@ -30,6 +30,8 @@ export function RepoUrlInput({
 
 		if (match) {
 			const [, owner, name] = match;
+			// Navigate directly - backend query is now case-insensitive
+			// The route component will handle canonical case redirect if needed
 			navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
 		} else {
 			// Try parsing as just "owner/repo" format

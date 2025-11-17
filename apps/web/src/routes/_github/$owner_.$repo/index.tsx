@@ -1,5 +1,5 @@
 import { api } from "@offworld/backend/convex/_generated/api";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
@@ -17,6 +17,10 @@ function RepoSummaryPage() {
 	const fullName = `${owner}/${repo}`;
 	const startAnalysis = useMutation(api.repos.startAnalysis);
 	const deleteRepository = useMutation(api.repos.deleteRepository);
+
+	// Check authentication status
+	const currentUser = useQuery(api.auth.getCurrentUserSafe);
+	const isAuthenticated = currentUser !== null && currentUser !== undefined;
 
 	// Query repository status - THIS IS REACTIVE and auto-updates
 	const repoStatus = useQuery(
@@ -126,18 +130,28 @@ function RepoSummaryPage() {
 			<div className="space-y-8">
 				{/* Main content styled like Summary section */}
 				<ContentCard title="Repository Not Indexed">
-					<p className="font-serif text-lg text-muted-foreground leading-relaxed">
-						This repository hasn't been analyzed yet. Would you like to index
-						it?
+					<p className="mb-4 font-serif text-lg text-muted-foreground leading-relaxed">
+						This repository hasn't been analyzed yet.
+						{!isAuthenticated &&
+							" Sign in to index repositories and get notified when analysis completes."}
 					</p>
-					<button
-						type="button"
-						onClick={handleStartIndexing}
-						disabled={isIndexing}
-						className="border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isIndexing ? "Starting Analysis..." : "Index This Repository"}
-					</button>
+					{isAuthenticated ? (
+						<button
+							type="button"
+							onClick={handleStartIndexing}
+							disabled={isIndexing}
+							className="border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							{isIndexing ? "Starting Analysis..." : "Index This Repository"}
+						</button>
+					) : (
+						<Link
+							to="/sign-in"
+							className="inline-block border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90"
+						>
+							Sign In to Index
+						</Link>
+					)}
 				</ContentCard>
 			</div>
 		);

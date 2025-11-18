@@ -20,7 +20,6 @@ import type * as http from "../http.js";
 import type * as importance from "../importance.js";
 import type * as issues from "../issues.js";
 import type * as lib_google from "../lib/google.js";
-import type * as maintenance from "../maintenance.js";
 import type * as migrations from "../migrations.js";
 import type * as privateData from "../privateData.js";
 import type * as prompts from "../prompts.js";
@@ -49,7 +48,6 @@ declare const fullApi: ApiFromModules<{
   importance: typeof importance;
   issues: typeof issues;
   "lib/google": typeof lib_google;
-  maintenance: typeof maintenance;
   migrations: typeof migrations;
   privateData: typeof privateData;
   prompts: typeof prompts;

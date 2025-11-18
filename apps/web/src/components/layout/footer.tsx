@@ -50,7 +50,8 @@ export function Footer() {
 								Docs
 							</a>
 							<Link
-								to="/about"
+								to="/$owner/$repo"
+								params={{ owner: "oscabriel", repo: "offworld" }}
 								className="font-mono text-foreground text-sm transition-colors hover:text-primary"
 							>
 								About

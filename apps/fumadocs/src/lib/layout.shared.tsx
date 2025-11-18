@@ -3,15 +3,15 @@ import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: 'Offworld',
+      title: 'OFFWORLD DOCS',
     },
     links: [
       {
-        text: 'App',
+        text: 'Check Out App',
         url: 'https://offworld.sh',
       },
       {
-        text: 'GitHub',
+        text: 'Read Source Code',
         url: 'https://github.com/oscabriel/offworld',
       },
     ],

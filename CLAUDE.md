@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Use Cases**: Summaries, architecture analysis, issue difficulty, PR impact, Mermaid diagrams
 
 ### Authentication
-- **Framework**: Better Auth v1 (session-based, type-safe)
+- **Framework**: Better Auth (session-based, type-safe)
 - **Providers**: GitHub OAuth (15k requests/hour via GitHub App)
 - **Adapter**: @convex-dev/better-auth (Convex integration)
 - **Session Storage**: Convex database

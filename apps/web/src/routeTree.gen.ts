@@ -13,7 +13,6 @@ import { Route as TunnelRouteImport } from './routes/tunnel'
 import { Route as TestErrorRouteImport } from './routes/test-error'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ExploreRouteImport } from './routes/explore'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as GithubRouteRouteImport } from './routes/_github/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GithubOwnerRouteImport } from './routes/_github/$owner'
@@ -48,11 +47,6 @@ const SignInRoute = SignInRouteImport.update({
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GithubRouteRoute = GithubRouteRouteImport.update({
@@ -137,7 +131,6 @@ const GithubOwnerRepoChatChatIdIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
   '/test-error': typeof TestErrorRoute
@@ -158,7 +151,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
   '/test-error': typeof TestErrorRoute
@@ -180,7 +172,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_github': typeof GithubRouteRouteWithChildren
-  '/about': typeof AboutRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
   '/test-error': typeof TestErrorRoute
@@ -203,7 +194,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
     | '/explore'
     | '/sign-in'
     | '/test-error'
@@ -224,7 +214,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
     | '/explore'
     | '/sign-in'
     | '/test-error'
@@ -245,7 +234,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_github'
-    | '/about'
     | '/explore'
     | '/sign-in'
     | '/test-error'
@@ -268,7 +256,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GithubRouteRoute: typeof GithubRouteRouteWithChildren
-  AboutRoute: typeof AboutRoute
   ExploreRoute: typeof ExploreRoute
   SignInRoute: typeof SignInRoute
   TestErrorRoute: typeof TestErrorRoute
@@ -304,13 +291,6 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_github': {
@@ -467,7 +447,6 @@ const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GithubRouteRoute: GithubRouteRouteWithChildren,
-  AboutRoute: AboutRoute,
   ExploreRoute: ExploreRoute,
   SignInRoute: SignInRoute,
   TestErrorRoute: TestErrorRoute,

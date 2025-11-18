@@ -16,9 +16,10 @@ const workflow = new WorkflowManager(components.workflow as any);
  * Survives crashes, resumes from last completed step
  *
  * Steps:
+ * 0. Clear old data
  * 1. Fetch GitHub metadata
  * 2. Check if repo exists (determines new index vs re-index)
- * 3. Create/reset repo record + clear old data
+ * 3. Create/reset repo record
  * 4. Fetch file tree
  * 5. Ingest files into RAG
  * 6. Generate summary

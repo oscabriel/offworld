@@ -18,9 +18,6 @@ import {
 import { codebaseAgent } from "./agent/codebaseAgent";
 import { getUser, safeGetUser } from "./auth";
 
-/**
- * Create a new conversation thread
- */
 export const createThread = mutation({
 	args: {
 		repositoryId: v.id("repositories"),
@@ -29,12 +26,10 @@ export const createThread = mutation({
 	handler: async (ctx, args) => {
 		const user = await getUser(ctx);
 
-		// Create thread in agent component
 		const threadId = await createAgentThread(ctx, components.agent, {
 			userId: user._id,
 		});
 
-		// Generate initial title from first message (truncate to 50 chars)
 		const title =
 			args.initialMessage.length > 50
 				? `${args.initialMessage.substring(0, 50)}...`
@@ -49,13 +44,11 @@ export const createThread = mutation({
 			messageCount: 1,
 		});
 
-		// Save initial user message to agent component
 		const { messageId } = await saveMessage(ctx, components.agent, {
 			threadId,
 			prompt: args.initialMessage,
 		});
 
-		// Schedule async response generation for initial message
 		await ctx.scheduler.runAfter(0, internal.chat.generateResponseAsync, {
 			threadId,
 			promptMessageId: messageId,
@@ -65,9 +58,6 @@ export const createThread = mutation({
 	},
 });
 
-/**
- * Send a message and schedule async agent response
- */
 export const sendMessage = mutation({
 	args: {
 		conversationId: v.id("conversations"),
@@ -76,13 +66,11 @@ export const sendMessage = mutation({
 	handler: async (ctx, args) => {
 		const user = await getUser(ctx);
 
-		// Verify ownership
 		const conversation = await ctx.db.get(args.conversationId);
 		if (!conversation || conversation.userId !== user._id) {
 			throw new Error("Unauthorized");
 		}
 
-		// RATE LIMITING: Check message count in last minute
 		const oneMinuteAgo = Date.now() - 60_000;
 		const recentConversations = await ctx.db
 			.query("conversations")
@@ -96,25 +84,21 @@ export const sendMessage = mutation({
 			0,
 		);
 		if (recentMessages > 20) {
-			// 20 messages per minute
 			throw new Error(
 				"Rate limit exceeded. Please wait before sending more messages.",
 			);
 		}
 
-		// Save user message to agent component
 		const { messageId } = await saveMessage(ctx, components.agent, {
 			threadId: conversation.threadId,
 			prompt: args.message,
 		});
 
-		// Update conversation metadata
 		await ctx.db.patch(args.conversationId, {
 			lastMessageAt: Date.now(),
 			messageCount: conversation.messageCount + 1,
 		});
 
-		// Schedule async response generation
 		await ctx.scheduler.runAfter(0, internal.chat.generateResponseAsync, {
 			threadId: conversation.threadId,
 			promptMessageId: messageId,
@@ -124,16 +108,12 @@ export const sendMessage = mutation({
 	},
 });
 
-/**
- * Generate agent response asynchronously (internal action)
- */
 export const generateResponseAsync = internalAction({
 	args: {
 		threadId: v.string(),
 		promptMessageId: v.string(),
 	},
 	handler: async (ctx, args) => {
-		// Get conversation to access repositoryId
 		const conversation = await ctx.runQuery(
 			internal.chat.getConversationByThread,
 			{
@@ -145,7 +125,6 @@ export const generateResponseAsync = internalAction({
 			throw new Error("Conversation not found");
 		}
 
-		// Add context for agent tools
 		const ctxWithAgent = Object.assign(ctx, {
 			repositoryId: conversation.repositoryId,
 			userId: conversation.userId,
@@ -154,7 +133,6 @@ export const generateResponseAsync = internalAction({
 		console.log("Generating response for thread:", args.threadId);
 		console.log("Repository context:", conversation.repositoryId);
 
-		// Generate response with streaming
 		await codebaseAgent.generateText(
 			ctxWithAgent,
 			{ threadId: args.threadId },
@@ -167,9 +145,6 @@ export const generateResponseAsync = internalAction({
 	},
 });
 
-/**
- * List messages for a thread with streaming support
- */
 export const listThreadMessages = query({
 	args: {
 		threadId: v.string(),
@@ -177,13 +152,11 @@ export const listThreadMessages = query({
 		streamArgs: vStreamArgs,
 	},
 	handler: async (ctx, args) => {
-		// Auth check
 		const user = await safeGetUser(ctx);
 		if (!user) {
 			throw new Error("Unauthorized");
 		}
 
-		// Verify thread ownership
 		const conversation = await ctx.db
 			.query("conversations")
 			.withIndex("by_thread", (q) => q.eq("threadId", args.threadId))
@@ -193,7 +166,6 @@ export const listThreadMessages = query({
 			throw new Error("Unauthorized");
 		}
 
-		// Get messages with streaming
 		const paginated = await listUIMessages(ctx, components.agent, args);
 		const streams = await syncStreams(ctx, components.agent, args);
 
@@ -201,9 +173,6 @@ export const listThreadMessages = query({
 	},
 });
 
-/**
- * Internal query helper: Get conversation by thread ID
- */
 export const getConversationByThread = internalQuery({
 	args: { threadId: v.string() },
 	handler: async (ctx, args) => {
@@ -214,9 +183,6 @@ export const getConversationByThread = internalQuery({
 	},
 });
 
-/**
- * Update conversation metadata (last message time, message count)
- */
 export const updateConversation = mutation({
 	args: {
 		conversationId: v.id("conversations"),
@@ -238,9 +204,6 @@ export const updateConversation = mutation({
 	},
 });
 
-/**
- * Get a single conversation by ID
- */
 export const getConversation = query({
 	args: {
 		conversationId: v.id("conversations"),
@@ -251,7 +214,6 @@ export const getConversation = query({
 
 		const conversation = await ctx.db.get(args.conversationId);
 
-		// Only return if user owns it
 		if (!conversation || conversation.userId !== user._id) {
 			return null;
 		}
@@ -260,9 +222,6 @@ export const getConversation = query({
 	},
 });
 
-/**
- * List all conversations for the current user
- */
 export const listConversationsByUser = query({
 	args: {},
 	handler: async (ctx) => {
@@ -279,9 +238,6 @@ export const listConversationsByUser = query({
 	},
 });
 
-/**
- * List conversations for a specific repository (current user only)
- */
 export const listConversationsByRepo = query({
 	args: {
 		repositoryId: v.id("repositories"),
@@ -295,7 +251,6 @@ export const listConversationsByRepo = query({
 			.withIndex("by_repo", (q) => q.eq("repositoryId", args.repositoryId))
 			.collect();
 
-		// Filter by current user and sort
 		const userConversations = conversations
 			.filter((conv) => conv.userId === user._id)
 			.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
@@ -304,9 +259,6 @@ export const listConversationsByRepo = query({
 	},
 });
 
-/**
- * Delete a conversation
- */
 export const deleteConversation = mutation({
 	args: {
 		conversationId: v.id("conversations"),
@@ -332,9 +284,6 @@ export const deleteConversation = mutation({
 	},
 });
 
-/**
- * Delete all conversations for a repository (internal use only)
- */
 export const deleteConversationsByRepo = internalMutation({
 	args: {
 		repositoryId: v.id("repositories"),
@@ -353,9 +302,6 @@ export const deleteConversationsByRepo = internalMutation({
 	},
 });
 
-/**
- * Update conversation title
- */
 export const updateConversationTitle = mutation({
 	args: {
 		conversationId: v.id("conversations"),

@@ -33,31 +33,22 @@ export function calculateImportance(filePath: string): number {
 	return 0.1;
 }
 
-/**
- * Determine if file should be excluded entirely
- * Returns true if file is too large or unnecessary
- */
+/** Exclude files too large (>100KB) or non-essential (lockfiles, build output, tests) */
 export function shouldExcludeFile(filePath: string, size: number): boolean {
-	// Exclude lock files and generated files
 	if (/\.(lock|lockb)$/.test(filePath)) return true;
 	if (/package-lock\.json$/.test(filePath)) return true;
 	if (/yarn\.lock$/.test(filePath)) return true;
 	if (/pnpm-lock\.yaml$/.test(filePath)) return true;
 	if (/bun\.lockb$/.test(filePath)) return true;
 
-	// Exclude build/dist directories
 	if (/^(dist|build|\.next|\.nuxt|out)\//.test(filePath)) return true;
 
-	// Exclude node_modules (should already be filtered by GitHub)
 	if (/node_modules\//.test(filePath)) return true;
 
-	// Exclude example/demo/sample files
 	if (/\/(examples?|demos?|samples?)\//.test(filePath)) return true;
 
-	// Exclude migration and seed files
 	if (/\/(migrations?|seeds?)\//.test(filePath)) return true;
 
-	// Exclude generated/vendor code
 	if (/\/(vendor|generated|\.git)\//.test(filePath)) return true;
 
 	// Exclude large files (>100KB) - reduced from 200KB
@@ -70,16 +61,12 @@ export function shouldExcludeFile(filePath: string, size: number): boolean {
 	return false;
 }
 
-/**
- * Get filter values for RAG metadata
- */
 export function getFilterValues(filePath: string) {
 	let fileType: "entry-point" | "core" | "regular" | "documentation";
 	let priority: "high" | "medium" | "low";
 
 	const importance = calculateImportance(filePath);
 
-	// Determine file type
 	if (importance >= 0.9) {
 		fileType = "entry-point";
 		priority = "high";
@@ -94,7 +81,6 @@ export function getFilterValues(filePath: string) {
 		priority = importance >= 0.4 ? "medium" : "low";
 	}
 
-	// Get file extension
 	const extension = filePath.split(".").pop() || "";
 
 	return [

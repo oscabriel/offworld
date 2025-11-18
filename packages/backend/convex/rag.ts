@@ -9,37 +9,27 @@ import {
 } from "./importance";
 import { google } from "./lib/google";
 
-// Filter types for metadata
 type FilterTypes = {
 	fileType: "entry-point" | "core" | "regular" | "documentation";
 	priority: "high" | "medium" | "low";
 	extension: string;
 };
 
-/**
- * RAG instance configured with Gemini embeddings
- */
 export const rag = new RAG<FilterTypes>(components.rag, {
 	textEmbeddingModel: google.textEmbeddingModel("text-embedding-004"),
 	embeddingDimension: 768,
 	filterNames: ["fileType", "priority", "extension"],
 });
 
-/**
- * Clear all documents from a specific namespace
- * Used when re-indexing a repository
- */
 export const clearNamespace = internalAction({
 	args: {
 		namespace: v.string(),
 	},
 	handler: async (ctx, args) => {
-		// First, get the namespaceId for this namespace
 		const namespace = await rag.getNamespace(ctx, {
 			namespace: args.namespace,
 		});
 
-		// If namespace doesn't exist, nothing to clear
 		if (!namespace) {
 			console.log(`Namespace ${args.namespace} not found - nothing to clear`);
 			return { deletedCount: 0 };
@@ -49,35 +39,30 @@ export const clearNamespace = internalAction({
 		let hasMore = true;
 		let cursor = null;
 
-		// Paginate through all entries using list() instead of search()
-		// list() is more efficient since it doesn't compute vector similarity
 		while (hasMore) {
 			const results = await rag.list(ctx, {
 				namespaceId: namespace.namespaceId,
 				paginationOpts: {
 					cursor,
-					numItems: 100, // Batch size
+					numItems: 100,
 				},
-				status: "ready", // Only delete ready entries
+				status: "ready",
 			});
 
-			// If no results, we're done
 			if (results.page.length === 0) {
 				break;
 			}
 
-			// Delete this batch in parallel using Promise.all()
 			const deletePromises = results.page.map((entry) =>
 				rag.delete(ctx, { entryId: entry.entryId }).catch((error) => {
 					console.warn(`Failed to delete RAG entry ${entry.entryId}:`, error);
-					return null; // Continue with other deletions
+					return null;
 				}),
 			);
 
 			await Promise.all(deletePromises);
 			totalDeleted += results.page.length;
 
-			// Check if we have more pages
 			hasMore = !results.isDone;
 			cursor = results.continueCursor;
 		}
@@ -89,10 +74,6 @@ export const clearNamespace = internalAction({
 	},
 });
 
-/**
- * Complete cascading delete for a repository
- * Clears RAG entries, architecture entities, issues, and conversations
- */
 export const clearNamespaceComplete = internalAction({
 	args: {
 		namespace: v.string(),
@@ -106,24 +87,20 @@ export const clearNamespaceComplete = internalAction({
 			conversations: 0,
 		};
 
-		// 1. Clear RAG entries
 		const ragResult = await ctx.runAction(internal.rag.clearNamespace, {
 			namespace: args.namespace,
 		});
 		results.ragEntries = ragResult.deletedCount;
 
-		// 2. Clear architecture entities
 		results.architectureEntities = await ctx.runMutation(
 			internal.architectureEntities.deleteByRepo,
 			{ repositoryId: args.repositoryId },
 		);
 
-		// 3. Clear issues
 		results.issues = await ctx.runMutation(internal.repos.deleteIssuesByRepo, {
 			repositoryId: args.repositoryId,
 		});
 
-		// 4. Clear conversations
 		results.conversations = await ctx.runMutation(
 			internal.chat.deleteConversationsByRepo,
 			{ repositoryId: args.repositoryId },
@@ -137,10 +114,6 @@ export const clearNamespaceComplete = internalAction({
 	},
 });
 
-/**
- * Ingest repository files into RAG component
- * Uses custom chunking with larger chunk sizes (~2000-2500 chars) for better storage efficiency
- */
 export const ingestRepository = internalAction({
 	args: {
 		repoId: v.id("repositories"),
@@ -160,7 +133,6 @@ export const ingestRepository = internalAction({
 		let filesProcessed = 0;
 		let chunksCreated = 0;
 
-		// Filter and sort files by importance
 		const eligibleFiles = args.files
 			.filter((file) => !shouldExcludeFile(file.path, file.size))
 			.map((file) => ({
@@ -168,15 +140,13 @@ export const ingestRepository = internalAction({
 				importance: calculateImportance(file.path),
 			}))
 			.sort((a, b) => b.importance - a.importance)
-			.slice(0, 500); // Limit to top 500 most important files
+			.slice(0, 500);
 
 		for (const file of eligibleFiles) {
-			// Skip excluded files (redundant check but safe)
 			if (shouldExcludeFile(file.path, file.size)) {
 				continue;
 			}
 
-			// Fetch file content from GitHub
 			const fileData = await ctx.runAction(
 				// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder for internal
 				(internal as any).github.fetchFileContent,
@@ -187,33 +157,27 @@ export const ingestRepository = internalAction({
 				},
 			);
 
-			// fetchFileContent returns an object with { path, content, size, sha }
 			if (!fileData || !fileData.content) continue;
 
-			// Use pre-calculated importance and get filter values
 			const filterValues = getFilterValues(file.path);
 
-			// Custom chunking with larger chunk sizes for better storage efficiency
-			// Target ~2000-2500 chars per chunk (vs default 1000) to reduce total chunk count by ~60%
-			// while maintaining good search quality for code
 			const chunks = defaultChunker(fileData.content, {
-				minCharsSoftLimit: 500, // Increased from 100 - allow larger minimum chunks
-				maxCharsSoftLimit: 2500, // Increased from 1000 - target ~2000-2500 chars per chunk
-				maxCharsHardLimit: 12000, // Increased from 10000 - allow larger chunks if needed
-				delimiter: "\n\n", // Keep default paragraph separator
+				minCharsSoftLimit: 500,
+				maxCharsSoftLimit: 2500,
+				maxCharsHardLimit: 12000,
+				delimiter: "\n\n",
 			});
 
-			// Add to RAG with custom chunks
 			await rag.add(ctx, {
 				namespace: args.namespace,
-				key: file.path, // Unique key for updates
-				chunks, // Use custom chunking instead of auto-chunking
-				importance: file.importance, // Use pre-calculated importance
+				key: file.path,
+				chunks,
+				importance: file.importance,
 				filterValues,
 			});
 
 			filesProcessed++;
-			chunksCreated += chunks.length; // Actual chunk count
+			chunksCreated += chunks.length;
 		}
 
 		return { filesProcessed, chunksCreated };

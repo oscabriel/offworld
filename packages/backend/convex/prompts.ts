@@ -1,13 +1,3 @@
-/**
- * Prompt Templates for Multi-Iteration Analysis
- *
- * Template variables use {{variableName}} syntax
- */
-
-// ============================================================================
-// SUMMARY GENERATION PROMPTS (3 iterations + synthesis)
-// ============================================================================
-
 export const SUMMARY_ITERATION_1 = `You are an expert code analyst creating clear, actionable documentation for developers.
 
 Analyze this codebase at a HIGH LEVEL:

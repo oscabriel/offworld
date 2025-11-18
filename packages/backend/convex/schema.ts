@@ -5,12 +5,12 @@ export default defineSchema({
 	repositories: defineTable({
 		owner: v.string(),
 		name: v.string(),
-		fullName: v.string(), // "owner/name"
+		fullName: v.string(),
 		description: v.optional(v.string()),
 		stars: v.number(),
 		language: v.optional(v.string()),
 		githubUrl: v.string(),
-		defaultBranch: v.string(), // "main" or "master"
+		defaultBranch: v.string(),
 		indexedAt: v.number(),
 		lastAnalyzedAt: v.number(),
 		indexingStatus: v.union(
@@ -21,8 +21,8 @@ export default defineSchema({
 		),
 		summary: v.optional(v.string()),
 		architecture: v.optional(v.string()),
-		architectureNarrative: v.optional(v.string()), // Synthesized narrative from all iterations (Phase 4C)
-		projectStructure: v.optional(v.any()), // JSON tree structure
+		architectureNarrative: v.optional(v.string()),
+		projectStructure: v.optional(v.any()),
 		workflowId: v.optional(v.string()),
 		errorMessage: v.optional(v.string()),
 		architectureMetadata: v.optional(
@@ -37,9 +37,9 @@ export default defineSchema({
 		),
 		diagrams: v.optional(
 			v.object({
-				architecture: v.optional(v.string()), // Mermaid syntax
-				dataFlow: v.optional(v.string()), // Mermaid syntax
-				routing: v.optional(v.string()), // Mermaid syntax
+				architecture: v.optional(v.string()),
+				dataFlow: v.optional(v.string()),
+				routing: v.optional(v.string()),
 			}),
 		),
 	})
@@ -56,31 +56,29 @@ export default defineSchema({
 			v.literal("service"),
 			v.literal("directory"),
 		),
-		name: v.string(), // Display name: "Button", "api", "react-reconciler"
-		slug: v.string(), // URL-safe: "button", "api", "react-reconciler"
-		path: v.string(), // File/directory path: "packages/react-reconciler"
-		description: v.string(), // AI-generated description
-		purpose: v.string(), // What it does / why it exists
-		dependencies: v.array(v.string()), // What it depends on (names)
-		usedBy: v.array(v.string()), // What uses it (names)
-		keyFiles: v.array(v.string()), // Important files in this entity (paths)
+		name: v.string(),
+		slug: v.string(),
+		path: v.string(),
+		description: v.string(),
+		purpose: v.string(),
+		dependencies: v.array(v.string()),
+		usedBy: v.array(v.string()),
+		keyFiles: v.array(v.string()),
 		keyFileUrls: v.optional(
 			v.array(
 				v.object({
-					path: v.string(), // File path from repository root
-					url: v.string(), // Complete GitHub blob/tree URL
+					path: v.string(),
+					url: v.string(),
 				}),
 			),
-		), // GitHub URLs for keyFiles
+		),
 		complexity: v.union(
 			v.literal("low"),
 			v.literal("medium"),
 			v.literal("high"),
 		),
-		iteration: v.number(), // Which analysis iteration discovered this (1-3)
-		codeSnippet: v.optional(v.string()), // Representative code sample
-
-		// NEW FIELDS (Phase 4C) - Library-focused architecture analysis
+		iteration: v.number(),
+		codeSnippet: v.optional(v.string()),
 		dataFlow: v.optional(
 			v.object({
 				entry: v.string(), // Where data enters: "Function call", "Import", "CLI command"

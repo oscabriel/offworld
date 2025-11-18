@@ -8,9 +8,6 @@ import {
 	safeParseAIResponse,
 } from "./schemas/aiValidation";
 
-/**
- * Generate repository summary using Gemini 2.5 Flash Lite
- */
 export const generateRepoSummary = internalAction({
 	args: {
 		repoId: v.id("repositories"),
@@ -33,8 +30,7 @@ export const generateRepoSummary = internalAction({
 			chunkContext: { before: 1, after: 1 },
 		});
 
-		// Extract file paths and get a representative sample of the codebase
-		const sampleContent = results.text.slice(0, 10000); // Limit to 10k chars
+		const sampleContent = results.text.slice(0, 10000);
 
 		const prompt = `You are an expert code analyst. Analyze this GitHub repository and provide a comprehensive summary.
 
@@ -61,33 +57,23 @@ Keep the summary under 300 words. Focus on clarity and practical understanding.`
 			prompt,
 		});
 
-		// Strip top-level headings as fallback (prompt should prevent this)
 		return stripTopLevelHeadings(text);
 	},
 });
 
-/**
- * Helper: Strip redundant top-level H1 headings from LLM output
- */
 function stripTopLevelHeadings(text: string): string {
-	// Remove only top-level H1 headings (single #)
 	let cleaned = text.replace(/^#\s+.+$/gm, "");
 
-	// Remove standalone redundant labels at start
 	cleaned = cleaned.replace(
 		/^(Summary|Overview|Repository Analysis|Introduction):\s*/im,
 		"",
 	);
 
-	// Trim excessive newlines
 	cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
 
 	return cleaned.trim();
 }
 
-/**
- * Generate architecture overview using Gemini 2.5 Flash Lite
- */
 export const generateArchitecture = internalAction({
 	args: {
 		repoName: v.string(),
@@ -95,10 +81,8 @@ export const generateArchitecture = internalAction({
 		namespace: v.string(),
 	},
 	handler: async (ctx, args) => {
-		// Import rag dynamically to avoid circular dependency
 		const { rag } = await import("./rag");
 
-		// Search RAG for high-priority files to understand structure
 		const highPriorityResults = await rag.search(ctx, {
 			namespace: args.namespace,
 			query: "main entry point core architecture",
@@ -107,13 +91,10 @@ export const generateArchitecture = internalAction({
 			chunkContext: { before: 1, after: 1 },
 		});
 
-		// Extract file paths from RAG results
 		const filePaths = highPriorityResults.entries.map((entry) => {
-			// Extract the key (file path) from entry metadata or content
-			return entry.entryId; // This will be the file path we used as the key
+			return entry.entryId;
 		});
 
-		// Group files by directory
 		const directoryStructure: Record<string, string[]> = {};
 		for (const path of filePaths) {
 			const dir = path.split("/").slice(0, -1).join("/") || "root";
@@ -124,7 +105,7 @@ export const generateArchitecture = internalAction({
 		}
 
 		const structureOverview = Object.entries(directoryStructure)
-			.slice(0, 20) // Top 20 directories
+			.slice(0, 20)
 			.map(([dir, files]) => `${dir}/ (${files.length} files)`)
 			.join("\n");
 
@@ -154,10 +135,6 @@ Keep it under 250 words. Focus on helping developers understand how the code is 
 	},
 });
 
-/**
- * Architecture Iteration 1: High-level structure discovery
- * Discovers packages, top-level directories, and main subsystems
- */
 export const generateArchitectureIteration1 = internalAction({
 	args: {
 		repoName: v.string(),
@@ -169,7 +146,6 @@ export const generateArchitectureIteration1 = internalAction({
 		const { ARCHITECTURE_ITERATION_1, renderPrompt, extractJSON } =
 			await import("./prompts");
 
-		// Search for entry points and top-level configuration
 		const results = await rag.search(ctx, {
 			namespace: args.namespace,
 			query: "package.json README entry point index main tsconfig",
@@ -192,7 +168,6 @@ export const generateArchitectureIteration1 = internalAction({
 		try {
 			const data = extractJSON(text);
 
-			// Preprocess entities: map invalid types to valid ones before validation
 			if (
 				data &&
 				typeof data === "object" &&
@@ -201,7 +176,6 @@ export const generateArchitectureIteration1 = internalAction({
 			) {
 				// biome-ignore lint/suspicious/noExplicitAny: Preprocessing unvalidated LLM JSON response
 				data.entities = data.entities.map((entity: any) => {
-					// Map common LLM mistakes to valid types
 					if (entity.type === "utility" || entity.type === "helper") {
 						entity.type = "component";
 					} else if (entity.type === "core" || entity.type === "library") {
@@ -216,7 +190,6 @@ export const generateArchitectureIteration1 = internalAction({
 				entities: [],
 			});
 
-			// Filter by iteration-specific types
 			const validTypes = ["package", "directory"];
 			const filteredEntities = validated.entities.filter((e) =>
 				validTypes.includes(e.type),
@@ -245,10 +218,6 @@ export const generateArchitectureIteration1 = internalAction({
 	},
 });
 
-/**
- * Architecture Iteration 2: Module and service discovery
- * Discovers core modules, services, and subsystems
- */
 export const generateArchitectureIteration2 = internalAction({
 	args: {
 		repoName: v.string(),
@@ -262,7 +231,6 @@ export const generateArchitectureIteration2 = internalAction({
 		const { ARCHITECTURE_ITERATION_2, renderPrompt, extractJSON } =
 			await import("./prompts");
 
-		// Search for modules, services, core directories
 		const results = await rag.search(ctx, {
 			namespace: args.namespace,
 			query: "modules services api router controller handlers middleware",
@@ -290,7 +258,6 @@ export const generateArchitectureIteration2 = internalAction({
 				entities: [],
 			});
 
-			// Filter by iteration-specific types
 			const validTypes = ["module", "service"];
 			const filteredEntities = validated.entities.filter((e) =>
 				validTypes.includes(e.type),
@@ -316,10 +283,6 @@ export const generateArchitectureIteration2 = internalAction({
 	},
 });
 
-/**
- * Architecture Iteration 3: Component and utility discovery
- * Discovers individual components, utilities, and helpers
- */
 export const generateArchitectureIteration3 = internalAction({
 	args: {
 		repoName: v.string(),
@@ -333,7 +296,6 @@ export const generateArchitectureIteration3 = internalAction({
 		const { ARCHITECTURE_ITERATION_3, renderPrompt, extractJSON } =
 			await import("./prompts");
 
-		// Search for components, utilities, helpers
 		const results = await rag.search(ctx, {
 			namespace: args.namespace,
 			query: "components utils helpers hooks utilities lib shared",
@@ -361,7 +323,6 @@ export const generateArchitectureIteration3 = internalAction({
 				entities: [],
 			});
 
-			// Filter by iteration-specific types
 			const validTypes = ["component"];
 			const filteredEntities = validated.entities.filter((e) =>
 				validTypes.includes(e.type),
@@ -387,10 +348,6 @@ export const generateArchitectureIteration3 = internalAction({
 	},
 });
 
-/**
- * Architecture Synthesis: Final narrative generation
- * Synthesizes all iteration overviews into a cohesive architectural narrative
- */
 export const synthesizeArchitecture = internalAction({
 	args: {
 		repoName: v.string(),
@@ -419,14 +376,10 @@ export const synthesizeArchitecture = internalAction({
 			prompt,
 		});
 
-		// Return raw narrative text (no extraction needed)
 		return text.trim();
 	},
 });
 
-/**
- * Generate C4 architecture diagram
- */
 export const generateArchitectureDiagram = internalAction({
 	args: {
 		repoName: v.string(),
@@ -449,14 +402,12 @@ export const generateArchitectureDiagram = internalAction({
 			prompt,
 		});
 
-		// Extract mermaid code (remove markdown fences if present)
 		let diagram = text.trim();
 		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
 		if (mermaidMatch) {
 			diagram = mermaidMatch[1].trim();
 		}
 
-		// Basic validation
 		if (!diagram.startsWith("graph ")) {
 			console.warn(
 				"Invalid mermaid diagram (no graph keyword), using fallback",
@@ -464,16 +415,12 @@ export const generateArchitectureDiagram = internalAction({
 			return generateFallbackDiagram(args.repoName, "architecture");
 		}
 
-		// Sanitize node IDs (replace problematic characters)
 		diagram = sanitizeMermaidDiagram(diagram);
 
 		return diagram;
 	},
 });
 
-/**
- * Generate data flow diagram
- */
 export const generateDataFlowDiagram = internalAction({
 	args: {
 		repoName: v.string(),
@@ -496,29 +443,23 @@ export const generateDataFlowDiagram = internalAction({
 			prompt,
 		});
 
-		// Extract mermaid code
 		let diagram = text.trim();
 		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
 		if (mermaidMatch) {
 			diagram = mermaidMatch[1].trim();
 		}
 
-		// Basic validation
 		if (!diagram.startsWith("graph ")) {
 			console.warn("Invalid data flow diagram, using fallback");
 			return generateFallbackDiagram(args.repoName, "dataFlow");
 		}
 
-		// Sanitize
 		diagram = sanitizeMermaidDiagram(diagram);
 
 		return diagram;
 	},
 });
 
-/**
- * Generate routing diagram (for frontend applications)
- */
 export const generateRoutingDiagram = internalAction({
 	args: {
 		repoName: v.string(),
@@ -528,7 +469,6 @@ export const generateRoutingDiagram = internalAction({
 		const { rag } = await import("./rag");
 		const { ROUTING_DIAGRAM_PROMPT, renderPrompt } = await import("./prompts");
 
-		// Search for route files
 		const results = await rag.search(ctx, {
 			namespace: args.namespace,
 			query: "routes pages app router routing navigation",
@@ -536,7 +476,6 @@ export const generateRoutingDiagram = internalAction({
 			chunkContext: { before: 1, after: 1 },
 		});
 
-		// Extract file paths that look like routes
 		const routeFiles = results.entries
 			.map((e) => e.entryId)
 			.filter(
@@ -549,7 +488,6 @@ export const generateRoutingDiagram = internalAction({
 			)
 			.join("\n");
 
-		// Skip routing diagram if no routes found
 		if (!routeFiles || routeFiles.length === 0) {
 			return null;
 		}
@@ -564,45 +502,33 @@ export const generateRoutingDiagram = internalAction({
 			prompt,
 		});
 
-		// Extract mermaid code
 		let diagram = text.trim();
 		const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
 		if (mermaidMatch) {
 			diagram = mermaidMatch[1].trim();
 		}
 
-		// Basic validation
 		if (!diagram.startsWith("graph ")) {
 			console.warn("Invalid routing diagram, using fallback");
 			return generateFallbackDiagram(args.repoName, "routing");
 		}
 
-		// Sanitize
 		diagram = sanitizeMermaidDiagram(diagram);
 
 		return diagram;
 	},
 });
 
-/**
- * Sanitize Mermaid diagram by fixing common issues
- */
 function sanitizeMermaidDiagram(diagram: string): string {
-	// Replace problematic characters in node definitions
-	// Pattern: NodeID[Label] - keep label as-is, clean ID
 	return diagram.replace(
 		/([A-Za-z][\w-]*)\[([^\]]+)\]/g,
 		(_match, id, label) => {
-			// Clean the ID: remove all non-alphanumeric except underscore
 			const cleanId = id.replace(/[^A-Za-z0-9_]/g, "");
 			return `${cleanId}[${label}]`;
 		},
 	);
 }
 
-/**
- * Generate fallback diagram when LLM output is invalid
- */
 function generateFallbackDiagram(repoName: string, type: string): string {
 	if (type === "architecture") {
 		return `graph TB
@@ -628,7 +554,6 @@ function generateFallbackDiagram(repoName: string, type: string): string {
     style C fill:#e8f5e9`;
 	}
 
-	// routing
 	return `graph TD
     A[Root] --> B[Main Routes]
     B --> C[Sub Routes]
@@ -636,9 +561,6 @@ function generateFallbackDiagram(repoName: string, type: string): string {
     style A fill:#e1f5ff`;
 }
 
-/**
- * Analyze an issue to determine difficulty and required skills
- */
 export const analyzeIssue = internalAction({
 	args: {
 		issueTitle: v.string(),
@@ -671,7 +593,6 @@ Respond ONLY with valid JSON, no additional text.`;
 		});
 
 		try {
-			// Extract JSON from response (handle markdown code blocks)
 			const jsonMatch = text.match(/\{[\s\S]*\}/);
 			if (!jsonMatch) {
 				throw new Error("No JSON found in response");
@@ -703,9 +624,6 @@ Respond ONLY with valid JSON, no additional text.`;
 	},
 });
 
-/**
- * Analyze pull request impact for contributors
- */
 export const analyzePullRequest = internalAction({
 	args: {
 		prTitle: v.string(),
@@ -740,7 +658,6 @@ Respond ONLY with valid JSON, no additional text.`;
 		});
 
 		try {
-			// Extract JSON from response (handle markdown code blocks)
 			const jsonMatch = text.match(/\{[\s\S]*\}/);
 			if (!jsonMatch) {
 				throw new Error("No JSON found in response");
@@ -768,9 +685,6 @@ Respond ONLY with valid JSON, no additional text.`;
 	},
 });
 
-/**
- * Generate answer for code question using RAG (Retrieval-Augmented Generation)
- */
 export const generateCodeAnswer = internalAction({
 	args: {
 		question: v.string(),
@@ -778,19 +692,16 @@ export const generateCodeAnswer = internalAction({
 		repoName: v.string(),
 	},
 	handler: async (ctx, args) => {
-		// Import rag dynamically to avoid circular dependency
 		const { rag } = await import("./rag");
 
-		// Search RAG for relevant code chunks
 		const searchResults = await rag.search(ctx, {
 			namespace: args.namespace,
 			query: args.question,
 			limit: 10,
 			vectorScoreThreshold: 0.7,
-			chunkContext: { before: 1, after: 1 }, // Include surrounding chunks
+			chunkContext: { before: 1, after: 1 },
 		});
 
-		// Format results as code context
 		const context = searchResults.entries
 			.map(
 				(entry) => `

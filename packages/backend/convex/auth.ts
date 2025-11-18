@@ -6,7 +6,7 @@ import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 
-// biome-ignore lint/style/noNonNullAssertion: this is fine
+// biome-ignore lint/style/noNonNullAssertion: SITE_URL required for auth callbacks
 const siteUrl = process.env.SITE_URL!;
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
@@ -41,28 +41,16 @@ export const getCurrentUser = query({
 	handler: async (ctx) => authComponent.getAuthUser(ctx),
 });
 
-/**
- * Returns the current authenticated user or null if not authenticated.
- * Safe query version that doesn't throw when user is not authenticated.
- */
 export const getCurrentUserSafe = query({
 	args: {},
 	returns: v.any(),
 	handler: async (ctx) => authComponent.safeGetAuthUser(ctx),
 });
 
-/**
- * Returns the current authenticated user or null if not authenticated.
- * Use for queries that support unauthenticated access.
- */
 export async function safeGetUser(ctx: GenericCtx<DataModel>) {
 	return await authComponent.safeGetAuthUser(ctx);
 }
 
-/**
- * Returns the current authenticated user or throws an error if not authenticated.
- * Use for mutations and protected queries.
- */
 export async function getUser(ctx: GenericCtx<DataModel>) {
 	const user = await authComponent.getAuthUser(ctx);
 	if (!user) {

@@ -5,9 +5,6 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction } from "./_generated/server";
 
-/**
- * Create authenticated Octokit instance using GitHub App credentials
- */
 function getOctokit() {
 	const appId = process.env.GITHUB_APP_ID;
 	const privateKey = process.env.GITHUB_PRIVATE_KEY;
@@ -31,9 +28,6 @@ function getOctokit() {
 	return octokit;
 }
 
-/**
- * Fetch repository metadata from GitHub
- */
 export const fetchRepoMetadata = internalAction({
 	args: {
 		owner: v.string(),
@@ -72,9 +66,6 @@ export const fetchRepoMetadata = internalAction({
 	},
 });
 
-/**
- * Fetch file tree from GitHub repository
- */
 export const fetchFileTree = internalAction({
 	args: {
 		owner: v.string(),
@@ -85,7 +76,6 @@ export const fetchFileTree = internalAction({
 		const octokit = getOctokit();
 
 		try {
-			// Get the tree recursively
 			const { data: ref } = await octokit.git.getRef({
 				owner: args.owner,
 				repo: args.name,
@@ -96,10 +86,9 @@ export const fetchFileTree = internalAction({
 				owner: args.owner,
 				repo: args.name,
 				tree_sha: ref.object.sha,
-				recursive: "true", // Get all files recursively
+				recursive: "true",
 			});
 
-			// Filter to only files (not trees/subdirectories) with supported extensions
 			const supportedExtensions = [
 				".ts",
 				".tsx",
@@ -117,7 +106,6 @@ export const fetchFileTree = internalAction({
 					if (item.type !== "blob") return false;
 					if (!item.path) return false;
 
-					// Exclude patterns
 					const excludePatterns = [
 						/node_modules/,
 						/\.test\.(ts|tsx|js|jsx)$/,
@@ -164,9 +152,6 @@ export const fetchFileTree = internalAction({
 	},
 });
 
-/**
- * Fetch file content from GitHub
- */
 export const fetchFileContent = internalAction({
 	args: {
 		owner: v.string(),
@@ -187,7 +172,6 @@ export const fetchFileContent = internalAction({
 				throw new Error(`${args.path} is not a file`);
 			}
 
-			// Decode base64 content (Convex doesn't have Buffer, use browser APIs)
 			const binaryString = atob(data.content);
 			const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
 			const content = new TextDecoder().decode(bytes);
@@ -205,9 +189,6 @@ export const fetchFileContent = internalAction({
 	},
 });
 
-/**
- * Fetch issues with "good first issue" or "help wanted" labels
- */
 export const fetchIssues = internalAction({
 	args: {
 		owner: v.string(),
@@ -255,10 +236,6 @@ export const fetchIssues = internalAction({
 	},
 });
 
-/**
- * Fetch, analyze, and store issues in one action
- * This avoids keeping large arrays in workflow state
- */
 export const analyzeAndStoreIssues = internalAction({
 	args: {
 		repoId: v.id("repositories"),
@@ -270,10 +247,8 @@ export const analyzeAndStoreIssues = internalAction({
 		actualFilePaths: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		// Import path validation helper
 		const { findBestPathMatch } = await import("./architectureEntities");
 
-		// Fetch issues
 		const issuesData = await ctx.runAction(internal.github.fetchIssues, {
 			owner: args.owner,
 			name: args.name,
@@ -282,7 +257,6 @@ export const analyzeAndStoreIssues = internalAction({
 			perPage: 20,
 		});
 
-		// Analyze issues in batches
 		const analyzedIssues: Array<{
 			repositoryId: Id<"repositories">;
 			githubIssueId: number;
@@ -311,7 +285,6 @@ export const analyzeAndStoreIssues = internalAction({
 				repoContext: args.summary,
 			});
 
-			// Validate and correct file paths using same logic as architecture entities
 			const validatedFiles =
 				analysis.filesLikelyTouched
 					?.map((file) => {
@@ -329,9 +302,7 @@ export const analyzeAndStoreIssues = internalAction({
 					})
 					.filter(Boolean) || [];
 
-			// Generate GitHub URLs for each file (similar to architecture entities)
 			const fileUrls = validatedFiles.map((filePath) => {
-				// Determine if path is a file (has extension) or directory
 				const isFile = filePath.includes(".");
 				const urlType = isFile ? "blob" : "tree";
 				return {
@@ -349,7 +320,6 @@ export const analyzeAndStoreIssues = internalAction({
 			});
 		}
 
-		// Store issues
 		await ctx.runMutation(internal.repos.storeIssues, {
 			repoId: args.repoId,
 			issues: analyzedIssues,
@@ -359,9 +329,6 @@ export const analyzeAndStoreIssues = internalAction({
 	},
 });
 
-/**
- * Fetch pull requests from GitHub with detailed stats
- */
 export const fetchPullRequests = internalAction({
 	args: {
 		owner: v.string(),
@@ -384,7 +351,6 @@ export const fetchPullRequests = internalAction({
 				per_page: args.perPage || 30,
 			});
 
-			// Fetch individual PR details to get additions/deletions
 			const prsWithStats = await Promise.all(
 				prs.map(async (pr) => {
 					try {
@@ -442,9 +408,6 @@ export const fetchPullRequests = internalAction({
 	},
 });
 
-/**
- * Fetch, analyze, and store pull requests
- */
 export const analyzeAndStorePullRequests = internalAction({
 	args: {
 		repoId: v.id("repositories"),
@@ -455,10 +418,8 @@ export const analyzeAndStorePullRequests = internalAction({
 		actualFilePaths: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		// Import path validation helper
 		const { findBestPathMatch } = await import("./architectureEntities");
 
-		// Fetch PRs
 		const prsData = await ctx.runAction(internal.github.fetchPullRequests, {
 			owner: args.owner,
 			name: args.name,
@@ -466,7 +427,6 @@ export const analyzeAndStorePullRequests = internalAction({
 			perPage: 30,
 		});
 
-		// Analyze PRs in batches
 		const analyzedPRs: Array<{
 			repositoryId: Id<"repositories">;
 			githubPrId: number;
@@ -498,7 +458,6 @@ export const analyzeAndStorePullRequests = internalAction({
 				repoContext: args.summary,
 			});
 
-			// Validate and correct file paths
 			const validatedFiles =
 				analysis.filesChanged
 					?.map((file: string) => {
@@ -524,7 +483,6 @@ export const analyzeAndStorePullRequests = internalAction({
 			});
 		}
 
-		// Store PRs
 		await ctx.runMutation(internal.repos.storePullRequests, {
 			repoId: args.repoId,
 			pullRequests: analyzedPRs,
@@ -534,9 +492,6 @@ export const analyzeAndStorePullRequests = internalAction({
 	},
 });
 
-/**
- * Fetch owner (user or organization) information from GitHub
- */
 export const fetchOwnerInfo = internalAction({
 	args: {
 		owner: v.string(),
@@ -545,7 +500,6 @@ export const fetchOwnerInfo = internalAction({
 		const octokit = getOctokit();
 
 		try {
-			// Try fetching as user first
 			const { data: user } = await octokit.users.getByUsername({
 				username: args.owner,
 			});
@@ -576,9 +530,6 @@ export const fetchOwnerInfo = internalAction({
 	},
 });
 
-/**
- * Fetch all public repositories for a user or organization
- */
 export const fetchOwnerRepos = internalAction({
 	args: {
 		owner: v.string(),
@@ -596,7 +547,6 @@ export const fetchOwnerRepos = internalAction({
 		const octokit = getOctokit();
 
 		try {
-			// Fetch repos - works for both users and orgs
 			const { data: repos } = await octokit.repos.listForUser({
 				username: args.owner,
 				per_page: args.perPage || 30,

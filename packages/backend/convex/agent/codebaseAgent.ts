@@ -14,10 +14,6 @@ import {
 	searchCodeContext,
 } from "./tools";
 
-/**
- * Codebase Explorer Agent
- * Helps developers understand open source codebases through intelligent code exploration
- */
 export const codebaseAgent = new Agent<CodebaseAgentContext>(components.agent, {
 	name: "Codebase Explorer",
 	languageModel: google("gemini-2.5-flash-lite"),
@@ -57,5 +53,5 @@ Communication style:
 		getPullRequestByNumber,
 	},
 
-	maxSteps: 10, // Allow up to 10 tool calls per response
+	maxSteps: 10,
 });

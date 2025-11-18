@@ -1,9 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 
-/**
- * List all issues for a repository
- */
 export const listByRepository = query({
 	args: {
 		repositoryId: v.id("repositories"),
@@ -18,9 +15,6 @@ export const listByRepository = query({
 	},
 });
 
-/**
- * Get a single issue by ID
- */
 export const getById = query({
 	args: {
 		issueId: v.id("issues"),
@@ -30,13 +24,10 @@ export const getById = query({
 	},
 });
 
-/**
- * List issues by state
- */
 export const listByState = query({
 	args: {
 		repositoryId: v.id("repositories"),
-		state: v.string(), // "open" or "closed"
+		state: v.string(),
 	},
 	handler: async (ctx, args) => {
 		const allIssues = await ctx.db
@@ -48,9 +39,6 @@ export const listByState = query({
 	},
 });
 
-/**
- * List issues by difficulty
- */
 export const listByDifficulty = query({
 	args: {
 		repositoryId: v.id("repositories"),
@@ -66,9 +54,6 @@ export const listByDifficulty = query({
 	},
 });
 
-/**
- * Get a specific issue by number for a repository
- */
 export const getByNumber = query({
 	args: {
 		repositoryId: v.id("repositories"),

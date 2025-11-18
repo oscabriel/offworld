@@ -1,9 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 
-/**
- * List all pull requests for a repository
- */
 export const listByRepository = query({
 	args: {
 		repositoryId: v.id("repositories"),
@@ -20,9 +17,6 @@ export const listByRepository = query({
 	},
 });
 
-/**
- * Get a single PR by ID
- */
 export const getById = query({
 	args: {
 		prId: v.id("pullRequests"),
@@ -32,13 +26,10 @@ export const getById = query({
 	},
 });
 
-/**
- * List PRs by state
- */
 export const listByState = query({
 	args: {
 		repositoryId: v.id("repositories"),
-		state: v.string(), // "open", "closed", or "merged"
+		state: v.string(),
 	},
 	handler: async (ctx, args) => {
 		const allPRs = await ctx.db
@@ -52,9 +43,6 @@ export const listByState = query({
 	},
 });
 
-/**
- * Get a specific PR by number for a repository
- */
 export const getByNumber = query({
 	args: {
 		repositoryId: v.id("repositories"),

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
 import { MarkdownContent } from "@/components/repo/markdown-content";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/")({
 	component: RepoSummaryPage,
@@ -105,14 +106,14 @@ function RepoSummaryPage() {
 						"Failed to analyze this repository. It may be private, archived, or unavailable."}
 				</p>
 				<div className="flex gap-4">
-					<button
+					<Button
 						type="button"
 						onClick={handleRetryAnalysis}
 						disabled={isRetrying}
-						className="border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+						className="px-6 py-3 font-mono"
 					>
 						{isRetrying ? "Retrying..." : "Retry Analysis"}
-					</button>
+					</Button>
 					<a
 						href="/"
 						className="inline-block border border-primary bg-card px-6 py-3 font-mono text-foreground hover:bg-accent"
@@ -136,14 +137,14 @@ function RepoSummaryPage() {
 							" Sign in to index repositories and get notified when analysis completes."}
 					</p>
 					{isAuthenticated ? (
-						<button
+						<Button
 							type="button"
 							onClick={handleStartIndexing}
 							disabled={isIndexing}
-							className="border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+							className="px-6 py-3 font-mono"
 						>
 							{isIndexing ? "Starting Analysis..." : "Index This Repository"}
-						</button>
+						</Button>
 					) : (
 						<Link
 							to="/sign-in"

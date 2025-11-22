@@ -181,23 +181,28 @@ export const findIssues = createTool({
 
 		const state = args.state || "open";
 		if (state !== "all") {
-			filteredIssues = filteredIssues.filter((issue) => issue.state === state);
+			filteredIssues = filteredIssues.filter(
+				(issue: (typeof allIssues)[number]) => issue.state === state,
+			);
 		}
 
 		if (args.difficulty !== undefined) {
 			filteredIssues = filteredIssues.filter(
-				(issue) => issue.difficulty === args.difficulty,
+				(issue: (typeof allIssues)[number]) =>
+					issue.difficulty === args.difficulty,
 			);
 		}
 
 		if (args.topic) {
 			const topicLower = args.topic.toLowerCase();
-			filteredIssues = filteredIssues.filter((issue) => {
-				const titleMatch = issue.title.toLowerCase().includes(topicLower);
-				const summaryMatch =
-					issue.aiSummary?.toLowerCase().includes(topicLower) || false;
-				return titleMatch || summaryMatch;
-			});
+			filteredIssues = filteredIssues.filter(
+				(issue: (typeof allIssues)[number]) => {
+					const titleMatch = issue.title.toLowerCase().includes(topicLower);
+					const summaryMatch =
+						issue.aiSummary?.toLowerCase().includes(topicLower) || false;
+					return titleMatch || summaryMatch;
+				},
+			);
 		}
 
 		if (filteredIssues.length === 0) {
@@ -207,7 +212,7 @@ export const findIssues = createTool({
 		return filteredIssues
 			.slice(0, 10)
 			.map(
-				(issue) =>
+				(issue: (typeof allIssues)[number]) =>
 					`#${issue.number}: ${issue.title}\n` +
 					`State: ${issue.state}\n` +
 					`Difficulty: ${issue.difficulty || "N/A"}/5\n` +
@@ -247,7 +252,9 @@ export const findPullRequests = createTool({
 		let filteredPRs = allPRs;
 
 		if (args.state && args.state !== "all") {
-			filteredPRs = filteredPRs.filter((pr) => pr.state === args.state);
+			filteredPRs = filteredPRs.filter(
+				(pr: (typeof allPRs)[number]) => pr.state === args.state,
+			);
 		}
 
 		if (filteredPRs.length === 0) {
@@ -258,7 +265,7 @@ export const findPullRequests = createTool({
 		return filteredPRs
 			.slice(0, limit)
 			.map(
-				(pr) =>
+				(pr: (typeof allPRs)[number]) =>
 					`#${pr.number}: ${pr.title}\n` +
 					`State: ${pr.state}\n` +
 					`Author: ${pr.author}\n` +

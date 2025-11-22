@@ -1,5 +1,11 @@
 {
-  "title": "User Guide",
-  "icon": "Book",
-  "pages": ["exploring-repositories", "understanding-issues", "pull-requests", "chat-interface", "sharing"]
+	"title": "User Guide",
+	"icon": "Book",
+	"pages": [
+		"exploring-repositories",
+		"understanding-issues",
+		"pull-requests",
+		"chat-interface",
+		"sharing"
+	]
 }

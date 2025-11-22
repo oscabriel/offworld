@@ -287,13 +287,13 @@ export const analyzeAndStoreIssues = internalAction({
 
 			const validatedFiles =
 				analysis.filesLikelyTouched
-					?.map((file) => {
+					?.map((file: string) => {
 						const validatedPath = findBestPathMatch(file, args.actualFilePaths);
 						return validatedPath || file;
 					})
 					.filter(Boolean) || [];
 
-			const fileUrls = validatedFiles.map((filePath) => {
+			const fileUrls = validatedFiles.map((filePath: string) => {
 				const isFile = filePath.includes(".");
 				const urlType = isFile ? "blob" : "tree";
 				return {

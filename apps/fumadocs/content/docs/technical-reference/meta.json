@@ -1,5 +1,11 @@
 {
-  "title": "Technical Reference",
-  "icon": "FileCode",
-  "pages": ["frontend-architecture", "backend-architecture", "ai-rag-system", "api-reference", "environment-variables"]
+	"title": "Technical Reference",
+	"icon": "FileCode",
+	"pages": [
+		"frontend-architecture",
+		"backend-architecture",
+		"ai-rag-system",
+		"api-reference",
+		"environment-variables"
+	]
 }

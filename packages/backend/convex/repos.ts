@@ -315,7 +315,8 @@ export const reindexRepository = mutation({
 		fullName: v.string(),
 		force: v.optional(v.boolean()),
 	},
-	handler: async (ctx, args) => {
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+	handler: async (ctx, args): Promise<any> => {
 		await getUser(ctx);
 
 		return await reindexRepositoryInternal(ctx, args);
@@ -335,7 +336,8 @@ export const reindexRepositoryAdmin = internalMutation({
 async function reindexRepositoryInternal(
 	ctx: MutationCtx,
 	args: { fullName: string; force?: boolean },
-) {
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+): Promise<any> {
 	const allRepos = await ctx.db.query("repositories").collect();
 	const repo = allRepos.find(
 		(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
@@ -362,7 +364,8 @@ async function reindexRepositoryInternal(
 		);
 	}
 
-	const deletedEntities = await ctx.runMutation(
+	// biome-ignore lint/suspicious/noExplicitAny: Return type from internal mutation
+	const deletedEntities: any = await ctx.runMutation(
 		// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder
 		(internal as any).architectureEntities.deleteByRepo,
 		{ repositoryId: repo._id },
@@ -386,7 +389,8 @@ async function reindexRepositoryInternal(
 		lastAnalyzedAt: Date.now(),
 	});
 
-	const workflowResult = await ctx.runMutation(
+	// biome-ignore lint/suspicious/noExplicitAny: WorkflowManager return type
+	const workflowResult: any = await ctx.runMutation(
 		// biome-ignore lint/suspicious/noExplicitAny: WorkflowManager requires any type
 		(internal as any).workflows.analyzeRepository.start,
 		{
@@ -539,7 +543,8 @@ export const startAnalysis = mutation({
 	args: {
 		repoUrl: v.string(),
 	},
-	handler: async (ctx, args) => {
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+	handler: async (ctx, args): Promise<any> => {
 		await getUser(ctx);
 
 		const urlPattern =
@@ -580,7 +585,8 @@ export const startAnalysis = mutation({
 			}
 		}
 
-		const result = await ctx.runMutation(
+		// biome-ignore lint/suspicious/noExplicitAny: WorkflowManager return type
+		const result: any = await ctx.runMutation(
 			// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder for internal
 			(internal as any).workflows.analyzeRepository.start,
 			{
@@ -602,8 +608,10 @@ export const getOwnerInfo = action({
 	args: {
 		owner: v.string(),
 	},
-	handler: async (ctx, args) => {
-		const ownerInfo = await ctx.runAction(
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+	handler: async (ctx, args): Promise<any> => {
+		// biome-ignore lint/suspicious/noExplicitAny: Return type from internal action
+		const ownerInfo: any = await ctx.runAction(
 			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
 			(internal as any).github.fetchOwnerInfo,
 			{
@@ -620,8 +628,10 @@ export const validateRepo = action({
 		owner: v.string(),
 		name: v.string(),
 	},
-	handler: async (ctx, args) => {
-		const metadata = await ctx.runAction(
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+	handler: async (ctx, args): Promise<any> => {
+		// biome-ignore lint/suspicious/noExplicitAny: Return type from internal action
+		const metadata: any = await ctx.runAction(
 			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
 			(internal as any).github.fetchRepoMetadata,
 			{
@@ -669,8 +679,10 @@ export const fetchUnindexedRepoMetadata = action({
 		owner: v.string(),
 		name: v.string(),
 	},
-	handler: async (ctx, args) => {
-		const metadata = await ctx.runAction(
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+	handler: async (ctx, args): Promise<any> => {
+		// biome-ignore lint/suspicious/noExplicitAny: Return type from internal action
+		const metadata: any = await ctx.runAction(
 			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
 			(internal as any).github.fetchRepoMetadata,
 			{
@@ -693,8 +705,10 @@ export const getOwnerRepos = action({
 		owner: v.string(),
 		perPage: v.optional(v.number()),
 	},
-	handler: async (ctx, args) => {
-		const repos = await ctx.runAction(
+	// biome-ignore lint/suspicious/noExplicitAny: Return type needed to break circular inference
+	handler: async (ctx, args): Promise<any> => {
+		// biome-ignore lint/suspicious/noExplicitAny: Return type from internal action
+		const repos: any = await ctx.runAction(
 			// biome-ignore lint/suspicious/noExplicitAny: Convex generated internal API types
 			(internal as any).github.fetchOwnerRepos,
 			{
@@ -704,7 +718,8 @@ export const getOwnerRepos = action({
 			},
 		);
 
-		const reposWithStatus = await Promise.all(
+		// biome-ignore lint/suspicious/noExplicitAny: Complex mapped type from Promise.all
+		const reposWithStatus: any = await Promise.all(
 			repos.map(
 				async (repo: {
 					owner: string;

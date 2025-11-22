@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TunnelRouteImport } from './routes/tunnel'
-import { Route as TestErrorRouteImport } from './routes/test-error'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as GithubRouteRouteImport } from './routes/_github/route'
@@ -32,11 +31,6 @@ import { Route as GithubOwnerRepoChatChatIdIndexRouteImport } from './routes/_gi
 const TunnelRoute = TunnelRouteImport.update({
   id: '/tunnel',
   path: '/tunnel',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestErrorRoute = TestErrorRouteImport.update({
-  id: '/test-error',
-  path: '/test-error',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -133,7 +127,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
-  '/test-error': typeof TestErrorRoute
   '/tunnel': typeof TunnelRoute
   '/$owner': typeof GithubOwnerRoute
   '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
@@ -153,7 +146,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
-  '/test-error': typeof TestErrorRoute
   '/tunnel': typeof TunnelRoute
   '/$owner': typeof GithubOwnerRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -174,7 +166,6 @@ export interface FileRoutesById {
   '/_github': typeof GithubRouteRouteWithChildren
   '/explore': typeof ExploreRoute
   '/sign-in': typeof SignInRoute
-  '/test-error': typeof TestErrorRoute
   '/tunnel': typeof TunnelRoute
   '/_github/$owner': typeof GithubOwnerRoute
   '/_github/$owner_/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
@@ -196,7 +187,6 @@ export interface FileRouteTypes {
     | '/'
     | '/explore'
     | '/sign-in'
-    | '/test-error'
     | '/tunnel'
     | '/$owner'
     | '/$owner/$repo'
@@ -216,7 +206,6 @@ export interface FileRouteTypes {
     | '/'
     | '/explore'
     | '/sign-in'
-    | '/test-error'
     | '/tunnel'
     | '/$owner'
     | '/api/auth/$'
@@ -236,7 +225,6 @@ export interface FileRouteTypes {
     | '/_github'
     | '/explore'
     | '/sign-in'
-    | '/test-error'
     | '/tunnel'
     | '/_github/$owner'
     | '/_github/$owner_/$repo'
@@ -258,7 +246,6 @@ export interface RootRouteChildren {
   GithubRouteRoute: typeof GithubRouteRouteWithChildren
   ExploreRoute: typeof ExploreRoute
   SignInRoute: typeof SignInRoute
-  TestErrorRoute: typeof TestErrorRoute
   TunnelRoute: typeof TunnelRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -270,13 +257,6 @@ declare module '@tanstack/react-router' {
       path: '/tunnel'
       fullPath: '/tunnel'
       preLoaderRoute: typeof TunnelRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/test-error': {
-      id: '/test-error'
-      path: '/test-error'
-      fullPath: '/test-error'
-      preLoaderRoute: typeof TestErrorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -449,7 +429,6 @@ const rootRouteChildren: RootRouteChildren = {
   GithubRouteRoute: GithubRouteRouteWithChildren,
   ExploreRoute: ExploreRoute,
   SignInRoute: SignInRoute,
-  TestErrorRoute: TestErrorRoute,
   TunnelRoute: TunnelRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

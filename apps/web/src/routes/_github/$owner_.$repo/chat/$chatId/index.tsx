@@ -3,7 +3,7 @@ import type { Id } from "@offworld/backend/convex/_generated/dataModel";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { MessageSquarePlus } from "lucide-react";
-import { ChatInterface } from "@/components/chat/ChatInterface";
+import { ChatInterface } from "@/components/chat/chat-interface";
 import { ContentCard } from "@/components/repo/content-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

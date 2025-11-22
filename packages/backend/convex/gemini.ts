@@ -200,7 +200,8 @@ export const generateArchitectureIteration1 = internalAction({
 				pattern: validated.pattern || "Unknown",
 				entities: filteredEntities,
 			};
-		} catch (error) {
+		} catch (err) {
+			console.error("Architecture analysis error:", err);
 			return {
 				overview: `The ${args.repoName.split("/")[1]} library is organized around a core module that provides the primary API surface for developers.`,
 				pattern: "Unknown",
@@ -259,7 +260,8 @@ export const generateArchitectureIteration2 = internalAction({
 				overview: validated.overview,
 				entities: filteredEntities,
 			};
-		} catch (error) {
+		} catch (err) {
+			console.error("Module analysis error:", err);
 			return {
 				overview: "Unable to analyze modules and services",
 				entities: [],
@@ -317,7 +319,8 @@ export const generateArchitectureIteration3 = internalAction({
 				overview: validated.overview,
 				entities: filteredEntities,
 			};
-		} catch (error) {
+		} catch (err) {
+			console.error("Component analysis error:", err);
 			return {
 				overview: "Unable to analyze components and utilities",
 				entities: [],
@@ -585,7 +588,8 @@ Respond ONLY with valid JSON, no additional text.`;
 				filesLikelyTouched: validated.filesLikelyTouched,
 				skillsRequired: validated.skillsRequired,
 			};
-		} catch (error) {
+		} catch (err) {
+			console.error("Issue analysis error:", err);
 			return {
 				difficulty: 3,
 				aiSummary: args.issueTitle,
@@ -644,7 +648,8 @@ Respond ONLY with valid JSON, no additional text.`;
 				impactAreas: data.impactAreas || [],
 				reviewComplexity: data.reviewComplexity || "moderate",
 			};
-		} catch (error) {
+		} catch (err) {
+			console.error("PR analysis error:", err);
 			return {
 				difficulty: 3,
 				aiSummary: args.prTitle,

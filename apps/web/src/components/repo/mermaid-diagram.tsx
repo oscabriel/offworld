@@ -214,7 +214,7 @@ export function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
 					modalContainerRef.current.innerHTML = svg;
 				}
 			} catch (err) {
-				// Silent error handling
+				console.error("Mermaid render error:", err);
 			}
 		};
 

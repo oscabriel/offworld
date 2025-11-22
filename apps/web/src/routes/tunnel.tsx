@@ -39,8 +39,8 @@ export const Route = createFileRoute("/tunnel")({
 							"Content-Type": "application/json",
 						},
 					});
-				} catch (error) {
-					return new Response("Tunnel error", { status: 500 });
+				} catch (err) {
+					return new Response(`Tunnel error: ${err}`, { status: 500 });
 				}
 			},
 		},

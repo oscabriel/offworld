@@ -48,7 +48,8 @@ export function safeParseAIResponse<T>(
 ): T {
 	try {
 		return schema.parse(data);
-	} catch (error) {
+	} catch (err) {
+		console.error("Schema validation error:", err);
 		return fallback;
 	}
 }

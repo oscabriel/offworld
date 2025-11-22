@@ -43,8 +43,8 @@ function ChatPage() {
 				to: "/$owner/$repo/chat/$chatId",
 				params: { owner, repo, chatId: result.conversationId },
 			});
-		} catch (error) {
-			// Silent error handling
+		} catch (err) {
+			console.error("Chat creation error:", err);
 		}
 	};
 

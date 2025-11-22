@@ -367,9 +367,9 @@ export const fetchPullRequests = internalAction({
 							linesAdded: prDetail.additions || 0,
 							linesDeleted: prDetail.deletions || 0,
 						};
-					} catch (_error: unknown) {
+					} catch (err: unknown) {
 						console.warn(
-							`Failed to fetch details for PR #${pr.number}, using fallback`,
+							`Failed to fetch details for PR #${pr.number}, using fallback: ${err}`,
 						);
 						return {
 							githubPrId: pr.id,

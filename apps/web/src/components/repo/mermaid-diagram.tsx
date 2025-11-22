@@ -115,7 +115,6 @@ export function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
 					setIsLoading(false);
 				}
 			} catch (err) {
-				console.error("Mermaid rendering error:", err);
 				setError(
 					err instanceof Error ? err.message : "Failed to render diagram",
 				);
@@ -215,7 +214,7 @@ export function MermaidDiagram({ chart, title }: MermaidDiagramProps) {
 					modalContainerRef.current.innerHTML = svg;
 				}
 			} catch (err) {
-				console.error("Modal mermaid rendering error:", err);
+				// Silent error handling
 			}
 		};
 

@@ -21,20 +21,15 @@ export const searchCodeContext = createTool({
 		ctx: ActionCtx & CodebaseAgentContext,
 		{ query },
 	): Promise<string> => {
-		console.log("🔍 searchCodeContext called with query:", query);
-		console.log("Context repositoryId:", ctx.repositoryId);
-
 		const repo = await ctx.runQuery(api.repos.getById, {
 			repoId: ctx.repositoryId,
 		});
 
 		if (!repo) {
-			console.log("❌ Repository not found for ID:", ctx.repositoryId);
 			return "Repository not found";
 		}
 
 		const namespace = `repo:${repo.owner}/${repo.name}`;
-		console.log("📦 Searching namespace:", namespace);
 
 		const { rag } = await import("../rag");
 
@@ -45,12 +40,6 @@ export const searchCodeContext = createTool({
 			vectorScoreThreshold: 0.7,
 			chunkContext: { before: 1, after: 1 },
 		});
-
-		console.log(
-			"✅ Search results:",
-			results.entries?.length || 0,
-			"entries found",
-		);
 
 		if (!results.entries || results.entries.length === 0) {
 			return "No relevant code found for this query.";

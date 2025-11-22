@@ -40,7 +40,6 @@ export const Route = createFileRoute("/tunnel")({
 						},
 					});
 				} catch (error) {
-					console.error("Sentry tunnel error:", error);
 					return new Response("Tunnel error", { status: 500 });
 				}
 			},

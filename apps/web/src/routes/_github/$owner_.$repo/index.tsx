@@ -31,33 +31,29 @@ function RepoSummaryPage() {
 
 	const handleStartIndexing = async () => {
 		setIsIndexing(true);
-		try {
-			await startAnalysis({
-				repoUrl: `https://github.com/${owner}/${repo}`,
-			});
-		} catch (error) {
-			console.error("Failed to start analysis:", error);
+		await startAnalysis({
+			repoUrl: `https://github.com/${owner}/${repo}`,
+		}).catch(() => {
 			setIsIndexing(false);
-		}
+		});
 	};
 
 	const handleRetryAnalysis = async () => {
 		setIsRetrying(true);
-		try {
-			// Delete the failed repository data
-			await deleteRepository({ fullName });
-
-			// Wait a moment for deletion to complete
-			await new Promise((resolve) => setTimeout(resolve, 500));
-
-			// Start fresh analysis
-			await startAnalysis({
-				repoUrl: `https://github.com/${owner}/${repo}`,
-			});
-		} catch (error) {
-			console.error("Failed to retry analysis:", error);
+		// Delete the failed repository data
+		await deleteRepository({ fullName }).catch(() => {
 			setIsRetrying(false);
-		}
+		});
+
+		// Wait a moment for deletion to complete
+		await new Promise((resolve) => setTimeout(resolve, 500));
+
+		// Start fresh analysis
+		await startAnalysis({
+			repoUrl: `https://github.com/${owner}/${repo}`,
+		}).catch(() => {
+			setIsRetrying(false);
+		});
 	};
 
 	// Processing state - show what we have so far, skeleton for the rest

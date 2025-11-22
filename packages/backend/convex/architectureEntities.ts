@@ -264,21 +264,9 @@ export const consolidateEntities = internalAction({
 			);
 			const finalPath = validatedPath || entity.path;
 
-			if (validatedPath && validatedPath !== entity.path) {
-				console.log(`✓ Path corrected: ${entity.path} → ${validatedPath}`);
-			} else if (
-				!validatedPath &&
-				!args.actualFilePaths.includes(entity.path)
-			) {
-				console.warn(`⚠ Could not validate path: ${entity.path}`);
-			}
-
 			const validatedKeyFiles =
 				entity.keyFiles?.map((file: string) => {
 					const validFile = findBestPathMatch(file, args.actualFilePaths);
-					if (validFile && validFile !== file) {
-						console.log(`✓ File path corrected: ${file} → ${validFile}`);
-					}
 					return validFile || file;
 				}) || [];
 
@@ -300,10 +288,6 @@ export const consolidateEntities = internalAction({
 				githubUrl: `https://github.com/${args.owner}/${args.repoName}/tree/${args.defaultBranch}/${finalPath}`,
 			};
 		});
-
-		console.log(
-			`Consolidated ${args.entities.length} entities → ${withValidatedUrls.length} major entities (limit: ${maxEntities} for ${args.fileCount} files)`,
-		);
 
 		return withValidatedUrls;
 	},

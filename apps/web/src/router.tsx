@@ -10,9 +10,6 @@ import "./index.css";
 
 export function getRouter() {
 	const CONVEX_URL = import.meta.env.VITE_CONVEX_URL;
-	if (!CONVEX_URL) {
-		console.error("missing envar VITE_CONVEX_URL");
-	}
 	const convex = new ConvexReactClient(CONVEX_URL, {
 		unsavedChangesWarning: false,
 	});
@@ -76,23 +73,6 @@ export function getRouter() {
 				debug: false, // Disable debug logs in all environments
 				// Use tunnel to bypass ad blockers
 				tunnel: "/tunnel",
-				beforeSend(event) {
-					// Only log in dev mode, and only for actual errors (not breadcrumbs/transactions)
-					if (import.meta.env.DEV && event.exception) {
-						console.log("📤 Sentry:", event.exception?.values?.[0]?.value);
-					}
-					return event;
-				},
-			});
-			console.log("✅ Sentry initialized", {
-				environment: import.meta.env.MODE,
-				dsn: `${dsnString.slice(0, 50)}...`,
-				dsnType: typeof dsnString,
-			});
-		} else {
-			console.warn("⚠️ Sentry DSN invalid or missing:", {
-				raw: SENTRY_DSN,
-				converted: dsnString,
 			});
 		}
 	}

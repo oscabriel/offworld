@@ -362,14 +362,11 @@ async function reindexRepositoryInternal(
 		);
 	}
 
-	console.log(`Starting re-index for ${repo.fullName} (repoId: ${repo._id})`);
-
 	const deletedEntities = await ctx.runMutation(
 		// biome-ignore lint/suspicious/noExplicitAny: Convex generated types use anyApi placeholder
 		(internal as any).architectureEntities.deleteByRepo,
 		{ repositoryId: repo._id },
 	);
-	console.log(`Deleted ${deletedEntities} architecture entities`);
 
 	const issues = await ctx.db
 		.query("issues")
@@ -378,7 +375,6 @@ async function reindexRepositoryInternal(
 	for (const issue of issues) {
 		await ctx.db.delete(issue._id);
 	}
-	console.log(`Deleted ${issues.length} issues`);
 
 	await ctx.db.patch(repo._id, {
 		indexingStatus: "processing",
@@ -397,10 +393,6 @@ async function reindexRepositoryInternal(
 			owner: repo.owner,
 			name: repo.name,
 		},
-	);
-
-	console.log(
-		`Re-index workflow started for ${repo.fullName}: ${workflowResult.workflowId}`,
 	);
 
 	return {

@@ -31,7 +31,6 @@ export const clearNamespace = internalAction({
 		});
 
 		if (!namespace) {
-			console.log(`Namespace ${args.namespace} not found - nothing to clear`);
 			return { deletedCount: 0 };
 		}
 
@@ -54,10 +53,7 @@ export const clearNamespace = internalAction({
 			}
 
 			const deletePromises = results.page.map((entry) =>
-				rag.delete(ctx, { entryId: entry.entryId }).catch((error) => {
-					console.warn(`Failed to delete RAG entry ${entry.entryId}:`, error);
-					return null;
-				}),
+				rag.delete(ctx, { entryId: entry.entryId }).catch(() => null),
 			);
 
 			await Promise.all(deletePromises);
@@ -67,9 +63,6 @@ export const clearNamespace = internalAction({
 			cursor = results.continueCursor;
 		}
 
-		console.log(
-			`Cleared ${totalDeleted} documents from namespace ${args.namespace}`,
-		);
 		return { deletedCount: totalDeleted };
 	},
 });
@@ -104,10 +97,6 @@ export const clearNamespaceComplete = internalAction({
 		results.conversations = await ctx.runMutation(
 			internal.chat.deleteConversationsByRepo,
 			{ repositoryId: args.repositoryId },
-		);
-
-		console.log(
-			`Complete clear for ${args.namespace}: ${results.ragEntries} RAG entries, ${results.architectureEntities} entities, ${results.issues} issues, ${results.conversations} conversations`,
 		);
 
 		return results;

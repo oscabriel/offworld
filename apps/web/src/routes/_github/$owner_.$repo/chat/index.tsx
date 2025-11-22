@@ -44,7 +44,7 @@ function ChatPage() {
 				params: { owner, repo, chatId: result.conversationId },
 			});
 		} catch (error) {
-			console.error("Failed to create thread:", error);
+			// Silent error handling
 		}
 	};
 

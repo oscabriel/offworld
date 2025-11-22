@@ -36,8 +36,7 @@ function RepoLayout() {
 			// Repo not indexed, fetch from GitHub
 			fetchGitHubMetadata({ owner, name: repo })
 				.then((metadata) => setGithubMetadata(metadata))
-				.catch((err) => {
-					console.error("Failed to fetch GitHub metadata:", err);
+				.catch(() => {
 					setGithubMetadata(null);
 				});
 		}

@@ -195,20 +195,12 @@ export const generateArchitectureIteration1 = internalAction({
 				validTypes.includes(e.type),
 			);
 
-			if (filteredEntities.length !== validated.entities.length) {
-				console.warn(
-					`Iteration 1: Filtered out ${validated.entities.length - filteredEntities.length} entities with invalid types`,
-				);
-			}
-
 			return {
 				overview: validated.overview,
 				pattern: validated.pattern || "Unknown",
 				entities: filteredEntities,
 			};
 		} catch (error) {
-			console.error("Failed to parse iteration 1 response:", error);
-			console.error("Raw LLM response (first 500 chars):", text.slice(0, 500));
 			return {
 				overview: `The ${args.repoName.split("/")[1]} library is organized around a core module that provides the primary API surface for developers.`,
 				pattern: "Unknown",
@@ -263,18 +255,11 @@ export const generateArchitectureIteration2 = internalAction({
 				validTypes.includes(e.type),
 			);
 
-			if (filteredEntities.length !== validated.entities.length) {
-				console.warn(
-					`Iteration 2: Filtered out ${validated.entities.length - filteredEntities.length} entities with invalid types`,
-				);
-			}
-
 			return {
 				overview: validated.overview,
 				entities: filteredEntities,
 			};
 		} catch (error) {
-			console.error("Failed to parse iteration 2 response:", error);
 			return {
 				overview: "Unable to analyze modules and services",
 				entities: [],
@@ -328,18 +313,11 @@ export const generateArchitectureIteration3 = internalAction({
 				validTypes.includes(e.type),
 			);
 
-			if (filteredEntities.length !== validated.entities.length) {
-				console.warn(
-					`Iteration 3: Filtered out ${validated.entities.length - filteredEntities.length} entities with invalid types`,
-				);
-			}
-
 			return {
 				overview: validated.overview,
 				entities: filteredEntities,
 			};
 		} catch (error) {
-			console.error("Failed to parse iteration 3 response:", error);
 			return {
 				overview: "Unable to analyze components and utilities",
 				entities: [],
@@ -409,9 +387,6 @@ export const generateArchitectureDiagram = internalAction({
 		}
 
 		if (!diagram.startsWith("graph ")) {
-			console.warn(
-				"Invalid mermaid diagram (no graph keyword), using fallback",
-			);
 			return generateFallbackDiagram(args.repoName, "architecture");
 		}
 
@@ -450,7 +425,6 @@ export const generateDataFlowDiagram = internalAction({
 		}
 
 		if (!diagram.startsWith("graph ")) {
-			console.warn("Invalid data flow diagram, using fallback");
 			return generateFallbackDiagram(args.repoName, "dataFlow");
 		}
 
@@ -509,7 +483,6 @@ export const generateRoutingDiagram = internalAction({
 		}
 
 		if (!diagram.startsWith("graph ")) {
-			console.warn("Invalid routing diagram, using fallback");
 			return generateFallbackDiagram(args.repoName, "routing");
 		}
 
@@ -613,7 +586,6 @@ Respond ONLY with valid JSON, no additional text.`;
 				skillsRequired: validated.skillsRequired,
 			};
 		} catch (error) {
-			console.error("Failed to parse Gemini response:", error);
 			return {
 				difficulty: 3,
 				aiSummary: args.issueTitle,
@@ -673,7 +645,6 @@ Respond ONLY with valid JSON, no additional text.`;
 				reviewComplexity: data.reviewComplexity || "moderate",
 			};
 		} catch (error) {
-			console.error("Failed to parse PR analysis response:", error);
 			return {
 				difficulty: 3,
 				aiSummary: args.prTitle,

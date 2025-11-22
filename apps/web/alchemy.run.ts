@@ -13,6 +13,4 @@ export const web = await TanStackStart("web", {
 	domains: ["offworld.sh"],
 });
 
-console.log(`Web    -> ${web.url}`);
-
 await app.finalize();

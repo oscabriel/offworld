@@ -48,13 +48,11 @@ export function ChatInterface({
 		e.preventDefault();
 		if (!input.trim()) return;
 
-		try {
-			await sendMessage({ conversationId, message: input });
-			setInput("");
-			setScrolled(false);
-		} catch (error) {
-			console.error("Failed to send message:", error);
-		}
+		await sendMessage({ conversationId, message: input }).catch(() => {
+			// Silent error handling
+		});
+		setInput("");
+		setScrolled(false);
 	};
 
 	const handleScroll = () => {

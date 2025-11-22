@@ -28,13 +28,6 @@ export function MessageBubble({ message, isUser }: MessageBubbleProps) {
 			(part) => part.type === "dynamic-tool" || part.type.startsWith("tool-"),
 		) || [];
 
-	// Debug logging
-	console.log("MessageBubble - parts:", parts);
-	console.log("Tool call parts found:", toolCallParts);
-	if (toolCallParts.length > 0) {
-		console.log("Tool call message:", message);
-	}
-
 	// If this message has tool calls, render them as badges BEFORE the text
 	const hasToolCalls = toolCallParts.length > 0;
 

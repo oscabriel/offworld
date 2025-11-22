@@ -49,10 +49,6 @@ export function safeParseAIResponse<T>(
 	try {
 		return schema.parse(data);
 	} catch (error) {
-		console.error("AI response validation failed:", error);
-		if (error instanceof z.ZodError) {
-			console.error("Validation errors:", error.issues);
-		}
 		return fallback;
 	}
 }

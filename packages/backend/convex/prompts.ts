@@ -610,7 +610,6 @@ export function renderPrompt(
 ): string {
 	return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
 		if (!(key in vars)) {
-			console.warn(`Template variable {{${key}}} not provided`);
 			return `{{${key}}}`;
 		}
 		return vars[key];

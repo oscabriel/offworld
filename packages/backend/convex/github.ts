@@ -289,15 +289,6 @@ export const analyzeAndStoreIssues = internalAction({
 				analysis.filesLikelyTouched
 					?.map((file) => {
 						const validatedPath = findBestPathMatch(file, args.actualFilePaths);
-						if (validatedPath && validatedPath !== file) {
-							console.log(
-								`✓ Issue #${issue.number} file path corrected: ${file} → ${validatedPath}`,
-							);
-						} else if (!validatedPath && !args.actualFilePaths.includes(file)) {
-							console.warn(
-								`⚠ Issue #${issue.number} could not validate path: ${file}`,
-							);
-						}
 						return validatedPath || file;
 					})
 					.filter(Boolean) || [];
@@ -462,15 +453,6 @@ export const analyzeAndStorePullRequests = internalAction({
 				analysis.filesChanged
 					?.map((file: string) => {
 						const validatedPath = findBestPathMatch(file, args.actualFilePaths);
-						if (validatedPath && validatedPath !== file) {
-							console.log(
-								`✓ PR #${pr.number} file path corrected: ${file} → ${validatedPath}`,
-							);
-						} else if (!validatedPath && !args.actualFilePaths.includes(file)) {
-							console.warn(
-								`⚠ PR #${pr.number} could not validate path: ${file}`,
-							);
-						}
 						return validatedPath || file;
 					})
 					.filter(Boolean) || [];

@@ -56,7 +56,6 @@ function RefreshPage() {
 		try {
 			await reindexRepository({ fullName });
 		} catch (err) {
-			console.error("Failed to reindex:", err);
 			setError(
 				err instanceof Error ? err.message : "Failed to start re-indexing",
 			);

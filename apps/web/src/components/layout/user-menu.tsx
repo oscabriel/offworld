@@ -34,9 +34,6 @@ export default function UserMenu() {
 						to: "/",
 					});
 				},
-				onError: () => {
-					console.error("Failed to sign out");
-				},
 			},
 		});
 	};

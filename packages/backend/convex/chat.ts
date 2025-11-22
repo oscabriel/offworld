@@ -130,9 +130,6 @@ export const generateResponseAsync = internalAction({
 			userId: conversation.userId,
 		});
 
-		console.log("Generating response for thread:", args.threadId);
-		console.log("Repository context:", conversation.repositoryId);
-
 		await codebaseAgent.generateText(
 			ctxWithAgent,
 			{ threadId: args.threadId },
@@ -140,8 +137,6 @@ export const generateResponseAsync = internalAction({
 				promptMessageId: args.promptMessageId,
 			},
 		);
-
-		console.log("Response generation completed");
 	},
 });
 

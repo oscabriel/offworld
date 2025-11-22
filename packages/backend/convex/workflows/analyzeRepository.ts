@@ -61,21 +61,11 @@ export const analyzeRepositoryWorkflow = workflow.define({
 
 		if (existingRepo) {
 			// Repository exists - perform complete cascading delete and reset
-			console.log(
-				`Re-indexing ${fullName} - reusing existing repo ${existingRepo._id}`,
-			);
-
 			try {
-				const clearResults = await step.runAction(
-					internal.rag.clearNamespaceComplete,
-					{
-						namespace,
-						repositoryId: existingRepo._id,
-					},
-				);
-				console.log(
-					`Complete clear for ${fullName}: ${clearResults.ragEntries} RAG entries, ${clearResults.architectureEntities} entities, ${clearResults.issues} issues, ${clearResults.conversations} conversations`,
-				);
+				await step.runAction(internal.rag.clearNamespaceComplete, {
+					namespace,
+					repositoryId: existingRepo._id,
+				});
 			} catch (error) {
 				// If clearing fails, this is critical - throw error
 				throw new Error(
@@ -92,10 +82,6 @@ export const analyzeRepositoryWorkflow = workflow.define({
 			repoId = existingRepo._id;
 		} else {
 			// First-time index - create new repository
-			console.log(
-				`First-time index for ${fullName} - creating new repo record`,
-			);
-
 			// Step 3b: Create new repo record
 			repoId = await step.runMutation(internal.repos.createRepo, {
 				...metadata,
@@ -127,10 +113,6 @@ export const analyzeRepositoryWorkflow = workflow.define({
 							? 4
 							: // Large repos: 4 iterations
 								5; // Very large repos: 5 iterations
-
-			console.log(
-				`Repository has ${fileCount} files, using ${iterationCount} iterations for architecture analysis`,
-			);
 
 			// Step 5: Ingest repository into RAG component (~2-5 minutes)
 			// Replaces custom chunking with RAG's auto-chunking + embedding generation

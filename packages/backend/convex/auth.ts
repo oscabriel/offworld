@@ -5,35 +5,43 @@ import { v } from "convex/values";
 import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import authConfig from "./auth.config";
 
 // biome-ignore lint/style/noNonNullAssertion: SITE_URL required for auth callbacks
 const siteUrl = process.env.SITE_URL!;
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
-function createAuth(
-	ctx: GenericCtx<DataModel>,
-	{ optionsOnly }: { optionsOnly?: boolean } = { optionsOnly: false },
-) {
+export const createAuth = (ctx: GenericCtx<DataModel>) => {
 	return betterAuth({
-		logger: {
-			disabled: optionsOnly,
-		},
 		baseURL: siteUrl,
 		trustedOrigins: [siteUrl],
 		database: authComponent.adapter(ctx),
+		// Enable cookie caching to speed up session validation on client-side navigation
+		// This avoids network requests for session validation by storing session data in a signed cookie
+		session: {
+			cookieCache: {
+				enabled: true,
+				maxAge: 5 * 60, // 5 minutes - short-lived cache that auto-refreshes
+			},
+		},
 		socialProviders: {
 			github: {
 				enabled: true,
-				clientId: process.env.GITHUB_CLIENT_ID || "",
-				clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+				// biome-ignore lint/style/noNonNullAssertion: GITHUB_CLIENT_ID required for auth
+				clientId: process.env.GITHUB_CLIENT_ID!,
+				// biome-ignore lint/style/noNonNullAssertion: GITHUB_CLIENT_SECRET required for auth
+				clientSecret: process.env.GITHUB_CLIENT_SECRET!,
 			},
 		},
-		plugins: [convex()],
+		plugins: [
+			convex({
+				authConfig,
+				jwksRotateOnTokenGenerationError: true,
+			}),
+		],
 	});
-}
-
-export { createAuth };
+};
 
 export const getCurrentUser = query({
 	args: {},

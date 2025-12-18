@@ -46,6 +46,25 @@ export const getBySlug = query({
 			.first();
 	},
 });
+
+// Batch query to get multiple entities by slugs (fixes N+1 problem)
+export const getBySlugsBatch = query({
+	args: {
+		repoId: v.id("repositories"),
+		slugs: v.array(v.string()),
+	},
+	handler: async (ctx, args) => {
+		// Get all entities for this repo and filter by slugs
+		// This is more efficient than N individual queries
+		const allEntities = await ctx.db
+			.query("architectureEntities")
+			.withIndex("by_repository", (q) => q.eq("repositoryId", args.repoId))
+			.collect();
+
+		const slugSet = new Set(args.slugs);
+		return allEntities.filter((entity) => slugSet.has(entity.slug));
+	},
+});
 export const listByIteration = query({
 	args: {
 		repoId: v.id("repositories"),

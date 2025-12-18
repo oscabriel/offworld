@@ -457,12 +457,43 @@ export const getByFullName = query({
 		fullName: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const allRepos = await ctx.db.query("repositories").collect();
-		const repo = allRepos.find(
-			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
-		);
+		// Use index lookup instead of full table scan
+		// Note: The index is case-sensitive, so we need to handle case-insensitivity
+		const repo = await ctx.db
+			.query("repositories")
+			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
 
-		if (!repo) return null;
+		// If exact match fails, fall back to case-insensitive search (less efficient but maintains compatibility)
+		if (!repo) {
+			const allRepos = await ctx.db.query("repositories").collect();
+			const caseInsensitiveMatch = allRepos.find(
+				(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+			);
+			if (!caseInsensitiveMatch) return null;
+
+			const issues = await ctx.db
+				.query("issues")
+				.withIndex("repositoryId", (q) =>
+					q.eq("repositoryId", caseInsensitiveMatch._id),
+				)
+				.collect();
+
+			const pullRequests = await ctx.db
+				.query("pullRequests")
+				.withIndex("by_repository", (q) =>
+					q.eq("repositoryId", caseInsensitiveMatch._id),
+				)
+				.collect();
+
+			return {
+				...caseInsensitiveMatch,
+				issueCount: issues.length,
+				issues,
+				pullRequestCount: pullRequests.length,
+				pullRequests,
+			};
+		}
 
 		const issues = await ctx.db
 			.query("issues")
@@ -489,12 +520,81 @@ export const getByFullNameInternal = internalQuery({
 		fullName: v.string(),
 	},
 	handler: async (ctx, args) => {
+		// Use index lookup first
+		const repo = await ctx.db
+			.query("repositories")
+			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (repo) return repo;
+
+		// Fall back to case-insensitive search
 		const allRepos = await ctx.db.query("repositories").collect();
-		const repo = allRepos.find(
+		const caseInsensitiveMatch = allRepos.find(
 			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
 		);
 
-		return repo || null;
+		return caseInsensitiveMatch || null;
+	},
+});
+
+// Optimized query that returns only basic repo data (no issues/PRs)
+export const getRepoBasic = query({
+	args: {
+		fullName: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Use index lookup first
+		const repo = await ctx.db
+			.query("repositories")
+			.withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (repo) return repo;
+
+		// Fall back to case-insensitive search
+		const allRepos = await ctx.db.query("repositories").collect();
+		const caseInsensitiveMatch = allRepos.find(
+			(r) => r.fullName.toLowerCase() === args.fullName.toLowerCase(),
+		);
+
+		return caseInsensitiveMatch || null;
+	},
+});
+
+// Separate query for issues with pagination support
+export const getRepoIssues = query({
+	args: {
+		repoId: v.id("repositories"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const query = ctx.db
+			.query("issues")
+			.withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId));
+
+		if (args.limit) {
+			return await query.take(args.limit);
+		}
+		return await query.collect();
+	},
+});
+
+// Separate query for pull requests with pagination support
+export const getRepoPullRequests = query({
+	args: {
+		repoId: v.id("repositories"),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const query = ctx.db
+			.query("pullRequests")
+			.withIndex("by_repository", (q) => q.eq("repositoryId", args.repoId));
+
+		if (args.limit) {
+			return await query.take(args.limit);
+		}
+		return await query.collect();
 	},
 });
 
@@ -536,6 +636,20 @@ export const list = query({
 			.take(20);
 
 		return repos;
+	},
+});
+
+// Get all indexed repos for a specific owner
+export const listByOwner = query({
+	args: {
+		owner: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Get all repos and filter by owner (case-insensitive)
+		const allRepos = await ctx.db.query("repositories").collect();
+		return allRepos.filter(
+			(repo) => repo.owner.toLowerCase() === args.owner.toLowerCase(),
+		);
 	},
 });
 

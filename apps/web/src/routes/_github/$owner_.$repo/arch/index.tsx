@@ -1,6 +1,7 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import {
 	ChevronRight,
 	FileCode,
@@ -14,21 +15,27 @@ import { MermaidDiagram } from "@/components/repo/mermaid-diagram";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/arch/")({
 	component: ArchitecturePage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function ArchitecturePage() {
 	const { owner, repo } = Route.useParams();
 	const fullName = `${owner}/${repo}`;
 
-	const repoStatus = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	// Use TanStack Query with convexQuery for proper auth handling with expectAuth: true
+	const { data: repoStatus } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
-	const entities = useQuery(
-		api.architectureEntities.listByRepo,
-		repoStatus?._id ? { repoId: repoStatus._id } : "skip",
-	);
+	// Use non-suspense query for dependent data that may not exist
+	const { data: entities } = useQuery({
+		...convexQuery(
+			api.architectureEntities.listByRepo,
+			repoStatus?._id ? { repoId: repoStatus._id } : "skip",
+		),
+		enabled: !!repoStatus?._id,
+	});
 
 	const isProcessing = repoStatus?.indexingStatus === "processing";
 	const isNotIndexed = repoStatus === null;

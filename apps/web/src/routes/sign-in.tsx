@@ -1,16 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
+const searchSchema = z.object({
+	redirect: z.string().optional(),
+});
+
 export const Route = createFileRoute("/sign-in")({
 	component: RouteComponent,
+	validateSearch: searchSchema,
 });
 
 function RouteComponent() {
+	const { redirect } = Route.useSearch();
+
 	const handleGitHubSignIn = async () => {
 		await authClient.signIn.social({
 			provider: "github",
-			callbackURL: "/",
+			callbackURL: redirect || "/",
 		});
 	};
 

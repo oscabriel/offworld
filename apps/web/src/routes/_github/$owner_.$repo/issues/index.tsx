@@ -1,6 +1,7 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
@@ -15,6 +16,8 @@ import {
 
 export const Route = createFileRoute("/_github/$owner_/$repo/issues/")({
 	component: IssuesPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function IssuesPage() {
@@ -23,9 +26,9 @@ function IssuesPage() {
 	const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
 	const [sortBy, setSortBy] = useState<"difficulty" | "number">("difficulty");
 
-	const repoData = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	// Use TanStack Query with convexQuery for proper auth handling with expectAuth: true
+	const { data: repoData } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
 	const isProcessing = repoData?.indexingStatus === "processing";

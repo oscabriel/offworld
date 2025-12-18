@@ -1,6 +1,8 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useState } from "react";
 import { ContentCard } from "@/components/repo/content-card";
 import { MarkdownContent } from "@/components/repo/markdown-content";
@@ -8,6 +10,8 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/")({
 	component: RepoSummaryPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function RepoSummaryPage() {
@@ -19,14 +23,17 @@ function RepoSummaryPage() {
 	const startAnalysis = useMutation(api.repos.startAnalysis);
 	const deleteRepository = useMutation(api.repos.deleteRepository);
 
-	// Check authentication status
-	const currentUser = useQuery(api.auth.getCurrentUserSafe);
+	// Check authentication status using non-suspense query
+	// This avoids blocking for unauthenticated users since expectAuth: true
+	// would otherwise wait for auth to be established before running queries
+	const { data: currentUser } = useQuery(
+		convexQuery(api.auth.getCurrentUserSafe, {}),
+	);
 	const isAuthenticated = currentUser !== null && currentUser !== undefined;
 
-	// Query repository status - THIS IS REACTIVE and auto-updates
-	const repoStatus = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	// Query repository status - reactive via TanStack Query
+	const { data: repoStatus } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
 	const handleStartIndexing = async () => {

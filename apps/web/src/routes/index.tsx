@@ -1,6 +1,7 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { HeroSection } from "@/components/home/hero-section";
 import { HowItWorks } from "@/components/home/how-it-works";
 import { InfoSection } from "@/components/home/info-section";
@@ -10,10 +11,13 @@ import { Footer } from "@/components/layout/footer";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(convexQuery(api.repos.list, {}));
+	},
 });
 
 function HomeComponent() {
-	const repos = useQuery(api.repos.list);
+	const { data: repos } = useSuspenseQuery(convexQuery(api.repos.list, {}));
 
 	const completedRepos =
 		repos?.filter((r) => r.indexingStatus === "completed") || [];

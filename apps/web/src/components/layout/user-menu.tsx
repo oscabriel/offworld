@@ -1,6 +1,7 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { LogOutIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,15 +25,14 @@ const getFirstName = (
 
 export default function UserMenu() {
 	const navigate = useNavigate();
-	const user = useQuery(api.auth.getCurrentUserSafe);
+	const { data: user } = useQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
 
 	const handleSignOut = async () => {
 		await authClient.signOut({
 			fetchOptions: {
 				onSuccess: () => {
-					navigate({
-						to: "/",
-					});
+					// Reload the page on sign out for expectAuth to work correctly
+					location.reload();
 				},
 			},
 		});

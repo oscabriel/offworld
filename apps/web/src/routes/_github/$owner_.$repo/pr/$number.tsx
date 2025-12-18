@@ -1,12 +1,15 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { ArrowLeft, ExternalLink, FileCode, GitMerge } from "lucide-react";
 import { ContentCard } from "@/components/repo/content-card";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/pr/$number")({
 	component: PRDetailPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function PRDetailPage() {
@@ -14,9 +17,9 @@ function PRDetailPage() {
 	const fullName = `${owner}/${repo}`;
 	const prNumber = Number.parseInt(number, 10);
 
-	const repoData = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	// Use TanStack Query with convexQuery for proper auth handling with expectAuth: true
+	const { data: repoData } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
 	const pr = repoData?.pullRequests?.find((p) => p.number === prNumber);
@@ -41,7 +44,8 @@ function PRDetailPage() {
 		);
 	}
 
-	if (!repoData || !pr) {
+	// PR not found in repo data (repoData is guaranteed to exist after suspense)
+	if (!pr) {
 		return (
 			<ContentCard>
 				<Link
@@ -53,7 +57,7 @@ function PRDetailPage() {
 					Back to Pull Requests
 				</Link>
 				<h2 className="font-mono font-semibold text-2xl">
-					{repoData === undefined ? "Loading..." : "Pull request not found"}
+					Pull request not found
 				</h2>
 			</ContentCard>
 		);

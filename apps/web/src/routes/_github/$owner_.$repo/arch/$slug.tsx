@@ -1,51 +1,58 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
-import type { Id } from "@offworld/backend/convex/_generated/dataModel";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { FileCode, Layers, Package, Settings } from "lucide-react";
+import { useMemo } from "react";
 import { ContentCard } from "@/components/repo/content-card";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/arch/$slug")({
-	// Loader preloads data before navigation completes
-	loader: async ({ context, params }) => {
-		const { owner, repo, slug } = params;
-		const fullName = `${owner}/${repo}`;
-
-		// Preload repository data
-		const repoPromise = context.convexClient.query(api.repos.getByFullName, {
-			fullName,
-		});
-
-		// Wait for repo to get its ID
-		const repoData = await repoPromise;
-
-		// Preload entity data if repo exists
-		if (repoData?._id) {
-			await context.convexClient.query(api.architectureEntities.getBySlug, {
-				repoId: repoData._id,
-				slug,
-			});
-		}
-
-		// Return preloaded data (TanStack Router pattern)
-		return { preloaded: true };
-	},
 	component: EntityDetailPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function EntityDetailPage() {
 	const { owner, repo, slug } = Route.useParams();
 	const fullName = `${owner}/${repo}`;
 
-	const repoStatus = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	// Use TanStack Query with convexQuery for proper auth handling with expectAuth: true
+	const { data: repoStatus } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
-	const entity = useQuery(
-		api.architectureEntities.getBySlug,
-		repoStatus?._id ? { repoId: repoStatus._id, slug } : "skip",
-	);
+	// Use non-suspense query for dependent data that may not exist
+	const { data: entity } = useQuery({
+		...convexQuery(
+			api.architectureEntities.getBySlug,
+			repoStatus?._id ? { repoId: repoStatus._id, slug } : "skip",
+		),
+		enabled: !!repoStatus?._id,
+	});
+
+	// Collect all slugs we need to check for links (dependencies + usedBy)
+	const allRelatedSlugs = useMemo(() => {
+		if (!entity) return [];
+		const names = [...entity.dependencies, ...entity.usedBy];
+		return names.map((name) => name.toLowerCase().replace(/\s+/g, "-"));
+	}, [entity]);
+
+	// Batch query for all related entities (fixes N+1 problem)
+	const { data: relatedEntities } = useQuery({
+		...convexQuery(
+			api.architectureEntities.getBySlugsBatch,
+			repoStatus?._id && allRelatedSlugs.length > 0
+				? { repoId: repoStatus._id, slugs: allRelatedSlugs }
+				: "skip",
+		),
+		enabled: !!repoStatus?._id && allRelatedSlugs.length > 0,
+	});
+
+	// Create a lookup map for related entities
+	const entityMap = useMemo(() => {
+		if (!relatedEntities) return new Map<string, boolean>();
+		return new Map(relatedEntities.map((e) => [e.slug, true]));
+	}, [relatedEntities]);
 
 	const isNotIndexed = repoStatus === null;
 
@@ -166,7 +173,7 @@ function EntityDetailPage() {
 							<li key={dep} className="font-mono text-sm">
 								<EntityLink
 									name={dep}
-									repoId={repoStatus?._id}
+									entityMap={entityMap}
 									owner={owner}
 									repo={repo}
 									prefix="→"
@@ -185,7 +192,7 @@ function EntityDetailPage() {
 							<li key={user} className="font-mono text-sm">
 								<EntityLink
 									name={user}
-									repoId={repoStatus?._id}
+									entityMap={entityMap}
 									owner={owner}
 									repo={repo}
 									prefix="←"
@@ -210,17 +217,18 @@ function EntityDetailPage() {
 
 /**
  * Smart link component that converts entity names to clickable links
+ * Uses pre-loaded entityMap for O(1) lookup instead of individual queries (fixes N+1)
  * Falls back to plain text if entity not found
  */
 function EntityLink({
 	name,
-	repoId,
+	entityMap,
 	owner,
 	repo,
 	prefix,
 }: {
 	name: string;
-	repoId: Id<"repositories"> | undefined;
+	entityMap: Map<string, boolean>;
 	owner: string;
 	repo: string;
 	prefix?: string;
@@ -228,14 +236,11 @@ function EntityLink({
 	// Convert name to slug (lowercase, replace spaces with dashes)
 	const slug = name.toLowerCase().replace(/\s+/g, "-");
 
-	// Query to check if entity exists
-	const targetEntity = useQuery(
-		api.architectureEntities.getBySlug,
-		repoId ? { repoId, slug } : "skip",
-	);
+	// Check if entity exists using the pre-loaded map (O(1) lookup)
+	const entityExists = entityMap.has(slug);
 
 	// If entity exists, render as link
-	if (targetEntity) {
+	if (entityExists) {
 		return (
 			<Link
 				to="/$owner/$repo/arch/$slug"

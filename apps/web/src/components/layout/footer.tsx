@@ -15,7 +15,7 @@ export function Footer() {
 				</div>
 
 				{/* Middle - Links */}
-				<div className="lg:-translate-x-1/2 flex flex-row items-center gap-20 lg:absolute lg:left-1/2 lg:items-end">
+				<div className="flex flex-row items-center gap-20 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:items-end">
 					<div className="space-y-2 text-center lg:text-left">
 						<h3 className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
 							Navigate

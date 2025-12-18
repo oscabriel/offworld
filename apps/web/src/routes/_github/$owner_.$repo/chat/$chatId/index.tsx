@@ -1,15 +1,19 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import type { Id } from "@offworld/backend/convex/_generated/dataModel";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { MessageSquarePlus } from "lucide-react";
 import { ChatInterface } from "@/components/chat/chat-interface";
+import Loader from "@/components/loader";
 import { ContentCard } from "@/components/repo/content-card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/chat/$chatId/")({
 	component: ChatThreadPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function ChatThreadPage() {
@@ -17,36 +21,30 @@ function ChatThreadPage() {
 	const navigate = useNavigate();
 	const fullName = `${owner}/${repo}`;
 
-	// Auth check
-	const user = useQuery(api.auth.getCurrentUserSafe);
+	// Use useConvexAuth to properly wait for Convex to validate the auth token
+	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 
 	// Get repo data
-	const repoData = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	const { data: repoData } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
-	// Get conversation by ID
-	const conversation = useQuery(api.chat.getConversation, {
-		conversationId: chatId as Id<"conversations">,
+	// Get conversation by ID - only query when authenticated
+	// Using non-suspense query with enabled flag to avoid errors before auth is ready
+	const { data: conversation, isLoading: isConversationLoading } = useQuery({
+		...convexQuery(api.chat.getConversation, {
+			conversationId: chatId as Id<"conversations">,
+		}),
+		enabled: isAuthenticated,
 	});
 
-	// Loading state
-	if (
-		user === undefined ||
-		repoData === undefined ||
-		conversation === undefined
-	) {
-		return (
-			<div className="space-y-4">
-				<Skeleton className="h-8 w-64" />
-				<Skeleton className="h-96 w-full rounded-lg" />
-			</div>
-		);
+	// Show loading while Convex validates auth token
+	if (isAuthLoading) {
+		return <Loader />;
 	}
 
-	// Not authenticated
-	if (!user) {
+	// Not authenticated - useConvexAuth ensures token is validated before this check
+	if (!isAuthenticated) {
 		return (
 			<ContentCard title="Sign In Required">
 				<p className="mb-4 font-serif text-lg text-muted-foreground leading-relaxed">
@@ -78,6 +76,11 @@ function ChatThreadPage() {
 				</Link>
 			</ContentCard>
 		);
+	}
+
+	// Loading conversation data
+	if (isConversationLoading) {
+		return <Loader />;
 	}
 
 	// Conversation not found or unauthorized

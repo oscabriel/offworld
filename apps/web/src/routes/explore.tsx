@@ -1,22 +1,25 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { useState } from "react";
 import { RepoUrlInput } from "@/components/home/repo-url-input";
 import { Footer } from "@/components/layout/footer";
 import { RepoCard } from "@/components/repo/repo-card";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/explore")({
 	component: ExploreComponent,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(convexQuery(api.repos.list, {}));
+	},
 });
 
 function ExploreComponent() {
 	const [error, setError] = useState<string | null>(null);
 
 	// Fetch pre-indexed repositories
-	const repos = useQuery(api.repos.list);
+	const { data: repos } = useSuspenseQuery(convexQuery(api.repos.list, {}));
 
 	const completedRepos =
 		repos?.filter((r) => r.indexingStatus === "completed") || [];
@@ -46,29 +49,7 @@ function ExploreComponent() {
 
 					{/* Pre-Indexed Repositories Grid */}
 					<div className="space-y-8">
-						{repos === undefined ? (
-							// Loading state
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-								{[...Array(6)].map((_, i) => (
-									<Card
-										key={i}
-										className="rounded-none border-primary/10 shadow-none"
-									>
-										<CardHeader>
-											<Skeleton className="h-6 w-3/4" />
-										</CardHeader>
-										<CardContent className="space-y-3">
-											<Skeleton className="h-4 w-full" />
-											<Skeleton className="h-4 w-5/6" />
-											<div className="flex gap-4 pt-2">
-												<Skeleton className="h-4 w-16" />
-												<Skeleton className="h-4 w-12" />
-											</div>
-										</CardContent>
-									</Card>
-								))}
-							</div>
-						) : completedRepos.length === 0 ? (
+						{completedRepos.length === 0 ? (
 							// Empty state
 							<Card className="rounded-none border-primary/10 p-12 text-center shadow-none">
 								<p className="font-serif text-lg text-muted-foreground">

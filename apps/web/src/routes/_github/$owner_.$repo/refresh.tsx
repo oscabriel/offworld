@@ -1,12 +1,17 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { useState } from "react";
+import Loader from "@/components/loader";
 import { ContentCard } from "@/components/repo/content-card";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/refresh")({
 	component: RefreshPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function formatTimestamp(timestamp: number): string {
@@ -40,14 +45,12 @@ function RefreshPage() {
 	const fullName = `${owner}/${repo}`;
 	const reindexRepository = useMutation(api.repos.reindexRepository);
 
-	// Check authentication status
-	const currentUser = useQuery(api.auth.getCurrentUserSafe);
-	const isAuthenticated = currentUser !== null && currentUser !== undefined;
+	// Use useConvexAuth to properly wait for Convex to validate the auth token
+	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 
 	// Query repository status
-	const repoData = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	const { data: repoData } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
 	const handleReindex = async () => {
@@ -63,16 +66,22 @@ function RefreshPage() {
 		}
 	};
 
-	// Not authenticated
+	// Show loading while Convex validates auth token
+	if (isAuthLoading) {
+		return <Loader />;
+	}
+
+	// Not authenticated - useConvexAuth ensures token is validated before this check
 	if (!isAuthenticated) {
 		return (
 			<div className="space-y-6">
-				<ContentCard title="Authentication Required">
+				<ContentCard title="Sign In Required">
 					<p className="mb-4 font-serif text-lg text-muted-foreground leading-relaxed">
 						You need to be signed in to refresh repository analysis.
 					</p>
 					<Link
 						to="/sign-in"
+						search={{ redirect: `/${owner}/${repo}/refresh` }}
 						className="inline-block border border-primary bg-primary px-6 py-3 font-mono text-primary-foreground hover:bg-primary/90"
 					>
 						Sign In
@@ -99,16 +108,6 @@ function RefreshPage() {
 						Go to Summary
 					</Link>
 				</ContentCard>
-			</div>
-		);
-	}
-
-	// Loading state
-	if (repoData === undefined) {
-		return (
-			<div className="space-y-6 border border-primary/10 bg-card p-8">
-				<div className="h-12 w-48 animate-pulse rounded bg-muted" />
-				<div className="h-6 w-32 animate-pulse rounded bg-muted" />
 			</div>
 		);
 	}

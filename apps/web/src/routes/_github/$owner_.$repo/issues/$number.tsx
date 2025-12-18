@@ -1,12 +1,15 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
 import { ArrowLeft, ExternalLink, FileCode } from "lucide-react";
 import { ContentCard } from "@/components/repo/content-card";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_github/$owner_/$repo/issues/$number")({
 	component: IssueDetailPage,
+	// Note: Parent layout ($owner_.$repo/route.tsx) already preloads repo data
+	// No additional loader needed here - avoids redundant preloading
 });
 
 function IssueDetailPage() {
@@ -14,9 +17,9 @@ function IssueDetailPage() {
 	const fullName = `${owner}/${repo}`;
 	const issueNumber = Number.parseInt(number, 10);
 
-	const repoData = useQuery(
-		api.repos.getByFullName,
-		fullName ? { fullName } : "skip",
+	// Use TanStack Query with convexQuery for proper auth handling with expectAuth: true
+	const { data: repoData } = useSuspenseQuery(
+		convexQuery(api.repos.getByFullName, { fullName }),
 	);
 
 	const issue = repoData?.issues?.find((i) => i.number === issueNumber);
@@ -41,7 +44,8 @@ function IssueDetailPage() {
 		);
 	}
 
-	if (!repoData || !issue) {
+	// Issue not found in repo data (repoData is guaranteed to exist after suspense)
+	if (!issue) {
 		return (
 			<ContentCard>
 				<Link
@@ -52,9 +56,7 @@ function IssueDetailPage() {
 					<ArrowLeft className="size-4" />
 					Back to Issues
 				</Link>
-				<h2 className="font-mono font-semibold text-2xl">
-					{repoData === undefined ? "Loading..." : "Issue not found"}
-				</h2>
+				<h2 className="font-mono font-semibold text-2xl">Issue not found</h2>
 			</ContentCard>
 		);
 	}

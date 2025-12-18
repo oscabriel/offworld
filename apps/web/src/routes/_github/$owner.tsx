@@ -1,4 +1,6 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAction } from "convex/react";
 import { useEffect, useState } from "react";
@@ -38,28 +40,60 @@ export const Route = createFileRoute("/_github/$owner")({
 function OwnerPage() {
 	const { owner } = Route.useParams();
 
+	// Use TanStack Query for indexed repos (cached, reactive)
+	const { data: indexedRepos } = useQuery(
+		convexQuery(api.repos.listByOwner, { owner }),
+	);
+
+	// State for GitHub API data (fetched via actions)
 	const [ownerInfo, setOwnerInfo] = useState<OwnerInfo | undefined>(undefined);
-	const [repos, setRepos] = useState<RepoWithStatus[] | undefined>(undefined);
+	const [githubRepos, setGithubRepos] = useState<RepoWithStatus[] | undefined>(
+		undefined,
+	);
 	const [error, setError] = useState<string | null>(null);
 
 	const getOwnerInfoAction = useAction(api.repos.getOwnerInfo);
 	const getOwnerReposAction = useAction(api.repos.getOwnerRepos);
 
+	// Fetch GitHub data via actions (only runs once per owner)
 	useEffect(() => {
+		let isCancelled = false;
+
 		async function fetchData() {
 			try {
 				const [ownerData, reposData] = await Promise.all([
 					getOwnerInfoAction({ owner }),
 					getOwnerReposAction({ owner, perPage: 30 }),
 				]);
-				setOwnerInfo(ownerData);
-				setRepos(reposData);
+
+				if (!isCancelled) {
+					setOwnerInfo(ownerData);
+					setGithubRepos(reposData);
+				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to fetch data");
+				if (!isCancelled) {
+					setError(err instanceof Error ? err.message : "Failed to fetch data");
+				}
 			}
 		}
 		fetchData();
+
+		return () => {
+			isCancelled = true;
+		};
 	}, [owner, getOwnerInfoAction, getOwnerReposAction]);
+
+	// Merge indexed repos data with GitHub repos for up-to-date status
+	const repos: RepoWithStatus[] | undefined = githubRepos?.map((repo) => {
+		const indexed = indexedRepos?.find(
+			(r) => r.fullName.toLowerCase() === repo.fullName.toLowerCase(),
+		);
+		return {
+			...repo,
+			isIndexed: !!indexed,
+			indexingStatus: indexed?.indexingStatus ?? null,
+		};
+	});
 
 	// Error state
 	if (error) {

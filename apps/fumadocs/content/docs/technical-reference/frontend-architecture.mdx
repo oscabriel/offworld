@@ -142,33 +142,52 @@ function RepoSummary() {
 
 ```tsx
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react';
+import { getToken } from "@/lib/auth-server";
+
+const getAuth = createServerFn({ method: "GET" }).handler(async () => {
+  return await getToken();
+});
 
 export const Route = createRootRoute({
+  beforeLoad: async (ctx) => {
+    const token = await getAuth();
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
+    return { isAuthenticated: !!token, token };
+  },
   component: RootLayout
 });
 
 function RootLayout() {
-  const { convexReactClient, convexQueryClient } = useRouterContext();
+  const { token } = Route.useRouteContext();
 
   return (
-    <ConvexBetterAuthProvider client={convexReactClient}>
+    <ConvexBetterAuthProvider 
+      client={context.convexQueryClient.convexClient}
+      authClient={authClient}
+      initialToken={token}
+    >
       <Outlet />
     </ConvexBetterAuthProvider>
   );
 }
 ```
 
+For detailed authentication patterns, see [Authentication & Data Loading](/technical-reference/auth-data-loading).
+
 ### Queries (Read)
 
-**Reactive subscriptions**:
+**Reactive subscriptions with TanStack Query**:
 
 ```tsx
-import { useQuery } from '@convex-dev/react-query';
+import { convexQuery } from "@convex-dev/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { api } from '@offworld/backend';
 
-const repo = useQuery(api.repos.getByFullName, {
-  fullName: "facebook/react"
-});
+const { data: repo } = useSuspenseQuery(
+  convexQuery(api.repos.getByFullName, { fullName: "facebook/react" })
+);
 // Auto-subscribes, updates on DB changes
 ```
 
@@ -177,12 +196,12 @@ const repo = useQuery(api.repos.getByFullName, {
 **One-off updates**:
 
 ```tsx
-import { useMutation } from '@convex-dev/react-query';
+import { useMutation } from 'convex/react';
 
 const startAnalysis = useMutation(api.repos.startAnalysis);
 
 // Trigger mutation
-await startAnalysis.mutateAsync({ fullName: "facebook/react" });
+await startAnalysis({ fullName: "facebook/react" });
 ```
 
 ### Actions (Async)
@@ -190,9 +209,9 @@ await startAnalysis.mutateAsync({ fullName: "facebook/react" });
 **Long-running operations**:
 
 ```tsx
-import { useAction } from '@convex-dev/react-query';
+import { useAction } from 'convex/react';
 
-const getOwnerInfo = useAction(api.github.getOwnerInfo);
+const getOwnerInfo = useAction(api.repos.getOwnerInfo);
 
 // Trigger action
 const ownerData = await getOwnerInfo({ owner: "facebook" });
@@ -345,5 +364,7 @@ Root layout with providers.
 
 ## Next Steps
 
+- Read [Authentication](/technical-reference/auth-data-loading) for auth patterns
+- Read [Data Loading Patterns](/technical-reference/data-loading) for query optimization
 - Read [Backend Architecture](/technical-reference/backend-architecture)
 - Check [API Reference](/technical-reference/api-reference)

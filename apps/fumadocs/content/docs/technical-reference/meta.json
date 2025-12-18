@@ -4,6 +4,8 @@
 	"pages": [
 		"frontend-architecture",
 		"backend-architecture",
+		"authentication",
+		"data-loading",
 		"ai-rag-system",
 		"api-reference",
 		"environment-variables"

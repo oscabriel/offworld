@@ -1,0 +1,303 @@
+---
+title: Authentication
+description: better-auth 1.4.7 and @convex-dev/better-auth 0.10.4 integration patterns
+icon: Shield
+---
+
+Guide to authentication patterns in the Offworld codebase using Better Auth with Convex.
+
+## Overview
+
+### Package Versions
+
+- `better-auth`: 1.4.7
+- `@convex-dev/better-auth`: ^0.10.4
+
+For the official Convex Better Auth documentation, see [labs.convex.dev/better-auth](https://labs.convex.dev/better-auth).
+
+---
+
+## Convex Better-Auth Integration
+
+### Auth Configuration
+
+Key changes in `@convex-dev/better-auth 0.10.4`:
+- New `customJwt` auth config for faster JWT validation
+- Simplified server utilities via `convexBetterAuthReactStart`
+- SSR improvements with `initialToken` prop
+
+**Backend** (`packages/backend/convex/auth.config.ts`):
+
+```typescript
+import { getAuthConfigProvider } from "@convex-dev/better-auth/auth-config";
+import type { AuthConfig } from "convex/server";
+
+export default {
+  providers: [getAuthConfigProvider()],
+} satisfies AuthConfig;
+```
+
+**Backend** (`packages/backend/convex/auth.ts`):
+
+```typescript
+import authConfig from "./auth.config";
+
+export const createAuth = (ctx: GenericCtx<DataModel>) => {
+  return betterAuth({
+    // ... other config
+    plugins: [
+      convex({
+        authConfig,
+        jwksRotateOnTokenGenerationError: true, // Key rotation during migration
+      }),
+    ],
+  });
+};
+```
+
+**Frontend** (`apps/web/src/lib/auth-server.ts`):
+
+```typescript
+import { convexBetterAuthReactStart } from "@convex-dev/better-auth/react-start";
+
+export const {
+  handler,
+  getToken,
+  fetchAuthQuery,
+  fetchAuthMutation,
+  fetchAuthAction,
+} = convexBetterAuthReactStart({
+  convexUrl: process.env.VITE_CONVEX_URL!,
+  convexSiteUrl: process.env.VITE_CONVEX_SITE_URL!,
+});
+```
+
+### SSR Token Handling
+
+**Root route** (`routes/__root.tsx`):
+
+```typescript
+import { getToken } from "@/lib/auth-server";
+
+const getAuth = createServerFn({ method: "GET" }).handler(async () => {
+  return await getToken();
+});
+
+export const Route = createRootRoute({
+  beforeLoad: async (ctx) => {
+    const token = await getAuth();
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
+    return { isAuthenticated: !!token, token };
+  },
+  component: RootComponent,
+});
+
+function RootComponent() {
+  const { token } = Route.useRouteContext();
+  
+  return (
+    <ConvexBetterAuthProvider
+      client={context.convexQueryClient.convexClient}
+      authClient={authClient}
+      initialToken={token} // Pass token for SSR hydration
+    >
+      <Outlet />
+    </ConvexBetterAuthProvider>
+  );
+}
+```
+
+### Sign Out Handling
+
+Reloading on sign out ensures clean state:
+
+```typescript
+const handleSignOut = async () => {
+  await authClient.signOut({
+    fetchOptions: {
+      onSuccess: () => {
+        location.reload(); // Clean slate
+      },
+    },
+  });
+};
+```
+
+### Why Not `expectAuth: true`
+
+We intentionally **do NOT** use `expectAuth: true` in our `ConvexQueryClient` configuration. This is a deliberate architectural decision for apps with public routes.
+
+**Problem with `expectAuth: true`:**
+- Pauses the WebSocket connection until `setAuth()` is called
+- For unauthenticated users, the WebSocket stays paused forever
+- All queries hang indefinitely on client-side navigation
+- Only initial SSR works (uses HTTP, not WebSocket)
+
+**Our approach:**
+- Allow WebSocket to connect immediately
+- Use `useConvexAuth()` to gate auth-dependent features
+- Accept brief "flash" of unauthenticated state for authenticated users
+
+---
+
+## Auth Query Patterns
+
+### Pattern 1: Public Routes with Optional Auth Check
+
+For public routes that show different UI based on auth state:
+
+```typescript
+function RepoSummaryPage() {
+  // Public data with suspense (preloaded in loader)
+  const { data: repoData } = useSuspenseQuery(
+    convexQuery(api.repos.getByFullName, { fullName })
+  );
+
+  // Auth check with NON-suspense query (doesn't block)
+  const { data: currentUser } = useQuery(
+    convexQuery(api.auth.getCurrentUserSafe, {})
+  );
+  const isAuthenticated = currentUser !== null && currentUser !== undefined;
+
+  return (
+    <div>
+      {repoData.summary}
+      {isAuthenticated ? <IndexButton /> : <SignInPrompt />}
+    </div>
+  );
+}
+```
+
+### Pattern 2: Auth-Required Routes with `useConvexAuth()`
+
+For routes that require authentication:
+
+```typescript
+import { useConvexAuth } from "convex/react";
+import Loader from "@/components/loader";
+
+function ChatPage() {
+  // Wait for Convex to validate auth token
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+
+  // Public data with suspense
+  const { data: repoData } = useSuspenseQuery(
+    convexQuery(api.repos.getByFullName, { fullName })
+  );
+
+  // Show loading while Convex validates auth token
+  if (isAuthLoading) {
+    return <Loader />;
+  }
+
+  // Not authenticated
+  if (!isAuthenticated) {
+    return <SignInRequired />;
+  }
+
+  // Safe to render auth-dependent content
+  return <AuthenticatedChatUI />;
+}
+```
+
+**Used in:** Chat, refresh routes
+
+### Pattern 3: Auth-Required Routes with Conditional Queries
+
+For auth-required routes with auth-dependent queries:
+
+```typescript
+function ChatThreadPage() {
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+
+  // Public data with suspense
+  const { data: repoData } = useSuspenseQuery(
+    convexQuery(api.repos.getByFullName, { fullName })
+  );
+
+  // Auth-dependent query - only runs when authenticated
+  const { data: conversation, isLoading: isConversationLoading } = useQuery({
+    ...convexQuery(api.chat.getConversation, { conversationId }),
+    enabled: isAuthenticated, // Don't run until auth is confirmed
+  });
+
+  if (isAuthLoading) return <Loader />;
+  if (!isAuthenticated) return <SignInRequired />;
+  if (isConversationLoading) return <Loader />;
+  if (!conversation) return <NotFound />;
+
+  return <ChatInterface conversation={conversation} />;
+}
+```
+
+### Pattern 4: Shared Components
+
+For components used outside of route context (e.g., header):
+
+```typescript
+import { useQuery } from "@tanstack/react-query"; // NOT useSuspenseQuery
+
+export default function UserMenu() {
+  // Non-suspense query - handles loading/undefined states manually
+  const { data: user } = useQuery(
+    convexQuery(api.auth.getCurrentUserSafe, {})
+  );
+
+  if (!user) {
+    return <SignInButton />;
+  }
+
+  return <UserDropdown user={user} />;
+}
+```
+
+---
+
+## Pattern Summary Table
+
+| Route Type | Auth Handling | Query Type |
+|------------|---------------|------------|
+| Public with auth UI | `useQuery(getCurrentUserSafe)` | Mixed |
+| Auth-required | `useConvexAuth()` | `useSuspenseQuery` |
+| Auth + conditional query | `useConvexAuth()` + `enabled` | `useQuery` with `enabled` |
+| Header/shared | `useQuery(getCurrentUserSafe)` | `useQuery` |
+
+---
+
+## Troubleshooting
+
+### Page Shows Loading Then Content Flashes
+
+**Symptom**: Authenticated user sees brief unauthenticated state.
+
+**Cause**: Without `expectAuth: true`, queries run before auth token validation.
+
+**Solution**: Use `useConvexAuth()` to gate rendering:
+```typescript
+const { isAuthenticated, isLoading } = useConvexAuth();
+if (isLoading) return <Loader />;
+```
+
+### Auth-Required Query Throws Error
+
+**Symptom**: Query that requires authentication throws an error.
+
+**Cause**: Query runs before `useConvexAuth()` confirms authentication.
+
+**Solution**: Use `enabled` flag:
+```typescript
+const { data } = useQuery({
+  ...convexQuery(api.auth.privateData, {}),
+  enabled: isAuthenticated,
+});
+```
+
+---
+
+## Next Steps
+
+- Read [Data Loading Patterns](/technical-reference/data-loading) for query optimization
+- Read [Frontend Architecture](/technical-reference/frontend-architecture)
+- Check [Backend Architecture](/technical-reference/backend-architecture)

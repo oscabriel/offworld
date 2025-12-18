@@ -1,0 +1,337 @@
+---
+title: Data Loading Patterns
+description: Optimized query patterns, SSR preloading, and performance best practices
+icon: Database
+---
+
+Guide to data loading patterns and performance optimizations in the Offworld codebase.
+
+## Overview
+
+This document covers:
+1. **SSR Preloading** - Route loader patterns for server-side rendering
+2. **Query Patterns** - When to use each data loading approach
+3. **Performance Optimizations** - Index usage, batch queries, avoiding N+1
+
+---
+
+## SSR Preloading Patterns
+
+### Pattern 1: Public Routes with Conditional SSR Preloading
+
+For routes accessible by both authenticated and unauthenticated users:
+
+```typescript
+export const Route = createFileRoute("/_github/$owner_/$repo/")({
+  component: RepoPage,
+  loader: async ({ context, params }) => {
+    const fullName = `${params.owner}/${params.repo}`;
+    // Only preload during SSR or when authenticated
+    const isServer = !!context.convexQueryClient.serverHttpClient;
+    if (isServer || context.isAuthenticated) {
+      await context.queryClient.ensureQueryData(
+        convexQuery(api.repos.getByFullName, { fullName })
+      );
+    }
+  },
+});
+
+function RepoPage() {
+  const { data: repoData } = useSuspenseQuery(
+    convexQuery(api.repos.getByFullName, { fullName })
+  );
+  // ...
+}
+```
+
+**Used in:** Layout routes, public pages
+
+### Pattern 2: Fully Public Routes
+
+For routes with no auth dependencies:
+
+```typescript
+export const Route = createFileRoute("/")({
+  component: HomeComponent,
+  loader: async ({ context }) => {
+    // No auth check needed - always preload
+    await context.queryClient.ensureQueryData(
+      convexQuery(api.repos.list, {})
+    );
+  },
+});
+
+function HomeComponent() {
+  const { data: repos } = useSuspenseQuery(
+    convexQuery(api.repos.list, {})
+  );
+  // ...
+}
+```
+
+---
+
+## Data Loading Best Practices
+
+### 1. Use Parent Layout Preloading
+
+The parent layout preloads repo data. Child routes should NOT re-preload:
+
+```typescript
+// Parent layout ($owner_.$repo/route.tsx)
+export const Route = createFileRoute("/_github/$owner_/$repo")({
+  loader: async ({ context, params }) => {
+    await context.queryClient.ensureQueryData(
+      convexQuery(api.repos.getByFullName, { fullName })
+    );
+  },
+});
+
+// Child route - NO loader needed
+export const Route = createFileRoute("/_github/$owner_/$repo/issues/")({
+  component: IssuesPage,
+  // Parent already loaded repo data - no loader here
+});
+```
+
+**Why this matters:**
+- Avoids redundant network requests
+- Parent data is already in TanStack Query cache
+- Child routes can use `useSuspenseQuery` and get instant data
+
+### 2. Use Index Lookups
+
+**Bad** - Full table scan:
+```typescript
+const allRepos = await ctx.db.query("repositories").collect();
+const repo = allRepos.find(r => r.fullName === args.fullName);
+```
+
+**Good** - Index lookup:
+```typescript
+const repo = await ctx.db
+  .query("repositories")
+  .withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+  .first();
+```
+
+### 3. Batch Queries to Fix N+1
+
+**Bad** - N+1 queries (each component makes its own query):
+```typescript
+function EntityLink({ slug, repoId }) {
+  // Each EntityLink makes its own query - N+1 problem!
+  const { data: entity } = useQuery({
+    ...convexQuery(api.architectureEntities.getBySlug, { repoId, slug }),
+  });
+}
+```
+
+**Good** - Batch query (single query for all entities):
+```typescript
+function EntityDetailPage() {
+  const allSlugs = [...entity.dependencies, ...entity.usedBy]
+    .map(name => name.toLowerCase().replace(/\s+/g, "-"));
+  
+  // Single batch query for all related entities
+  const { data: relatedEntities } = useQuery({
+    ...convexQuery(api.architectureEntities.getBySlugsBatch, { 
+      repoId, 
+      slugs: allSlugs 
+    }),
+    enabled: !!repoId && allSlugs.length > 0,
+  });
+  
+  const entityMap = new Map(relatedEntities?.map(e => [e.slug, e]));
+  
+  return entity.dependencies.map(dep => (
+    <EntityLink name={dep} entityMap={entityMap} />
+  ));
+}
+
+function EntityLink({ name, entityMap }) {
+  const slug = name.toLowerCase().replace(/\s+/g, "-");
+  const exists = entityMap.has(slug); // O(1) lookup
+  
+  if (exists) return <Link to={`/arch/${slug}`}>{name}</Link>;
+  return <span>{name}</span>;
+}
+```
+
+### 4. Match Loader and Component Queries
+
+The query arguments in the loader MUST match the component:
+
+```typescript
+// Loader
+await context.queryClient.ensureQueryData(
+  convexQuery(api.repos.getByFullName, { fullName: "owner/repo" })
+);
+
+// Component - MUST use same args
+const { data } = useSuspenseQuery(
+  convexQuery(api.repos.getByFullName, { fullName: "owner/repo" })
+);
+```
+
+**If they don't match:**
+- SSR will work (different cache key)
+- Client will show loading state (cache miss)
+- User sees flash of loading content
+
+### 5. Split Large Queries
+
+Instead of one large query that returns everything:
+
+```typescript
+// Bad - returns repo + all issues + all PRs
+const { data } = useQuery(api.repos.getByFullName, { fullName });
+```
+
+Use separate queries for different data needs:
+
+```typescript
+// Good - separate queries, loaded as needed
+const { data: repo } = useQuery(api.repos.getRepoBasic, { fullName });
+const { data: issues } = useQuery(api.repos.getRepoIssues, { 
+  repoId: repo?._id,
+  limit: 20 
+});
+```
+
+---
+
+## Backend Query Reference
+
+### Optimized Repository Queries
+
+```typescript
+// Basic repo data (no issues/PRs)
+export const getRepoBasic = query({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("repositories")
+      .withIndex("fullName", (q) => q.eq("fullName", args.fullName))
+      .first();
+  },
+});
+
+// Separate issues query with pagination
+export const getRepoIssues = query({
+  args: { 
+    repoId: v.id("repositories"), 
+    limit: v.optional(v.number()) 
+  },
+  handler: async (ctx, args) => {
+    const query = ctx.db
+      .query("issues")
+      .withIndex("repositoryId", (q) => q.eq("repositoryId", args.repoId));
+    
+    return args.limit ? await query.take(args.limit) : await query.collect();
+  },
+});
+
+// Separate PRs query with pagination
+export const getRepoPullRequests = query({
+  args: { 
+    repoId: v.id("repositories"), 
+    limit: v.optional(v.number()) 
+  },
+  handler: async (ctx, args) => {
+    const query = ctx.db
+      .query("pullRequests")
+      .withIndex("by_repository", (q) => q.eq("repositoryId", args.repoId));
+    
+    return args.limit ? await query.take(args.limit) : await query.collect();
+  },
+});
+
+// Batch entity lookup (fixes N+1)
+export const getBySlugsBatch = query({
+  args: {
+    repoId: v.id("repositories"),
+    slugs: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const allEntities = await ctx.db
+      .query("architectureEntities")
+      .withIndex("by_repository", (q) => q.eq("repositoryId", args.repoId))
+      .collect();
+
+    const slugSet = new Set(args.slugs);
+    return allEntities.filter((entity) => slugSet.has(entity.slug));
+  },
+});
+
+// Get repos by owner
+export const listByOwner = query({
+  args: { owner: v.string() },
+  handler: async (ctx, args) => {
+    const allRepos = await ctx.db.query("repositories").collect();
+    return allRepos.filter(
+      (repo) => repo.owner.toLowerCase() === args.owner.toLowerCase()
+    );
+  },
+});
+```
+
+---
+
+## Pattern Summary Table
+
+| Route Type | Preloading | Query Type |
+|------------|------------|------------|
+| Public layout | Conditional SSR | `useSuspenseQuery` |
+| Fully public | Always | `useSuspenseQuery` |
+| Child routes | None (use parent) | `useSuspenseQuery` |
+| Dependent queries | Use `enabled` flag | `useQuery` |
+
+---
+
+## Troubleshooting
+
+### SSR Data Not Available on Client
+
+**Symptom**: Data is rendered on server but client shows loading state.
+
+**Cause**: Loader query args don't match component query args.
+
+**Solution**: Ensure exact same arguments in both places.
+
+### Slow Page Loads
+
+**Symptom**: Pages take a long time to load.
+
+**Possible causes:**
+1. Full table scans instead of index lookups
+2. N+1 query patterns
+3. Redundant preloading in child routes
+
+**Solutions:**
+1. Add database indexes and use `withIndex()`
+2. Use batch queries
+3. Remove loaders from child routes
+
+### Waterfall Requests
+
+**Symptom**: Requests happen sequentially instead of in parallel.
+
+**Cause**: Dependent queries where data from one is needed for another.
+
+**Solution**: If queries are independent, load them in parallel:
+```typescript
+// Parallel loading in loader
+await Promise.all([
+  context.queryClient.ensureQueryData(convexQuery(api.repos.getRepoBasic, { fullName })),
+  context.queryClient.ensureQueryData(convexQuery(api.repos.list, {})),
+]);
+```
+
+---
+
+## Next Steps
+
+- Read [Authentication](/technical-reference/auth-data-loading) for auth patterns
+- Read [Frontend Architecture](/technical-reference/frontend-architecture)
+- Check [Backend Architecture](/technical-reference/backend-architecture)

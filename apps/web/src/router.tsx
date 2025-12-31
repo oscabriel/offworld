@@ -29,6 +29,7 @@ export function getRouter() {
 			},
 		},
 	});
+
 	convexQueryClient.connect(queryClient);
 
 	const router = createTanStackRouter({

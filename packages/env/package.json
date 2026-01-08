@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./web": "./src/web.ts"
+    "./web": "./src/web.ts",
+    "./server": "./src/server.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.1",
@@ -14,6 +15,7 @@
   "devDependencies": {
     "@offworld/config": "workspace:*",
     "@offworld/infra": "workspace:*",
+    "@types/node": "^24.3.0",
     "typescript": "catalog:"
   }
 }

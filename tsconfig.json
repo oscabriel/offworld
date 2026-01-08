@@ -1,0 +1,3 @@
+{
+  "extends": "@offworld/config/tsconfig.base.json"
+}

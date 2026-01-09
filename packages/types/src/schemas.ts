@@ -144,3 +144,20 @@ export const SkillSchema = z.object({
   searchStrategies: z.array(z.string()),
   whenToUse: z.array(z.string()),
 });
+
+// ============================================================================
+// PRD 3.6: RepoIndex schemas for global repo index
+// ============================================================================
+export const RepoIndexEntrySchema = z.object({
+  fullName: z.string(), // "owner/repo" or local name
+  qualifiedName: z.string(), // "github:owner/repo" or "local:<hash>"
+  localPath: z.string(), // Absolute path to cloned repo
+  analyzedAt: z.string().optional(), // ISO date string
+  commitSha: z.string().optional(), // Commit SHA at analysis time
+  hasSkill: z.boolean().default(false), // Whether SKILL.md was generated
+});
+
+export const RepoIndexSchema = z.object({
+  version: z.string().default("1"),
+  repos: z.record(z.string(), RepoIndexEntrySchema), // Keyed by qualifiedName
+});

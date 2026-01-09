@@ -15,6 +15,8 @@ import type {
   FileIndexSchema,
   AnalysisMetaSchema,
   SkillSchema,
+  RepoIndexEntrySchema,
+  RepoIndexSchema,
 } from "./schemas";
 
 // PRD 2.1: Config type
@@ -41,3 +43,7 @@ export type AnalysisMeta = z.infer<typeof AnalysisMetaSchema>;
 
 // PRD 2.5: Skill type
 export type Skill = z.infer<typeof SkillSchema>;
+
+// PRD 3.6: Repo index types
+export type RepoIndexEntry = z.infer<typeof RepoIndexEntrySchema>;
+export type RepoIndex = z.infer<typeof RepoIndexSchema>;

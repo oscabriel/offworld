@@ -4,6 +4,9 @@ export {
 	type RepoSource,
 	type RepoIndex,
 	type RepoIndexEntry,
+	type FileIndexEntry,
+	type FileIndex,
+	type FileRole,
 } from "@offworld/types";
 
 // Constants (PRD 3.4)
@@ -101,3 +104,9 @@ export {
 	clearLanguageCache,
 	resetParser,
 } from "./importance/index.js";
+
+// Import extraction (PRD 3.8)
+export { type ExtractedImport, extractImports, extractModuleNames } from "./importance/index.js";
+
+// File importance ranking (PRD 3.9)
+export { type RankOptions, rankFileImportance } from "./importance/index.js";

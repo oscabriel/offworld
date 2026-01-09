@@ -38,3 +38,10 @@ export {
 	extractImports,
 	extractModuleNames,
 } from "./queries.js";
+
+export {
+	// Types
+	type RankOptions,
+	// Ranking
+	rankFileImportance,
+} from "./ranker.js";

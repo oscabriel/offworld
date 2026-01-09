@@ -72,3 +72,32 @@ export {
 	type UpdateResult,
 	type RemoveOptions,
 } from "./clone.js";
+
+// Tree-sitter parser (PRD 3.7)
+export {
+	// Types
+	type Parser,
+	type Language,
+	type SyntaxNode,
+	type Tree,
+	// Errors
+	ParserError,
+	ParserNotInitializedError,
+	LanguageNotSupportedError,
+	LanguageLoadError,
+	// Language mapping
+	getLanguage,
+	isExtensionSupported,
+	// Initialization
+	initializeParser,
+	isParserInitialized,
+	loadLanguage,
+	loadLanguageForExtension,
+	// Parsing
+	createParser,
+	parse,
+	parseByExtension,
+	// Cleanup
+	clearLanguageCache,
+	resetParser,
+} from "./importance/index.js";

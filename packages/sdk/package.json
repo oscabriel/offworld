@@ -17,7 +17,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@offworld/types": "workspace:*"
+    "@offworld/types": "workspace:*",
+    "web-tree-sitter": "^0.24.7"
   },
   "devDependencies": {
     "@types/node": "^22",

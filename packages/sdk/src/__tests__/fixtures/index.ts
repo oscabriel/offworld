@@ -83,6 +83,13 @@ export function loadSampleReadme(): string {
 	return loadFixture("sample-readme.md");
 }
 
+/**
+ * Load the sample Go file fixture
+ */
+export function loadSampleGo(): string {
+	return loadFixture("sample-go.go");
+}
+
 // ============================================================================
 // Fixture data constants
 // ============================================================================
@@ -126,6 +133,24 @@ export const SAMPLE_PY_IMPORTS = [
 	"pandas",
 	"typing",
 	"mymodule",
+];
+
+/**
+ * Expected imports from sample-go.go
+ */
+export const SAMPLE_GO_IMPORTS = [
+	"fmt",
+	"net/http",
+	"os",
+	"encoding/json",
+	"io",
+	"context",
+	"github.com/sirupsen/logrus",
+	"math",
+	"github.com/lib/pq",
+	"github.com/gin-gonic/gin",
+	"github.com/spf13/cobra",
+	"github.com/gorilla/mux",
 ];
 
 /**

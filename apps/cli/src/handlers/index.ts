@@ -12,6 +12,9 @@ export { generateHandler, type GenerateOptions, type GenerateResult } from "./ge
 // PRD 4.6: List command
 export { listHandler, type ListOptions, type ListResult, type RepoListItem } from "./list.js";
 
+// PRD 4.5: Push command
+export { pushHandler, type PushOptions, type PushResult } from "./push.js";
+
 // PRD 4.7: Remove command
 export { rmHandler, type RmOptions, type RmResult } from "./rm.js";
 

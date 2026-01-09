@@ -1,6 +1,7 @@
 import { os } from "@orpc/server";
 import { createCli } from "trpc-cli";
 import { z } from "zod";
+import { pullHandler } from "./handlers/index.js";
 
 export const version = "0.1.0";
 
@@ -30,9 +31,13 @@ export const router = os.router({
       negateBooleans: true,
     })
     .handler(async ({ input }) => {
-      // Stub - will be implemented in PRD 4.3
-      console.log(`Pulling ${input.repo}...`);
-      return { success: true, repo: input.repo };
+      const result = await pullHandler({
+        repo: input.repo,
+        shallow: input.shallow,
+        branch: input.branch,
+        force: input.force,
+      });
+      return result;
     }),
 
   // List command - show cloned repos

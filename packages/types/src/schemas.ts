@@ -3,12 +3,15 @@ import { z } from "zod";
 // ============================================================================
 // PRD 2.1: ConfigSchema for CLI configuration
 // ============================================================================
+export const AIProviderSchema = z.enum(["claude-code", "opencode"]);
+
 export const ConfigSchema = z.object({
   repoRoot: z.string().default("~/ow"),
   metaRoot: z.string().default("~/.ow"),
   skillDir: z.string().default("~/.config/opencode/skill"),
   defaultShallow: z.boolean().default(true),
   autoAnalyze: z.boolean().default(true),
+  preferredProvider: AIProviderSchema.optional(),
 });
 
 // ============================================================================

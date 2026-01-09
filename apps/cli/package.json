@@ -13,15 +13,19 @@
     }
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && chmod +x ./dist/cli.mjs",
     "dev": "tsdown --watch",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@clack/prompts": "^0.9.1",
     "@offworld/sdk": "workspace:*",
-    "@offworld/types": "workspace:*"
+    "@offworld/types": "workspace:*",
+    "@orpc/server": "^1.5.0",
+    "trpc-cli": "^0.7.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^22",

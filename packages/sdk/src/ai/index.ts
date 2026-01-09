@@ -30,3 +30,15 @@ export {
 	type ClaudeCodeAnalysisOptions,
 	type ClaudeCodeAnalysisResult,
 } from "./claude-code.js";
+
+// OpenCode SDK wrapper (PRD 3.12)
+export {
+	// Main function
+	analyzeWithOpenCode,
+	// Errors
+	OpenCodeAnalysisError,
+	OpenCodeConnectionError,
+	// Types
+	type OpenCodeAnalysisOptions,
+	type OpenCodeAnalysisResult,
+} from "./opencode.js";

@@ -29,3 +29,12 @@ export {
 	PathNotFoundError,
 	NotGitRepoError,
 } from "./repo-source.js";
+
+// Utility functions (PRD 3.5)
+export {
+	isBinaryBuffer,
+	hashBuffer,
+	loadGitignorePatterns,
+	loadGitignorePatternsSimple,
+	type GitignorePattern,
+} from "./util.js";

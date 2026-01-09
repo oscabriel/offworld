@@ -31,3 +31,13 @@ export {
 	type ConfigResetResult,
 	type ConfigPathResult,
 } from "./config.js";
+
+// PRD 4.8: Auth commands
+export {
+	authLoginHandler,
+	authLogoutHandler,
+	authStatusHandler,
+	type AuthLoginResult,
+	type AuthLogoutResult,
+	type AuthStatusResult,
+} from "./auth.js";

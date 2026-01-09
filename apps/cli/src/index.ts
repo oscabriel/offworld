@@ -1,7 +1,17 @@
 import { os } from "@orpc/server";
 import { createCli } from "trpc-cli";
 import { z } from "zod";
-import { pullHandler } from "./handlers/index.js";
+import {
+  pullHandler,
+  generateHandler,
+  listHandler,
+  rmHandler,
+  configShowHandler,
+  configSetHandler,
+  configGetHandler,
+  configResetHandler,
+  configPathHandler,
+} from "./handlers/index.js";
 
 export const version = "0.1.0";
 
@@ -31,13 +41,12 @@ export const router = os.router({
       negateBooleans: true,
     })
     .handler(async ({ input }) => {
-      const result = await pullHandler({
+      return pullHandler({
         repo: input.repo,
         shallow: input.shallow,
         branch: input.branch,
         force: input.force,
       });
-      return result;
     }),
 
   // List command - show cloned repos
@@ -54,9 +63,11 @@ export const router = os.router({
       aliases: { command: "ls" },
     })
     .handler(async ({ input }) => {
-      // Stub - will be implemented in PRD 4.6
-      console.log("Listing repos...");
-      return { repos: [], format: input.json ? "json" : "table" };
+      return listHandler({
+        json: input.json,
+        paths: input.paths,
+        stale: input.stale,
+      });
     }),
 
   // Generate command - run local analysis
@@ -77,9 +88,10 @@ export const router = os.router({
       aliases: { command: "gen" },
     })
     .handler(async ({ input }) => {
-      // Stub - will be implemented in PRD 4.4
-      console.log(`Generating analysis for ${input.repo}...`);
-      return { success: true };
+      return generateHandler({
+        repo: input.repo,
+        force: input.force,
+      });
     }),
 
   // Push command - upload analysis to offworld.sh
@@ -120,9 +132,12 @@ export const router = os.router({
       aliases: { command: "remove" },
     })
     .handler(async ({ input }) => {
-      // Stub - will be implemented in PRD 4.7
-      console.log(`Removing ${input.repo}...`);
-      return { success: true };
+      return rmHandler({
+        repo: input.repo,
+        yes: input.yes,
+        keepSkill: input.keepSkill,
+        dryRun: input.dryRun,
+      });
     }),
 
   // Auth subcommands
@@ -165,9 +180,7 @@ export const router = os.router({
       )
       .meta({ description: "Show all config settings", default: true })
       .handler(async ({ input }) => {
-        // Stub - will be implemented in PRD 4.9
-        console.log("Config settings:");
-        return { config: {} };
+        return configShowHandler({ json: input.json });
       }),
 
     set: os
@@ -179,9 +192,7 @@ export const router = os.router({
       )
       .meta({ description: "Set a config value" })
       .handler(async ({ input }) => {
-        // Stub - will be implemented in PRD 4.9
-        console.log(`Set ${input.key} = ${input.value}`);
-        return { success: true };
+        return configSetHandler({ key: input.key, value: input.value });
       }),
 
     get: os
@@ -192,26 +203,21 @@ export const router = os.router({
       )
       .meta({ description: "Get a config value" })
       .handler(async ({ input }) => {
-        // Stub - will be implemented in PRD 4.9
-        return { key: input.key, value: null };
+        return configGetHandler({ key: input.key });
       }),
 
     reset: os
       .input(z.object({}))
       .meta({ description: "Reset config to defaults" })
       .handler(async () => {
-        // Stub - will be implemented in PRD 4.9
-        console.log("Config reset to defaults");
-        return { success: true };
+        return configResetHandler();
       }),
 
     path: os
       .input(z.object({}))
       .meta({ description: "Show config file location" })
       .handler(async () => {
-        // Stub - will be implemented in PRD 4.9
-        console.log("~/.ow/config.json");
-        return { path: "~/.ow/config.json" };
+        return configPathHandler();
       }),
   }),
 });

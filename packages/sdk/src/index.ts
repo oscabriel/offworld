@@ -1,5 +1,10 @@
 // SDK exports - implementation in future PRD items
-export { type Config, type RepoSource } from "@offworld/types";
+export {
+	type Config,
+	type RepoSource,
+	type RepoIndex,
+	type RepoIndexEntry,
+} from "@offworld/types";
 
 // Constants (PRD 3.4)
 export {
@@ -38,3 +43,14 @@ export {
 	loadGitignorePatternsSimple,
 	type GitignorePattern,
 } from "./util.js";
+
+// Index manager (PRD 3.6)
+export {
+	getIndexPath,
+	getIndex,
+	saveIndex,
+	updateIndex,
+	removeFromIndex,
+	getIndexEntry,
+	listIndexedRepos,
+} from "./index-manager.js";

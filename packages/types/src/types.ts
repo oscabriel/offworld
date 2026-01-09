@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type {
+  AIProviderSchema,
   ConfigSchema,
   GitProviderSchema,
   RemoteRepoSourceSchema,
@@ -19,7 +20,8 @@ import type {
   RepoIndexSchema,
 } from "./schemas";
 
-// PRD 2.1: Config type
+// PRD 2.1 / 3.10: Config and AI provider types
+export type AIProvider = z.infer<typeof AIProviderSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
 
 // PRD 2.2: Git provider and repo source types

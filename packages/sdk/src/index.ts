@@ -1,5 +1,6 @@
 // SDK exports - implementation in future PRD items
 export {
+	type AIProvider,
 	type Config,
 	type RepoSource,
 	type RepoIndex,
@@ -110,3 +111,20 @@ export { type ExtractedImport, extractImports, extractModuleNames } from "./impo
 
 // File importance ranking (PRD 3.9)
 export { type RankOptions, rankFileImportance } from "./importance/index.js";
+
+// AI Provider detection (PRD 3.10)
+export {
+	// Errors
+	AIProviderError,
+	AIProviderNotFoundError,
+	PreferredProviderNotAvailableError,
+	// Detection functions
+	isClaudeCodeAvailable,
+	isOpenCodeAvailable,
+	isProviderAvailable,
+	detectProvider,
+	// Utilities
+	getProviderDisplayName,
+	// Types
+	type DetectionResult,
+} from "./ai/index.js";

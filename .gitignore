@@ -48,3 +48,11 @@ coverage
 .cache
 tmp
 temp
+
+# Ralph
+history/
+CLAUDE.md
+PRD.md
+progress.txt
+ralph.sh
+ralph-once.sh

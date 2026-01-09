@@ -1,10 +1,58 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery, query } from "./_generated/server";
 
 /**
  * Analyses Convex Functions
  * PRD 7.5: Internal functions for analysis management
+ * PRD 7.6-7.8: Public queries for web app
  */
+
+// ============================================================================
+// Public Query Functions (for web app)
+// ============================================================================
+
+/**
+ * Get analysis by repository fullName (public)
+ * PRD 7.6: Display analysis on web
+ */
+export const get = query({
+	args: { fullName: v.string() },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("analyses")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+	},
+});
+
+/**
+ * List all analyses sorted by pull count (public)
+ * PRD 7.8: Repo directory/browse page
+ */
+export const list = query({
+	args: {
+		limit: v.optional(v.number()),
+		cursor: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const limit = args.limit ?? 50;
+
+		const analyses = await ctx.db
+			.query("analyses")
+			.withIndex("by_pullCount")
+			.order("desc")
+			.take(limit);
+
+		return analyses.map((a) => ({
+			fullName: a.fullName,
+			provider: a.provider,
+			pullCount: a.pullCount,
+			analyzedAt: a.analyzedAt,
+			commitSha: a.commitSha,
+			isVerified: a.isVerified,
+		}));
+	},
+});
 
 // ============================================================================
 // Query Functions

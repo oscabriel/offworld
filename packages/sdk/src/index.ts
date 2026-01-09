@@ -148,3 +148,31 @@ export {
 
 // Unified AI interface (PRD 3.13)
 export { runAnalysis, type AnalysisOptions, type AnalysisResult } from "./ai/index.js";
+
+// Sync operations (PRD 3.14)
+export {
+	// Errors
+	SyncError,
+	NetworkError,
+	AuthenticationError,
+	RateLimitError,
+	ConflictError,
+	PushNotAllowedError,
+	// API functions
+	pullAnalysis,
+	pushAnalysis,
+	checkRemote,
+	checkStaleness,
+	// Push validation
+	fetchRepoStars,
+	canPushToWeb,
+	validatePushAllowed,
+	// Types
+	type AnalysisData,
+	type PullResponse,
+	type CheckResponse,
+	type PushResponse,
+	type SyncOptions,
+	type StalenessResult,
+	type CanPushResult,
+} from "./sync.js";

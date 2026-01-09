@@ -6,7 +6,8 @@
   "author": "",
   "scripts": {
     "dev": "convex dev",
-    "dev:setup": "convex dev --configure --until-success"
+    "dev:setup": "convex dev --configure --until-success",
+    "check-types": "convex typecheck"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",

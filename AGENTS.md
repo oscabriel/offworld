@@ -8,6 +8,18 @@
 
 Turborepo monorepo: React web app (TanStack Start + Convex + Better Auth), TUI app, Astro docs. Cloudflare deployment via Alchemy.
 
+Production code. Must be maintainable.
+
+This codebase will outlive you. Every shortcut you take becomes
+someone else's burden. Every hack compounds into technical debt
+that slows the whole team down.
+
+You are not just writing code. You are shaping the future of this
+project. The patterns you establish will be copied. The corners
+you cut will be cut again.
+
+Fight entropy. Leave the codebase better than you found it.
+
 ## STRUCTURE
 
 ```
@@ -25,15 +37,15 @@ offworld/
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add route | `apps/web/src/routes/` | TanStack Router file-based routing |
-| Add API endpoint | `packages/backend/convex/` | Convex query/mutation |
-| Add UI component | `apps/web/src/components/` | shadcn/ui + Tailwind |
-| Add shared UI | `apps/web/src/components/ui/` | shadcn primitives |
-| Auth config | `packages/backend/convex/auth.ts` | Better Auth + Convex |
-| Env vars | `packages/env/src/` | server.ts or web.ts |
-| Deploy config | `packages/infra/alchemy.run.ts` | Cloudflare Workers |
+| Task             | Location                          | Notes                              |
+| ---------------- | --------------------------------- | ---------------------------------- |
+| Add route        | `apps/web/src/routes/`            | TanStack Router file-based routing |
+| Add API endpoint | `packages/backend/convex/`        | Convex query/mutation              |
+| Add UI component | `apps/web/src/components/`        | shadcn/ui + Tailwind               |
+| Add shared UI    | `apps/web/src/components/ui/`     | shadcn primitives                  |
+| Auth config      | `packages/backend/convex/auth.ts` | Better Auth + Convex               |
+| Env vars         | `packages/env/src/`               | server.ts or web.ts                |
+| Deploy config    | `packages/infra/alchemy.run.ts`   | Cloudflare Workers                 |
 
 ## CONVENTIONS
 
@@ -41,7 +53,7 @@ offworld/
 - **Package manager**: Bun
 - **Imports**: Path alias `@/` → `apps/web/src/`
 - **TypeScript**: Strict, no unused vars/params
-- **Env vars**: T3 env validation, VITE_ prefix for client
+- **Env vars**: T3 env validation, VITE\_ prefix for client
 
 ## ANTI-PATTERNS
 

@@ -15,13 +15,13 @@ src/
 
 ## WHERE TO LOOK
 
-| Task | File |
-|------|------|
-| Add page | `src/routes/{name}.tsx` |
-| Root layout | `src/routes/__root.tsx` |
-| Auth client | `src/lib/auth-client.ts` |
-| Auth server | `src/lib/auth-server.ts` |
-| Router config | `src/router.tsx` |
+| Task          | File                     |
+| ------------- | ------------------------ |
+| Add page      | `src/routes/{name}.tsx`  |
+| Root layout   | `src/routes/__root.tsx`  |
+| Auth client   | `src/lib/auth-client.ts` |
+| Auth server   | `src/lib/auth-server.ts` |
+| Router config | `src/router.tsx`         |
 
 ## CONVENTIONS
 

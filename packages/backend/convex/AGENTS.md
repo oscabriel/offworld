@@ -4,14 +4,14 @@ Convex functions, schema, auth. Reactive backend-as-a-service.
 
 ## FILES
 
-| File | Purpose |
-|------|---------|
-| `schema.ts` | Database schema (todos table) |
-| `auth.ts` | Better Auth setup + getCurrentUser query |
-| `auth.config.ts` | Auth provider config |
-| `http.ts` | HTTP routes (auth endpoints) |
-| `todos.ts` | Todo CRUD mutations/queries |
-| `_generated/` | Auto-generated (don't edit) |
+| File             | Purpose                                  |
+| ---------------- | ---------------------------------------- |
+| `schema.ts`      | Database schema (todos table)            |
+| `auth.ts`        | Better Auth setup + getCurrentUser query |
+| `auth.config.ts` | Auth provider config                     |
+| `http.ts`        | HTTP routes (auth endpoints)             |
+| `todos.ts`       | Todo CRUD mutations/queries              |
+| `_generated/`    | Auto-generated (don't edit)              |
 
 ## PATTERNS
 

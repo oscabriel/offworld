@@ -5,6 +5,7 @@ import {
   pullHandler,
   generateHandler,
   listHandler,
+  pushHandler,
   rmHandler,
   configShowHandler,
   configSetHandler,
@@ -108,9 +109,9 @@ export const router = os.router({
       description: "Push local analysis to offworld.sh",
     })
     .handler(async ({ input }) => {
-      // Stub - will be implemented in PRD 4.5
-      console.log(`Pushing ${input.repo}...`);
-      return { success: true };
+      return pushHandler({
+        repo: input.repo,
+      });
     }),
 
   // Remove command - delete repo and analysis

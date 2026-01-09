@@ -19,3 +19,14 @@ export {
 	// Types
 	type DetectionResult,
 } from "./provider.js";
+
+// Claude Code SDK wrapper (PRD 3.11)
+export {
+	// Main function
+	analyzeWithClaudeCode,
+	// Errors
+	ClaudeCodeAnalysisError,
+	// Types
+	type ClaudeCodeAnalysisOptions,
+	type ClaudeCodeAnalysisResult,
+} from "./claude-code.js";

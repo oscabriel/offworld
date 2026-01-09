@@ -1,10 +1,11 @@
 {
-  "name": "@offworld/cli",
+  "name": "offworld",
   "version": "0.1.0",
-  "private": true,
+  "description": "Offworld CLI - Repository analysis and skill generation for AI coding agents",
   "type": "module",
   "bin": {
-    "ow": "./dist/cli.mjs"
+    "ow": "./dist/cli.mjs",
+    "offworld": "./dist/cli.mjs"
   },
   "exports": {
     ".": {
@@ -12,12 +13,42 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsdown && chmod +x ./dist/cli.mjs",
     "dev": "tsdown --watch",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "repository",
+    "analysis",
+    "skill",
+    "claude",
+    "opencode",
+    "coding-agent"
+  ],
+  "author": "Oscar Gabriel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oscabriel/offworld.git",
+    "directory": "apps/cli"
+  },
+  "homepage": "https://offworld.sh",
+  "bugs": {
+    "url": "https://github.com/oscabriel/offworld/issues"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",

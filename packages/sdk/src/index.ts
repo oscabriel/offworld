@@ -54,3 +54,21 @@ export {
 	getIndexEntry,
 	listIndexedRepos,
 } from "./index-manager.js";
+
+// Clone operations (PRD 3.3)
+export {
+	cloneRepo,
+	updateRepo,
+	removeRepo,
+	listRepos,
+	isRepoCloned,
+	getClonedRepoPath,
+	getCommitSha,
+	CloneError,
+	RepoExistsError,
+	RepoNotFoundError,
+	GitError,
+	type CloneOptions,
+	type UpdateResult,
+	type RemoveOptions,
+} from "./clone.js";

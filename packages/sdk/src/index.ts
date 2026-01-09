@@ -20,3 +20,12 @@ export {
 	loadConfig,
 	saveConfig,
 } from "./config.js";
+
+// Repo source parsing (PRD 3.2)
+export {
+	parseRepoInput,
+	getAnalysisPathForSource,
+	RepoSourceError,
+	PathNotFoundError,
+	NotGitRepoError,
+} from "./repo-source.js";

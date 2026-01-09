@@ -128,3 +128,23 @@ export {
 	// Types
 	type DetectionResult,
 } from "./ai/index.js";
+
+// Claude Code SDK wrapper (PRD 3.11)
+export {
+	analyzeWithClaudeCode,
+	ClaudeCodeAnalysisError,
+	type ClaudeCodeAnalysisOptions,
+	type ClaudeCodeAnalysisResult,
+} from "./ai/index.js";
+
+// OpenCode SDK wrapper (PRD 3.12)
+export {
+	analyzeWithOpenCode,
+	OpenCodeAnalysisError,
+	OpenCodeConnectionError,
+	type OpenCodeAnalysisOptions,
+	type OpenCodeAnalysisResult,
+} from "./ai/index.js";
+
+// Unified AI interface (PRD 3.13)
+export { runAnalysis, type AnalysisOptions, type AnalysisResult } from "./ai/index.js";

@@ -12,7 +12,9 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@offworld/types": "workspace:*"
@@ -20,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^22",
     "tsdown": "^0.12.9",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

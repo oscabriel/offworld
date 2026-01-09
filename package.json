@@ -13,7 +13,8 @@
       "convex": "^1.31.2",
       "better-auth": "1.4.9",
       "@convex-dev/better-auth": "^0.10.9",
-      "alchemy": "^0.82.1"
+      "alchemy": "^0.82.1",
+      "vitest": "^3.1.4"
     }
   },
   "type": "module",
@@ -21,6 +22,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",
+    "test": "turbo test",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F @offworld/backend dev",
@@ -38,7 +40,8 @@
     "oxfmt": "^0.19.0",
     "oxlint": "^1.34.0",
     "turbo": "^2.6.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "packageManager": "bun@1.3.5"
 }

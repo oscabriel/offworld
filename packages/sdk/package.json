@@ -17,8 +17,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.0.30",
     "@offworld/types": "workspace:*",
-    "web-tree-sitter": "^0.24.7"
+    "web-tree-sitter": "^0.24.7",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
     "@types/node": "^22",

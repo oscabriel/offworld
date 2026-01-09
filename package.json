@@ -14,7 +14,9 @@
       "better-auth": "1.4.9",
       "@convex-dev/better-auth": "^0.10.9",
       "alchemy": "^0.82.1",
-      "vitest": "^3.1.4"
+      "vitest": "^3.1.4",
+      "convex-test": "^0.0.41",
+      "@edge-runtime/vm": "^5.0.2"
     }
   },
   "type": "module",

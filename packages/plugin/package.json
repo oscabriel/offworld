@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@offworld/sdk": "workspace:*",
-    "@offworld/types": "workspace:*"
+    "@offworld/types": "workspace:*",
+    "@opencode-ai/plugin": "^1.0.201"
   },
   "devDependencies": {
     "tsdown": "^0.12.9",

@@ -1,0 +1,25 @@
+{
+  "name": "@offworld/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@offworld/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsdown": "^0.12.9",
+    "typescript": "catalog:"
+  }
+}

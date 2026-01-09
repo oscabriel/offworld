@@ -9,3 +9,14 @@ export {
 	SUPPORTED_EXTENSIONS,
 	type SupportedLanguage,
 } from "./constants.js";
+
+// Config utilities (PRD 3.1)
+export {
+	getMetaRoot,
+	getRepoRoot,
+	getRepoPath,
+	getAnalysisPath,
+	getConfigPath,
+	loadConfig,
+	saveConfig,
+} from "./config.js";

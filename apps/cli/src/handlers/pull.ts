@@ -18,6 +18,7 @@ import {
 	updateIndex,
 	getIndexEntry,
 	RepoExistsError,
+	runAnalysisPipeline,
 	type PullResponse,
 } from "@offworld/sdk";
 import type { RepoSource, Skill } from "@offworld/types";
@@ -348,20 +349,59 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			s.stop("No remote analysis found");
 		}
 
-		// No remote analysis - need to generate locally
-		// This requires Phase 5 (Analysis Pipeline) to be implemented
-		// For now, we'll inform the user and return partial success
-		p.log.warn(
-			"Local analysis generation not yet implemented. Run 'ow generate' once available."
-		);
+		// No remote analysis - generate locally using analysis pipeline
+		s.start("Generating local analysis...");
 
-		return {
-			success: true,
-			repoPath,
-			analysisSource: "local",
-			skillInstalled: false,
-			message: "Repository cloned. Analysis generation pending (Phase 5).",
-		};
+		try {
+			const pipelineOptions = source.type === "remote"
+				? {
+						config,
+						provider: source.provider,
+						fullName: source.fullName,
+						onProgress: (step: string, message: string) => {
+							s.message(message);
+						},
+				  }
+				: {
+						config,
+						onProgress: (step: string, message: string) => {
+							s.message(message);
+						},
+				  };
+
+			await runAnalysisPipeline(repoPath, pipelineOptions);
+			s.stop("Analysis complete");
+
+			// Update index
+			const entry = getIndexEntry(source.qualifiedName);
+			if (entry) {
+				updateIndex({
+					...entry,
+					analyzedAt: new Date().toISOString(),
+					commitSha: getCommitSha(repoPath),
+					hasSkill: true,
+				});
+			}
+
+			return {
+				success: true,
+				repoPath,
+				analysisSource: "local",
+				skillInstalled: true,
+			};
+		} catch (err) {
+			s.stop("Analysis failed");
+			const errMessage = err instanceof Error ? err.message : "Unknown error";
+			p.log.error(`Failed to generate analysis: ${errMessage}`);
+
+			return {
+				success: true,
+				repoPath,
+				analysisSource: "local",
+				skillInstalled: false,
+				message: `Repository cloned but analysis failed: ${errMessage}`,
+			};
+		}
 	} catch (error) {
 		s.stop("Failed");
 		const message = error instanceof Error ? error.message : "Unknown error";

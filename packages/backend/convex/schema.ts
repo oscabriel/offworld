@@ -1,9 +1,137 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+/**
+ * Offworld Backend Schema
+ * PRD 7.1: Convex schema for analyses storage
+ */
+
+// Entity schema for architecture entities
+const entitySchema = v.object({
+	name: v.string(),
+	type: v.string(), // package, module, feature, util, config
+	path: v.string(),
+	description: v.string(),
+	responsibilities: v.array(v.string()),
+	exports: v.optional(v.array(v.string())),
+	dependencies: v.optional(v.array(v.string())),
+});
+
+// Relationship schema for entity relationships
+const relationshipSchema = v.object({
+	from: v.string(),
+	to: v.string(),
+	type: v.string(), // imports, uses, extends, implements
+});
+
+// Key file schema
+const keyFileSchema = v.object({
+	path: v.string(),
+	role: v.string(), // entry, core, types, config, test, util, doc
+	description: v.optional(v.string()),
+});
+
+// Patterns schema
+const patternsSchema = v.object({
+	framework: v.optional(v.string()),
+	buildTool: v.optional(v.string()),
+	testFramework: v.optional(v.string()),
+	stateManagement: v.optional(v.string()),
+	styling: v.optional(v.string()),
+	other: v.optional(v.array(v.string())),
+});
+
+// Architecture schema for stored analysis
+const architectureSchema = v.object({
+	projectType: v.string(), // monorepo, library, cli, app, framework
+	entities: v.array(entitySchema),
+	relationships: v.array(relationshipSchema),
+	keyFiles: v.array(keyFileSchema),
+	patterns: patternsSchema,
+});
+
+// Skill schema
+const repositoryStructureSchema = v.object({
+	path: v.string(),
+	purpose: v.string(),
+});
+
+const keyFileSkillSchema = v.object({
+	path: v.string(),
+	description: v.string(),
+});
+
+const skillSchema = v.object({
+	name: v.string(),
+	description: v.string(),
+	allowedTools: v.array(v.string()),
+	repositoryStructure: v.array(repositoryStructureSchema),
+	keyFiles: v.array(keyFileSkillSchema),
+	searchStrategies: v.array(v.string()),
+	whenToUse: v.array(v.string()),
+});
+
+// File index entry schema
+const fileIndexEntrySchema = v.object({
+	path: v.string(),
+	importance: v.number(), // 0-1
+	type: v.string(), // entry, core, types, config, test, util, doc
+	exports: v.optional(v.array(v.string())),
+	imports: v.optional(v.array(v.string())),
+	summary: v.optional(v.string()),
+});
+
 export default defineSchema({
-  todos: defineTable({
-    text: v.string(),
-    completed: v.boolean(),
-  }),
+	// Existing todos table (keep for compatibility)
+	todos: defineTable({
+		text: v.string(),
+		completed: v.boolean(),
+	}),
+
+	// PRD 7.1: Analyses table
+	analyses: defineTable({
+		// Repository identification
+		fullName: v.string(), // owner/repo format
+		provider: v.string(), // github, gitlab, bitbucket
+
+		// Analysis content
+		summary: v.string(), // markdown summary
+		architecture: architectureSchema,
+		skill: skillSchema,
+		fileIndex: v.array(fileIndexEntrySchema),
+
+		// Metadata
+		commitSha: v.string(),
+		analyzedAt: v.string(), // ISO timestamp
+		version: v.string(), // offworld version that generated this
+
+		// Stats
+		pullCount: v.number(),
+		isVerified: v.boolean(), // verified by offworld team
+
+		// User who pushed (optional for public analyses)
+		pushedBy: v.optional(v.id("users")),
+	})
+		.index("by_fullName", ["fullName"])
+		.index("by_pullCount", ["pullCount"])
+		.index("by_provider", ["provider"])
+		.index("by_analyzedAt", ["analyzedAt"]),
+
+	// PRD 7.1: Push logs for rate limiting
+	pushLogs: defineTable({
+		fullName: v.string(),
+		userId: v.id("users"),
+		pushedAt: v.string(), // ISO timestamp
+		commitSha: v.string(),
+	})
+		.index("by_repo_date", ["fullName", "pushedAt"])
+		.index("by_user_date", ["userId", "pushedAt"]),
+
+	// Users table for auth (referenced by pushLogs)
+	users: defineTable({
+		email: v.string(),
+		name: v.optional(v.string()),
+		image: v.optional(v.string()),
+		createdAt: v.string(),
+	}).index("by_email", ["email"]),
 });

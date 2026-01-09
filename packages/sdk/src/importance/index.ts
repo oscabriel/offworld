@@ -30,3 +30,11 @@ export {
 	clearLanguageCache,
 	resetParser,
 } from "./parser.js";
+
+export {
+	// Types
+	type ExtractedImport,
+	// Import extraction
+	extractImports,
+	extractModuleNames,
+} from "./queries.js";

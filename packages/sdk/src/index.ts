@@ -198,3 +198,26 @@ export {
 	type AnalysisMeta,
 	type AnalysisPipelineOptions,
 } from "./analysis/index.js";
+
+// Authentication (PRD 4.8)
+export {
+	// Errors
+	AuthError,
+	NotLoggedInError,
+	TokenExpiredError,
+	// Path utilities
+	getAuthPath,
+	// Token storage
+	saveAuthData,
+	loadAuthData,
+	clearAuthData,
+	// Token retrieval
+	getToken,
+	getTokenOrNull,
+	isLoggedIn,
+	// Status
+	getAuthStatus,
+	// Types
+	type AuthData,
+	type AuthStatus,
+} from "./auth.js";

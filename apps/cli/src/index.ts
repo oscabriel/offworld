@@ -11,6 +11,9 @@ import {
   configGetHandler,
   configResetHandler,
   configPathHandler,
+  authLoginHandler,
+  authLogoutHandler,
+  authStatusHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -146,27 +149,21 @@ export const router = os.router({
       .input(z.object({}))
       .meta({ description: "Login to offworld.sh" })
       .handler(async () => {
-        // Stub - will be implemented in PRD 4.8
-        console.log("Opening browser for login...");
-        return { success: true };
+        return authLoginHandler();
       }),
 
     logout: os
       .input(z.object({}))
       .meta({ description: "Logout from offworld.sh" })
       .handler(async () => {
-        // Stub - will be implemented in PRD 4.8
-        console.log("Logged out");
-        return { success: true };
+        return authLogoutHandler();
       }),
 
     status: os
       .input(z.object({}))
       .meta({ description: "Show authentication status" })
       .handler(async () => {
-        // Stub - will be implemented in PRD 4.8
-        console.log("Not logged in");
-        return { loggedIn: false };
+        return authStatusHandler();
       }),
   }),
 

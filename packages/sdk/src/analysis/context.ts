@@ -32,7 +32,9 @@ const MAX_FILE_CONTENT_CHARS = 2000;
 
 /** Gathered context for AI analysis */
 export interface GatheredContext {
-	/** Repository name or path */
+	/** Absolute path to the repository */
+	repoPath: string;
+	/** Repository name (basename) */
 	repoName: string;
 	/** Truncated README content */
 	readme: string | null;
@@ -288,6 +290,7 @@ export async function gatherContext(
 	}
 
 	return {
+		repoPath,
 		repoName,
 		readme,
 		packageConfig,

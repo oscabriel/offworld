@@ -284,6 +284,7 @@ npm install
 	// =========================================================================
 	describe("formatContextForPrompt", () => {
 		const mockContext: GatheredContext = {
+			repoPath: "/mock/test-repo",
 			repoName: "test-repo",
 			readme: "# Test Repo\nThis is a test.",
 			packageConfig: '{"name": "test-repo"}',

@@ -145,7 +145,7 @@ export async function initializeParser(): Promise<void> {
 		return;
 	}
 
-	const Parser = (await import("web-tree-sitter")).default;
+	const { Parser } = await import("web-tree-sitter");
 	await Parser.init();
 	TreeSitter = Parser;
 	isInitialized = true;

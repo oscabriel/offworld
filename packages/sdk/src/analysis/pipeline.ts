@@ -64,6 +64,10 @@ export interface AnalysisPipelineOptions {
 	fullName?: string;
 	/** Progress callback for status updates */
 	onProgress?: (step: string, message: string) => void;
+	/** Debug callback for detailed logging */
+	onDebug?: (message: string) => void;
+	/** Stream callback for real-time AI output */
+	onStream?: (text: string) => void;
 }
 
 // ============================================================================
@@ -168,8 +172,11 @@ export async function runAnalysisPipeline(
 	repoPath: string,
 	options: AnalysisPipelineOptions = {},
 ): Promise<AnalysisPipelineResult> {
-	const config = options.config ?? loadConfig();
 	const onProgress = options.onProgress ?? (() => {});
+	const generateOptions = {
+		onDebug: options.onDebug,
+		onStream: options.onStream,
+	};
 
 	// Determine analysis path
 	let analysisPath: string;
@@ -200,11 +207,11 @@ export async function runAnalysisPipeline(
 
 	// Step 3: Generate summary
 	onProgress("summary", "Generating summary...");
-	const summary = await generateSummary(context, config);
+	const summary = await generateSummary(context, generateOptions);
 
 	// Step 4: Extract architecture
 	onProgress("architecture", "Extracting architecture...");
-	const architecture = await extractArchitecture(context, config);
+	const architecture = await extractArchitecture(context, generateOptions);
 
 	// Step 5: Format architecture markdown
 	onProgress("format", "Formatting architecture diagram...");
@@ -212,7 +219,7 @@ export async function runAnalysisPipeline(
 
 	// Step 6: Generate skill
 	onProgress("skill", "Generating skill...");
-	const skill = await generateSkill(context, summary, architecture, config);
+	const skill = await generateSkill(context, summary, architecture, generateOptions);
 	const skillMd = formatSkillMd(skill);
 
 	// Build metadata

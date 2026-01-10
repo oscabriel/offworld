@@ -29,8 +29,8 @@ let mockFileIndex: FileIndexEntry[] = [
 	{ path: "src/utils.ts", importance: 0.5, type: "util" },
 ];
 
-// Mock context
 let mockContext: GatheredContext = {
+	repoPath: "/mock/test-repo",
 	repoName: "test-repo",
 	readme: "# Test Repo",
 	packageConfig: '{"name": "test"}',

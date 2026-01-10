@@ -42,7 +42,7 @@
 	"scripts": {
 		"build": "tsdown && chmod +x ./dist/cli.mjs",
 		"dev": "tsdown --watch",
-		"check-types": "tsc --noEmit",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"prepublishOnly": "npm run build"

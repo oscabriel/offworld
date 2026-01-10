@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "convex dev",
 		"dev:setup": "convex dev --configure --until-success",
-		"check-types": "convex typecheck",
+		"typecheck": "convex typecheck",
 		"test": "vitest run",
 		"test:watch": "vitest"
 	},

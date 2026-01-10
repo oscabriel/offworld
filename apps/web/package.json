@@ -6,7 +6,7 @@
 		"build": "vite build",
 		"serve": "vite preview",
 		"dev": "vite dev",
-		"check-types": "tsc --noEmit",
+		"typecheck": "tsc --noEmit",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed"

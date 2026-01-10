@@ -184,7 +184,7 @@ describe("skill formatting", () => {
 			// Should create OpenCode directory
 			expect(mockMkdirSync).toHaveBeenCalledWith(
 				expect.stringContaining("opencode"),
-				expect.objectContaining({ recursive: true })
+				expect.objectContaining({ recursive: true }),
 			);
 		});
 
@@ -194,7 +194,7 @@ describe("skill formatting", () => {
 			// Should create Claude Code directory
 			expect(mockMkdirSync).toHaveBeenCalledWith(
 				expect.stringContaining(".claude/skills"),
-				expect.objectContaining({ recursive: true })
+				expect.objectContaining({ recursive: true }),
 			);
 		});
 
@@ -207,10 +207,10 @@ describe("skill formatting", () => {
 
 			// Check both calls write SKILL.md with correct content
 			const calls = mockWriteFileSync.mock.calls;
-			expect(calls[0][0]).toContain("SKILL.md");
-			expect(calls[0][1]).toBe(skillContent);
-			expect(calls[1][0]).toContain("SKILL.md");
-			expect(calls[1][1]).toBe(skillContent);
+			expect(calls[0]![0]).toContain("SKILL.md");
+			expect(calls[0]![1]).toBe(skillContent);
+			expect(calls[1]![0]).toContain("SKILL.md");
+			expect(calls[1]![1]).toBe(skillContent);
 		});
 
 		it("uses repo name for directory structure", () => {
@@ -218,15 +218,15 @@ describe("skill formatting", () => {
 
 			// Should use repo name in path
 			const calls = mockMkdirSync.mock.calls;
-			expect(calls[0][0]).toContain("owner/repo-name");
-			expect(calls[1][0]).toContain("owner/repo-name");
+			expect(calls[0]![0]).toContain("owner/repo-name");
+			expect(calls[1]![0]).toContain("owner/repo-name");
 		});
 
 		it("expands tilde in OpenCode skill path", () => {
 			installSkill("test/repo", "content");
 
 			// First call should be OpenCode path (expanded from config.skillDir)
-			const openCodePath = mockMkdirSync.mock.calls[0][0] as string;
+			const openCodePath = mockMkdirSync.mock.calls[0]![0] as string;
 
 			// Should not contain literal ~
 			expect(openCodePath).not.toContain("~");
@@ -238,7 +238,7 @@ describe("skill formatting", () => {
 			installSkill("org/sub/repo", "content");
 
 			const calls = mockWriteFileSync.mock.calls;
-			expect(calls[0][0]).toContain("org/sub/repo");
+			expect(calls[0]![0]).toContain("org/sub/repo");
 		});
 	});
 });

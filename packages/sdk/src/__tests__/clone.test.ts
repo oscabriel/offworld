@@ -112,11 +112,11 @@ describe("clone.ts", () => {
 
 			expect(mockExecSync).toHaveBeenCalledWith(
 				expect.stringContaining("git clone"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 			expect(mockExecSync).toHaveBeenCalledWith(
 				expect.stringContaining("https://github.com/tanstack/router.git"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 		});
 
@@ -127,7 +127,7 @@ describe("clone.ts", () => {
 
 			expect(mockExecSync).toHaveBeenCalledWith(
 				expect.stringContaining("--depth 1"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 		});
 
@@ -138,7 +138,7 @@ describe("clone.ts", () => {
 
 			expect(mockExecSync).toHaveBeenCalledWith(
 				expect.stringContaining("--branch develop"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 		});
 
@@ -153,10 +153,7 @@ describe("clone.ts", () => {
 
 			await cloneRepo(mockSource);
 
-			expect(mockMkdir).toHaveBeenCalledWith(
-				expect.any(String),
-				{ recursive: true }
-			);
+			expect(mockMkdir).toHaveBeenCalledWith(expect.any(String), { recursive: true });
 		});
 
 		it("updates index after successful clone", async () => {
@@ -168,7 +165,7 @@ describe("clone.ts", () => {
 				expect.objectContaining({
 					fullName: "tanstack/router",
 					qualifiedName: "github:tanstack/router",
-				})
+				}),
 			);
 		});
 
@@ -177,13 +174,10 @@ describe("clone.ts", () => {
 
 			await cloneRepo(mockSource, { force: true });
 
-			expect(mockRmSync).toHaveBeenCalledWith(
-				expect.any(String),
-				{ recursive: true, force: true }
-			);
+			expect(mockRmSync).toHaveBeenCalledWith(expect.any(String), { recursive: true, force: true });
 			expect(mockExecSync).toHaveBeenCalledWith(
 				expect.stringContaining("git clone"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 		});
 	});
@@ -199,8 +193,8 @@ describe("clone.ts", () => {
 			await updateRepo("github:tanstack/router");
 
 			const calls = mockExecSync.mock.calls;
-			const fetchCall = calls.find(([cmd]: [string]) => cmd.includes("git fetch"));
-			const pullCall = calls.find(([cmd]: [string]) => cmd.includes("git pull"));
+			const fetchCall = calls.find((call) => (call[0] as string).includes("git fetch"));
+			const pullCall = calls.find((call) => (call[0] as string).includes("git pull"));
 
 			expect(fetchCall).toBeDefined();
 			expect(pullCall).toBeDefined();
@@ -255,10 +249,10 @@ describe("clone.ts", () => {
 
 			await removeRepo("github:tanstack/router");
 
-			expect(mockRmSync).toHaveBeenCalledWith(
-				mockIndexEntry.localPath,
-				{ recursive: true, force: true }
-			);
+			expect(mockRmSync).toHaveBeenCalledWith(mockIndexEntry.localPath, {
+				recursive: true,
+				force: true,
+			});
 		});
 
 		it("removes analysis directory", async () => {
@@ -267,10 +261,10 @@ describe("clone.ts", () => {
 
 			await removeRepo("github:tanstack/router");
 
-			expect(mockRmSync).toHaveBeenCalledWith(
-				expect.stringContaining("analyses"),
-				{ recursive: true, force: true }
-			);
+			expect(mockRmSync).toHaveBeenCalledWith(expect.stringContaining("analyses"), {
+				recursive: true,
+				force: true,
+			});
 		});
 
 		it("updates index after removal", async () => {
@@ -378,7 +372,7 @@ describe("clone.ts", () => {
 
 			expect(mockExecSync).toHaveBeenCalledWith(
 				expect.stringContaining("git rev-parse HEAD"),
-				expect.objectContaining({ cwd: "/some/repo" })
+				expect.objectContaining({ cwd: "/some/repo" }),
 			);
 			expect(result).toBe("sha123456");
 		});

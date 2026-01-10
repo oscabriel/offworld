@@ -5,19 +5,9 @@
 
 import type { z } from "zod";
 import type { AIProvider, Config } from "@offworld/types";
-import {
-	detectProvider,
-	AIProviderNotFoundError,
-	getProviderDisplayName,
-} from "./provider.js";
-import {
-	analyzeWithClaudeCode,
-	type ClaudeCodeAnalysisResult,
-} from "./claude-code.js";
-import {
-	analyzeWithOpenCode,
-	type OpenCodeAnalysisResult,
-} from "./opencode.js";
+import { detectProvider, AIProviderNotFoundError } from "./provider.js";
+import { analyzeWithClaudeCode, type ClaudeCodeAnalysisResult } from "./claude-code.js";
+import { analyzeWithOpenCode, type OpenCodeAnalysisResult } from "./opencode.js";
 
 // ============================================================================
 // Unified Analysis Interface (PRD 3.13)
@@ -82,17 +72,9 @@ export interface AnalysisResult<T> {
  * @throws AIProviderNotFoundError if no provider is available
  */
 export async function runAnalysis<T extends z.ZodType>(
-	options: AnalysisOptions<T>
+	options: AnalysisOptions<T>,
 ): Promise<AnalysisResult<z.infer<T>>> {
-	const {
-		prompt,
-		cwd,
-		schema,
-		systemPrompt,
-		config,
-		forceProvider,
-		abortController,
-	} = options;
+	const { prompt, cwd, schema, systemPrompt, config, forceProvider, abortController } = options;
 
 	// Determine which provider to use
 	let provider: AIProvider;
@@ -110,14 +92,13 @@ export async function runAnalysis<T extends z.ZodType>(
 	// Route to appropriate provider
 	switch (provider) {
 		case "claude-code": {
-			const result: ClaudeCodeAnalysisResult<z.infer<T>> =
-				await analyzeWithClaudeCode({
-					prompt,
-					cwd,
-					schema,
-					systemPrompt,
-					abortController,
-				});
+			const result: ClaudeCodeAnalysisResult<z.infer<T>> = await analyzeWithClaudeCode({
+				prompt,
+				cwd,
+				schema,
+				systemPrompt,
+				abortController,
+			});
 
 			return {
 				output: result.output,
@@ -130,13 +111,12 @@ export async function runAnalysis<T extends z.ZodType>(
 		}
 
 		case "opencode": {
-			const result: OpenCodeAnalysisResult<z.infer<T>> =
-				await analyzeWithOpenCode({
-					prompt,
-					cwd,
-					schema,
-					systemPrompt,
-				});
+			const result: OpenCodeAnalysisResult<z.infer<T>> = await analyzeWithOpenCode({
+				prompt,
+				cwd,
+				schema,
+				systemPrompt,
+			});
 
 			return {
 				output: result.output,

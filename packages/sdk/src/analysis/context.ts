@@ -3,7 +3,7 @@
  * PRD 5.1: Gather repository context for AI prompts
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import type { FileIndexEntry } from "@offworld/types";
 import { rankFileImportance } from "../importance/ranker.js";
@@ -16,14 +16,11 @@ import { isBinaryBuffer } from "../util.js";
 /** Maximum token budget for context (roughly 4 chars per token) */
 const MAX_CONTEXT_TOKENS = 4000;
 const CHARS_PER_TOKEN = 4;
-const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * CHARS_PER_TOKEN;
 
 /** Token budget allocations */
 const README_TOKEN_BUDGET = 500;
 const PACKAGE_JSON_TOKEN_BUDGET = 300;
 const FILE_TREE_TOKEN_BUDGET = 400;
-/** Remaining budget for file contents: ~2800 tokens */
-const FILE_CONTENT_TOKEN_BUDGET = MAX_CONTEXT_TOKENS - README_TOKEN_BUDGET - PACKAGE_JSON_TOKEN_BUDGET - FILE_TREE_TOKEN_BUDGET;
 
 /** Number of top files to include content for */
 const TOP_FILES_COUNT = 15;
@@ -95,14 +92,7 @@ function truncateToTokens(text: string, targetTokens: number): string {
  * Find and read README file from repository.
  */
 function findReadme(repoPath: string): string | null {
-	const readmeNames = [
-		"README.md",
-		"readme.md",
-		"README.MD",
-		"Readme.md",
-		"README",
-		"readme",
-	];
+	const readmeNames = ["README.md", "readme.md", "README.MD", "Readme.md", "README", "readme"];
 
 	for (const name of readmeNames) {
 		const readmePath = join(repoPath, name);
@@ -167,9 +157,7 @@ function buildFileTree(topFiles: FileIndexEntry[]): string {
 	// Group by directory
 	const byDir = new Map<string, FileIndexEntry[]>();
 	for (const file of topFiles) {
-		const dir = file.path.includes("/")
-			? file.path.substring(0, file.path.lastIndexOf("/"))
-			: ".";
+		const dir = file.path.includes("/") ? file.path.substring(0, file.path.lastIndexOf("/")) : ".";
 		if (!byDir.has(dir)) {
 			byDir.set(dir, []);
 		}
@@ -243,7 +231,7 @@ function readFileContent(filePath: string, maxChars: number): string | null {
  */
 export async function gatherContext(
 	repoPath: string,
-	options: ContextOptions = {}
+	options: ContextOptions = {},
 ): Promise<GatheredContext> {
 	const maxTopFiles = options.maxTopFiles ?? TOP_FILES_COUNT;
 	const maxFileContentChars = options.maxFileContentChars ?? MAX_FILE_CONTENT_CHARS;
@@ -258,7 +246,7 @@ export async function gatherContext(
 	const packageConfig = findPackageConfig(repoPath);
 
 	// Get ranked files (or use provided for testing)
-	const rankedFiles = options.rankedFiles ?? await rankFileImportance(repoPath);
+	const rankedFiles = options.rankedFiles ?? (await rankFileImportance(repoPath));
 
 	// Take top N files
 	const topFilesRanked = rankedFiles.slice(0, maxTopFiles);

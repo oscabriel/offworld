@@ -191,7 +191,7 @@ npm install
 
 			expect(context.topFiles.length).toBeLessThanOrEqual(3);
 			// First file should be highest importance
-			expect(context.topFiles[0].importance).toBe(1.0);
+			expect(context.topFiles[0]!.importance).toBe(1.0);
 		});
 
 		it("total size is within token budget", async () => {
@@ -234,21 +234,19 @@ npm install
 
 		it("skips binary files", async () => {
 			mockIsBinaryBuffer.mockImplementation((buffer: Buffer) => {
-				// Make one file appear binary
-				return buffer.toString().includes("router");
+				// Make one file appear binary (case-insensitive check for "router")
+				return buffer.toString().toLowerCase().includes("router");
 			});
 
 			const context = await gatherContext("/test/repo", { rankedFiles: mockRankedFiles });
 
-			// Should not include the binary file content
+			// Should not include the binary file content (path contains "router")
 			const hasRouterContent = context.topFiles.some((f) => f.path.includes("router"));
 			expect(hasRouterContent).toBe(false);
 		});
 
 		it("uses provided rankedFiles option", async () => {
-			const customFiles: FileIndexEntry[] = [
-				{ path: "custom.ts", importance: 0.9, type: "core" },
-			];
+			const customFiles: FileIndexEntry[] = [{ path: "custom.ts", importance: 0.9, type: "core" }];
 
 			mockExistsSync.mockImplementation((path: string) => {
 				if (path.includes("custom.ts")) return true;
@@ -269,7 +267,7 @@ npm install
 			// Should not call rankFileImportance when rankedFiles provided
 			expect(mockRankFileImportance).not.toHaveBeenCalled();
 			expect(context.topFiles).toHaveLength(1);
-			expect(context.topFiles[0].path).toBe("custom.ts");
+			expect(context.topFiles[0]!.path).toBe("custom.ts");
 		});
 
 		it("extracts repo name from path", async () => {

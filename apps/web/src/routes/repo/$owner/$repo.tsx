@@ -131,16 +131,15 @@ function RepoAnalysisPage() {
 						{copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
 						{copied ? "Copied!" : "Copy command"}
 					</Button>
-					<Button variant="outline" asChild>
-						<a
-							href={`https://github.com/${fullName}`}
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							<ExternalLink className="mr-2 h-4 w-4" />
-							GitHub
-						</a>
-					</Button>
+					<a
+						href={`https://github.com/${fullName}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex h-8 items-center justify-center gap-1.5 rounded-none border border-border bg-background px-2.5 text-xs font-medium transition-all hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+					>
+						<ExternalLink className="mr-2 h-4 w-4" />
+						GitHub
+					</a>
 				</div>
 			</div>
 
@@ -159,31 +158,22 @@ function RepoAnalysisPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>Architecture</CardTitle>
-						<CardDescription>
-							Project type: {analysis.architecture.projectType}
-						</CardDescription>
+						<CardDescription>Project type: {analysis.architecture.projectType}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div>
 							<h4 className="mb-2 font-semibold">Entities</h4>
 							<div className="grid gap-2">
 								{analysis.architecture.entities.slice(0, 10).map((entity) => (
-									<div
-										key={entity.name}
-										className="bg-muted rounded-lg p-3"
-									>
+									<div key={entity.name} className="bg-muted rounded-lg p-3">
 										<div className="flex items-center justify-between">
 											<span className="font-medium">{entity.name}</span>
 											<span className="bg-background text-muted-foreground rounded px-2 py-0.5 text-xs">
 												{entity.type}
 											</span>
 										</div>
-										<p className="text-muted-foreground mt-1 text-sm">
-											{entity.description}
-										</p>
-										<p className="mt-1 font-mono text-xs text-blue-400">
-											{entity.path}
-										</p>
+										<p className="text-muted-foreground mt-1 text-sm">{entity.description}</p>
+										<p className="mt-1 font-mono text-xs text-blue-400">{entity.path}</p>
 									</div>
 								))}
 								{analysis.architecture.entities.length > 10 && (
@@ -199,16 +189,25 @@ function RepoAnalysisPage() {
 								<h4 className="mb-2 font-semibold">Patterns</h4>
 								<div className="flex flex-wrap gap-2">
 									{analysis.architecture.patterns.framework && (
-										<PatternBadge label="Framework" value={analysis.architecture.patterns.framework} />
+										<PatternBadge
+											label="Framework"
+											value={analysis.architecture.patterns.framework}
+										/>
 									)}
 									{analysis.architecture.patterns.buildTool && (
 										<PatternBadge label="Build" value={analysis.architecture.patterns.buildTool} />
 									)}
 									{analysis.architecture.patterns.testFramework && (
-										<PatternBadge label="Test" value={analysis.architecture.patterns.testFramework} />
+										<PatternBadge
+											label="Test"
+											value={analysis.architecture.patterns.testFramework}
+										/>
 									)}
 									{analysis.architecture.patterns.stateManagement && (
-										<PatternBadge label="State" value={analysis.architecture.patterns.stateManagement} />
+										<PatternBadge
+											label="State"
+											value={analysis.architecture.patterns.stateManagement}
+										/>
 									)}
 									{analysis.architecture.patterns.styling && (
 										<PatternBadge label="Styling" value={analysis.architecture.patterns.styling} />
@@ -255,8 +254,8 @@ function RepoAnalysisPage() {
 							bunx offworld pull {fullName}
 						</div>
 						<p className="text-muted-foreground mt-2 text-sm">
-							This command will clone the repository and install the SKILL.md file to your
-							Claude Code and OpenCode skill directories.
+							This command will clone the repository and install the SKILL.md file to your Claude
+							Code and OpenCode skill directories.
 						</p>
 					</CardContent>
 				</Card>
@@ -271,16 +270,32 @@ function SummaryContent({ summary }: { summary: string }) {
 		<div className="space-y-2">
 			{lines.map((line, i) => {
 				if (line.startsWith("# ")) {
-					return <h1 key={i} className="text-2xl font-bold">{line.slice(2)}</h1>;
+					return (
+						<h1 key={i} className="text-2xl font-bold">
+							{line.slice(2)}
+						</h1>
+					);
 				}
 				if (line.startsWith("## ")) {
-					return <h2 key={i} className="text-xl font-semibold">{line.slice(3)}</h2>;
+					return (
+						<h2 key={i} className="text-xl font-semibold">
+							{line.slice(3)}
+						</h2>
+					);
 				}
 				if (line.startsWith("### ")) {
-					return <h3 key={i} className="text-lg font-medium">{line.slice(4)}</h3>;
+					return (
+						<h3 key={i} className="text-lg font-medium">
+							{line.slice(4)}
+						</h3>
+					);
 				}
 				if (line.startsWith("- ") || line.startsWith("* ")) {
-					return <li key={i} className="ml-4">{line.slice(2)}</li>;
+					return (
+						<li key={i} className="ml-4">
+							{line.slice(2)}
+						</li>
+					);
 				}
 				if (line.trim() === "") {
 					return <br key={i} />;

@@ -60,7 +60,7 @@ describe("repo-source.ts", () => {
 			];
 
 			for (const [input, expectedOwner, expectedRepo] of cases) {
-				const result = parseRepoInput(input);
+				const result = parseRepoInput(input!);
 				expect(result.type).toBe("remote");
 				if (result.type === "remote") {
 					expect(result.owner).toBe(expectedOwner);
@@ -189,7 +189,7 @@ describe("repo-source.ts", () => {
 	// =========================================================================
 	describe("parseRepoInput - local paths", () => {
 		it("returns local source for '.' (mocked fs)", () => {
-			mockExistsSync.mockImplementation((path: string) => {
+			mockExistsSync.mockImplementation((_path: string) => {
 				// Both the dir and .git should exist
 				return true;
 			});

@@ -39,7 +39,8 @@ const PROVIDER_HOSTS: Record<string, GitProvider> = {
 };
 
 // Regex patterns for different URL formats
-const HTTPS_URL_REGEX = /^https?:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/([^/]+)\/([^/]+?)(?:\.git)?$/;
+const HTTPS_URL_REGEX =
+	/^https?:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/([^/]+)\/([^/]+?)(?:\.git)?$/;
 const SSH_URL_REGEX = /^git@(github\.com|gitlab\.com|bitbucket\.org):([^/]+)\/([^/]+?)(?:\.git)?$/;
 const SHORT_FORMAT_REGEX = /^([^/:@]+)\/([^/:@]+)$/;
 
@@ -70,6 +71,8 @@ function parseHttpsUrl(input: string): RemoteRepoSource | null {
 	if (!match) return null;
 
 	const [, host, owner, repo] = match;
+	if (!host || !owner || !repo) return null;
+
 	const provider = PROVIDER_HOSTS[host];
 	if (!provider) return null;
 
@@ -92,6 +95,8 @@ function parseSshUrl(input: string): RemoteRepoSource | null {
 	if (!match) return null;
 
 	const [, host, owner, repo] = match;
+	if (!host || !owner || !repo) return null;
+
 	const provider = PROVIDER_HOSTS[host];
 	if (!provider) return null;
 
@@ -115,6 +120,8 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
 	if (!match) return null;
 
 	const [, owner, repo] = match;
+	if (!owner || !repo) return null;
+
 	const provider: GitProvider = "github";
 
 	return {
@@ -210,7 +217,7 @@ export function parseRepoInput(input: string): RepoSource {
 
 	throw new RepoSourceError(
 		`Unable to parse repository input: ${input}. ` +
-			"Expected formats: owner/repo, https://github.com/owner/repo, git@github.com:owner/repo.git, or a local path"
+			"Expected formats: owner/repo, https://github.com/owner/repo, git@github.com:owner/repo.git, or a local path",
 	);
 }
 

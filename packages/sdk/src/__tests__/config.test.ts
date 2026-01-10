@@ -15,12 +15,7 @@ vi.mock("node:fs", () => ({
 	mkdirSync: vi.fn(),
 }));
 
-import {
-	existsSync,
-	readFileSync,
-	writeFileSync,
-	mkdirSync,
-} from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import {
 	getMetaRoot,
 	getRepoRoot,
@@ -260,7 +255,7 @@ describe("config.ts", () => {
 	// =========================================================================
 	describe("saveConfig", () => {
 		it("creates directory if missing", () => {
-			mockExistsSync.mockImplementation((path: string) => {
+			mockExistsSync.mockImplementation((_path: string) => {
 				// Config dir doesn't exist, config file doesn't exist
 				return false;
 			});
@@ -271,7 +266,7 @@ describe("config.ts", () => {
 			saveConfig({ repoRoot: "/new/path" });
 
 			expect(mockMkdirSync).toHaveBeenCalled();
-			expect(mockMkdirSync.mock.calls[0][1]).toEqual({ recursive: true });
+			expect(mockMkdirSync.mock.calls[0]![1]).toEqual({ recursive: true });
 		});
 
 		it("merges with existing config", () => {
@@ -293,7 +288,7 @@ describe("config.ts", () => {
 			saveConfig({ repoRoot: "/new/path" });
 
 			expect(mockWriteFileSync).toHaveBeenCalled();
-			const writtenContent = JSON.parse(mockWriteFileSync.mock.calls[0][1] as string);
+			const writtenContent = JSON.parse(mockWriteFileSync.mock.calls[0]![1] as string);
 			expect(writtenContent.repoRoot).toBe("/new/path");
 			expect(writtenContent.metaRoot).toBe("/old/meta"); // preserved
 		});
@@ -304,7 +299,7 @@ describe("config.ts", () => {
 			saveConfig({ repoRoot: "/test/path" });
 
 			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			expect(() => JSON.parse(content as string)).not.toThrow();
 		});
 

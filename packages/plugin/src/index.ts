@@ -45,7 +45,10 @@ interface RepoInfo {
 /**
  * Load summary.md content for a repository
  */
-function loadSummary(fullName: string, provider: "github" | "gitlab" | "bitbucket" = "github"): string | null {
+function loadSummary(
+	fullName: string,
+	provider: "github" | "gitlab" | "bitbucket" = "github",
+): string | null {
 	const analysisPath = getAnalysisPath(fullName, provider);
 	const summaryPath = join(analysisPath, "summary.md");
 
@@ -63,7 +66,10 @@ function loadSummary(fullName: string, provider: "github" | "gitlab" | "bitbucke
 /**
  * Load architecture.json for a repository
  */
-function loadArchitecture(fullName: string, provider: "github" | "gitlab" | "bitbucket" = "github"): Architecture | null {
+function loadArchitecture(
+	fullName: string,
+	provider: "github" | "gitlab" | "bitbucket" = "github",
+): Architecture | null {
 	const analysisPath = getAnalysisPath(fullName, provider);
 	const archPath = join(analysisPath, "architecture.json");
 
@@ -110,7 +116,9 @@ function listRepos(): RepoInfo[] {
 /**
  * Clone and analyze a repository
  */
-async function cloneAndAnalyze(repoInput: string): Promise<{ success: boolean; message: string; path?: string }> {
+async function cloneAndAnalyze(
+	repoInput: string,
+): Promise<{ success: boolean; message: string; path?: string }> {
 	try {
 		const source = parseRepoInput(repoInput);
 
@@ -164,92 +172,72 @@ const offworldTool = tool({
 		mode: tool.schema.enum(["list", "summary", "architecture", "clone"]),
 		repo: tool.schema.string().optional(),
 	},
-	async execute(args: ToolArgs) {
+	async execute(args: ToolArgs): Promise<string> {
 		const { mode, repo } = args;
 
 		switch (mode) {
 			case "list": {
 				const repos = listRepos();
 				if (repos.length === 0) {
-					return {
-						content: "No repositories cloned. Use mode='clone' with a repo to get started.",
-					};
+					return "No repositories cloned. Use mode='clone' with a repo to get started.";
 				}
 				const list = repos
 					.map(
 						(r) =>
-							`- ${r.fullName}${r.hasAnalysis ? " [analyzed]" : ""}${r.hasSkill ? " [skill]" : ""}`
+							`- ${r.fullName}${r.hasAnalysis ? " [analyzed]" : ""}${r.hasSkill ? " [skill]" : ""}`,
 					)
 					.join("\n");
-				return {
-					content: `Cloned repositories:\n${list}`,
-				};
+				return `Cloned repositories:\n${list}`;
 			}
 
 			case "summary": {
 				if (!repo) {
-					return {
-						content: "Error: 'repo' parameter required for summary mode. Use format 'owner/repo'.",
-					};
+					return "Error: 'repo' parameter required for summary mode. Use format 'owner/repo'.";
 				}
 				// Parse to get provider
 				let provider: "github" | "gitlab" | "bitbucket" = "github";
-				let fullName = repo;
+				let fullName: string = repo;
 				if (repo.includes(":")) {
 					const [p, name] = repo.split(":");
 					provider = p as "github" | "gitlab" | "bitbucket";
-					fullName = name;
+					fullName = name ?? repo;
 				}
 				const summary = loadSummary(fullName, provider);
 				if (!summary) {
-					return {
-						content: `No summary found for ${repo}. Run 'ow pull ${repo}' to generate analysis.`,
-					};
+					return `No summary found for ${repo}. Run 'ow pull ${repo}' to generate analysis.`;
 				}
-				return { content: summary };
+				return summary;
 			}
 
 			case "architecture": {
 				if (!repo) {
-					return {
-						content: "Error: 'repo' parameter required for architecture mode. Use format 'owner/repo'.",
-					};
+					return "Error: 'repo' parameter required for architecture mode. Use format 'owner/repo'.";
 				}
 				// Parse to get provider
 				let provider: "github" | "gitlab" | "bitbucket" = "github";
-				let fullName = repo;
+				let fullName: string = repo;
 				if (repo.includes(":")) {
 					const [p, name] = repo.split(":");
 					provider = p as "github" | "gitlab" | "bitbucket";
-					fullName = name;
+					fullName = name ?? repo;
 				}
 				const arch = loadArchitecture(fullName, provider);
 				if (!arch) {
-					return {
-						content: `No architecture found for ${repo}. Run 'ow pull ${repo}' to generate analysis.`,
-					};
+					return `No architecture found for ${repo}. Run 'ow pull ${repo}' to generate analysis.`;
 				}
-				return {
-					content: JSON.stringify(arch, null, 2),
-				};
+				return JSON.stringify(arch, null, 2);
 			}
 
 			case "clone": {
 				if (!repo) {
-					return {
-						content: "Error: 'repo' parameter required for clone mode. Use format 'owner/repo' or GitHub URL.",
-					};
+					return "Error: 'repo' parameter required for clone mode. Use format 'owner/repo' or GitHub URL.";
 				}
 				const result = await cloneAndAnalyze(repo);
-				return {
-					content: result.message,
-				};
+				return result.message;
 			}
 
 			default:
-				return {
-					content: `Unknown mode: ${mode}. Use one of: list, summary, architecture, clone`,
-				};
+				return `Unknown mode: ${mode}. Use one of: list, summary, architecture, clone`;
 		}
 	},
 });
@@ -292,7 +280,9 @@ Use the 'offworld' tool with mode='summary' or mode='architecture' to retrieve d
  * Offworld OpenCode Plugin
  * Provides the offworld tool and context injection
  */
-export const OffworldPlugin: Plugin = async (ctx) => {
+// Using type assertion because Plugin type definitions may not match current OpenCode SDK
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const OffworldPlugin = (async (_ctx: any) => {
 	// Get context injection (may be null if no repos)
 	const contextInjection = generateContextInjection();
 
@@ -306,16 +296,16 @@ export const OffworldPlugin: Plugin = async (ctx) => {
 		// Note: This uses experimental.chat.system.transform hook
 		hooks: contextInjection
 			? {
-					"message.created.before": async ({ message }) => {
+					"message.created.before": async ({ message }: { message: unknown }) => {
 						// The context injection would be added to system prompt
 						// This is a synthetic injection that helps the AI know about available repos
 						// The actual implementation depends on OpenCode's hook API
 						return message;
 					},
-			  }
+				}
 			: {},
 	};
-};
+}) as Plugin;
 
 // Default export for convenience
 export default OffworldPlugin;

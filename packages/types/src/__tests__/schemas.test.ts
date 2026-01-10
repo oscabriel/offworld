@@ -318,9 +318,7 @@ describe("SkillSchema", () => {
 					description: "Main Router class",
 				},
 			],
-			searchStrategies: [
-				"grep for 'createRouter' to find router instantiation",
-			],
+			searchStrategies: ["grep for 'createRouter' to find router instantiation"],
 			whenToUse: ["User asks about file-based routing"],
 		};
 		const result = SkillSchema.safeParse(skill);

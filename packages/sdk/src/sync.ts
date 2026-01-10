@@ -3,12 +3,7 @@
  * PRD 3.14: Implements pull/push/check for remote analysis storage
  */
 
-import type {
-	Architecture,
-	FileIndex,
-	RepoSource,
-	Skill,
-} from "@offworld/types";
+import type { Architecture, FileIndex, RepoSource, Skill } from "@offworld/types";
 
 // ============================================================================
 // Configuration
@@ -32,7 +27,7 @@ export class SyncError extends Error {
 export class NetworkError extends SyncError {
 	constructor(
 		message: string,
-		public readonly statusCode?: number
+		public readonly statusCode?: number,
 	) {
 		super(message);
 		this.name = "NetworkError";
@@ -47,9 +42,7 @@ export class AuthenticationError extends SyncError {
 }
 
 export class RateLimitError extends SyncError {
-	constructor(
-		message = "Rate limit exceeded. You can push up to 3 times per repo per day."
-	) {
+	constructor(message = "Rate limit exceeded. You can push up to 3 times per repo per day.") {
 		super(message);
 		this.name = "RateLimitError";
 	}
@@ -58,7 +51,7 @@ export class RateLimitError extends SyncError {
 export class ConflictError extends SyncError {
 	constructor(
 		message = "A newer analysis already exists on the server.",
-		public readonly remoteCommitSha?: string
+		public readonly remoteCommitSha?: string,
 	) {
 		super(message);
 		this.name = "ConflictError";
@@ -68,7 +61,7 @@ export class ConflictError extends SyncError {
 export class PushNotAllowedError extends SyncError {
 	constructor(
 		message: string,
-		public readonly reason: "local" | "not-github" | "low-stars"
+		public readonly reason: "local" | "not-github" | "low-stars",
 	) {
 		super(message);
 		this.name = "PushNotAllowedError";
@@ -146,7 +139,7 @@ export interface CanPushResult {
  */
 export async function pullAnalysis(
 	fullName: string,
-	options: SyncOptions = {}
+	options: SyncOptions = {},
 ): Promise<PullResponse | null> {
 	const apiBase = options.apiBase ?? DEFAULT_API_BASE;
 	const url = `${apiBase}/api/analyses/pull`;
@@ -165,22 +158,19 @@ export async function pullAnalysis(
 		}
 
 		if (response.status === 400) {
-			const error = await response.json();
-			throw new SyncError(error.message || "Invalid request");
+			const errorData = (await response.json()) as { message?: string };
+			throw new SyncError(errorData.message || "Invalid request");
 		}
 
 		if (!response.ok) {
-			throw new NetworkError(
-				`Failed to pull analysis: ${response.statusText}`,
-				response.status
-			);
+			throw new NetworkError(`Failed to pull analysis: ${response.statusText}`, response.status);
 		}
 
 		return (await response.json()) as PullResponse;
 	} catch (error) {
 		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`
+			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`,
 		);
 	}
 }
@@ -195,7 +185,7 @@ export async function pullAnalysis(
 export async function pushAnalysis(
 	analysis: AnalysisData,
 	token: string,
-	options: SyncOptions = {}
+	options: SyncOptions = {},
 ): Promise<PushResponse> {
 	const apiBase = options.apiBase ?? DEFAULT_API_BASE;
 	const url = `${apiBase}/api/analyses/push`;
@@ -219,27 +209,24 @@ export async function pushAnalysis(
 		}
 
 		if (response.status === 409) {
-			const error = await response.json();
-			throw new ConflictError(error.message, error.remoteCommitSha);
+			const errorData = (await response.json()) as { message?: string; remoteCommitSha?: string };
+			throw new ConflictError(errorData.message, errorData.remoteCommitSha);
 		}
 
 		if (response.status === 400) {
-			const error = await response.json();
-			throw new SyncError(error.message || "Invalid request");
+			const errorData = (await response.json()) as { message?: string };
+			throw new SyncError(errorData.message || "Invalid request");
 		}
 
 		if (!response.ok) {
-			throw new NetworkError(
-				`Failed to push analysis: ${response.statusText}`,
-				response.status
-			);
+			throw new NetworkError(`Failed to push analysis: ${response.statusText}`, response.status);
 		}
 
 		return (await response.json()) as PushResponse;
 	} catch (error) {
 		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`
+			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`,
 		);
 	}
 }
@@ -252,7 +239,7 @@ export async function pushAnalysis(
  */
 export async function checkRemote(
 	fullName: string,
-	options: SyncOptions = {}
+	options: SyncOptions = {},
 ): Promise<CheckResponse> {
 	const apiBase = options.apiBase ?? DEFAULT_API_BASE;
 	const url = `${apiBase}/api/analyses/check`;
@@ -271,17 +258,14 @@ export async function checkRemote(
 		}
 
 		if (!response.ok) {
-			throw new NetworkError(
-				`Failed to check remote: ${response.statusText}`,
-				response.status
-			);
+			throw new NetworkError(`Failed to check remote: ${response.statusText}`, response.status);
 		}
 
 		return (await response.json()) as CheckResponse;
 	} catch (error) {
 		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`
+			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`,
 		);
 	}
 }
@@ -296,7 +280,7 @@ export async function checkRemote(
 export async function checkStaleness(
 	fullName: string,
 	localCommitSha: string,
-	options: SyncOptions = {}
+	options: SyncOptions = {},
 ): Promise<StalenessResult> {
 	const remote = await checkRemote(fullName, options);
 
@@ -341,7 +325,7 @@ export async function fetchRepoStars(owner: string, repo: string): Promise<numbe
 			return 0;
 		}
 
-		const data = await response.json();
+		const data = (await response.json()) as { stargazers_count?: number };
 		return data.stargazers_count ?? 0;
 	} catch {
 		return 0;

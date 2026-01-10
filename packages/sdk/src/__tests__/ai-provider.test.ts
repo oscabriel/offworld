@@ -65,7 +65,7 @@ describe("ai/provider.ts", () => {
 			expect(result).toBe(true);
 			expect(mockExecSync).toHaveBeenCalledWith(
 				"claude --version",
-				expect.objectContaining({ stdio: "pipe" })
+				expect.objectContaining({ stdio: "pipe" }),
 			);
 		});
 
@@ -94,7 +94,7 @@ describe("ai/provider.ts", () => {
 			expect(result).toBe(true);
 			expect(mockFetch).toHaveBeenCalledWith(
 				"http://localhost:4096/health",
-				expect.objectContaining({ method: "GET" })
+				expect.objectContaining({ method: "GET" }),
 			);
 		});
 

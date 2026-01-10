@@ -93,7 +93,7 @@ describe("index-manager.ts", () => {
 
 			expect(result.version).toBe("0.1.0");
 			expect(result.repos["github:tanstack/router"]).toBeDefined();
-			expect(result.repos["github:tanstack/router"].fullName).toBe("tanstack/router");
+			expect(result.repos["github:tanstack/router"]!.fullName).toBe("tanstack/router");
 		});
 
 		it("returns empty index on JSON parse error", () => {
@@ -126,7 +126,7 @@ describe("index-manager.ts", () => {
 			saveIndex(sampleIndex);
 
 			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			expect(() => JSON.parse(content as string)).not.toThrow();
 		});
 
@@ -135,10 +135,7 @@ describe("index-manager.ts", () => {
 
 			saveIndex(sampleIndex);
 
-			expect(mockMkdirSync).toHaveBeenCalledWith(
-				expect.any(String),
-				{ recursive: true }
-			);
+			expect(mockMkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
 		});
 
 		it("writes to correct path", () => {
@@ -149,7 +146,7 @@ describe("index-manager.ts", () => {
 			expect(mockWriteFileSync).toHaveBeenCalledWith(
 				"/home/user/.ow/index.json",
 				expect.any(String),
-				"utf-8"
+				"utf-8",
 			);
 		});
 	});
@@ -164,7 +161,7 @@ describe("index-manager.ts", () => {
 			updateIndex(sampleEntry);
 
 			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.repos["github:tanstack/router"]).toBeDefined();
 		});
@@ -182,10 +179,10 @@ describe("index-manager.ts", () => {
 			updateIndex(updatedEntry);
 
 			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.repos["github:tanstack/router"].commitSha).toBe("newsha456");
-			expect(written.repos["github:tanstack/router"].hasSkill).toBe(true);
+			expect(written.repos["github:tanstack/router"]!.commitSha).toBe("newsha456");
+			expect(written.repos["github:tanstack/router"]!.hasSkill).toBe(true);
 		});
 
 		it("preserves other entries when updating", () => {
@@ -205,7 +202,7 @@ describe("index-manager.ts", () => {
 
 			updateIndex(sampleEntry);
 
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.repos["github:other/repo"]).toBeDefined();
 			expect(written.repos["github:tanstack/router"]).toBeDefined();
@@ -223,7 +220,7 @@ describe("index-manager.ts", () => {
 			const result = removeFromIndex("github:tanstack/router");
 
 			expect(result).toBe(true);
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.repos["github:tanstack/router"]).toBeUndefined();
 		});
@@ -307,7 +304,7 @@ describe("index-manager.ts", () => {
 
 			updateIndex(sampleEntry);
 
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.version).toBe("0.1.0");
 		});
@@ -322,7 +319,7 @@ describe("index-manager.ts", () => {
 
 			updateIndex(sampleEntry);
 
-			const [, content] = mockWriteFileSync.mock.calls[0];
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.version).toBe("0.1.0"); // updated to current
 		});

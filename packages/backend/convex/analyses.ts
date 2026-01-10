@@ -104,9 +104,7 @@ export const getPushCountToday = internalQuery({
 
 		const pushes = await ctx.db
 			.query("pushLogs")
-			.withIndex("by_repo_date", (q) =>
-				q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo)
-			)
+			.withIndex("by_repo_date", (q) => q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo))
 			.filter((q) => q.eq(q.field("userId"), args.userId))
 			.collect();
 
@@ -174,7 +172,7 @@ export const upsert = internalMutation({
 			const recentPushes = await ctx.db
 				.query("pushLogs")
 				.withIndex("by_repo_date", (q) =>
-					q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo)
+					q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo),
 				)
 				.filter((q) => q.eq(q.field("userId"), userId))
 				.collect();

@@ -31,9 +31,11 @@ const result = sampleFunction({
 The main function that processes data.
 
 **Parameters:**
+
 - `config` - Configuration object with options
 
 **Returns:**
+
 - Processed result object
 
 ## Architecture

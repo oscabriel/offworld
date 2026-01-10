@@ -17,10 +17,7 @@ import { formatContextForPrompt } from "./context.js";
 /**
  * Generate a markdown summary of the repository.
  */
-export async function generateSummary(
-	context: GatheredContext,
-	config?: Config
-): Promise<string> {
+export async function generateSummary(context: GatheredContext, config?: Config): Promise<string> {
 	const contextPrompt = formatContextForPrompt(context);
 
 	const prompt = `You are analyzing a software repository. Based on the following context, write a concise markdown summary.
@@ -61,7 +58,7 @@ Output the summary in markdown format.`;
  */
 export async function extractArchitecture(
 	context: GatheredContext,
-	config?: Config
+	config?: Config,
 ): Promise<Architecture> {
 	const contextPrompt = formatContextForPrompt(context);
 
@@ -82,7 +79,8 @@ Be thorough but concise. Focus on the actual structure visible in the code.`;
 		prompt,
 		cwd: process.cwd(),
 		schema: ArchitectureSchema,
-		systemPrompt: "You are a software architect expert. Analyze codebases and extract architectural patterns.",
+		systemPrompt:
+			"You are a software architect expert. Analyze codebases and extract architectural patterns.",
 		config,
 	});
 
@@ -100,7 +98,7 @@ export async function generateSkill(
 	context: GatheredContext,
 	summary: string,
 	architecture: Architecture,
-	config?: Config
+	config?: Config,
 ): Promise<Skill> {
 	const contextPrompt = formatContextForPrompt(context);
 
@@ -130,7 +128,8 @@ Make the skill practical and immediately usable without editing.`;
 		prompt,
 		cwd: process.cwd(),
 		schema: SkillSchema,
-		systemPrompt: "You are an expert at creating AI assistant skills. Make them practical and immediately useful.",
+		systemPrompt:
+			"You are an expert at creating AI assistant skills. Make them practical and immediately useful.",
 		config,
 	});
 
@@ -230,10 +229,12 @@ export function formatArchitectureMd(architecture: Architecture): string {
  * Sanitize a string for use as a Mermaid node ID.
  */
 function sanitizeMermaidId(name: string): string {
-	return name
-		.replace(/[^a-zA-Z0-9]/g, "_")
-		.replace(/^_+|_+$/g, "")
-		.toLowerCase() || "node";
+	return (
+		name
+			.replace(/[^a-zA-Z0-9]/g, "_")
+			.replace(/^_+|_+$/g, "")
+			.toLowerCase() || "node"
+	);
 }
 
 // ============================================================================
@@ -295,8 +296,5 @@ export function formatSkillMd(skill: Skill): string {
  * Escape special characters for YAML string values.
  */
 function escapeYaml(str: string): string {
-	return str
-		.replace(/\\/g, "\\\\")
-		.replace(/"/g, '\\"')
-		.replace(/\n/g, "\\n");
+	return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
 }

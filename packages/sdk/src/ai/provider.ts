@@ -37,7 +37,7 @@ OpenCode:
   # Start OpenCode server on localhost:4096
   # Visit: https://opencode.ai for installation instructions
 
-After installation, run your command again.`
+After installation, run your command again.`,
 		);
 		this.name = "AIProviderNotFoundError";
 	}
@@ -50,7 +50,7 @@ export class PreferredProviderNotAvailableError extends AIProviderError {
 	constructor(provider: AIProvider) {
 		super(
 			`Preferred provider "${provider}" is not available. ` +
-				`Either install it or remove the preference from your config.`
+				`Either install it or remove the preference from your config.`,
 		);
 		this.name = "PreferredProviderNotAvailableError";
 	}

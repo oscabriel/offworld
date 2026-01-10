@@ -54,18 +54,13 @@ function expandTilde(path: string): string {
 /**
  * Install SKILL.md to both OpenCode and Claude Code skill directories
  */
-export async function installSkill(
-	repoName: string,
-	skillContent: string
-): Promise<void> {
+export async function installSkill(repoName: string, skillContent: string): Promise<void> {
 	const config = loadConfig();
 
 	// OpenCode skill directory
 	const openCodeSkillDir = expandTilde(join(config.skillDir, repoName));
 	// Claude Code skill directory (~/.claude/skills/{repo})
-	const claudeSkillDir = expandTilde(
-		join("~/.claude/skills", repoName)
-	);
+	const claudeSkillDir = expandTilde(join("~/.claude/skills", repoName));
 
 	// Ensure directories exist and write SKILL.md
 	for (const skillDir of [openCodeSkillDir, claudeSkillDir]) {
@@ -125,10 +120,7 @@ function formatSkillMd(skill: Skill): string {
 /**
  * Save pulled analysis to local analysis directory
  */
-function saveAnalysisLocally(
-	source: RepoSource,
-	analysis: PullResponse
-): void {
+function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
 	let analysisPath: string;
 	if (source.type === "remote") {
 		analysisPath = getAnalysisPath(source.fullName, source.provider);
@@ -142,26 +134,18 @@ function saveAnalysisLocally(
 	mkdirSync(analysisPath, { recursive: true });
 
 	// Write analysis files
-	writeFileSync(
-		join(analysisPath, "summary.md"),
-		analysis.summary,
-		"utf-8"
-	);
+	writeFileSync(join(analysisPath, "summary.md"), analysis.summary, "utf-8");
 	writeFileSync(
 		join(analysisPath, "architecture.json"),
 		JSON.stringify(analysis.architecture, null, 2),
-		"utf-8"
+		"utf-8",
 	);
 	writeFileSync(
 		join(analysisPath, "file-index.json"),
 		JSON.stringify(analysis.fileIndex, null, 2),
-		"utf-8"
+		"utf-8",
 	);
-	writeFileSync(
-		join(analysisPath, "skill.json"),
-		JSON.stringify(analysis.skill, null, 2),
-		"utf-8"
-	);
+	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(analysis.skill, null, 2), "utf-8");
 
 	// Write SKILL.md
 	const skillMd = formatSkillMd(analysis.skill);
@@ -174,11 +158,7 @@ function saveAnalysisLocally(
 		version: "0.1.0",
 		pullCount: analysis.pullCount,
 	};
-	writeFileSync(
-		join(analysisPath, "meta.json"),
-		JSON.stringify(meta, null, 2),
-		"utf-8"
-	);
+	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
 /**
@@ -353,21 +333,22 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		s.start("Generating local analysis...");
 
 		try {
-			const pipelineOptions = source.type === "remote"
-				? {
-						config,
-						provider: source.provider,
-						fullName: source.fullName,
-						onProgress: (step: string, message: string) => {
-							s.message(message);
-						},
-				  }
-				: {
-						config,
-						onProgress: (step: string, message: string) => {
-							s.message(message);
-						},
-				  };
+			const pipelineOptions =
+				source.type === "remote"
+					? {
+							config,
+							provider: source.provider,
+							fullName: source.fullName,
+							onProgress: (_step: string, message: string) => {
+								s.message(message);
+							},
+						}
+					: {
+							config,
+							onProgress: (_step: string, message: string) => {
+								s.message(message);
+							},
+						};
 
 			await runAnalysisPipeline(repoPath, pipelineOptions);
 			s.stop("Analysis complete");

@@ -4,7 +4,7 @@
 
 // ES6 named imports
 import { useState, useEffect } from "react";
-import { Router, Route } from "react-router-dom";
+import { Router as _Router, Route as _Route } from "react-router-dom";
 
 // Default import
 import axios from "axios";
@@ -13,11 +13,11 @@ import axios from "axios";
 import * as fs from "node:fs";
 
 // Type-only import
-import type { Config, RepoSource } from "@offworld/types";
+import type { Config, RepoSource as _RepoSource } from "@offworld/types";
 
 // Relative imports
-import { helper } from "./utils";
-import { Component } from "../components/Component";
+import { helper as _helper } from "./utils";
+import { Component as _Component } from "../components/Component";
 
 // Side-effect import
 import "./styles.css";
@@ -26,14 +26,14 @@ import "./styles.css";
 export { useState } from "react";
 
 // Dynamic import (should not be extracted as static import)
-const loadModule = async () => {
+const _loadModule = async () => {
 	const mod = await import("./dynamic-module");
 	return mod;
 };
 
 // Sample function using imports
-export function sampleFunction(config: Config): void {
-	const [state, setState] = useState<string>("");
+export function sampleFunction(_config: Config): void {
+	const [_state, setState] = useState<string>("");
 
 	useEffect(() => {
 		axios.get("/api/data").then((res) => {

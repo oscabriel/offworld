@@ -3,7 +3,7 @@
  */
 
 // ES6 imports
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile as _writeFile } from "fs/promises";
 import path from "path";
 
 // CommonJS require (should also be detected)
@@ -11,11 +11,11 @@ const express = require("express");
 const { Router } = require("express");
 
 // Dynamic require
-const dynamicModule = require(`./dynamic-${process.env.NODE_ENV}`);
+const _dynamicModule = require(`./dynamic-${process.env.NODE_ENV}`);
 
 // Relative imports
-import { config } from "./config.js";
-import utils from "../utils/index.js";
+import { config as _config } from "./config.js";
+import _utils from "../utils/index.js";
 
 // Sample usage
 export async function processFile(filePath) {

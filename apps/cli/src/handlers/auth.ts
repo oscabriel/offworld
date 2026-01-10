@@ -4,12 +4,7 @@
  */
 
 import * as p from "@clack/prompts";
-import {
-	saveAuthData,
-	clearAuthData,
-	getAuthStatus,
-	getAuthPath,
-} from "@offworld/sdk";
+import { saveAuthData, clearAuthData, getAuthStatus, getAuthPath } from "@offworld/sdk";
 import open from "open";
 import http from "node:http";
 import { URL } from "node:url";
@@ -195,10 +190,13 @@ interface ReceivedAuthData {
  */
 function createCallbackServer(): Promise<ReceivedAuthData> {
 	return new Promise((resolve, reject) => {
-		const timeout = setTimeout(() => {
-			server.close();
-			reject(new Error("Login timed out. Please try again."));
-		}, 5 * 60 * 1000); // 5 minute timeout
+		const timeout = setTimeout(
+			() => {
+				server.close();
+				reject(new Error("Login timed out. Please try again."));
+			},
+			5 * 60 * 1000,
+		); // 5 minute timeout
 
 		const server = http.createServer((req, res) => {
 			if (!req.url?.startsWith(CALLBACK_PATH)) {
@@ -268,7 +266,11 @@ function createCallbackServer(): Promise<ReceivedAuthData> {
 		server.on("error", (err) => {
 			clearTimeout(timeout);
 			if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") {
-				reject(new Error(`Port ${CALLBACK_PORT} is already in use. Please close any conflicting applications.`));
+				reject(
+					new Error(
+						`Port ${CALLBACK_PORT} is already in use. Please close any conflicting applications.`,
+					),
+				);
 			} else {
 				reject(err);
 			}

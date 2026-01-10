@@ -73,29 +73,35 @@ export function createFsMock() {
 		return normalized in virtualFs;
 	});
 
-	const readFileSync: Mock = vi.fn((path: string, encoding?: BufferEncoding | { encoding?: BufferEncoding }) => {
-		const normalized = normalizePath(path);
-		const file = virtualFs[normalized];
+	const readFileSync: Mock = vi.fn(
+		(path: string, encoding?: BufferEncoding | { encoding?: BufferEncoding }) => {
+			const normalized = normalizePath(path);
+			const file = virtualFs[normalized];
 
-		if (!file) {
-			const error = new Error(`ENOENT: no such file or directory, open '${path}'`) as NodeJS.ErrnoException;
-			error.code = "ENOENT";
-			throw error;
-		}
+			if (!file) {
+				const error = new Error(
+					`ENOENT: no such file or directory, open '${path}'`,
+				) as NodeJS.ErrnoException;
+				error.code = "ENOENT";
+				throw error;
+			}
 
-		if (file.isDirectory) {
-			const error = new Error(`EISDIR: illegal operation on a directory, read '${path}'`) as NodeJS.ErrnoException;
-			error.code = "EISDIR";
-			throw error;
-		}
+			if (file.isDirectory) {
+				const error = new Error(
+					`EISDIR: illegal operation on a directory, read '${path}'`,
+				) as NodeJS.ErrnoException;
+				error.code = "EISDIR";
+				throw error;
+			}
 
-		const enc = typeof encoding === "string" ? encoding : encoding?.encoding;
-		if (enc === "utf-8" || enc === "utf8") {
-			return typeof file.content === "string" ? file.content : file.content.toString("utf-8");
-		}
+			const enc = typeof encoding === "string" ? encoding : encoding?.encoding;
+			if (enc === "utf-8" || enc === "utf8") {
+				return typeof file.content === "string" ? file.content : file.content.toString("utf-8");
+			}
 
-		return typeof file.content === "string" ? Buffer.from(file.content) : file.content;
-	});
+			return typeof file.content === "string" ? Buffer.from(file.content) : file.content;
+		},
+	);
 
 	const writeFileSync: Mock = vi.fn((path: string, data: string | Buffer) => {
 		const normalized = normalizePath(path);
@@ -127,7 +133,9 @@ export function createFsMock() {
 		const normalized = normalizePath(path);
 
 		if (!(normalized in virtualFs) && !options?.force) {
-			const error = new Error(`ENOENT: no such file or directory, unlink '${path}'`) as NodeJS.ErrnoException;
+			const error = new Error(
+				`ENOENT: no such file or directory, unlink '${path}'`,
+			) as NodeJS.ErrnoException;
 			error.code = "ENOENT";
 			throw error;
 		}
@@ -166,7 +174,9 @@ export function createFsMock() {
 		const file = virtualFs[normalized];
 
 		if (!file) {
-			const error = new Error(`ENOENT: no such file or directory, stat '${path}'`) as NodeJS.ErrnoException;
+			const error = new Error(
+				`ENOENT: no such file or directory, stat '${path}'`,
+			) as NodeJS.ErrnoException;
 			error.code = "ENOENT";
 			throw error;
 		}
@@ -196,9 +206,11 @@ export function createFsPromisesMock() {
 	const fsMock = createFsMock();
 
 	return {
-		readFile: vi.fn(async (path: string, encoding?: BufferEncoding | { encoding?: BufferEncoding }) => {
-			return fsMock.readFileSync(path, encoding);
-		}),
+		readFile: vi.fn(
+			async (path: string, encoding?: BufferEncoding | { encoding?: BufferEncoding }) => {
+				return fsMock.readFileSync(path, encoding);
+			},
+		),
 
 		writeFile: vi.fn(async (path: string, data: string | Buffer) => {
 			fsMock.writeFileSync(path, data);
@@ -223,7 +235,9 @@ export function createFsPromisesMock() {
 		access: vi.fn(async (path: string) => {
 			const normalized = normalizePath(path);
 			if (!(normalized in virtualFs)) {
-				const error = new Error(`ENOENT: no such file or directory, access '${path}'`) as NodeJS.ErrnoException;
+				const error = new Error(
+					`ENOENT: no such file or directory, access '${path}'`,
+				) as NodeJS.ErrnoException;
 				error.code = "ENOENT";
 				throw error;
 			}

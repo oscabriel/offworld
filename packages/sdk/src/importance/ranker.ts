@@ -8,7 +8,7 @@ import { basename, dirname, extname, join, relative, resolve } from "node:path";
 
 import type { FileIndexEntry, FileRole } from "@offworld/types";
 
-import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS, type SupportedLanguage } from "../constants.js";
+import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS } from "../constants.js";
 import { isBinaryBuffer, loadGitignorePatternsSimple } from "../util.js";
 import { extractImports, type ExtractedImport } from "./queries.js";
 import { getLanguage, initializeParser, isParserInitialized } from "./parser.js";

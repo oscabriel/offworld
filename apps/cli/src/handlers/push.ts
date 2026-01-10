@@ -8,7 +8,6 @@ import {
 	parseRepoInput,
 	getToken,
 	getAnalysisPath,
-	getMetaRoot,
 	getCommitSha,
 	getClonedRepoPath,
 	isRepoCloned,
@@ -54,13 +53,7 @@ function loadLocalAnalysis(analysisPath: string): AnalysisData | null {
 	const metaPath = join(analysisPath, "meta.json");
 
 	// Check all required files exist
-	const requiredFiles = [
-		summaryPath,
-		architecturePath,
-		fileIndexPath,
-		skillPath,
-		metaPath,
-	];
+	const requiredFiles = [summaryPath, architecturePath, fileIndexPath, skillPath, metaPath];
 
 	for (const file of requiredFiles) {
 		if (!existsSync(file)) {
@@ -70,12 +63,8 @@ function loadLocalAnalysis(analysisPath: string): AnalysisData | null {
 
 	try {
 		const summary = readFileSync(summaryPath, "utf-8");
-		const architecture = JSON.parse(
-			readFileSync(architecturePath, "utf-8")
-		) as Architecture;
-		const fileIndex = JSON.parse(
-			readFileSync(fileIndexPath, "utf-8")
-		) as FileIndex;
+		const architecture = JSON.parse(readFileSync(architecturePath, "utf-8")) as Architecture;
+		const fileIndex = JSON.parse(readFileSync(fileIndexPath, "utf-8")) as FileIndex;
 		const skill = JSON.parse(readFileSync(skillPath, "utf-8")) as Skill;
 		const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as {
 			commitSha: string;
@@ -146,9 +135,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 				} else if (err.reason === "not-github") {
 					p.log.info("GitLab and Bitbucket support coming soon!");
 				} else if (err.reason === "low-stars") {
-					p.log.info(
-						"We require 5+ stars to ensure quality analyses on offworld.sh."
-					);
+					p.log.info("We require 5+ stars to ensure quality analyses on offworld.sh.");
 				}
 
 				return {
@@ -209,14 +196,10 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			const currentSha = getCommitSha(repoPath);
 			if (currentSha !== localAnalysis.commitSha) {
 				s.stop("Analysis outdated");
-				p.log.warn(
-					"Local analysis was generated for a different commit."
-				);
+				p.log.warn("Local analysis was generated for a different commit.");
 				p.log.info(`Analysis: ${localAnalysis.commitSha.slice(0, 7)}`);
 				p.log.info(`Current:  ${currentSha.slice(0, 7)}`);
-				p.log.info(
-					`Run 'ow generate ${source.fullName} --force' to regenerate.`
-				);
+				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
 				return {
 					success: false,
 					message: "Analysis outdated - run generate to update",
@@ -233,12 +216,8 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 
 			if (result.success) {
 				s.stop("Analysis uploaded!");
-				p.log.success(
-					`Successfully pushed analysis for ${source.fullName}`
-				);
-				p.log.info(
-					`View at: https://offworld.sh/repo/${source.owner}/${source.repo}`
-				);
+				p.log.success(`Successfully pushed analysis for ${source.fullName}`);
+				p.log.info(`View at: https://offworld.sh/repo/${source.owner}/${source.repo}`);
 				return {
 					success: true,
 					message: "Analysis pushed successfully",
@@ -278,9 +257,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 					p.log.info(`Remote: ${err.remoteCommitSha.slice(0, 7)}`);
 					p.log.info(`Local:  ${localAnalysis.commitSha.slice(0, 7)}`);
 				}
-				p.log.info(
-					"Pull the latest analysis with 'ow pull' or use '--force' if you're sure."
-				);
+				p.log.info("Pull the latest analysis with 'ow pull' or use '--force' if you're sure.");
 				return {
 					success: false,
 					message: "Conflict - newer analysis exists",

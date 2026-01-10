@@ -33,7 +33,7 @@ export function isBinaryBuffer(buffer: Buffer): boolean {
 	let suspiciousBytes = 0;
 
 	for (let i = 0; i < buffer.length; i++) {
-		const byte = buffer[i];
+		const byte = buffer[i]!;
 
 		// Null byte is a strong binary indicator
 		if (byte === 0x00) {

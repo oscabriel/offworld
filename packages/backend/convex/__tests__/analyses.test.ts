@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { internal } from "../_generated/api";
 import schema from "../schema";
 
+// Use import.meta.glob to load modules for convex-test
+const modules = import.meta.glob("../**/*.ts");
+
+const t = () => convexTest(schema, modules);
+
 /**
  * PRD T7.1: Unit tests for Convex functions
  */
@@ -25,12 +30,8 @@ const sampleAnalysis = {
 				dependencies: [],
 			},
 		],
-		relationships: [
-			{ from: "router-core", to: "utils", type: "imports" },
-		],
-		keyFiles: [
-			{ path: "src/index.ts", role: "entry", description: "Main export" },
-		],
+		relationships: [{ from: "router-core", to: "utils", type: "imports" }],
+		keyFiles: [{ path: "src/index.ts", role: "entry", description: "Main export" }],
 		patterns: {
 			framework: "React",
 			buildTool: "Vite",
@@ -41,12 +42,8 @@ const sampleAnalysis = {
 		name: "tanstack-router",
 		description: "TanStack Router skill",
 		allowedTools: ["Read", "Glob", "Grep"],
-		repositoryStructure: [
-			{ path: "packages/", purpose: "Monorepo packages" },
-		],
-		keyFiles: [
-			{ path: "src/index.ts", description: "Main entry point" },
-		],
+		repositoryStructure: [{ path: "packages/", purpose: "Monorepo packages" }],
+		keyFiles: [{ path: "src/index.ts", description: "Main entry point" }],
 		searchStrategies: ["grep for createRouter"],
 		whenToUse: ["When working with TanStack Router"],
 	},
@@ -66,9 +63,9 @@ const sampleAnalysis = {
 
 describe("getByRepo", () => {
 	it("returns null for missing repo", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		const result = await t.query(internal.analyses.getByRepo, {
+		const result = await ctx.query(internal.analyses.getByRepo, {
 			fullName: "nonexistent/repo",
 		});
 
@@ -76,10 +73,10 @@ describe("getByRepo", () => {
 	});
 
 	it("returns analysis for existing repo", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
 		// Insert test data directly
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				pullCount: 0,
@@ -87,7 +84,7 @@ describe("getByRepo", () => {
 			});
 		});
 
-		const result = await t.query(internal.analyses.getByRepo, {
+		const result = await ctx.query(internal.analyses.getByRepo, {
 			fullName: "tanstack/router",
 		});
 
@@ -100,9 +97,9 @@ describe("getByRepo", () => {
 
 describe("getMeta", () => {
 	it("returns null for missing repo", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		const result = await t.query(internal.analyses.getMeta, {
+		const result = await ctx.query(internal.analyses.getMeta, {
 			fullName: "nonexistent/repo",
 		});
 
@@ -110,9 +107,9 @@ describe("getMeta", () => {
 	});
 
 	it("returns only commitSha and analyzedAt", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				pullCount: 42,
@@ -120,7 +117,7 @@ describe("getMeta", () => {
 			});
 		});
 
-		const result = await t.query(internal.analyses.getMeta, {
+		const result = await ctx.query(internal.analyses.getMeta, {
 			fullName: "tanstack/router",
 		});
 
@@ -136,9 +133,9 @@ describe("getMeta", () => {
 
 describe("incrementPullCount", () => {
 	it("increases count by 1", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				pullCount: 5,
@@ -146,23 +143,23 @@ describe("incrementPullCount", () => {
 			});
 		});
 
-		const result = await t.mutation(internal.analyses.incrementPullCount, {
+		const result = await ctx.mutation(internal.analyses.incrementPullCount, {
 			fullName: "tanstack/router",
 		});
 
 		expect(result).toBe(true);
 
 		// Verify count was incremented
-		const analysis = await t.query(internal.analyses.getByRepo, {
+		const analysis = await ctx.query(internal.analyses.getByRepo, {
 			fullName: "tanstack/router",
 		});
 		expect(analysis?.pullCount).toBe(6);
 	});
 
 	it("returns false for missing repo", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		const result = await t.mutation(internal.analyses.incrementPullCount, {
+		const result = await ctx.mutation(internal.analyses.incrementPullCount, {
 			fullName: "nonexistent/repo",
 		});
 
@@ -172,16 +169,16 @@ describe("incrementPullCount", () => {
 
 describe("upsert", () => {
 	it("creates new analysis when not exists", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		const result = await t.mutation(internal.analyses.upsert, {
+		const result = await ctx.mutation(internal.analyses.upsert, {
 			...sampleAnalysis,
 		});
 
 		expect(result.success).toBe(true);
 
 		// Verify analysis was created
-		const analysis = await t.query(internal.analyses.getByRepo, {
+		const analysis = await ctx.query(internal.analyses.getByRepo, {
 			fullName: "tanstack/router",
 		});
 		expect(analysis).not.toBeNull();
@@ -191,10 +188,10 @@ describe("upsert", () => {
 	});
 
 	it("updates existing analysis when newer", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
 		// Insert initial analysis
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				analyzedAt: "2026-01-09T08:00:00.000Z", // Older
@@ -204,7 +201,7 @@ describe("upsert", () => {
 		});
 
 		// Update with newer analysis
-		const result = await t.mutation(internal.analyses.upsert, {
+		const result = await ctx.mutation(internal.analyses.upsert, {
 			...sampleAnalysis,
 			analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
 			commitSha: "newsha123",
@@ -214,7 +211,7 @@ describe("upsert", () => {
 		expect(result.success).toBe(true);
 
 		// Verify analysis was updated
-		const analysis = await t.query(internal.analyses.getByRepo, {
+		const analysis = await ctx.query(internal.analyses.getByRepo, {
 			fullName: "tanstack/router",
 		});
 		expect(analysis?.summary).toBe("# Updated Summary");
@@ -224,10 +221,10 @@ describe("upsert", () => {
 	});
 
 	it("rejects older analysis over newer", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
 		// Insert initial analysis with newer timestamp
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
@@ -237,7 +234,7 @@ describe("upsert", () => {
 		});
 
 		// Try to update with older analysis
-		const result = await t.mutation(internal.analyses.upsert, {
+		const result = await ctx.mutation(internal.analyses.upsert, {
 			...sampleAnalysis,
 			analyzedAt: "2026-01-09T08:00:00.000Z", // Older
 		});
@@ -248,10 +245,10 @@ describe("upsert", () => {
 	});
 
 	it("rejects different analysis for same commit", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
 		// Insert initial analysis
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				analyzedAt: "2026-01-09T10:00:00.000Z",
@@ -262,7 +259,7 @@ describe("upsert", () => {
 		});
 
 		// Try to push different analysis for same commit
-		const result = await t.mutation(internal.analyses.upsert, {
+		const result = await ctx.mutation(internal.analyses.upsert, {
 			...sampleAnalysis,
 			analyzedAt: "2026-01-09T11:00:00.000Z", // Different time
 			commitSha: "samecommit123", // Same commit
@@ -274,20 +271,18 @@ describe("upsert", () => {
 	});
 
 	it("enforces rate limit (3/repo/day)", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
 		// Create a user first
-		let userId: string;
-		await t.run(async (ctx) => {
-			const id = await ctx.db.insert("users", {
+		await ctx.run(async (ctx) => {
+			await ctx.db.insert("users", {
 				email: "test@example.com",
 				createdAt: new Date().toISOString(),
 			});
-			userId = id as unknown as string;
 		});
 
 		// Get the actual user ID for mutations
-		const userIdTyped = await t.run(async (ctx) => {
+		const userIdTyped = await ctx.run(async (ctx) => {
 			const user = await ctx.db
 				.query("users")
 				.filter((q) => q.eq(q.field("email"), "test@example.com"))
@@ -297,7 +292,7 @@ describe("upsert", () => {
 
 		// Push 3 times (should succeed)
 		for (let i = 0; i < 3; i++) {
-			await t.run(async (ctx) => {
+			await ctx.run(async (ctx) => {
 				await ctx.db.insert("pushLogs", {
 					fullName: "tanstack/router",
 					userId: userIdTyped,
@@ -308,7 +303,7 @@ describe("upsert", () => {
 		}
 
 		// 4th push should be rate limited
-		const result = await t.mutation(internal.analyses.upsert, {
+		const result = await ctx.mutation(internal.analyses.upsert, {
 			...sampleAnalysis,
 			userId: userIdTyped,
 		});
@@ -321,9 +316,9 @@ describe("upsert", () => {
 
 describe("remove", () => {
 	it("deletes existing analysis", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
 				pullCount: 0,
@@ -331,23 +326,23 @@ describe("remove", () => {
 			});
 		});
 
-		const result = await t.mutation(internal.analyses.remove, {
+		const result = await ctx.mutation(internal.analyses.remove, {
 			fullName: "tanstack/router",
 		});
 
 		expect(result).toBe(true);
 
 		// Verify analysis was deleted
-		const analysis = await t.query(internal.analyses.getByRepo, {
+		const analysis = await ctx.query(internal.analyses.getByRepo, {
 			fullName: "tanstack/router",
 		});
 		expect(analysis).toBeNull();
 	});
 
 	it("returns false for missing repo", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
-		const result = await t.mutation(internal.analyses.remove, {
+		const result = await ctx.mutation(internal.analyses.remove, {
 			fullName: "nonexistent/repo",
 		});
 
@@ -357,10 +352,10 @@ describe("remove", () => {
 
 describe("getPushCountToday", () => {
 	it("counts only pushes within 24 hours", async () => {
-		const t = convexTest(schema);
+		const ctx = t();
 
 		// Create a user
-		const userId = await t.run(async (ctx) => {
+		const userId = await ctx.run(async (ctx) => {
 			const id = await ctx.db.insert("users", {
 				email: "test@example.com",
 				createdAt: new Date().toISOString(),
@@ -372,7 +367,7 @@ describe("getPushCountToday", () => {
 		const yesterday = new Date(now.getTime() - 25 * 60 * 60 * 1000); // 25 hours ago
 
 		// Add old push (should not count)
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("pushLogs", {
 				fullName: "tanstack/router",
 				userId,
@@ -382,7 +377,7 @@ describe("getPushCountToday", () => {
 		});
 
 		// Add recent pushes (should count)
-		await t.run(async (ctx) => {
+		await ctx.run(async (ctx) => {
 			await ctx.db.insert("pushLogs", {
 				fullName: "tanstack/router",
 				userId,
@@ -397,7 +392,7 @@ describe("getPushCountToday", () => {
 			});
 		});
 
-		const count = await t.query(internal.analyses.getPushCountToday, {
+		const count = await ctx.query(internal.analyses.getPushCountToday, {
 			fullName: "tanstack/router",
 			userId,
 		});

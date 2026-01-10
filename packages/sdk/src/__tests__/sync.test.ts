@@ -23,7 +23,7 @@ import {
 	ConflictError,
 	PushNotAllowedError,
 } from "../sync.js";
-import type { RepoSource, RemoteRepoSource, LocalRepoSource } from "@offworld/types";
+import type { RemoteRepoSource, LocalRepoSource } from "@offworld/types";
 
 describe("sync.ts", () => {
 	const mockAnalysisData = {
@@ -104,7 +104,7 @@ describe("sync.ts", () => {
 				expect.objectContaining({
 					method: "POST",
 					body: JSON.stringify({ fullName: "tanstack/router" }),
-				})
+				}),
 			);
 		});
 
@@ -157,7 +157,7 @@ describe("sync.ts", () => {
 					headers: expect.objectContaining({
 						Authorization: "Bearer test-token",
 					}),
-				})
+				}),
 			);
 		});
 
@@ -170,7 +170,7 @@ describe("sync.ts", () => {
 
 			await pushAnalysis(mockAnalysisData, "test-token");
 
-			const call = mockFetch.mock.calls[0];
+			const call = mockFetch.mock.calls[0]!;
 			const body = JSON.parse(call[1].body as string);
 			expect(body.fullName).toBe("tanstack/router");
 			expect(body.commitSha).toBe("abc123");
@@ -195,7 +195,7 @@ describe("sync.ts", () => {
 			});
 
 			await expect(pushAnalysis(mockAnalysisData, "bad-token")).rejects.toThrow(
-				AuthenticationError
+				AuthenticationError,
 			);
 		});
 
@@ -205,9 +205,7 @@ describe("sync.ts", () => {
 				status: 429,
 			});
 
-			await expect(pushAnalysis(mockAnalysisData, "test-token")).rejects.toThrow(
-				RateLimitError
-			);
+			await expect(pushAnalysis(mockAnalysisData, "test-token")).rejects.toThrow(RateLimitError);
 		});
 
 		it("throws ConflictError on 409", async () => {
@@ -221,9 +219,7 @@ describe("sync.ts", () => {
 					}),
 			});
 
-			await expect(pushAnalysis(mockAnalysisData, "test-token")).rejects.toThrow(
-				ConflictError
-			);
+			await expect(pushAnalysis(mockAnalysisData, "test-token")).rejects.toThrow(ConflictError);
 		});
 	});
 
@@ -273,11 +269,11 @@ describe("sync.ts", () => {
 
 			expect(mockFetch).toHaveBeenCalledWith(
 				expect.stringContaining("/api/analyses/check"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 			expect(mockFetch).not.toHaveBeenCalledWith(
 				expect.stringContaining("/api/analyses/pull"),
-				expect.any(Object)
+				expect.any(Object),
 			);
 		});
 	});
@@ -416,9 +412,7 @@ describe("sync.ts", () => {
 	// =========================================================================
 	describe("validatePushAllowed", () => {
 		it("throws PushNotAllowedError with reason local for local sources", async () => {
-			await expect(validatePushAllowed(mockLocalSource)).rejects.toThrow(
-				PushNotAllowedError
-			);
+			await expect(validatePushAllowed(mockLocalSource)).rejects.toThrow(PushNotAllowedError);
 
 			try {
 				await validatePushAllowed(mockLocalSource);

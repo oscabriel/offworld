@@ -58,7 +58,7 @@ export interface ClaudeCodeAnalysisResult<T> {
 export class ClaudeCodeAnalysisError extends Error {
 	constructor(
 		message: string,
-		public readonly errors?: string[]
+		public readonly errors?: string[],
 	) {
 		super(message);
 		this.name = "ClaudeCodeAnalysisError";
@@ -82,19 +82,14 @@ export class ClaudeCodeAnalysisError extends Error {
  * @throws ClaudeCodeAnalysisError if analysis fails
  */
 export async function analyzeWithClaudeCode<T extends z.ZodType>(
-	options: ClaudeCodeAnalysisOptions<T>
+	options: ClaudeCodeAnalysisOptions<T>,
 ): Promise<ClaudeCodeAnalysisResult<z.infer<T>>> {
-	const {
-		prompt,
-		cwd,
-		schema,
-		systemPrompt,
-		maxTurns = 50,
-		abortController,
-	} = options;
+	const { prompt, cwd, schema, systemPrompt, maxTurns = 50, abortController } = options;
 
 	// Convert Zod schema to JSON Schema
-	const jsonSchema = zodToJsonSchema(schema, {
+	// Using 'as any' because zod-to-json-schema may have type compatibility issues with Zod v4
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const jsonSchema = zodToJsonSchema(schema as any, {
 		$refStrategy: "none", // Inline all refs for compatibility
 	});
 
@@ -135,7 +130,7 @@ export async function analyzeWithClaudeCode<T extends z.ZodType>(
 				const parsed = schema.safeParse(message.structured_output);
 				if (!parsed.success) {
 					throw new ClaudeCodeAnalysisError(
-						`Failed to validate output against schema: ${parsed.error.message}`
+						`Failed to validate output against schema: ${parsed.error.message}`,
 					);
 				}
 
@@ -151,33 +146,25 @@ export async function analyzeWithClaudeCode<T extends z.ZodType>(
 					},
 				};
 			} else if (message.subtype === "error_max_turns") {
-				throw new ClaudeCodeAnalysisError(
-					"Analysis exceeded maximum turns",
-					["Max turns reached"]
-				);
+				throw new ClaudeCodeAnalysisError("Analysis exceeded maximum turns", ["Max turns reached"]);
 			} else if (message.subtype === "error_during_execution") {
 				throw new ClaudeCodeAnalysisError(
 					"Analysis failed during execution",
-					"errors" in message ? message.errors : undefined
+					"errors" in message ? message.errors : undefined,
 				);
 			} else if (message.subtype === "error_max_budget_usd") {
-				throw new ClaudeCodeAnalysisError(
-					"Analysis exceeded budget",
-					["Budget limit reached"]
-				);
+				throw new ClaudeCodeAnalysisError("Analysis exceeded budget", ["Budget limit reached"]);
 			} else if (message.subtype === "error_max_structured_output_retries") {
 				throw new ClaudeCodeAnalysisError(
 					"Failed to produce valid structured output after maximum retries",
-					["Structured output validation failed"]
+					["Structured output validation failed"],
 				);
 			}
 		}
 	}
 
 	if (!result) {
-		throw new ClaudeCodeAnalysisError(
-			"Analysis completed without producing a result"
-		);
+		throw new ClaudeCodeAnalysisError("Analysis completed without producing a result");
 	}
 
 	return result;

@@ -21,16 +21,14 @@ function BrowsePage() {
 	const isLoading = analysesQuery.isLoading;
 
 	const filteredAnalyses = analyses.filter((a) =>
-		a.fullName.toLowerCase().includes(search.toLowerCase())
+		a.fullName.toLowerCase().includes(search.toLowerCase()),
 	);
 
 	return (
 		<div className="container mx-auto max-w-4xl py-10">
 			<div className="mb-8">
 				<h1 className="mb-2 text-3xl font-bold">Browse Repositories</h1>
-				<p className="text-muted-foreground">
-					Explore analyzed repositories sorted by popularity
-				</p>
+				<p className="text-muted-foreground">Explore analyzed repositories sorted by popularity</p>
 			</div>
 
 			<div className="mb-6">
@@ -60,9 +58,7 @@ function BrowsePage() {
 				<Card>
 					<CardContent className="py-10 text-center">
 						<p className="text-muted-foreground">
-							{search
-								? `No repositories found matching "${search}"`
-								: "No analyses available yet"}
+							{search ? `No repositories found matching "${search}"` : "No analyses available yet"}
 						</p>
 					</CardContent>
 				</Card>

@@ -22,8 +22,8 @@ function HomeComponent() {
 			<div className="mb-12 text-center">
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">Offworld</h1>
 				<p className="text-muted-foreground mx-auto max-w-lg text-lg">
-					Generate AI-powered skills for any repository. Make your AI coding assistant
-					an expert in any codebase.
+					Generate AI-powered skills for any repository. Make your AI coding assistant an expert in
+					any codebase.
 				</p>
 			</div>
 
@@ -132,9 +132,7 @@ function RepoCard({ analysis }: { analysis: AnalysisListItem }) {
 				<CardHeader className="pb-2">
 					<div className="flex items-start justify-between">
 						<CardTitle className="text-base">{analysis.fullName}</CardTitle>
-						{analysis.isVerified && (
-							<Check className="h-4 w-4 text-green-500" />
-						)}
+						{analysis.isVerified && <Check className="h-4 w-4 text-green-500" />}
 					</div>
 					<CardDescription className="flex items-center gap-3 text-xs">
 						<span className="flex items-center gap-1">

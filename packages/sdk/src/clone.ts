@@ -9,12 +9,7 @@ import { dirname, join } from "node:path";
 import { execSync } from "node:child_process";
 import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
 import { getMetaRoot, getRepoPath, loadConfig } from "./config.js";
-import {
-	getIndexEntry,
-	listIndexedRepos,
-	removeFromIndex,
-	updateIndex,
-} from "./index-manager.js";
+import { getIndexEntry, listIndexedRepos, removeFromIndex, updateIndex } from "./index-manager.js";
 
 // ============================================================================
 // Custom Error Types
@@ -45,7 +40,7 @@ export class GitError extends CloneError {
 	constructor(
 		message: string,
 		public readonly command: string,
-		public readonly exitCode: number | null
+		public readonly exitCode: number | null,
 	) {
 		super(`Git command failed: ${message}`);
 		this.name = "GitError";
@@ -116,7 +111,7 @@ export function getCommitSha(repoPath: string): string {
  */
 export async function cloneRepo(
 	source: RemoteRepoSource,
-	options: CloneOptions = {}
+	options: CloneOptions = {},
 ): Promise<string> {
 	const config = options.config ?? loadConfig();
 	const repoPath = getRepoPath(source.fullName, source.provider, config);
@@ -240,7 +235,7 @@ export interface RemoveOptions {
  */
 export async function removeRepo(
 	qualifiedName: string,
-	options: RemoveOptions = {}
+	options: RemoveOptions = {},
 ): Promise<boolean> {
 	const entry = getIndexEntry(qualifiedName);
 	if (!entry) {
@@ -253,7 +248,11 @@ export async function removeRepo(
 	}
 
 	// Remove analysis directory
-	const analysisPath = join(getMetaRoot(), "analyses", getAnalysisPathFromQualifiedName(qualifiedName));
+	const analysisPath = join(
+		getMetaRoot(),
+		"analyses",
+		getAnalysisPathFromQualifiedName(qualifiedName),
+	);
 	if (existsSync(analysisPath)) {
 		rmSync(analysisPath, { recursive: true, force: true });
 	}
@@ -281,7 +280,7 @@ function getAnalysisPathFromQualifiedName(qualifiedName: string): string {
 
 	// Remote: "github:owner/repo" -> "github--owner--repo"
 	const [provider, fullName] = qualifiedName.split(":");
-	const [owner, repo] = fullName.split("/");
+	const [owner, repo] = fullName?.split("/") ?? [];
 	return `${provider}--${owner}--${repo}`;
 }
 

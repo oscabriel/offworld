@@ -9,7 +9,6 @@ import {
 	cloneRepo,
 	isRepoCloned,
 	getClonedRepoPath,
-	getCommitSha,
 	checkRemote,
 	runAnalysisPipeline,
 	loadConfig,
@@ -53,7 +52,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			if (remoteCheck.exists) {
 				s.stop("Remote analysis exists");
 				p.log.warn(
-					`Remote analysis already exists for ${source.fullName} (commit: ${remoteCheck.commitSha?.slice(0, 7)})`
+					`Remote analysis already exists for ${source.fullName} (commit: ${remoteCheck.commitSha?.slice(0, 7)})`,
 				);
 				p.log.info("Use --force to generate a new local analysis anyway.");
 				p.log.info("Or use 'ow pull' to fetch the existing analysis.");
@@ -89,21 +88,22 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		// Run the analysis pipeline
 		s.start("Running analysis pipeline...");
 
-		const pipelineOptions = source.type === "remote"
-			? {
-					config,
-					provider: source.provider,
-					fullName: source.fullName,
-					onProgress: (_step: string, message: string) => {
-						s.message(message);
-					},
-			  }
-			: {
-					config,
-					onProgress: (_step: string, message: string) => {
-						s.message(message);
-					},
-			  };
+		const pipelineOptions =
+			source.type === "remote"
+				? {
+						config,
+						provider: source.provider,
+						fullName: source.fullName,
+						onProgress: (_step: string, message: string) => {
+							s.message(message);
+						},
+					}
+				: {
+						config,
+						onProgress: (_step: string, message: string) => {
+							s.message(message);
+						},
+					};
 
 		const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 		s.stop("Analysis complete");

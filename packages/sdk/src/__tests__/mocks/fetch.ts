@@ -19,7 +19,9 @@ export interface FetchMockRoute {
 	/** HTTP method (default: GET) */
 	method?: string;
 	/** Response to return */
-	response: FetchResponse | ((url: string, init?: RequestInit) => FetchResponse | Promise<FetchResponse>);
+	response:
+		| FetchResponse
+		| ((url: string, init?: RequestInit) => FetchResponse | Promise<FetchResponse>);
 }
 
 let routes: FetchMockRoute[] = [];
@@ -36,7 +38,9 @@ export function createFetchMock(): Mock {
 		// Find matching route
 		for (const route of routes) {
 			const urlMatches =
-				typeof route.url === "string" ? url === route.url || url.includes(route.url) : route.url.test(url);
+				typeof route.url === "string"
+					? url === route.url || url.includes(route.url)
+					: route.url.test(url);
 
 			const methodMatches = !route.method || route.method.toUpperCase() === method.toUpperCase();
 
@@ -70,14 +74,14 @@ function createMockResponse(response: FetchResponse): Response {
 		headers: response.headers ?? new Headers(),
 		json: response.json ?? (() => Promise.resolve({})),
 		text: response.text ?? (() => Promise.resolve("")),
-		blob: () => Promise.resolve(new Blob()),
+		blob: () => Promise.resolve(new Blob([])),
 		arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
 		formData: () => Promise.resolve(new FormData()),
 		clone: () => createMockResponse(response),
 		body: null,
 		bodyUsed: false,
 		redirected: false,
-		type: "basic" as ResponseType,
+		type: "basic",
 		url: "",
 	} as Response;
 }
@@ -146,7 +150,7 @@ export function mockOffworldPullResponse(analysis: {
  */
 export function mockOffworldCheckResponse(
 	exists: boolean,
-	meta?: { commitSha: string; analyzedAt: string }
+	meta?: { commitSha: string; analyzedAt: string },
 ): FetchMockRoute {
 	return {
 		url: "/api/analyses/check",
@@ -154,10 +158,7 @@ export function mockOffworldCheckResponse(
 		response: {
 			status: 200,
 			ok: true,
-			json: () =>
-				Promise.resolve(
-					exists ? { exists: true, ...meta } : { exists: false }
-				),
+			json: () => Promise.resolve(exists ? { exists: true, ...meta } : { exists: false }),
 		},
 	};
 }
@@ -165,7 +166,11 @@ export function mockOffworldCheckResponse(
 /**
  * Mock response for GitHub API stars endpoint
  */
-export function mockGitHubStarsResponse(owner: string, repo: string, stars: number): FetchMockRoute {
+export function mockGitHubStarsResponse(
+	owner: string,
+	repo: string,
+	stars: number,
+): FetchMockRoute {
 	return {
 		url: new RegExp(`api\\.github\\.com/repos/${owner}/${repo}$`),
 		method: "GET",

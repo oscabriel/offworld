@@ -22,13 +22,10 @@ http.route({
 
 			// Validate required field
 			if (!fullName || typeof fullName !== "string") {
-				return new Response(
-					JSON.stringify({ error: "fullName is required" }),
-					{
-						status: 400,
-						headers: { "Content-Type": "application/json" },
-					}
-				);
+				return new Response(JSON.stringify({ error: "fullName is required" }), {
+					status: 400,
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 
 			// Get analysis
@@ -37,13 +34,10 @@ http.route({
 			});
 
 			if (!analysis) {
-				return new Response(
-					JSON.stringify({ error: "Analysis not found" }),
-					{
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					}
-				);
+				return new Response(JSON.stringify({ error: "Analysis not found" }), {
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 
 			// Increment pull count
@@ -66,17 +60,14 @@ http.route({
 				{
 					status: 200,
 					headers: { "Content-Type": "application/json" },
-				}
+				},
 			);
 		} catch (error) {
 			console.error("Pull error:", error);
-			return new Response(
-				JSON.stringify({ error: "Internal server error" }),
-				{
-					status: 500,
-					headers: { "Content-Type": "application/json" },
-				}
-			);
+			return new Response(JSON.stringify({ error: "Internal server error" }), {
+				status: 500,
+				headers: { "Content-Type": "application/json" },
+			});
 		}
 	}),
 });
@@ -101,7 +92,7 @@ http.route({
 					{
 						status: 401,
 						headers: { "Content-Type": "application/json" },
-					}
+					},
 				);
 			}
 
@@ -111,37 +102,35 @@ http.route({
 			// For now, we'll accept any non-empty token and use a placeholder user ID
 			// TODO: Implement proper token validation with Better Auth
 			if (!token) {
-				return new Response(
-					JSON.stringify({ error: "Invalid token" }),
-					{
-						status: 401,
-						headers: { "Content-Type": "application/json" },
-					}
-				);
+				return new Response(JSON.stringify({ error: "Invalid token" }), {
+					status: 401,
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 
 			const body = await request.json();
-			const {
-				fullName,
-				summary,
-				architecture,
-				skill,
-				fileIndex,
-				commitSha,
-				analyzedAt,
-			} = body;
+			const { fullName, summary, architecture, skill, fileIndex, commitSha, analyzedAt } = body;
 
 			// Validate required fields
-			if (!fullName || !summary || !architecture || !skill || !fileIndex || !commitSha || !analyzedAt) {
+			if (
+				!fullName ||
+				!summary ||
+				!architecture ||
+				!skill ||
+				!fileIndex ||
+				!commitSha ||
+				!analyzedAt
+			) {
 				return new Response(
 					JSON.stringify({
 						error: "Missing required fields",
-						message: "Required: fullName, summary, architecture, skill, fileIndex, commitSha, analyzedAt",
+						message:
+							"Required: fullName, summary, architecture, skill, fileIndex, commitSha, analyzedAt",
 					}),
 					{
 						status: 400,
 						headers: { "Content-Type": "application/json" },
-					}
+					},
 				);
 			}
 
@@ -173,7 +162,7 @@ http.route({
 					{
 						status: statusCode,
 						headers: { "Content-Type": "application/json" },
-					}
+					},
 				);
 			}
 
@@ -182,17 +171,14 @@ http.route({
 				{
 					status: 200,
 					headers: { "Content-Type": "application/json" },
-				}
+				},
 			);
 		} catch (error) {
 			console.error("Push error:", error);
-			return new Response(
-				JSON.stringify({ error: "Internal server error" }),
-				{
-					status: 500,
-					headers: { "Content-Type": "application/json" },
-				}
-			);
+			return new Response(JSON.stringify({ error: "Internal server error" }), {
+				status: 500,
+				headers: { "Content-Type": "application/json" },
+			});
 		}
 	}),
 });
@@ -211,13 +197,10 @@ http.route({
 
 			// Validate required field
 			if (!fullName || typeof fullName !== "string") {
-				return new Response(
-					JSON.stringify({ error: "fullName is required" }),
-					{
-						status: 400,
-						headers: { "Content-Type": "application/json" },
-					}
-				);
+				return new Response(JSON.stringify({ error: "fullName is required" }), {
+					status: 400,
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 
 			// Get analysis metadata only (lightweight check, no pullCount increment)
@@ -226,13 +209,10 @@ http.route({
 			});
 
 			if (!meta) {
-				return new Response(
-					JSON.stringify({ exists: false }),
-					{
-						status: 200, // 200 even for "not found" - this is a check endpoint
-						headers: { "Content-Type": "application/json" },
-					}
-				);
+				return new Response(JSON.stringify({ exists: false }), {
+					status: 200, // 200 even for "not found" - this is a check endpoint
+					headers: { "Content-Type": "application/json" },
+				});
 			}
 
 			return new Response(
@@ -244,17 +224,14 @@ http.route({
 				{
 					status: 200,
 					headers: { "Content-Type": "application/json" },
-				}
+				},
 			);
 		} catch (error) {
 			console.error("Check error:", error);
-			return new Response(
-				JSON.stringify({ error: "Internal server error" }),
-				{
-					status: 500,
-					headers: { "Content-Type": "application/json" },
-				}
-			);
+			return new Response(JSON.stringify({ error: "Internal server error" }), {
+				status: 500,
+				headers: { "Content-Type": "application/json" },
+			});
 		}
 	}),
 });

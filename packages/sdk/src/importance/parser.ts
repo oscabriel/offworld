@@ -10,14 +10,16 @@ import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "../constants.js";
 // ============================================================================
 
 /**
- * Tree-sitter Parser instance (from web-tree-sitter)
+ * Tree-sitter Parser type - using any to avoid type compatibility issues with web-tree-sitter
  */
-export type Parser = import("web-tree-sitter").default;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Parser = any;
 
 /**
  * Tree-sitter Language instance
  */
-export type Language = Awaited<ReturnType<typeof import("web-tree-sitter").default.Language.load>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Language = any;
 
 /**
  * Tree-sitter SyntaxNode
@@ -66,7 +68,8 @@ export class LanguageLoadError extends ParserError {
 // Module State
 // ============================================================================
 
-let TreeSitter: typeof import("web-tree-sitter").default | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let TreeSitter: any = null;
 let isInitialized = false;
 const languageCache = new Map<SupportedLanguage, Language>();
 

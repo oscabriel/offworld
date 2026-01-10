@@ -8,8 +8,7 @@
  * - Ranking algorithm logic (mocked imports)
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SupportedLanguage } from "../constants.js";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock web-tree-sitter since it requires WASM loading
 vi.mock("web-tree-sitter", () => ({
@@ -144,7 +143,11 @@ describe("file role determination", () => {
 		}
 
 		// Check for test patterns
-		if (normalizedPath.includes("__tests__") || normalizedPath.includes(".test.") || normalizedPath.includes(".spec.")) {
+		if (
+			normalizedPath.includes("__tests__") ||
+			normalizedPath.includes(".test.") ||
+			normalizedPath.includes(".spec.")
+		) {
 			return "test";
 		}
 
@@ -163,7 +166,11 @@ describe("file role determination", () => {
 		}
 
 		// Check for utility patterns
-		if (normalizedPath.includes("/utils/") || normalizedPath.includes("/util/") || normalizedPath.includes("/helpers/")) {
+		if (
+			normalizedPath.includes("/utils/") ||
+			normalizedPath.includes("/util/") ||
+			normalizedPath.includes("/helpers/")
+		) {
 			return "util";
 		}
 
@@ -196,7 +203,7 @@ describe("file role determination", () => {
 	});
 
 	it("classifies *.config.ts as config", () => {
-		expect(determineTestRole("tsconfig.ts")).toBe("core");
+		expect(determineTestRole("tsconfig.ts")).toBe("config");
 		expect(determineTestRole("vitest.config.ts")).toBe("config");
 	});
 
@@ -235,11 +242,11 @@ describe("importance scoring algorithm", () => {
 		}));
 
 		// Most imported file should have 0.7 (70% of max)
-		expect(normalized[0].importance).toBe(0.7);
+		expect(normalized[0]!.importance).toBe(0.7);
 		// Half as many imports should have 0.35
-		expect(normalized[1].importance).toBe(0.35);
+		expect(normalized[1]!.importance).toBe(0.35);
 		// No imports should have 0
-		expect(normalized[2].importance).toBe(0);
+		expect(normalized[2]!.importance).toBe(0);
 	});
 
 	it("entry points get bonus", () => {
@@ -274,7 +281,7 @@ describe("ignore pattern matching", () => {
 	function matchesPattern(filePath: string, pattern: string): boolean {
 		// Simple glob matching
 		if (pattern.includes("**")) {
-			const prefix = pattern.split("**")[0];
+			const prefix = pattern.split("**")[0]!;
 			return filePath.startsWith(prefix);
 		}
 		if (pattern.includes("*")) {

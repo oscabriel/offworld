@@ -4,14 +4,7 @@
  */
 
 import * as p from "@clack/prompts";
-import {
-	parseRepoInput,
-	removeRepo,
-	getIndexEntry,
-	getClonedRepoPath,
-	getAnalysisPath,
-	getMetaRoot,
-} from "@offworld/sdk";
+import { parseRepoInput, removeRepo, getIndexEntry, getMetaRoot } from "@offworld/sdk";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -54,7 +47,7 @@ function getAffectedPaths(qualifiedName: string): {
 		analysisPath = join(getMetaRoot(), "analyses", `local--${hash}`);
 	} else {
 		const [provider, fullName] = qualifiedName.split(":");
-		const [owner, repo] = fullName.split("/");
+		const [owner, repo] = (fullName ?? "").split("/");
 		analysisPath = join(getMetaRoot(), "analyses", `${provider}--${owner}--${repo}`);
 	}
 
@@ -69,20 +62,14 @@ function getAffectedPaths(qualifiedName: string): {
 		"opencode",
 		"skill",
 		repoName,
-		"SKILL.md"
+		"SKILL.md",
 	);
 	if (existsSync(openCodeSkillPath)) {
 		skillPaths.push(openCodeSkillPath);
 	}
 
 	// Claude Code skill path
-	const claudeSkillPath = join(
-		process.env.HOME || "",
-		".claude",
-		"skills",
-		repoName,
-		"SKILL.md"
-	);
+	const claudeSkillPath = join(process.env.HOME || "", ".claude", "skills", repoName, "SKILL.md");
 	if (existsSync(claudeSkillPath)) {
 		skillPaths.push(claudeSkillPath);
 	}

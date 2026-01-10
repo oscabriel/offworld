@@ -4,16 +4,19 @@
  */
 
 import * as p from "@clack/prompts";
-import {
-	loadConfig,
-	saveConfig,
-	getConfigPath,
-} from "@offworld/sdk";
+import { loadConfig, saveConfig, getConfigPath } from "@offworld/sdk";
 import { ConfigSchema } from "@offworld/types/schemas";
 
 // Valid config keys
-const VALID_KEYS = ["repoRoot", "metaRoot", "skillDir", "defaultShallow", "autoAnalyze", "preferredProvider"] as const;
-type ConfigKey = typeof VALID_KEYS[number];
+const VALID_KEYS = [
+	"repoRoot",
+	"metaRoot",
+	"skillDir",
+	"defaultShallow",
+	"autoAnalyze",
+	"preferredProvider",
+] as const;
+type ConfigKey = (typeof VALID_KEYS)[number];
 
 function isValidKey(key: string): key is ConfigKey {
 	return VALID_KEYS.includes(key as ConfigKey);

@@ -56,7 +56,7 @@ export interface OpenCodeAnalysisResult<T> {
 export class OpenCodeAnalysisError extends Error {
 	constructor(
 		message: string,
-		public readonly details?: unknown
+		public readonly details?: unknown,
 	) {
 		super(message);
 		this.name = "OpenCodeAnalysisError";
@@ -70,7 +70,7 @@ export class OpenCodeConnectionError extends OpenCodeAnalysisError {
 	constructor(baseUrl: string) {
 		super(
 			`Cannot connect to OpenCode server at ${baseUrl}. ` +
-				`Ensure OpenCode is running with: opencode server`
+				`Ensure OpenCode is running with: opencode server`,
 		);
 		this.name = "OpenCodeConnectionError";
 	}
@@ -93,9 +93,7 @@ interface OpenCodeMessage {
 
 interface OpenCodeClient {
 	session: {
-		create: (options: {
-			body: { title?: string };
-		}) => Promise<{ data: OpenCodeSession }>;
+		create: (options: { body: { title?: string } }) => Promise<{ data: OpenCodeSession }>;
 		prompt: (options: {
 			path: { id: string };
 			body: {
@@ -104,9 +102,7 @@ interface OpenCodeClient {
 				noReply?: boolean;
 			};
 		}) => Promise<{ data: unknown }>;
-		messages: (options: {
-			path: { id: string };
-		}) => Promise<{ data: OpenCodeMessage[] }>;
+		messages: (options: { path: { id: string } }) => Promise<{ data: OpenCodeMessage[] }>;
 		delete: (options: { path: { id: string } }) => Promise<void>;
 	};
 }
@@ -122,11 +118,12 @@ interface OpenCodeClient {
 async function createClient(baseUrl: string): Promise<OpenCodeClient> {
 	try {
 		const { createOpencodeClient } = await import("@opencode-ai/sdk");
-		return createOpencodeClient({ baseUrl }) as OpenCodeClient;
+		// Using 'as unknown as' because the SDK types may differ from our interface
+		return createOpencodeClient({ baseUrl }) as unknown as OpenCodeClient;
 	} catch (error) {
 		throw new OpenCodeAnalysisError(
 			"Failed to import @opencode-ai/sdk. Install it with: npm install @opencode-ai/sdk",
-			error
+			error,
 		);
 	}
 }
@@ -167,7 +164,7 @@ async function checkServerHealth(baseUrl: string): Promise<boolean> {
  * @throws OpenCodeAnalysisError if analysis fails
  */
 export async function analyzeWithOpenCode<T extends z.ZodType>(
-	options: OpenCodeAnalysisOptions<T>
+	options: OpenCodeAnalysisOptions<T>,
 ): Promise<OpenCodeAnalysisResult<z.infer<T>>> {
 	const {
 		prompt,
@@ -232,23 +229,17 @@ Respond with ONLY the JSON output.`;
 		});
 
 		// Find the assistant's response
-		const assistantMessage = messages
-			.filter((m) => m.role === "assistant")
-			.pop();
+		const assistantMessage = messages.filter((m) => m.role === "assistant").pop();
 
 		if (!assistantMessage) {
 			throw new OpenCodeAnalysisError("No response received from OpenCode");
 		}
 
 		// Extract text content from the response
-		const textPart = assistantMessage.parts.find(
-			(p) => p.type === "text" && p.text
-		);
+		const textPart = assistantMessage.parts.find((p) => p.type === "text" && p.text);
 
 		if (!textPart?.text) {
-			throw new OpenCodeAnalysisError(
-				"Response did not contain text content"
-			);
+			throw new OpenCodeAnalysisError("Response did not contain text content");
 		}
 
 		// Parse the JSON response
@@ -272,7 +263,7 @@ Respond with ONLY the JSON output.`;
 		} catch (parseError) {
 			throw new OpenCodeAnalysisError(
 				`Failed to parse JSON response: ${textPart.text.substring(0, 200)}...`,
-				parseError
+				parseError,
 			);
 		}
 
@@ -281,7 +272,7 @@ Respond with ONLY the JSON output.`;
 		if (!parsed.success) {
 			throw new OpenCodeAnalysisError(
 				`Response did not match expected schema: ${parsed.error.message}`,
-				parsed.error
+				parsed.error,
 			);
 		}
 

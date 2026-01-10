@@ -4,12 +4,7 @@
  */
 
 import * as p from "@clack/prompts";
-import {
-	listRepos,
-	getCommitSha,
-	checkStaleness,
-	loadConfig,
-} from "@offworld/sdk";
+import { listRepos, getCommitSha } from "@offworld/sdk";
 import type { RepoIndexEntry } from "@offworld/types";
 import { existsSync } from "node:fs";
 
@@ -38,10 +33,7 @@ export interface RepoListItem {
 /**
  * Format a repo entry for display
  */
-function formatRepoForDisplay(
-	item: RepoListItem,
-	showPaths: boolean
-): string {
+function formatRepoForDisplay(item: RepoListItem, showPaths: boolean): string {
 	const parts: string[] = [];
 
 	// Name
@@ -76,10 +68,7 @@ function formatRepoForDisplay(
 /**
  * Convert index entry to list item with staleness check
  */
-async function entryToListItem(
-	entry: RepoIndexEntry,
-	checkStale: boolean
-): Promise<RepoListItem> {
+async function entryToListItem(entry: RepoIndexEntry, checkStale: boolean): Promise<RepoListItem> {
 	const exists = existsSync(entry.localPath);
 	const analyzed = !!entry.analyzedAt;
 

@@ -46,7 +46,7 @@ export function getRepoRoot(config?: Config): string {
 export function getRepoPath(
 	fullName: string,
 	provider: "github" | "gitlab" | "bitbucket" = "github",
-	config?: Config
+	config?: Config,
 ): string {
 	const root = getRepoRoot(config);
 	const [owner, repo] = fullName.split("/");
@@ -65,7 +65,7 @@ export function getRepoPath(
  */
 export function getAnalysisPath(
 	fullName: string,
-	provider: "github" | "gitlab" | "bitbucket" = "github"
+	provider: "github" | "gitlab" | "bitbucket" = "github",
 ): string {
 	const [owner, repo] = fullName.split("/");
 	if (!owner || !repo) {

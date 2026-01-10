@@ -66,7 +66,6 @@ import {
 	loadConfig,
 	getAnalysisPath,
 	getMetaRoot,
-	updateIndex,
 	getIndexEntry,
 	listRepos,
 	pullAnalysis,
@@ -92,7 +91,6 @@ describe("CLI handlers", () => {
 	const mockLoadConfig = loadConfig as ReturnType<typeof vi.fn>;
 	const mockGetAnalysisPath = getAnalysisPath as ReturnType<typeof vi.fn>;
 	const mockGetMetaRoot = getMetaRoot as ReturnType<typeof vi.fn>;
-	const mockUpdateIndex = updateIndex as ReturnType<typeof vi.fn>;
 	const mockGetIndexEntry = getIndexEntry as ReturnType<typeof vi.fn>;
 	const mockListRepos = listRepos as ReturnType<typeof vi.fn>;
 	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
@@ -188,7 +186,7 @@ describe("CLI handlers", () => {
 
 			expect(mockCloneRepo).toHaveBeenCalledWith(
 				mockGitHubSource,
-				expect.objectContaining({ shallow: true })
+				expect.objectContaining({ shallow: true }),
 			);
 			expect(result.success).toBe(true);
 		});
@@ -252,7 +250,11 @@ describe("CLI handlers", () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(true);
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
-			mockUpdateRepo.mockResolvedValue({ updated: false, previousSha: "abc123", currentSha: "abc123" });
+			mockUpdateRepo.mockResolvedValue({
+				updated: false,
+				previousSha: "abc123",
+				currentSha: "abc123",
+			});
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
 			mockExistsSync.mockReturnValue(true);
@@ -345,7 +347,7 @@ describe("CLI handlers", () => {
 				expect.objectContaining({
 					provider: "github",
 					fullName: "tanstack/router",
-				})
+				}),
 			);
 			expect(result.success).toBe(true);
 			expect(result.analysisPath).toBeDefined();
@@ -381,9 +383,9 @@ describe("CLI handlers", () => {
 			const result = await listHandler({});
 
 			expect(result.repos).toHaveLength(1);
-			expect(result.repos[0].fullName).toBe("tanstack/router");
-			expect(result.repos[0].analyzed).toBe(true);
-			expect(result.repos[0].hasSkill).toBe(true);
+			expect(result.repos[0]!.fullName).toBe("tanstack/router");
+			expect(result.repos[0]!.analyzed).toBe(true);
+			expect(result.repos[0]!.hasSkill).toBe(true);
 		});
 
 		it("outputs JSON with --json flag", async () => {
@@ -425,7 +427,7 @@ describe("CLI handlers", () => {
 
 			const result = await listHandler({ paths: true });
 
-			expect(result.repos[0].localPath).toBe(mockIndexEntry.localPath);
+			expect(result.repos[0]!.localPath).toBe(mockIndexEntry.localPath);
 		});
 
 		it("handles empty repo list", async () => {

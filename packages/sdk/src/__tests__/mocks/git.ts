@@ -28,7 +28,7 @@ export interface GitMockConfig {
 		errorMessage?: string;
 	};
 	/** Custom command handler */
-	customHandler?: (command: string, args: string[], cwd?: string) => string;
+	customHandler?: (command: string, args: string[], cwd: string | undefined) => string;
 }
 
 const defaultConfig: GitMockConfig = {
@@ -53,7 +53,7 @@ export function createExecSyncMock(): Mock {
 			throw new Error(`Expected git command, got: ${command}`);
 		}
 
-		const gitCommand = parts[1];
+		const gitCommand = parts[1]!;
 		const args = parts.slice(2);
 
 		// Use custom handler if provided

@@ -4,7 +4,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { homedir } from "node:os";
 import type { Architecture, Config, FileIndex, Skill } from "@offworld/types";
@@ -12,7 +12,7 @@ import { getAnalysisPath, getMetaRoot, loadConfig } from "../config.js";
 import { getCommitSha } from "../clone.js";
 import { rankFileImportance } from "../importance/ranker.js";
 import { VERSION } from "../constants.js";
-import { gatherContext, type GatheredContext } from "./context.js";
+import { gatherContext } from "./context.js";
 import {
 	generateSummary,
 	extractArchitecture,
@@ -108,7 +108,7 @@ export function installSkill(repoName: string, skillContent: string): void {
  */
 function saveAnalysis(
 	analysisPath: string,
-	result: Omit<AnalysisPipelineResult, "analysisPath">
+	result: Omit<AnalysisPipelineResult, "analysisPath">,
 ): void {
 	// Ensure directory exists
 	mkdirSync(analysisPath, { recursive: true });
@@ -120,7 +120,7 @@ function saveAnalysis(
 	writeFileSync(
 		join(analysisPath, "architecture.json"),
 		JSON.stringify(result.architecture, null, 2),
-		"utf-8"
+		"utf-8",
 	);
 
 	// Write architecture.md
@@ -130,25 +130,17 @@ function saveAnalysis(
 	writeFileSync(
 		join(analysisPath, "file-index.json"),
 		JSON.stringify(result.fileIndex, null, 2),
-		"utf-8"
+		"utf-8",
 	);
 
 	// Write skill.json
-	writeFileSync(
-		join(analysisPath, "skill.json"),
-		JSON.stringify(result.skill, null, 2),
-		"utf-8"
-	);
+	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(result.skill, null, 2), "utf-8");
 
 	// Write SKILL.md
 	writeFileSync(join(analysisPath, "SKILL.md"), result.skillMd, "utf-8");
 
 	// Write meta.json
-	writeFileSync(
-		join(analysisPath, "meta.json"),
-		JSON.stringify(result.meta, null, 2),
-		"utf-8"
-	);
+	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(result.meta, null, 2), "utf-8");
 }
 
 // ============================================================================
@@ -174,7 +166,7 @@ function saveAnalysis(
  */
 export async function runAnalysisPipeline(
 	repoPath: string,
-	options: AnalysisPipelineOptions = {}
+	options: AnalysisPipelineOptions = {},
 ): Promise<AnalysisPipelineResult> {
 	const config = options.config ?? loadConfig();
 	const onProgress = options.onProgress ?? (() => {});
@@ -189,10 +181,7 @@ export async function runAnalysisPipeline(
 		repoName = options.fullName;
 	} else {
 		// Local repo - use path hash
-		const pathHash = createHash("sha256")
-			.update(repoPath)
-			.digest("hex")
-			.slice(0, 12);
+		const pathHash = createHash("sha256").update(repoPath).digest("hex").slice(0, 12);
 		analysisPath = join(getMetaRoot(), "analyses", `local--${pathHash}`);
 		repoName = basename(repoPath);
 	}

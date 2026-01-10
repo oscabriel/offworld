@@ -12,7 +12,7 @@
 	"scripts": {
 		"build": "tsdown",
 		"dev": "tsdown --watch",
-		"check-types": "tsc --noEmit"
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@offworld/sdk": "workspace:*",

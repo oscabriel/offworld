@@ -24,13 +24,14 @@
 	"scripts": {
 		"dev": "turbo dev",
 		"build": "turbo build",
-		"check-types": "turbo check-types",
+		"typecheck": "turbo typecheck",
 		"test": "turbo test",
 		"dev:native": "turbo -F native dev",
 		"dev:web": "turbo -F web dev",
 		"dev:server": "turbo -F @offworld/backend dev",
 		"dev:setup": "turbo -F @offworld/backend dev:setup",
-		"check": "oxlint && oxfmt --write"
+		"check": "oxlint && oxfmt --write",
+		"link:cli": "turbo -F offworld build && bun link --cwd apps/cli"
 	},
 	"dependencies": {
 		"@offworld/env": "workspace:*",

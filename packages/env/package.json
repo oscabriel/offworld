@@ -1,21 +1,21 @@
 {
-  "name": "@offworld/env",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./web": "./src/web.ts",
-    "./server": "./src/server.ts"
-  },
-  "dependencies": {
-    "@t3-oss/env-core": "^0.13.1",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@offworld/config": "workspace:*",
-    "@offworld/infra": "workspace:*",
-    "@types/node": "^24.3.0",
-    "typescript": "catalog:"
-  }
+	"name": "@offworld/env",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./web": "./src/web.ts",
+		"./server": "./src/server.ts"
+	},
+	"dependencies": {
+		"@t3-oss/env-core": "^0.13.10",
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@offworld/config": "workspace:*",
+		"@offworld/infra": "workspace:*",
+		"@types/node": "^25.0.3",
+		"typescript": "catalog:"
+	}
 }

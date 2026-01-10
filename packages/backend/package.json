@@ -1,29 +1,29 @@
 {
-  "name": "@offworld/backend",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "scripts": {
-    "dev": "convex dev",
-    "dev:setup": "convex dev --configure --until-success",
-    "check-types": "convex typecheck",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "@convex-dev/better-auth": "catalog:",
-    "better-auth": "catalog:",
-    "convex": "catalog:",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@edge-runtime/vm": "catalog:",
-    "@offworld/config": "workspace:*",
-    "@types/node": "^24.3.0",
-    "convex-test": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
-  }
+	"name": "@offworld/backend",
+	"version": "1.0.0",
+	"description": "",
+	"license": "ISC",
+	"author": "",
+	"scripts": {
+		"dev": "convex dev",
+		"dev:setup": "convex dev --configure --until-success",
+		"check-types": "convex typecheck",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"@convex-dev/better-auth": "catalog:",
+		"better-auth": "catalog:",
+		"convex": "catalog:",
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@edge-runtime/vm": "catalog:",
+		"@offworld/config": "workspace:*",
+		"@types/node": "^25.0.3",
+		"convex-test": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	}
 }

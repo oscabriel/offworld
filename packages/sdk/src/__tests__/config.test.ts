@@ -1,21 +1,114 @@
 /**
  * Unit tests for config.ts path utilities
- * PRD T3.1
+ * PRD T2.2: Upgraded to use virtual file system mock
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+// ============================================================================
+// Virtual file system state (inline due to vi.mock hoisting)
+// ============================================================================
+
+interface VirtualFile {
+	content: string;
+	isDirectory?: boolean;
+	permissions?: number;
+}
+
+const virtualFs: Record<string, VirtualFile> = {};
+const createdDirs = new Set<string>();
+
+function clearVirtualFs(): void {
+	for (const key of Object.keys(virtualFs)) {
+		delete virtualFs[key];
+	}
+	createdDirs.clear();
+}
+
+function addVirtualFile(
+	path: string,
+	content: string,
+	options?: { isDirectory?: boolean; permissions?: number },
+): void {
+	const normalized = path.replace(/\\/g, "/");
+	virtualFs[normalized] = {
+		content,
+		isDirectory: options?.isDirectory ?? false,
+		permissions: options?.permissions ?? 0o644,
+	};
+}
+
+// initVirtualFs available for future use but not currently needed
+// function initVirtualFs(files: Record<string, string | { content: string; isDirectory?: boolean; permissions?: number }>): void { ... }
+
+function getVirtualFs(): Record<string, VirtualFile> {
+	return { ...virtualFs };
+}
+
+// ============================================================================
 // Mock node:fs before importing config module
+// ============================================================================
+
 vi.mock("node:fs", () => ({
-	existsSync: vi.fn(),
-	readFileSync: vi.fn(),
-	writeFileSync: vi.fn(),
-	mkdirSync: vi.fn(),
+	existsSync: vi.fn((path: string) => {
+		const normalized = path.replace(/\\/g, "/");
+		return normalized in virtualFs || createdDirs.has(normalized);
+	}),
+	readFileSync: vi.fn((path: string, _encoding?: string) => {
+		const normalized = path.replace(/\\/g, "/");
+		const file = virtualFs[normalized];
+		if (!file) {
+			const error = new Error(
+				`ENOENT: no such file or directory, open '${path}'`,
+			) as NodeJS.ErrnoException;
+			error.code = "ENOENT";
+			throw error;
+		}
+		if (file.isDirectory) {
+			const error = new Error(
+				`EISDIR: illegal operation on a directory, read '${path}'`,
+			) as NodeJS.ErrnoException;
+			error.code = "EISDIR";
+			throw error;
+		}
+		if (file.permissions === 0o000) {
+			const error = new Error(`EACCES: permission denied, open '${path}'`) as NodeJS.ErrnoException;
+			error.code = "EACCES";
+			throw error;
+		}
+		return file.content;
+	}),
+	writeFileSync: vi.fn((path: string, content: string, _encoding?: string) => {
+		const normalized = path.replace(/\\/g, "/");
+		// Check if parent dir exists or was created
+		const parentDir = normalized.substring(0, normalized.lastIndexOf("/"));
+		if (parentDir && !(parentDir in virtualFs) && !createdDirs.has(parentDir)) {
+			const error = new Error(
+				`ENOENT: no such file or directory, open '${path}'`,
+			) as NodeJS.ErrnoException;
+			error.code = "ENOENT";
+			throw error;
+		}
+		virtualFs[normalized] = { content, isDirectory: false, permissions: 0o644 };
+	}),
+	mkdirSync: vi.fn((path: string, options?: { recursive?: boolean }) => {
+		const normalized = path.replace(/\\/g, "/");
+		if (options?.recursive) {
+			const parts = normalized.split("/").filter(Boolean);
+			let current = "";
+			for (const part of parts) {
+				current += "/" + part;
+				createdDirs.add(current);
+			}
+		} else {
+			createdDirs.add(normalized);
+		}
+	}),
 }));
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import {
 	getMetaRoot,
 	getRepoRoot,
@@ -27,17 +120,21 @@ import {
 } from "../config.js";
 
 describe("config.ts", () => {
-	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
-	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
 	const mockWriteFileSync = writeFileSync as ReturnType<typeof vi.fn>;
 	const mockMkdirSync = mkdirSync as ReturnType<typeof vi.fn>;
 
+	const home = homedir();
+	const configDir = join(home, ".ow").replace(/\\/g, "/");
+	const configPath = join(home, ".ow", "config.json").replace(/\\/g, "/");
+
 	beforeEach(() => {
 		vi.clearAllMocks();
+		clearVirtualFs();
 	});
 
 	afterEach(() => {
 		vi.resetAllMocks();
+		clearVirtualFs();
 	});
 
 	// =========================================================================
@@ -51,7 +148,6 @@ describe("config.ts", () => {
 
 		it("expands ~ to home directory", () => {
 			const result = getMetaRoot();
-			const home = homedir();
 			expect(result).toBe(join(home, ".ow"));
 		});
 	});
@@ -62,13 +158,11 @@ describe("config.ts", () => {
 	describe("getRepoRoot", () => {
 		it("returns default ~/ow when no config", () => {
 			const result = getRepoRoot();
-			const home = homedir();
 			expect(result).toBe(join(home, "ow"));
 		});
 
 		it("returns default ~/ow when config is undefined", () => {
 			const result = getRepoRoot(undefined);
-			const home = homedir();
 			expect(result).toBe(join(home, "ow"));
 		});
 
@@ -93,7 +187,6 @@ describe("config.ts", () => {
 				autoAnalyze: true,
 			};
 			const result = getRepoRoot(config);
-			const home = homedir();
 			expect(result).toBe(join(home, "custom/repos"));
 		});
 	});
@@ -104,19 +197,16 @@ describe("config.ts", () => {
 	describe("getRepoPath", () => {
 		it("returns {root}/github/owner/repo for owner/repo format", () => {
 			const result = getRepoPath("tanstack/router");
-			const home = homedir();
 			expect(result).toBe(join(home, "ow", "github", "tanstack", "router"));
 		});
 
 		it("returns {root}/gitlab/owner/repo for gitlab provider", () => {
 			const result = getRepoPath("group/project", "gitlab");
-			const home = homedir();
 			expect(result).toBe(join(home, "ow", "gitlab", "group", "project"));
 		});
 
 		it("returns {root}/bitbucket/owner/repo for bitbucket provider", () => {
 			const result = getRepoPath("team/repo", "bitbucket");
-			const home = homedir();
 			expect(result).toBe(join(home, "ow", "bitbucket", "team", "repo"));
 		});
 
@@ -144,19 +234,16 @@ describe("config.ts", () => {
 	describe("getAnalysisPath", () => {
 		it("returns {meta}/analyses/github--owner--repo for owner/repo", () => {
 			const result = getAnalysisPath("tanstack/router");
-			const home = homedir();
 			expect(result).toBe(join(home, ".ow", "analyses", "github--tanstack--router"));
 		});
 
 		it("returns {meta}/analyses/gitlab--owner--repo for gitlab", () => {
 			const result = getAnalysisPath("group/project", "gitlab");
-			const home = homedir();
 			expect(result).toBe(join(home, ".ow", "analyses", "gitlab--group--project"));
 		});
 
 		it("returns {meta}/analyses/bitbucket--owner--repo for bitbucket", () => {
 			const result = getAnalysisPath("team/repo", "bitbucket");
-			const home = homedir();
 			expect(result).toBe(join(home, ".ow", "analyses", "bitbucket--team--repo"));
 		});
 
@@ -171,17 +258,16 @@ describe("config.ts", () => {
 	describe("getConfigPath", () => {
 		it("returns ~/.ow/config.json", () => {
 			const result = getConfigPath();
-			const home = homedir();
 			expect(result).toBe(join(home, ".ow", "config.json"));
 		});
 	});
 
 	// =========================================================================
-	// loadConfig tests
+	// loadConfig tests - Real JSON parsing
 	// =========================================================================
 	describe("loadConfig", () => {
 		it("returns defaults when config file missing", () => {
-			mockExistsSync.mockReturnValue(false);
+			// Virtual FS is empty - no config file
 
 			const result = loadConfig();
 
@@ -200,9 +286,7 @@ describe("config.ts", () => {
 				defaultShallow: false,
 				autoAnalyze: false,
 			};
-
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
+			addVirtualFile(configPath, JSON.stringify(existingConfig));
 
 			const result = loadConfig();
 
@@ -217,9 +301,7 @@ describe("config.ts", () => {
 			const partialConfig = {
 				repoRoot: "/custom/path",
 			};
-
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(partialConfig));
+			addVirtualFile(configPath, JSON.stringify(partialConfig));
 
 			const result = loadConfig();
 
@@ -228,9 +310,11 @@ describe("config.ts", () => {
 			expect(result.defaultShallow).toBe(true); // default
 		});
 
-		it("returns defaults on JSON parse error", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue("invalid json {{{");
+		// =====================================================================
+		// Malformed JSON tests (T2.2 requirement)
+		// =====================================================================
+		it("returns defaults on JSON parse error - invalid syntax", () => {
+			addVirtualFile(configPath, "invalid json {{{");
 
 			const result = loadConfig();
 
@@ -238,11 +322,59 @@ describe("config.ts", () => {
 			expect(result.defaultShallow).toBe(true);
 		});
 
-		it("returns defaults on read error", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockImplementation(() => {
-				throw new Error("EACCES: permission denied");
-			});
+		it("returns defaults on JSON parse error - truncated JSON", () => {
+			addVirtualFile(configPath, '{"repoRoot": "/path"');
+
+			const result = loadConfig();
+
+			expect(result.repoRoot).toBe("~/ow");
+		});
+
+		it("returns defaults on JSON parse error - empty file", () => {
+			addVirtualFile(configPath, "");
+
+			const result = loadConfig();
+
+			expect(result.repoRoot).toBe("~/ow");
+		});
+
+		it("returns defaults on JSON parse error - null content", () => {
+			addVirtualFile(configPath, "null");
+
+			const result = loadConfig();
+
+			expect(result.repoRoot).toBe("~/ow");
+		});
+
+		it("returns defaults on JSON parse error - array instead of object", () => {
+			addVirtualFile(configPath, '["not", "an", "object"]');
+
+			const result = loadConfig();
+
+			expect(result.repoRoot).toBe("~/ow");
+		});
+
+		it("returns defaults on JSON parse error - wrong type for repoRoot", () => {
+			addVirtualFile(configPath, JSON.stringify({ repoRoot: 123 }));
+
+			const result = loadConfig();
+
+			expect(result.repoRoot).toBe("~/ow");
+		});
+
+		// =====================================================================
+		// Permission scenario tests (T2.2 requirement)
+		// =====================================================================
+		it("returns defaults on read error - permission denied", () => {
+			addVirtualFile(configPath, '{"repoRoot": "/path"}', { permissions: 0o000 });
+
+			const result = loadConfig();
+
+			expect(result.repoRoot).toBe("~/ow");
+		});
+
+		it("returns defaults when config path is a directory", () => {
+			addVirtualFile(configPath, "", { isDirectory: true });
 
 			const result = loadConfig();
 
@@ -251,24 +383,43 @@ describe("config.ts", () => {
 	});
 
 	// =========================================================================
-	// saveConfig tests
+	// saveConfig tests - Directory creation logic
 	// =========================================================================
 	describe("saveConfig", () => {
-		it("creates directory if missing", () => {
-			mockExistsSync.mockImplementation((_path: string) => {
-				// Config dir doesn't exist, config file doesn't exist
-				return false;
-			});
-			mockReadFileSync.mockImplementation(() => {
-				throw new Error("ENOENT");
-			});
+		// =====================================================================
+		// Directory creation tests (T2.2 requirement)
+		// =====================================================================
+		it("creates directory recursively if missing", () => {
+			// Virtual FS is empty - no directories exist
 
 			saveConfig({ repoRoot: "/new/path" });
 
-			expect(mockMkdirSync).toHaveBeenCalled();
-			expect(mockMkdirSync.mock.calls[0]![1]).toEqual({ recursive: true });
+			expect(mockMkdirSync).toHaveBeenCalledWith(configDir, { recursive: true });
 		});
 
+		it("does not create directory if it already exists", () => {
+			// Pre-create the config directory
+			addVirtualFile(configDir, "", { isDirectory: true });
+
+			saveConfig({ repoRoot: "/new/path" });
+
+			expect(mockMkdirSync).not.toHaveBeenCalled();
+		});
+
+		it("creates nested directory structure", () => {
+			// Virtual FS is empty
+
+			saveConfig({ repoRoot: "/new/path" });
+
+			// Should create with recursive: true
+			expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringMatching(/\.ow$/), {
+				recursive: true,
+			});
+		});
+
+		// =====================================================================
+		// Config merging tests
+		// =====================================================================
 		it("merges with existing config", () => {
 			const existingConfig = {
 				repoRoot: "/old/path",
@@ -277,13 +428,8 @@ describe("config.ts", () => {
 				defaultShallow: true,
 				autoAnalyze: true,
 			};
-
-			// First call: check config dir
-			// Second call: check config file
-			mockExistsSync
-				.mockReturnValueOnce(true) // config dir exists
-				.mockReturnValueOnce(true); // config file exists
-			mockReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
+			addVirtualFile(configDir, "", { isDirectory: true });
+			addVirtualFile(configPath, JSON.stringify(existingConfig));
 
 			saveConfig({ repoRoot: "/new/path" });
 
@@ -291,11 +437,10 @@ describe("config.ts", () => {
 			const writtenContent = JSON.parse(mockWriteFileSync.mock.calls[0]![1] as string);
 			expect(writtenContent.repoRoot).toBe("/new/path");
 			expect(writtenContent.metaRoot).toBe("/old/meta"); // preserved
+			expect(writtenContent.skillDir).toBe("/old/skill"); // preserved
 		});
 
 		it("writes valid JSON", () => {
-			mockExistsSync.mockReturnValue(false);
-
 			saveConfig({ repoRoot: "/test/path" });
 
 			expect(mockWriteFileSync).toHaveBeenCalled();
@@ -304,12 +449,34 @@ describe("config.ts", () => {
 		});
 
 		it("returns validated config", () => {
-			mockExistsSync.mockReturnValue(false);
-
 			const result = saveConfig({ repoRoot: "/test/path" });
 
 			expect(result.repoRoot).toBe("/test/path");
 			expect(result.metaRoot).toBe("~/.ow"); // default applied
+		});
+
+		it("writes config with correct encoding", () => {
+			saveConfig({ repoRoot: "/test/path" });
+
+			expect(mockWriteFileSync).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.any(String),
+				"utf-8",
+			);
+		});
+
+		it("verifies actual file content after save", () => {
+			addVirtualFile(configDir, "", { isDirectory: true });
+
+			saveConfig({ repoRoot: "/verify/path", defaultShallow: false });
+
+			// Check the actual content in virtual fs
+			const fs = getVirtualFs();
+			const savedFile = fs[configPath];
+			expect(savedFile).toBeDefined();
+			const parsed = JSON.parse(savedFile!.content);
+			expect(parsed.repoRoot).toBe("/verify/path");
+			expect(parsed.defaultShallow).toBe(false);
 		});
 	});
 });

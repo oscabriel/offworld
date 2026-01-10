@@ -1,22 +1,13 @@
 import { z } from "zod";
 
-// ============================================================================
-// PRD 2.1: ConfigSchema for CLI configuration
-// ============================================================================
-export const AIProviderSchema = z.enum(["claude-code", "opencode"]);
-
 export const ConfigSchema = z.object({
 	repoRoot: z.string().default("~/ow"),
 	metaRoot: z.string().default("~/.ow"),
 	skillDir: z.string().default("~/.config/opencode/skill"),
 	defaultShallow: z.boolean().default(true),
 	autoAnalyze: z.boolean().default(true),
-	preferredProvider: AIProviderSchema.optional(),
 });
 
-// ============================================================================
-// PRD 2.2: GitProvider and RepoSource schemas
-// ============================================================================
 export const GitProviderSchema = z.enum(["github", "gitlab", "bitbucket"]);
 
 export const RemoteRepoSourceSchema = z.object({
@@ -24,8 +15,8 @@ export const RemoteRepoSourceSchema = z.object({
 	provider: GitProviderSchema,
 	owner: z.string(),
 	repo: z.string(),
-	fullName: z.string(), // "owner/repo"
-	qualifiedName: z.string(), // "github:owner/repo"
+	fullName: z.string(),
+	qualifiedName: z.string(),
 	cloneUrl: z.string(),
 });
 
@@ -33,7 +24,7 @@ export const LocalRepoSourceSchema = z.object({
 	type: z.literal("local"),
 	path: z.string(),
 	name: z.string(),
-	qualifiedName: z.string(), // "local:<hash>"
+	qualifiedName: z.string(),
 });
 
 export const RepoSourceSchema = z.discriminatedUnion("type", [
@@ -41,9 +32,6 @@ export const RepoSourceSchema = z.discriminatedUnion("type", [
 	LocalRepoSourceSchema,
 ]);
 
-// ============================================================================
-// PRD 2.3: Architecture and Entity schemas
-// ============================================================================
 export const ProjectTypeSchema = z.enum(["monorepo", "library", "cli", "app", "framework"]);
 
 export const EntityTypeSchema = z.enum(["package", "module", "feature", "util", "config"]);
@@ -82,9 +70,6 @@ export const ArchitectureSchema = z.object({
 	}),
 });
 
-// ============================================================================
-// PRD 2.4: FileIndex and AnalysisMeta schemas
-// ============================================================================
 export const FileRoleSchema = z.enum(["entry", "core", "types", "config", "test", "util", "doc"]);
 
 export const FileIndexEntrySchema = z.object({
@@ -99,15 +84,12 @@ export const FileIndexEntrySchema = z.object({
 export const FileIndexSchema = z.array(FileIndexEntrySchema);
 
 export const AnalysisMetaSchema = z.object({
-	analyzedAt: z.string(), // ISO date string
+	analyzedAt: z.string(),
 	commitSha: z.string(),
 	version: z.string(),
 	tokenCost: z.number().optional(),
 });
 
-// ============================================================================
-// PRD 2.5: Skill schema for SKILL.md generation
-// ============================================================================
 export const SkillSchema = z.object({
 	name: z.string(),
 	description: z.string(),
@@ -128,19 +110,16 @@ export const SkillSchema = z.object({
 	whenToUse: z.array(z.string()),
 });
 
-// ============================================================================
-// PRD 3.6: RepoIndex schemas for global repo index
-// ============================================================================
 export const RepoIndexEntrySchema = z.object({
-	fullName: z.string(), // "owner/repo" or local name
-	qualifiedName: z.string(), // "github:owner/repo" or "local:<hash>"
-	localPath: z.string(), // Absolute path to cloned repo
-	analyzedAt: z.string().optional(), // ISO date string
-	commitSha: z.string().optional(), // Commit SHA at analysis time
-	hasSkill: z.boolean().default(false), // Whether SKILL.md was generated
+	fullName: z.string(),
+	qualifiedName: z.string(),
+	localPath: z.string(),
+	analyzedAt: z.string().optional(),
+	commitSha: z.string().optional(),
+	hasSkill: z.boolean().default(false),
 });
 
 export const RepoIndexSchema = z.object({
 	version: z.string().default("1"),
-	repos: z.record(z.string(), RepoIndexEntrySchema), // Keyed by qualifiedName
+	repos: z.record(z.string(), RepoIndexEntrySchema),
 });

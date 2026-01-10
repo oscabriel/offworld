@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-	AIProviderSchema,
 	AnalysisMetaSchema,
 	ArchitectureSchema,
 	ConfigSchema,
@@ -19,9 +18,6 @@ import {
 	SkillSchema,
 } from "../schemas.js";
 
-// ============================================================================
-// PRD T2.1: ConfigSchema tests
-// ============================================================================
 describe("ConfigSchema", () => {
 	it("validates valid config objects", () => {
 		const config = {
@@ -40,10 +36,10 @@ describe("ConfigSchema", () => {
 
 	it("rejects invalid config (wrong types)", () => {
 		const invalid = {
-			repoRoot: 123, // should be string
+			repoRoot: 123,
 			metaRoot: "~/.ow",
 			skillDir: "~/.config/opencode/skill",
-			defaultShallow: "yes", // should be boolean
+			defaultShallow: "yes",
 			autoAnalyze: true,
 		};
 		const result = ConfigSchema.safeParse(invalid);
@@ -62,30 +58,8 @@ describe("ConfigSchema", () => {
 			expect(result.data.autoAnalyze).toBe(true);
 		}
 	});
-
-	it("accepts optional preferredProvider", () => {
-		const config = {
-			preferredProvider: "claude-code",
-		};
-		const result = ConfigSchema.safeParse(config);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.preferredProvider).toBe("claude-code");
-		}
-	});
-
-	it("rejects invalid preferredProvider value", () => {
-		const config = {
-			preferredProvider: "invalid-provider",
-		};
-		const result = ConfigSchema.safeParse(config);
-		expect(result.success).toBe(false);
-	});
 });
 
-// ============================================================================
-// PRD T2.1: GitProviderSchema tests
-// ============================================================================
 describe("GitProviderSchema", () => {
 	it("accepts github", () => {
 		expect(GitProviderSchema.safeParse("github").success).toBe(true);
@@ -105,9 +79,6 @@ describe("GitProviderSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: RepoSourceSchema tests
-// ============================================================================
 describe("RepoSourceSchema", () => {
 	it("discriminates remote vs local correctly (remote)", () => {
 		const remote = {
@@ -153,7 +124,6 @@ describe("RepoSourceSchema", () => {
 		const incomplete = {
 			type: "remote",
 			provider: "github",
-			// missing owner, repo, fullName, qualifiedName, cloneUrl
 		};
 		const result = RemoteRepoSourceSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
@@ -162,16 +132,12 @@ describe("RepoSourceSchema", () => {
 	it("rejects local source with missing fields", () => {
 		const incomplete = {
 			type: "local",
-			// missing path, name, qualifiedName
 		};
 		const result = LocalRepoSourceSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
 	});
 });
 
-// ============================================================================
-// PRD T2.1: ArchitectureSchema tests
-// ============================================================================
 describe("ArchitectureSchema", () => {
 	it("validates complete architecture object", () => {
 		const architecture = {
@@ -236,9 +202,6 @@ describe("ArchitectureSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: ProjectTypeSchema tests
-// ============================================================================
 describe("ProjectTypeSchema", () => {
 	const validTypes = ["monorepo", "library", "cli", "app", "framework"];
 
@@ -251,9 +214,6 @@ describe("ProjectTypeSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: EntityTypeSchema tests
-// ============================================================================
 describe("EntityTypeSchema", () => {
 	const validTypes = ["package", "module", "feature", "util", "config"];
 
@@ -266,9 +226,6 @@ describe("EntityTypeSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: EntitySchema tests
-// ============================================================================
 describe("EntitySchema", () => {
 	it("validates entity with all fields", () => {
 		const entity = {
@@ -297,9 +254,6 @@ describe("EntitySchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: SkillSchema tests
-// ============================================================================
 describe("SkillSchema", () => {
 	it("validates skill with all required fields", () => {
 		const skill = {
@@ -329,7 +283,6 @@ describe("SkillSchema", () => {
 		const incomplete = {
 			name: "incomplete",
 			description: "Missing fields",
-			// missing allowedTools, repositoryStructure, keyFiles, searchStrategies, whenToUse
 		};
 		const result = SkillSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
@@ -350,9 +303,6 @@ describe("SkillSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: FileRoleSchema tests
-// ============================================================================
 describe("FileRoleSchema", () => {
 	const validRoles = ["entry", "core", "types", "config", "test", "util", "doc"];
 
@@ -365,9 +315,6 @@ describe("FileRoleSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: FileIndexEntrySchema tests
-// ============================================================================
 describe("FileIndexEntrySchema", () => {
 	it("validates importance is in 0-1 range", () => {
 		const validEntry = {
@@ -417,9 +364,6 @@ describe("FileIndexEntrySchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: FileIndexSchema tests
-// ============================================================================
 describe("FileIndexSchema", () => {
 	it("validates array of file entries", () => {
 		const index = [
@@ -439,9 +383,6 @@ describe("FileIndexSchema", () => {
 	});
 });
 
-// ============================================================================
-// PRD T2.1: AnalysisMetaSchema tests
-// ============================================================================
 describe("AnalysisMetaSchema", () => {
 	it("validates complete meta object", () => {
 		const meta = {
@@ -467,33 +408,12 @@ describe("AnalysisMetaSchema", () => {
 	it("rejects missing required fields", () => {
 		const incomplete = {
 			analyzedAt: "2026-01-09T12:00:00Z",
-			// missing commitSha, version
 		};
 		const result = AnalysisMetaSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
 	});
 });
 
-// ============================================================================
-// PRD T2.1: AIProviderSchema tests
-// ============================================================================
-describe("AIProviderSchema", () => {
-	it("accepts claude-code", () => {
-		expect(AIProviderSchema.safeParse("claude-code").success).toBe(true);
-	});
-
-	it("accepts opencode", () => {
-		expect(AIProviderSchema.safeParse("opencode").success).toBe(true);
-	});
-
-	it("rejects invalid provider", () => {
-		expect(AIProviderSchema.safeParse("gpt").success).toBe(false);
-	});
-});
-
-// ============================================================================
-// PRD T2.1: RepoIndexEntrySchema tests
-// ============================================================================
 describe("RepoIndexEntrySchema", () => {
 	it("validates complete entry", () => {
 		const entry = {
@@ -517,14 +437,11 @@ describe("RepoIndexEntrySchema", () => {
 		const result = RepoIndexEntrySchema.safeParse(entry);
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data.hasSkill).toBe(false); // default
+			expect(result.data.hasSkill).toBe(false);
 		}
 	});
 });
 
-// ============================================================================
-// PRD T2.1: RepoIndexSchema tests
-// ============================================================================
 describe("RepoIndexSchema", () => {
 	it("validates index with repos", () => {
 		const index = {

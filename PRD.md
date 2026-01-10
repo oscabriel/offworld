@@ -1,315 +1,406 @@
-# Test Suite Enhancement PRD
+# Markdown Template Migration PRD
 
 ## Overview
 
-Add critical missing test coverage to the offworld codebase: AI provider smoke tests and frontend E2E tests via Playwright.
+Migrate the analysis generation workflow from fragile JSON schema extraction to reliable markdown templates. The current approach forces structured JSON output through OpenCode (which doesn't support it), causing frequent parsing failures. The new approach uses markdown templates that the AI can reliably produce, then parses them into structured objects.
 
 ## Requirements
 
 ```json
 [
 	{
-		"id": "T1.0",
-		"category": "AI Provider Smoke Tests",
-		"description": "Create smoke test file for AI provider availability checks",
+		"id": "M1.0",
+		"category": "OpenCode Streaming API",
+		"description": "Create streamPrompt() function that returns raw text with streaming support",
 		"steps_to_verify": [
-			"File exists at packages/sdk/src/__tests__/ai-provider.smoke.test.ts",
-			"File imports isClaudeCodeAvailable, isOpenCodeAvailable, detectProvider from ../ai/provider.js",
-			"File uses vitest (describe, it, expect)",
-			"Tests are conditionally skipped based on SMOKE_TESTS env var"
+			"Function streamPrompt() exists in packages/sdk/src/ai/opencode.ts",
+			"Function accepts StreamPromptOptions: { prompt, cwd, systemPrompt?, timeoutMs?, onDebug?, onStream? }",
+			"Function returns Promise<StreamPromptResult>: { text, sessionId, durationMs }",
+			"Function calls onStream callback with text chunks as they arrive",
+			"Function does NOT use zodToJsonSchema or any JSON schema logic"
 		],
 		"passes": true
 	},
 	{
-		"id": "T1.1",
-		"category": "AI Provider Smoke Tests",
-		"description": "Test isClaudeCodeAvailable returns boolean without throwing",
+		"id": "M1.1",
+		"category": "OpenCode Streaming API",
+		"description": "Implement 120-second timeout for streaming responses",
 		"steps_to_verify": [
-			"Test case exists with name matching /isClaudeCodeAvailable.*boolean/i",
-			"Test calls isClaudeCodeAvailable() without mocks",
-			"Test asserts typeof result === 'boolean'",
-			"Test has timeout >= 10000ms"
+			"streamPrompt() has timeoutMs parameter with default value 120000",
+			"If no session.idle event received within timeout, function throws OpenCodeAnalysisError",
+			"Error message includes 'timeout' and the duration waited"
 		],
 		"passes": true
 	},
 	{
-		"id": "T1.2",
-		"category": "AI Provider Smoke Tests",
-		"description": "Test isOpenCodeAvailable returns boolean without throwing",
+		"id": "M1.2",
+		"category": "OpenCode Streaming API",
+		"description": "Remove JSON extraction logic from opencode.ts",
 		"steps_to_verify": [
-			"Test case exists with name matching /isOpenCodeAvailable.*boolean/i",
-			"Test calls isOpenCodeAvailable() without mocks",
-			"Test asserts typeof result === 'boolean'",
-			"Test has timeout >= 10000ms"
+			"extractJSON() function does not exist in opencode.ts",
+			"analyzeWithOpenCode() function does not exist in opencode.ts",
+			"analyzeWithRetry() function does not exist in opencode.ts",
+			"No import of zod-to-json-schema in opencode.ts",
+			"No reference to 'schema' parameter in any function signature"
 		],
 		"passes": true
 	},
 	{
-		"id": "T1.3",
-		"category": "AI Provider Smoke Tests",
-		"description": "Test detectProvider returns valid result or throws AIProviderNotFoundError",
+		"id": "M1.3",
+		"category": "OpenCode Streaming API",
+		"description": "Keep embedded server pattern and docs agent config",
 		"steps_to_verify": [
-			"Test case exists with name matching /detectProvider/i",
-			"Test calls detectProvider() without mocks",
-			"Test handles both success case (valid provider object) and expected error case",
-			"Test has timeout >= 10000ms"
+			"createOpencode() is called with port retry logic (up to 10 attempts)",
+			"createOpencodeClient() is used to create HTTP client",
+			"Agent config disables build, explore, general, plan agents",
+			"Agent config enables docs agent with read, grep, glob, list tools only",
+			"Agent config denies edit, bash, webfetch permissions"
 		],
 		"passes": true
 	},
 	{
-		"id": "T1.4",
-		"category": "AI Provider Smoke Tests",
-		"description": "Add test:smoke script to packages/sdk/package.json",
+		"id": "M2.0",
+		"category": "Markdown Parsers",
+		"description": "Create parsers.ts with markdown parsing utilities",
 		"steps_to_verify": [
-			"packages/sdk/package.json contains script 'test:smoke'",
-			"Script sets SMOKE_TESTS=1 environment variable",
-			"Script runs vitest with pattern filter for smoke tests"
+			"File exists at packages/sdk/src/analysis/parsers.ts",
+			"File exports extractField() function",
+			"File exports parseListSection() function",
+			"File exports parsePathDescSection() function",
+			"File exports parsePathPurposeSection() function"
 		],
 		"passes": true
 	},
 	{
-		"id": "T2.0",
-		"category": "Playwright Setup",
-		"description": "Install Playwright and create configuration file",
+		"id": "M2.1",
+		"category": "Markdown Parsers",
+		"description": "Implement extractField() for parsing bold field values",
 		"steps_to_verify": [
-			"@playwright/test is in apps/web/package.json devDependencies",
-			"File exists at apps/web/playwright.config.ts",
-			"Config exports defineConfig from @playwright/test",
-			"Config sets testDir to './e2e'",
-			"Config sets webServer.command to start dev server",
-			"Config sets webServer.port to 3001",
-			"Config sets webServer.reuseExistingServer based on CI env var",
-			"Config sets use.baseURL to http://localhost:3001"
+			"extractField('**Name**: my-skill', 'Name') returns 'my-skill'",
+			"extractField('- **Type**: package', 'Type') returns 'package'",
+			"extractField('no match here', 'Name') returns empty string or throws"
 		],
 		"passes": true
 	},
 	{
-		"id": "T2.1",
-		"category": "Playwright Setup",
-		"description": "Create e2e test directory structure",
+		"id": "M2.2",
+		"category": "Markdown Parsers",
+		"description": "Implement parseListSection() for bullet list extraction",
 		"steps_to_verify": [
-			"Directory exists at apps/web/e2e/",
-			"At least one .spec.ts file exists in apps/web/e2e/"
+			"Parses '## Header\\n- item1\\n- item2' into ['item1', 'item2']",
+			"Stops parsing at next ## header",
+			"Handles empty sections gracefully (returns empty array)",
+			"Trims whitespace from items"
 		],
 		"passes": true
 	},
 	{
-		"id": "T2.2",
-		"category": "Playwright Setup",
-		"description": "Add Playwright scripts to apps/web/package.json",
+		"id": "M2.3",
+		"category": "Markdown Parsers",
+		"description": "Implement parsePathDescSection() for path-description pairs",
 		"steps_to_verify": [
-			"Script 'test:e2e' exists and runs 'playwright test'",
-			"Script 'test:e2e:ui' exists and runs 'playwright test --ui'",
-			"Script 'test:e2e:headed' exists and runs 'playwright test --headed'"
+			"Parses '- `src/index.ts`: Main entry point' into [{path: 'src/index.ts', description: 'Main entry point'}]",
+			"Handles paths without backticks: '- src/index.ts: desc'",
+			"Returns empty array for missing section"
 		],
 		"passes": true
 	},
 	{
-		"id": "T3.0",
-		"category": "Navigation E2E Tests",
-		"description": "Create navigation.spec.ts for basic page load tests",
+		"id": "M2.4",
+		"category": "Markdown Parsers",
+		"description": "Implement parseArchitectureMarkdown() for full architecture extraction",
 		"steps_to_verify": [
-			"File exists at apps/web/e2e/navigation.spec.ts",
-			"File imports test and expect from @playwright/test",
-			"File contains describe block for navigation tests"
+			"Function exists and returns Architecture type",
+			"Extracts projectType from '## Project Type' section",
+			"Extracts entities from '## Entities' section with ### subsections",
+			"Extracts relationships from '## Relationships' section",
+			"Extracts keyFiles from '## Key Files' section",
+			"Extracts patterns from '## Patterns' section",
+			"Throws error if critical sections are missing (projectType required)"
 		],
 		"passes": true
 	},
 	{
-		"id": "T3.1",
-		"category": "Navigation E2E Tests",
-		"description": "Test home page loads without error",
+		"id": "M2.5",
+		"category": "Markdown Parsers",
+		"description": "Implement parseSkillMarkdown() for full skill extraction",
 		"steps_to_verify": [
-			"Test navigates to '/'",
-			"Test waits for page to load",
-			"Test asserts main content area is visible (h1, main, or [data-testid])"
+			"Function exists and returns Skill type",
+			"Extracts name and description from '## Skill Info' section",
+			"Extracts allowedTools from '## Allowed Tools' section",
+			"Extracts repositoryStructure from '## Repository Structure' section",
+			"Extracts keyFiles from '## Key Files' section",
+			"Extracts searchStrategies from '## Search Strategies' section",
+			"Extracts whenToUse from '## When to Use' section",
+			"Throws error if name is missing or empty"
 		],
 		"passes": true
 	},
 	{
-		"id": "T3.2",
-		"category": "Navigation E2E Tests",
-		"description": "Test browse page loads",
+		"id": "M3.0",
+		"category": "Generation Functions",
+		"description": "Rewrite generateSummary() to use markdown template",
 		"steps_to_verify": [
-			"Test navigates to '/browse'",
-			"Test waits for page to load",
-			"Test asserts main content area is visible"
+			"Function sends prompt with template sections: Purpose, Key Features, Technologies, Architecture Overview",
+			"Function calls streamPrompt() instead of runAnalysis()",
+			"Function returns raw markdown string (no JSON parsing)",
+			"Function passes onStream callback through for progress display"
 		],
 		"passes": true
 	},
 	{
-		"id": "T3.3",
-		"category": "Navigation E2E Tests",
-		"description": "Test repo detail page loads with valid params",
+		"id": "M3.1",
+		"category": "Generation Functions",
+		"description": "Rewrite extractArchitecture() to use markdown template and parser",
 		"steps_to_verify": [
-			"Test navigates to '/repo/tanstack/router' or similar known repo path",
-			"Test waits for page to load",
-			"Test asserts page does not show 404 or error state",
-			"Test asserts main content area is visible"
+			"Function sends prompt with template sections: Project Type, Entities, Relationships, Key Files, Patterns",
+			"Function calls streamPrompt() instead of runAnalysis()",
+			"Function calls parseArchitectureMarkdown() on response text",
+			"Function returns Architecture object",
+			"Function throws on parse failure (does not return partial data)"
 		],
 		"passes": true
 	},
 	{
-		"id": "T3.4",
-		"category": "Navigation E2E Tests",
-		"description": "Test 404 page renders for invalid routes",
+		"id": "M3.2",
+		"category": "Generation Functions",
+		"description": "Rewrite generateSkill() to use markdown template and parser",
 		"steps_to_verify": [
-			"Test navigates to '/this-route-does-not-exist-12345'",
-			"Test asserts 404 indicator is visible (text '404', 'not found', or equivalent)"
+			"Function sends prompt with template sections: Skill Info, Allowed Tools, Repository Structure, Key Files, Search Strategies, When to Use",
+			"Function calls streamPrompt() instead of runAnalysis()",
+			"Function calls parseSkillMarkdown() on response text",
+			"Function returns Skill object",
+			"Function throws on parse failure (does not return partial data)"
 		],
 		"passes": true
 	},
 	{
-		"id": "T4.0",
-		"category": "Auth E2E Tests",
-		"description": "Create auth.spec.ts for authentication flow tests",
+		"id": "M3.3",
+		"category": "Generation Functions",
+		"description": "Keep formatArchitectureMd() and formatSkillMd() unchanged",
 		"steps_to_verify": [
-			"File exists at apps/web/e2e/auth.spec.ts",
-			"File imports test and expect from @playwright/test",
-			"File contains describe block for authentication tests"
+			"formatArchitectureMd() still exists and generates Mermaid diagrams",
+			"formatSkillMd() still exists and generates YAML frontmatter format",
+			"Both functions accept the same input types as before"
 		],
 		"passes": true
 	},
 	{
-		"id": "T4.1",
-		"category": "Auth E2E Tests",
-		"description": "Test sign-in page renders form",
+		"id": "M4.0",
+		"category": "Pipeline Integration",
+		"description": "Update pipeline.ts to use new generation functions",
 		"steps_to_verify": [
-			"Test navigates to '/dashboard' (auth forms shown for unauthenticated)",
-			"Test asserts email input field is visible",
-			"Test asserts password input field is visible",
-			"Test asserts submit button is visible"
+			"runAnalysisPipeline() still calls generateSummary(), extractArchitecture(), generateSkill()",
+			"Pipeline passes onStream callback through generateOptions",
+			"Pipeline still saves all 7 output files to analysisPath",
+			"Pipeline still calls installSkill() at the end"
 		],
 		"passes": true
 	},
 	{
-		"id": "T4.2",
-		"category": "Auth E2E Tests",
-		"description": "Test sign-up page renders form",
+		"id": "M4.1",
+		"category": "Pipeline Integration",
+		"description": "Verify output files are saved correctly",
 		"steps_to_verify": [
-			"Test navigates to '/dashboard' and switches to sign-up",
-			"Test asserts email input field is visible",
-			"Test asserts password input field is visible",
-			"Test asserts submit button is visible"
+			"summary.md contains raw markdown from AI",
+			"architecture.json contains valid JSON matching Architecture schema",
+			"architecture.md contains Mermaid diagram",
+			"skill.json contains valid JSON matching Skill schema",
+			"SKILL.md contains YAML frontmatter format",
+			"file-index.json is unchanged (from ranker)",
+			"meta.json is unchanged (metadata)"
 		],
 		"passes": true
 	},
 	{
-		"id": "T4.3",
-		"category": "Auth E2E Tests",
-		"description": "Test protected route redirects unauthenticated users",
+		"id": "M4.2",
+		"category": "Pipeline Integration",
+		"description": "Verify skill installation to correct paths",
 		"steps_to_verify": [
-			"Test navigates to a protected route (e.g., '/dashboard' or route requiring auth)",
-			"Test asserts URL changes to sign-in page OR page shows auth required message"
+			"installSkill() writes to ~/.config/opencode/skill/{repo}/SKILL.md",
+			"installSkill() writes to ~/.claude/skills/{repo}/SKILL.md",
+			"Both files contain identical content",
+			"Directories are created if they don't exist"
 		],
 		"passes": true
 	},
 	{
-		"id": "T5.0",
-		"category": "Analysis E2E Tests",
-		"description": "Create analysis.spec.ts for analysis display tests",
+		"id": "M5.0",
+		"category": "Export Updates",
+		"description": "Update ai/index.ts exports",
 		"steps_to_verify": [
-			"File exists at apps/web/e2e/analysis.spec.ts",
-			"File imports test and expect from @playwright/test",
-			"File contains describe block for analysis tests"
+			"streamPrompt is exported from packages/sdk/src/ai/index.ts",
+			"StreamPromptOptions type is exported",
+			"StreamPromptResult type is exported",
+			"OpenCodeAnalysisError is exported",
+			"OpenCodeSDKError is exported",
+			"runAnalysis is NOT exported (removed)"
 		],
 		"passes": true
 	},
 	{
-		"id": "T5.1",
-		"category": "Analysis E2E Tests",
-		"description": "Test browse page shows analysis list or empty state",
+		"id": "M5.1",
+		"category": "Export Updates",
+		"description": "Update main SDK exports if needed",
 		"steps_to_verify": [
-			"Test navigates to '/browse'",
-			"Test waits for Convex query to resolve (network idle or specific element)",
-			"Test asserts either analysis list items are visible OR empty state message is visible"
+			"packages/sdk/src/index.ts exports streamPrompt or appropriate public API",
+			"No broken imports when running bun run check-types"
 		],
 		"passes": true
 	},
 	{
-		"id": "T5.2",
-		"category": "Analysis E2E Tests",
-		"description": "Test repo detail page shows summary section",
+		"id": "M6.0",
+		"category": "Cleanup",
+		"description": "Remove zod-to-json-schema dependency",
 		"steps_to_verify": [
-			"Test navigates to repo detail page for known analyzed repo",
-			"Test waits for content to load",
-			"Test asserts summary content area is visible (heading, markdown content, or [data-testid='summary'])"
+			"zod-to-json-schema is not in packages/sdk/package.json dependencies",
+			"No import of zod-to-json-schema anywhere in packages/sdk/src/"
 		],
 		"passes": true
 	},
 	{
-		"id": "T5.3",
-		"category": "Analysis E2E Tests",
-		"description": "Test repo detail page shows architecture section",
+		"id": "M6.1",
+		"category": "Cleanup",
+		"description": "Remove dead code from opencode.ts",
 		"steps_to_verify": [
-			"Test navigates to repo detail page for known analyzed repo",
-			"Test waits for content to load",
-			"Test asserts architecture content area is visible (mermaid diagram, entity list, or [data-testid='architecture'])"
+			"No unused functions in opencode.ts",
+			"No unused imports in opencode.ts",
+			"No unused type definitions in opencode.ts"
 		],
 		"passes": true
 	},
 	{
-		"id": "T6.0",
-		"category": "CI Integration",
-		"description": "Ensure smoke tests can run in CI",
+		"id": "M7.0",
+		"category": "Parser Tests",
+		"description": "Create unit tests for markdown parsers",
 		"steps_to_verify": [
-			"Running 'bun run test:smoke' in packages/sdk completes without setup errors",
-			"Tests either pass or skip gracefully when providers unavailable"
+			"Test file exists at packages/sdk/src/__tests__/parsers.test.ts",
+			"Tests cover extractField() with various inputs",
+			"Tests cover parseListSection() with valid and edge cases",
+			"Tests cover parseArchitectureMarkdown() with sample AI output",
+			"Tests cover parseSkillMarkdown() with sample AI output",
+			"All parser tests pass"
 		],
 		"passes": true
 	},
 	{
-		"id": "T6.1",
-		"category": "CI Integration",
-		"description": "Ensure E2E tests can run in CI",
+		"id": "M7.1",
+		"category": "Parser Tests",
+		"description": "Test parse failure behavior",
 		"steps_to_verify": [
-			"Running 'bun run test:e2e' in apps/web completes without setup errors",
-			"Playwright uses Chromium only in CI for speed",
-			"Tests pass against dev server"
+			"parseArchitectureMarkdown() throws on missing projectType",
+			"parseSkillMarkdown() throws on missing name",
+			"Error messages are descriptive (include what was missing)"
 		],
 		"passes": true
+	},
+	{
+		"id": "M8.0",
+		"category": "Type Safety",
+		"description": "Ensure type check passes",
+		"steps_to_verify": [
+			"bun run check-types completes with no errors in packages/sdk",
+			"bun run check-types completes with no errors in apps/cli",
+			"No @ts-ignore or @ts-expect-error added to bypass errors"
+		],
+		"passes": true
+	},
+	{
+		"id": "M8.1",
+		"category": "Type Safety",
+		"description": "Ensure Zod schemas are still used for type definitions",
+		"steps_to_verify": [
+			"ArchitectureSchema still exists in packages/types/src/schemas.ts",
+			"SkillSchema still exists in packages/types/src/schemas.ts",
+			"Architecture type is inferred from ArchitectureSchema",
+			"Skill type is inferred from SkillSchema"
+		],
+		"passes": true
+	},
+	{
+		"id": "M9.0",
+		"category": "End-to-End Verification",
+		"description": "CLI ow pull command works end-to-end",
+		"steps_to_verify": [
+			"ow pull tanstack/router completes without error",
+			"Streaming output is displayed during generation",
+			"All 7 files are created in ~/.ow/analyses/github--tanstack--router/",
+			"SKILL.md is installed to ~/.config/opencode/skill/tanstack/router/",
+			"No JSON parsing errors in output"
+		],
+		"passes": false
+	},
+	{
+		"id": "M9.1",
+		"category": "End-to-End Verification",
+		"description": "CLI ow generate command works end-to-end",
+		"steps_to_verify": [
+			"ow generate on a local repo completes without error",
+			"Streaming output is displayed during generation",
+			"All 7 files are created in ~/.ow/analyses/local--{hash}/",
+			"architecture.json is valid JSON",
+			"skill.json is valid JSON"
+		],
+		"passes": false
 	}
 ]
 ```
 
 ## Implementation Notes
 
-### Test Isolation
+### Streaming Display
 
-- Smoke tests touch real systems but validate types only, not specific values
-- E2E tests use existing Convex dev deployment (read-only operations preferred)
-- No test should modify production data
+The onStream callback should be passed through the entire pipeline so users see real-time progress:
 
-### Timeouts
+- CLI handlers pass onStream to pipeline
+- Pipeline passes to generate functions
+- Generate functions pass to streamPrompt
+- streamPrompt calls onStream with each text chunk from OpenCode events
 
-- Smoke tests: 10s per test (network variability)
-- E2E navigation tests: default Playwright timeout (30s)
-- E2E tests with Convex queries: may need explicit waits for reactivity
+### Parse Failure Behavior
 
-### Environment Variables
+All parsers throw on critical missing data:
 
-- `SMOKE_TESTS=1`: Enables AI provider smoke tests
-- `CI=1`: Detected by Playwright for server reuse behavior
+- Architecture requires: projectType
+- Skill requires: name
+- Other fields use sensible defaults (empty arrays, empty strings)
 
-### Dependencies to Add
+### Timeout Configuration
+
+- Default timeout: 120 seconds per generation step
+- Total pipeline time: up to 6 minutes (3 generations x 2 min each)
+- Timeout errors include helpful context about which step failed
+
+### Dependencies
 
 ```
-apps/web: @playwright/test (devDependency)
+Remove: zod-to-json-schema from packages/sdk
+Keep: zod (still used for type definitions and optional validation)
 ```
 
 ### Files to Create
 
 ```
-packages/sdk/src/__tests__/ai-provider.smoke.test.ts
-apps/web/playwright.config.ts
-apps/web/e2e/navigation.spec.ts
-apps/web/e2e/auth.spec.ts
-apps/web/e2e/analysis.spec.ts
+packages/sdk/src/analysis/parsers.ts
+packages/sdk/src/__tests__/parsers.test.ts
 ```
 
 ### Files to Modify
 
 ```
-packages/sdk/package.json (add test:smoke script)
-apps/web/package.json (add playwright scripts + dependency)
+packages/sdk/src/ai/opencode.ts (rewrite)
+packages/sdk/src/ai/index.ts (update exports)
+packages/sdk/src/analysis/generate.ts (rewrite prompts, add parser calls)
+packages/sdk/src/analysis/pipeline.ts (minor - pass onStream)
+packages/sdk/package.json (remove zod-to-json-schema)
+```
+
+### Files to Keep Unchanged
+
+```
+packages/types/src/schemas.ts (keep all schemas)
+packages/sdk/src/analysis/context.ts (unchanged)
+packages/sdk/src/importance/ranker.ts (unchanged)
+apps/cli/src/handlers/pull.ts (unchanged - calls pipeline)
+apps/cli/src/handlers/generate.ts (unchanged - calls pipeline)
 ```

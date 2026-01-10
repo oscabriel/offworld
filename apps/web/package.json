@@ -6,7 +6,10 @@
 		"build": "vite build",
 		"serve": "vite preview",
 		"dev": "vite dev",
-		"check-types": "tsc --noEmit"
+		"check-types": "tsc --noEmit",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.0.0",
@@ -42,6 +45,7 @@
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.20.1",
 		"@offworld/config": "workspace:*",
+		"@playwright/test": "^1.57.0",
 		"@tanstack/react-router-devtools": "^1.146.2",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.1",

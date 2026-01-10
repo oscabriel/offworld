@@ -139,5 +139,15 @@
 		"builtin": true
 	},
 	"globals": {},
-	"ignorePatterns": []
+	"ignorePatterns": [
+		"dist/",
+		"example/dist/",
+		"**/_generated/",
+		"*.config.js",
+		"*.config.mjs",
+		"*.config.cjs",
+		"*.config.ts",
+		"*.config.tsx",
+		"initTemplate.mjs"
+	]
 }

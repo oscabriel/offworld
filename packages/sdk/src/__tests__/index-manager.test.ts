@@ -1,16 +1,110 @@
 /**
  * Unit tests for index-manager.ts
- * PRD T3.5
+ * PRD T2.2: Upgraded to use virtual file system mock
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { join } from "node:path";
 
+// ============================================================================
+// Virtual file system state (inline due to vi.mock hoisting)
+// ============================================================================
+
+interface VirtualFile {
+	content: string;
+	isDirectory?: boolean;
+	permissions?: number;
+}
+
+const virtualFs: Record<string, VirtualFile> = {};
+const createdDirs = new Set<string>();
+
+function clearVirtualFs(): void {
+	for (const key of Object.keys(virtualFs)) {
+		delete virtualFs[key];
+	}
+	createdDirs.clear();
+}
+
+function addVirtualFile(
+	path: string,
+	content: string,
+	options?: { isDirectory?: boolean; permissions?: number },
+): void {
+	const normalized = path.replace(/\\/g, "/");
+	virtualFs[normalized] = {
+		content,
+		isDirectory: options?.isDirectory ?? false,
+		permissions: options?.permissions ?? 0o644,
+	};
+}
+
+// initVirtualFs available for future use but not currently needed
+// function initVirtualFs(files: Record<string, string | { content: string; isDirectory?: boolean; permissions?: number }>): void { ... }
+
+function getVirtualFs(): Record<string, VirtualFile> {
+	return { ...virtualFs };
+}
+
+// ============================================================================
 // Mock node:fs before importing index-manager module
+// ============================================================================
+
 vi.mock("node:fs", () => ({
-	existsSync: vi.fn(),
-	readFileSync: vi.fn(),
-	writeFileSync: vi.fn(),
-	mkdirSync: vi.fn(),
+	existsSync: vi.fn((path: string) => {
+		const normalized = path.replace(/\\/g, "/");
+		return normalized in virtualFs || createdDirs.has(normalized);
+	}),
+	readFileSync: vi.fn((path: string, _encoding?: string) => {
+		const normalized = path.replace(/\\/g, "/");
+		const file = virtualFs[normalized];
+		if (!file) {
+			const error = new Error(
+				`ENOENT: no such file or directory, open '${path}'`,
+			) as NodeJS.ErrnoException;
+			error.code = "ENOENT";
+			throw error;
+		}
+		if (file.isDirectory) {
+			const error = new Error(
+				`EISDIR: illegal operation on a directory, read '${path}'`,
+			) as NodeJS.ErrnoException;
+			error.code = "EISDIR";
+			throw error;
+		}
+		if (file.permissions === 0o000) {
+			const error = new Error(`EACCES: permission denied, open '${path}'`) as NodeJS.ErrnoException;
+			error.code = "EACCES";
+			throw error;
+		}
+		return file.content;
+	}),
+	writeFileSync: vi.fn((path: string, content: string, _encoding?: string) => {
+		const normalized = path.replace(/\\/g, "/");
+		// Check if parent dir exists or was created
+		const parentDir = normalized.substring(0, normalized.lastIndexOf("/"));
+		if (parentDir && !(parentDir in virtualFs) && !createdDirs.has(parentDir)) {
+			const error = new Error(
+				`ENOENT: no such file or directory, open '${path}'`,
+			) as NodeJS.ErrnoException;
+			error.code = "ENOENT";
+			throw error;
+		}
+		virtualFs[normalized] = { content, isDirectory: false, permissions: 0o644 };
+	}),
+	mkdirSync: vi.fn((path: string, options?: { recursive?: boolean }) => {
+		const normalized = path.replace(/\\/g, "/");
+		if (options?.recursive) {
+			const parts = normalized.split("/").filter(Boolean);
+			let current = "";
+			for (const part of parts) {
+				current += "/" + part;
+				createdDirs.add(current);
+			}
+		} else {
+			createdDirs.add(normalized);
+		}
+	}),
 }));
 
 vi.mock("../config.js", () => ({
@@ -21,7 +115,7 @@ vi.mock("../constants.js", () => ({
 	VERSION: "0.1.0",
 }));
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import {
 	getIndexPath,
 	getIndex,
@@ -34,10 +128,11 @@ import {
 import type { RepoIndex, RepoIndexEntry } from "@offworld/types";
 
 describe("index-manager.ts", () => {
-	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
-	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
 	const mockWriteFileSync = writeFileSync as ReturnType<typeof vi.fn>;
 	const mockMkdirSync = mkdirSync as ReturnType<typeof vi.fn>;
+
+	const metaRoot = "/home/user/.ow";
+	const indexPath = join(metaRoot, "index.json").replace(/\\/g, "/");
 
 	const sampleEntry: RepoIndexEntry = {
 		fullName: "tanstack/router",
@@ -56,10 +151,12 @@ describe("index-manager.ts", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		clearVirtualFs();
 	});
 
 	afterEach(() => {
 		vi.resetAllMocks();
+		clearVirtualFs();
 	});
 
 	// =========================================================================
@@ -73,11 +170,11 @@ describe("index-manager.ts", () => {
 	});
 
 	// =========================================================================
-	// getIndex tests
+	// getIndex tests - Real JSON parsing
 	// =========================================================================
 	describe("getIndex", () => {
 		it("returns empty index when file missing", () => {
-			mockExistsSync.mockReturnValue(false);
+			// Virtual FS is empty
 
 			const result = getIndex();
 
@@ -86,8 +183,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("parses existing index.json", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(sampleIndex));
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = getIndex();
 
@@ -96,9 +192,11 @@ describe("index-manager.ts", () => {
 			expect(result.repos["github:tanstack/router"]!.fullName).toBe("tanstack/router");
 		});
 
-		it("returns empty index on JSON parse error", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue("invalid json {{{");
+		// =====================================================================
+		// Malformed JSON tests (T2.2 requirement)
+		// =====================================================================
+		it("returns empty index on JSON parse error - invalid syntax", () => {
+			addVirtualFile(indexPath, "invalid json {{{");
 
 			const result = getIndex();
 
@@ -106,22 +204,95 @@ describe("index-manager.ts", () => {
 			expect(result.repos).toEqual({});
 		});
 
-		it("returns empty index on schema validation error", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify({ invalid: "structure" }));
+		it("returns empty index on JSON parse error - truncated JSON", () => {
+			addVirtualFile(indexPath, '{"version": "0.1.0", "repos": {');
+
+			const result = getIndex();
+
+			expect(result.version).toBe("0.1.0");
+			expect(result.repos).toEqual({});
+		});
+
+		it("returns empty index on JSON parse error - empty file", () => {
+			addVirtualFile(indexPath, "");
+
+			const result = getIndex();
+
+			expect(result.version).toBe("0.1.0");
+			expect(result.repos).toEqual({});
+		});
+
+		it("returns empty index on JSON parse error - null content", () => {
+			addVirtualFile(indexPath, "null");
+
+			const result = getIndex();
+
+			expect(result.version).toBe("0.1.0");
+			expect(result.repos).toEqual({});
+		});
+
+		it("returns empty index on JSON parse error - array instead of object", () => {
+			addVirtualFile(indexPath, '["not", "an", "index"]');
+
+			const result = getIndex();
+
+			expect(result.version).toBe("0.1.0");
+			expect(result.repos).toEqual({});
+		});
+
+		it("returns empty index on schema validation error - missing repos", () => {
+			addVirtualFile(indexPath, JSON.stringify({ version: "0.1.0" }));
 
 			const result = getIndex();
 
 			expect(result.repos).toEqual({});
 		});
+
+		it("returns empty index on schema validation error - invalid structure", () => {
+			addVirtualFile(indexPath, JSON.stringify({ invalid: "structure" }));
+
+			const result = getIndex();
+
+			expect(result.repos).toEqual({});
+		});
+
+		it("returns empty index on schema validation error - wrong repos type", () => {
+			addVirtualFile(indexPath, JSON.stringify({ version: "0.1.0", repos: "not-an-object" }));
+
+			const result = getIndex();
+
+			expect(result.repos).toEqual({});
+		});
+
+		// =====================================================================
+		// Permission scenario tests (T2.2 requirement)
+		// =====================================================================
+		it("returns empty index on permission denied", () => {
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex), { permissions: 0o000 });
+
+			const result = getIndex();
+
+			expect(result.version).toBe("0.1.0");
+			expect(result.repos).toEqual({});
+		});
+
+		it("returns empty index when path is a directory", () => {
+			addVirtualFile(indexPath, "", { isDirectory: true });
+
+			const result = getIndex();
+
+			expect(result.version).toBe("0.1.0");
+			expect(result.repos).toEqual({});
+		});
 	});
 
 	// =========================================================================
-	// saveIndex tests
+	// saveIndex tests - Directory creation logic
 	// =========================================================================
 	describe("saveIndex", () => {
 		it("writes valid JSON", () => {
-			mockExistsSync.mockReturnValue(true);
+			// Pre-create the directory
+			addVirtualFile(metaRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
@@ -130,16 +301,27 @@ describe("index-manager.ts", () => {
 			expect(() => JSON.parse(content as string)).not.toThrow();
 		});
 
-		it("creates directory if missing", () => {
-			mockExistsSync.mockReturnValue(false);
+		// =====================================================================
+		// Directory creation tests (T2.2 requirement)
+		// =====================================================================
+		it("creates directory recursively if missing", () => {
+			// Virtual FS is empty
 
 			saveIndex(sampleIndex);
 
-			expect(mockMkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
+			expect(mockMkdirSync).toHaveBeenCalledWith(metaRoot, { recursive: true });
+		});
+
+		it("does not create directory if it already exists", () => {
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+
+			saveIndex(sampleIndex);
+
+			expect(mockMkdirSync).not.toHaveBeenCalled();
 		});
 
 		it("writes to correct path", () => {
-			mockExistsSync.mockReturnValue(true);
+			addVirtualFile(metaRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
@@ -149,14 +331,36 @@ describe("index-manager.ts", () => {
 				"utf-8",
 			);
 		});
+
+		it("verifies actual file content after save", () => {
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+
+			saveIndex(sampleIndex);
+
+			const fs = getVirtualFs();
+			const savedFile = fs[indexPath];
+			expect(savedFile).toBeDefined();
+			const parsed = JSON.parse(savedFile!.content) as RepoIndex;
+			expect(parsed.version).toBe("0.1.0");
+			expect(parsed.repos["github:tanstack/router"]).toBeDefined();
+		});
+
+		it("formats JSON with indentation", () => {
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+
+			saveIndex(sampleIndex);
+
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
+			expect(content).toContain("\n"); // Has newlines from JSON.stringify(_, null, 2)
+		});
 	});
 
 	// =========================================================================
 	// updateIndex tests
 	// =========================================================================
 	describe("updateIndex", () => {
-		it("adds new repo entry", () => {
-			mockExistsSync.mockReturnValue(false);
+		it("adds new repo entry to empty index", () => {
+			// Virtual FS empty - no existing index
 
 			updateIndex(sampleEntry);
 
@@ -164,11 +368,12 @@ describe("index-manager.ts", () => {
 			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.repos["github:tanstack/router"]).toBeDefined();
+			expect(written.repos["github:tanstack/router"]!.commitSha).toBe("abc123");
 		});
 
 		it("updates existing repo entry", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(sampleIndex));
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const updatedEntry: RepoIndexEntry = {
 				...sampleEntry,
@@ -197,8 +402,8 @@ describe("index-manager.ts", () => {
 					},
 				},
 			};
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(existingIndex));
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(indexPath, JSON.stringify(existingIndex));
 
 			updateIndex(sampleEntry);
 
@@ -207,6 +412,14 @@ describe("index-manager.ts", () => {
 			expect(written.repos["github:other/repo"]).toBeDefined();
 			expect(written.repos["github:tanstack/router"]).toBeDefined();
 		});
+
+		it("creates directory if missing when adding entry", () => {
+			// Virtual FS empty
+
+			updateIndex(sampleEntry);
+
+			expect(mockMkdirSync).toHaveBeenCalledWith(metaRoot, { recursive: true });
+		});
 	});
 
 	// =========================================================================
@@ -214,8 +427,8 @@ describe("index-manager.ts", () => {
 	// =========================================================================
 	describe("removeFromIndex", () => {
 		it("removes existing entry and returns true", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(sampleIndex));
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = removeFromIndex("github:tanstack/router");
 
@@ -226,12 +439,44 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns false if entry not found", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(sampleIndex));
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = removeFromIndex("github:nonexistent/repo");
 
 			expect(result).toBe(false);
+		});
+
+		it("returns false when index file does not exist", () => {
+			// Virtual FS empty - no index file
+
+			const result = removeFromIndex("github:nonexistent/repo");
+
+			expect(result).toBe(false);
+		});
+
+		it("preserves other entries when removing", () => {
+			const multiIndex: RepoIndex = {
+				version: "0.1.0",
+				repos: {
+					"github:tanstack/router": sampleEntry,
+					"github:vercel/ai": {
+						fullName: "vercel/ai",
+						qualifiedName: "github:vercel/ai",
+						localPath: "/home/user/ow/github/vercel/ai",
+						hasSkill: true,
+					},
+				},
+			};
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(indexPath, JSON.stringify(multiIndex));
+
+			removeFromIndex("github:tanstack/router");
+
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
+			const written = JSON.parse(content as string) as RepoIndex;
+			expect(written.repos["github:tanstack/router"]).toBeUndefined();
+			expect(written.repos["github:vercel/ai"]).toBeDefined();
 		});
 	});
 
@@ -240,8 +485,7 @@ describe("index-manager.ts", () => {
 	// =========================================================================
 	describe("getIndexEntry", () => {
 		it("returns entry if exists", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(sampleIndex));
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = getIndexEntry("github:tanstack/router");
 
@@ -250,12 +494,31 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns undefined if not found", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(sampleIndex));
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = getIndexEntry("github:nonexistent/repo");
 
 			expect(result).toBeUndefined();
+		});
+
+		it("returns undefined when index file does not exist", () => {
+			// Virtual FS empty
+
+			const result = getIndexEntry("github:tanstack/router");
+
+			expect(result).toBeUndefined();
+		});
+
+		it("returns all fields from entry", () => {
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
+
+			const result = getIndexEntry("github:tanstack/router");
+
+			expect(result?.fullName).toBe("tanstack/router");
+			expect(result?.qualifiedName).toBe("github:tanstack/router");
+			expect(result?.localPath).toBe("/home/user/ow/github/tanstack/router");
+			expect(result?.commitSha).toBe("abc123");
+			expect(result?.hasSkill).toBe(false);
 		});
 	});
 
@@ -276,8 +539,7 @@ describe("index-manager.ts", () => {
 					},
 				},
 			};
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(multiIndex));
+			addVirtualFile(indexPath, JSON.stringify(multiIndex));
 
 			const result = listIndexedRepos();
 
@@ -287,11 +549,30 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns empty array when no repos", () => {
-			mockExistsSync.mockReturnValue(false);
+			// Virtual FS empty - no index file
 
 			const result = listIndexedRepos();
 
 			expect(result).toEqual([]);
+		});
+
+		it("returns empty array when index has empty repos", () => {
+			addVirtualFile(indexPath, JSON.stringify({ version: "0.1.0", repos: {} }));
+
+			const result = listIndexedRepos();
+
+			expect(result).toEqual([]);
+		});
+
+		it("returns entries with all fields populated", () => {
+			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
+
+			const result = listIndexedRepos();
+
+			expect(result).toHaveLength(1);
+			expect(result[0]!.fullName).toBe("tanstack/router");
+			expect(result[0]!.qualifiedName).toBe("github:tanstack/router");
+			expect(result[0]!.localPath).toBe("/home/user/ow/github/tanstack/router");
 		});
 	});
 
@@ -300,8 +581,6 @@ describe("index-manager.ts", () => {
 	// =========================================================================
 	describe("version field", () => {
 		it("is set correctly on save", () => {
-			mockExistsSync.mockReturnValue(false);
-
 			updateIndex(sampleEntry);
 
 			const [, content] = mockWriteFileSync.mock.calls[0]!;
@@ -314,14 +593,24 @@ describe("index-manager.ts", () => {
 				version: "0.0.1", // old version
 				repos: {},
 			};
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(JSON.stringify(oldIndex));
+			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(indexPath, JSON.stringify(oldIndex));
 
 			updateIndex(sampleEntry);
 
 			const [, content] = mockWriteFileSync.mock.calls[0]!;
 			const written = JSON.parse(content as string) as RepoIndex;
 			expect(written.version).toBe("0.1.0"); // updated to current
+		});
+
+		it("preserves version from constants", () => {
+			addVirtualFile(indexPath, JSON.stringify({ version: "9.9.9", repos: {} }));
+
+			updateIndex(sampleEntry);
+
+			const [, content] = mockWriteFileSync.mock.calls[0]!;
+			const written = JSON.parse(content as string) as RepoIndex;
+			expect(written.version).toBe("0.1.0"); // Always uses VERSION constant
 		});
 	});
 });

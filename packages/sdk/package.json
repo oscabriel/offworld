@@ -16,7 +16,8 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-		"test:integration": "vitest run src/__tests__/integration/"
+		"test:integration": "vitest run src/__tests__/integration/",
+		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke"
 	},
 	"dependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.2.3",

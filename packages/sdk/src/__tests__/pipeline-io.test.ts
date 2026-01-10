@@ -30,6 +30,7 @@ const mockFileIndex: FileIndexEntry[] = [
 ];
 
 const mockContext: GatheredContext = {
+	repoPath: "/mock/test-repo",
 	repoName: "test-repo",
 	readme: "# Test Repo",
 	packageConfig: '{"name": "test"}',
@@ -204,7 +205,7 @@ describe("installSkill with temp directories", () => {
 	it("handles skill content with special characters", () => {
 		const repoName = "special-chars";
 		const skillContent =
-			"# Skill with émojis 🚀 and spëcial çharacters\n\nLine with\ttabs and \"quotes\"";
+			'# Skill with émojis 🚀 and spëcial çharacters\n\nLine with\ttabs and "quotes"';
 
 		installSkill(repoName, skillContent);
 

@@ -37,8 +37,7 @@ vi.mock("../../config.js", () => ({
 		skillDir: join(tempDir, "skill"),
 	}),
 	getMetaRoot: () => tempMetaRoot,
-	getRepoPath: (fullName: string, provider: string) =>
-		join(tempRepoRoot, provider, fullName),
+	getRepoPath: (fullName: string, provider: string) => join(tempRepoRoot, provider, fullName),
 }));
 
 // Mock index-manager to avoid polluting real index

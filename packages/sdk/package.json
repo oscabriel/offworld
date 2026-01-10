@@ -12,7 +12,7 @@
 	"scripts": {
 		"build": "tsdown",
 		"dev": "tsdown --watch",
-		"check-types": "tsc --noEmit",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
@@ -23,8 +23,7 @@
 		"@anthropic-ai/claude-agent-sdk": "^0.2.3",
 		"@offworld/types": "workspace:*",
 		"@opencode-ai/sdk": "^1.1.10",
-		"web-tree-sitter": "^0.26.3",
-		"zod-to-json-schema": "^3.25.1"
+		"web-tree-sitter": "^0.26.3"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.3",

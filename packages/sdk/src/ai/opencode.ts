@@ -1,58 +1,20 @@
-/**
- * OpenCode SDK wrapper for analysis operations
- * PRD 3.12: OpenCode SDK wrapper
- */
+// Streaming OpenCode API - Markdown templates instead of JSON schemas
 
-import type { z } from "zod";
-
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Options for OpenCode analysis
- */
-export interface OpenCodeAnalysisOptions<T extends z.ZodType> {
-	/** The prompt describing what to analyze */
+export interface StreamPromptOptions {
 	prompt: string;
-	/** Working directory for the analysis */
 	cwd: string;
-	/** Zod schema for structured output */
-	schema: T;
-	/** Additional system prompt instructions */
 	systemPrompt?: string;
-	/** Model to use (default: anthropic/claude-sonnet-4-20250514) */
-	model?: {
-		providerID: string;
-		modelID: string;
-	};
-	/** Agent type (default: plan for read-only analysis) */
-	agent?: "build" | "plan";
-	/** Session title for identification */
-	sessionTitle?: string;
-	/** OpenCode server base URL (default: http://localhost:4096) */
-	baseUrl?: string;
+	timeoutMs?: number;
+	onDebug?: (message: string) => void;
+	onStream?: (text: string) => void;
 }
 
-/**
- * Result from OpenCode analysis
- */
-export interface OpenCodeAnalysisResult<T> {
-	/** The structured output matching the schema */
-	output: T;
-	/** Session ID for reference */
+export interface StreamPromptResult {
+	text: string;
 	sessionId: string;
-	/** Duration in milliseconds */
 	durationMs: number;
 }
 
-// ============================================================================
-// Errors
-// ============================================================================
-
-/**
- * Error during OpenCode analysis
- */
 export class OpenCodeAnalysisError extends Error {
 	constructor(
 		message: string,
@@ -63,232 +25,280 @@ export class OpenCodeAnalysisError extends Error {
 	}
 }
 
-/**
- * Error when OpenCode server is not reachable
- */
-export class OpenCodeConnectionError extends OpenCodeAnalysisError {
-	constructor(baseUrl: string) {
-		super(
-			`Cannot connect to OpenCode server at ${baseUrl}. ` +
-				`Ensure OpenCode is running with: opencode server`,
-		);
-		this.name = "OpenCodeConnectionError";
+export class OpenCodeSDKError extends OpenCodeAnalysisError {
+	constructor() {
+		super("Failed to import @opencode-ai/sdk. Install it with: bun add @opencode-ai/sdk");
+		this.name = "OpenCodeSDKError";
 	}
 }
 
-// ============================================================================
-// Internal Types for OpenCode API
-// ============================================================================
+interface OpenCodeServer {
+	close: () => void;
+	url: string;
+}
 
 interface OpenCodeSession {
 	id: string;
-	title?: string;
 }
 
-interface OpenCodeMessage {
-	id: string;
-	role: "user" | "assistant";
-	parts: Array<{ type: string; text?: string }>;
+interface OpenCodeEvent {
+	type: string;
+	properties: Record<string, unknown>;
 }
 
 interface OpenCodeClient {
 	session: {
-		create: (options: { body: { title?: string } }) => Promise<{ data: OpenCodeSession }>;
+		create: () => Promise<{ data: OpenCodeSession; error?: unknown }>;
 		prompt: (options: {
 			path: { id: string };
 			body: {
+				agent?: string;
 				parts: Array<{ type: string; text: string }>;
 				model?: { providerID: string; modelID: string };
-				noReply?: boolean;
 			};
-		}) => Promise<{ data: unknown }>;
-		messages: (options: { path: { id: string } }) => Promise<{ data: OpenCodeMessage[] }>;
-		delete: (options: { path: { id: string } }) => Promise<void>;
+		}) => Promise<{ data: unknown; error?: unknown }>;
+	};
+	event: {
+		subscribe: () => Promise<{
+			stream: AsyncIterable<OpenCodeEvent>;
+		}>;
 	};
 }
 
-// ============================================================================
-// Client Creation
-// ============================================================================
-
-/**
- * Create an OpenCode client pointing to localhost:4096
- * Uses dynamic import to avoid bundling issues
- */
-async function createClient(baseUrl: string): Promise<OpenCodeClient> {
-	try {
-		const { createOpencodeClient } = await import("@opencode-ai/sdk");
-		// Using 'as unknown as' because the SDK types may differ from our interface
-		return createOpencodeClient({ baseUrl }) as unknown as OpenCodeClient;
-	} catch (error) {
-		throw new OpenCodeAnalysisError(
-			"Failed to import @opencode-ai/sdk. Install it with: npm install @opencode-ai/sdk",
-			error,
-		);
-	}
+interface OpenCodeConfig {
+	agent?: {
+		build?: { disable: boolean };
+		explore?: { disable: boolean };
+		general?: { disable: boolean };
+		plan?: { disable: boolean };
+		docs?: {
+			prompt?: string;
+			description?: string;
+			permission?: Record<string, string>;
+			mode?: string;
+			tools?: Record<string, boolean>;
+		};
+	};
 }
 
-/**
- * Check if OpenCode server is healthy
- */
-async function checkServerHealth(baseUrl: string): Promise<boolean> {
+type CreateOpencodeResult = { server: OpenCodeServer };
+type CreateOpencodeClientFn = (opts: { baseUrl: string; directory: string }) => OpenCodeClient;
+type CreateOpencodeFn = (opts: {
+	port: number;
+	cwd?: string;
+	config?: OpenCodeConfig;
+}) => Promise<CreateOpencodeResult>;
+
+let cachedCreateOpencode: CreateOpencodeFn | null = null;
+let cachedCreateOpencodeClient: CreateOpencodeClientFn | null = null;
+
+async function getOpenCodeSDK(): Promise<{
+	createOpencode: CreateOpencodeFn;
+	createOpencodeClient: CreateOpencodeClientFn;
+}> {
+	if (cachedCreateOpencode && cachedCreateOpencodeClient) {
+		return {
+			createOpencode: cachedCreateOpencode,
+			createOpencodeClient: cachedCreateOpencodeClient,
+		};
+	}
+
 	try {
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-		const response = await fetch(`${baseUrl}/health`, {
-			method: "GET",
-			signal: controller.signal,
-		});
-
-		clearTimeout(timeoutId);
-		return response.ok;
+		const sdk = await import("@opencode-ai/sdk");
+		cachedCreateOpencode = sdk.createOpencode as CreateOpencodeFn;
+		cachedCreateOpencodeClient = sdk.createOpencodeClient as CreateOpencodeClientFn;
+		return {
+			createOpencode: cachedCreateOpencode,
+			createOpencodeClient: cachedCreateOpencodeClient,
+		};
 	} catch {
-		return false;
+		throw new OpenCodeSDKError();
 	}
 }
 
-// ============================================================================
-// Main Function
-// ============================================================================
-
 /**
- * Analyze a repository using OpenCode SDK
- *
- * Creates a session, injects context via system prompt, sends the analysis prompt,
- * and parses the response using the provided Zod schema.
- *
- * @param options - Analysis options including prompt, cwd, and output schema
- * @returns Structured analysis result matching the provided schema
- * @throws OpenCodeConnectionError if server is not reachable
- * @throws OpenCodeAnalysisError if analysis fails
+ * Stream a prompt to OpenCode and return raw text response.
+ * No JSON parsing - just returns whatever the AI produces.
  */
-export async function analyzeWithOpenCode<T extends z.ZodType>(
-	options: OpenCodeAnalysisOptions<T>,
-): Promise<OpenCodeAnalysisResult<z.infer<T>>> {
-	const {
-		prompt,
-		cwd,
-		schema,
-		systemPrompt,
-		model = { providerID: "anthropic", modelID: "claude-sonnet-4-20250514" },
-		agent = "plan", // Use plan agent for read-only analysis
-		sessionTitle = "offworld-analysis",
-		baseUrl = "http://localhost:4096",
-	} = options;
+export async function streamPrompt(options: StreamPromptOptions): Promise<StreamPromptResult> {
+	const { prompt, cwd, systemPrompt, timeoutMs = 120000, onDebug, onStream } = options;
 
+	const debug = onDebug ?? (() => {});
+	const stream = onStream ?? (() => {});
 	const startTime = Date.now();
 
-	// Check server health
-	const isHealthy = await checkServerHealth(baseUrl);
-	if (!isHealthy) {
-		throw new OpenCodeConnectionError(baseUrl);
+	debug("Loading OpenCode SDK...");
+	const { createOpencode, createOpencodeClient } = await getOpenCodeSDK();
+
+	const maxAttempts = 10;
+	let server: OpenCodeServer | null = null;
+	let client: OpenCodeClient | null = null;
+	let port = 0;
+
+	const config: OpenCodeConfig = {
+		agent: {
+			build: { disable: true },
+			explore: { disable: true },
+			general: { disable: true },
+			plan: { disable: true },
+			docs: {
+				description: "Analyze codebase and extract structured information",
+				permission: {
+					webfetch: "deny",
+					edit: "deny",
+					bash: "deny",
+					external_directory: "deny",
+					doom_loop: "deny",
+				},
+				mode: "primary",
+				tools: {
+					write: false,
+					bash: false,
+					delete: false,
+					read: true,
+					grep: true,
+					glob: true,
+					list: true,
+					path: false,
+					todowrite: false,
+					todoread: false,
+					websearch: false,
+					webfetch: false,
+					skill: false,
+					task: false,
+					mcp: false,
+					edit: false,
+				},
+			},
+		},
+	};
+
+	debug("Starting embedded OpenCode server...");
+	for (let attempt = 0; attempt < maxAttempts; attempt++) {
+		port = Math.floor(Math.random() * 3000) + 3000;
+		try {
+			const result = await createOpencode({ port, cwd, config });
+			server = result.server;
+			client = createOpencodeClient({
+				baseUrl: `http://localhost:${port}`,
+				directory: cwd,
+			});
+			debug(`Server started on port ${port}`);
+			break;
+		} catch (err) {
+			if (err instanceof Error && err.message?.includes("port")) {
+				continue;
+			}
+			throw new OpenCodeAnalysisError("Failed to start OpenCode server", err);
+		}
 	}
 
-	// Create client
-	const client = await createClient(baseUrl);
-
-	// Create session
-	const { data: session } = await client.session.create({
-		body: { title: sessionTitle },
-	});
+	if (!server || !client) {
+		throw new OpenCodeAnalysisError("Failed to start OpenCode server after all attempts");
+	}
 
 	try {
-		// Build the analysis prompt with JSON output instructions
-		const schemaDescription = JSON.stringify(schema._def, null, 2);
-		const jsonInstructions = `
-You are analyzing a codebase at: ${cwd}
+		debug("Creating session...");
+		const sessionResult = await client.session.create();
+		if (sessionResult.error) {
+			throw new OpenCodeAnalysisError("Failed to create session", sessionResult.error);
+		}
+		const sessionId = sessionResult.data.id;
+		debug(`Session created: ${sessionId}`);
 
-${systemPrompt ? `Additional context: ${systemPrompt}\n` : ""}
+		debug("Subscribing to events...");
+		const { stream: eventStream } = await client.event.subscribe();
 
-${agent === "plan" ? "You are in read-only mode. Use Read, Glob, and Grep tools to explore the codebase." : ""}
+		const fullPrompt = systemPrompt
+			? `${systemPrompt}\n\nAnalyzing codebase at: ${cwd}\n\n${prompt}`
+			: `Analyzing codebase at: ${cwd}\n\n${prompt}`;
 
-IMPORTANT: Your response MUST be valid JSON that matches this schema structure.
-Do not include any text before or after the JSON.
-Do not use markdown code blocks.
-
-Expected output structure:
-${schemaDescription}
-
-Task: ${prompt}
-
-Respond with ONLY the JSON output.`;
-
-		// Send the prompt
-		await client.session.prompt({
-			path: { id: session.id },
+		debug("Sending prompt...");
+		const promptPromise = client.session.prompt({
+			path: { id: sessionId },
 			body: {
-				parts: [{ type: "text", text: jsonInstructions }],
-				model,
+				agent: "docs",
+				parts: [{ type: "text", text: fullPrompt }],
+				model: { providerID: "anthropic", modelID: "claude-sonnet-4-20250514" },
 			},
 		});
 
-		// Get the response messages
-		const { data: messages } = await client.session.messages({
-			path: { id: session.id },
+		const textParts = new Map<string, string>();
+		let firstTextReceived = false;
+		debug("Waiting for response...");
+
+		// Set up timeout
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			timeoutId = setTimeout(() => {
+				reject(
+					new OpenCodeAnalysisError(
+						`timeout: no session.idle event received within ${timeoutMs}ms`,
+					),
+				);
+			}, timeoutMs);
 		});
 
-		// Find the assistant's response
-		const assistantMessage = messages.filter((m) => m.role === "assistant").pop();
+		const processEvents = async (): Promise<string> => {
+			for await (const event of eventStream) {
+				const props = event.properties;
 
-		if (!assistantMessage) {
+				if ("sessionID" in props && props.sessionID !== sessionId) {
+					continue;
+				}
+
+				if (event.type === "message.part.updated") {
+					const part = props.part as { id?: string; type: string; text?: string } | undefined;
+					const partId = part?.id ?? "";
+					if (part?.type === "text" && part.text && partId) {
+						const prevText = textParts.get(partId) ?? "";
+						textParts.set(partId, part.text);
+						if (!firstTextReceived) {
+							debug("Receiving response...");
+							firstTextReceived = true;
+						}
+						if (part.text.length > prevText.length) {
+							stream(part.text.slice(prevText.length));
+						}
+					}
+				}
+
+				if (event.type === "session.idle" && props.sessionID === sessionId) {
+					debug("Response complete");
+					break;
+				}
+
+				if (event.type === "session.error" && props.sessionID === sessionId) {
+					const errorProps = props.error as { name?: string } | undefined;
+					debug(`Session error: ${JSON.stringify(props.error)}`);
+					throw new OpenCodeAnalysisError(errorProps?.name ?? "Unknown session error", props.error);
+				}
+			}
+			return Array.from(textParts.values()).join("");
+		};
+
+		const responseText = await Promise.race([processEvents(), timeoutPromise]);
+
+		if (timeoutId) clearTimeout(timeoutId);
+
+		await promptPromise;
+
+		if (!responseText) {
 			throw new OpenCodeAnalysisError("No response received from OpenCode");
 		}
 
-		// Extract text content from the response
-		const textPart = assistantMessage.parts.find((p) => p.type === "text" && p.text);
-
-		if (!textPart?.text) {
-			throw new OpenCodeAnalysisError("Response did not contain text content");
-		}
-
-		// Parse the JSON response
-		let jsonResponse: unknown;
-		try {
-			// Try to extract JSON from the response (handle potential markdown wrapping)
-			let jsonText = textPart.text.trim();
-
-			// Remove markdown code blocks if present
-			if (jsonText.startsWith("```json")) {
-				jsonText = jsonText.slice(7);
-			} else if (jsonText.startsWith("```")) {
-				jsonText = jsonText.slice(3);
-			}
-			if (jsonText.endsWith("```")) {
-				jsonText = jsonText.slice(0, -3);
-			}
-			jsonText = jsonText.trim();
-
-			jsonResponse = JSON.parse(jsonText);
-		} catch (parseError) {
-			throw new OpenCodeAnalysisError(
-				`Failed to parse JSON response: ${textPart.text.substring(0, 200)}...`,
-				parseError,
-			);
-		}
-
-		// Validate against the schema
-		const parsed = schema.safeParse(jsonResponse);
-		if (!parsed.success) {
-			throw new OpenCodeAnalysisError(
-				`Response did not match expected schema: ${parsed.error.message}`,
-				parsed.error,
-			);
-		}
+		debug(`Response received (${responseText.length} chars)`);
 
 		const durationMs = Date.now() - startTime;
+		debug(`Complete in ${durationMs}ms`);
 
 		return {
-			output: parsed.data,
-			sessionId: session.id,
+			text: responseText,
+			sessionId,
 			durationMs,
 		};
 	} finally {
-		// Clean up the session
-		try {
-			await client.session.delete({ path: { id: session.id } });
-		} catch {
-			// Ignore cleanup errors
-		}
+		debug("Closing server...");
+		server.close();
 	}
 }

@@ -29,3 +29,14 @@ export {
 	type AnalysisMeta,
 	type AnalysisPipelineOptions,
 } from "./pipeline.js";
+
+// Markdown parsers (M2.x)
+export {
+	extractField,
+	parseListSection,
+	parsePathDescSection,
+	parsePathPurposeSection,
+	parseArchitectureMarkdown,
+	parseSkillMarkdown,
+	ParseError,
+} from "./parsers.js";

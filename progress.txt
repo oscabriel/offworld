@@ -41,3 +41,18 @@
 - Pre-existing TS error in parser.ts blocks full check-types pass (unrelated)
 - All unit tests pass
 - Files: none modified
+
+## 2026-01-10: M1.0-M8.1 Markdown Template Migration
+
+- Created streamPrompt() in opencode.ts - streaming API with 120s timeout
+- Removed JSON extraction logic (extractJSON, analyzeWithOpenCode, analyzeWithRetry)
+- Removed zod-to-json-schema dependency
+- Created parsers.ts with markdown parsing utilities:
+  - extractField(), parseListSection(), parsePathDescSection(), parsePathPurposeSection()
+  - parseArchitectureMarkdown(), parseSkillMarkdown() with ParseError
+- Rewrote generate.ts: generateSummary, extractArchitecture, generateSkill now use markdown templates
+- Updated exports in ai/index.ts and main SDK index.ts
+- Created 30 parser unit tests, all passing
+- All 422 SDK tests pass, typecheck clean, lint clean
+- Files: opencode.ts, ai/index.ts, parsers.ts, generate.ts, index.ts, package.json, parsers.test.ts
+- Remaining: M9.0-M9.1 E2E verification (requires actual API calls)

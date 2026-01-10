@@ -14,3 +14,30 @@
 - Created apps/web/e2e/ directory with example.spec.ts
 - Added scripts: test:e2e, test:e2e:ui, test:e2e:headed
 - Files: apps/web/package.json, apps/web/playwright.config.ts, apps/web/e2e/example.spec.ts
+
+## 2026-01-10: T3.0-T3.4 Navigation E2E Tests
+
+- Created apps/web/e2e/navigation.spec.ts
+- Tests: home page, browse page, repo detail page, 404 handling
+- Files: apps/web/e2e/navigation.spec.ts
+
+## 2026-01-10: T4.0-T4.3 Auth E2E Tests
+
+- Created apps/web/e2e/auth.spec.ts
+- Note: No separate /sign-in /sign-up routes; auth forms on /dashboard for unauthenticated
+- Tests: sign-in form, sign-up form, protected route shows auth forms
+- Files: apps/web/e2e/auth.spec.ts
+
+## 2026-01-10: T5.0-T5.3 Analysis E2E Tests
+
+- Created apps/web/e2e/analysis.spec.ts
+- Tests: browse page list/empty state, repo summary section, repo architecture section
+- Files: apps/web/e2e/analysis.spec.ts
+
+## 2026-01-10: T6.0-T6.1 CI Integration
+
+- Verified smoke tests run (skip when SMOKE_TESTS not set)
+- Verified Playwright config uses Chromium only
+- Pre-existing TS error in parser.ts blocks full check-types pass (unrelated)
+- All unit tests pass
+- Files: none modified

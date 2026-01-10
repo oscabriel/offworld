@@ -1,1 +1,8 @@
+## 2026-01-10: T1.0-T1.4 AI Provider Smoke Tests
 
+- Created packages/sdk/src/__tests__/ai-provider.smoke.test.ts
+- Tests: isClaudeCodeAvailable, isOpenCodeAvailable, detectProvider
+- All conditional skip via SMOKE_TESTS env var, 10s timeouts
+- Added test:smoke script to package.json
+- Pre-existing TS error in parser.ts (unrelated)
+- Files: packages/sdk/package.json, packages/sdk/src/__tests__/ai-provider.smoke.test.ts

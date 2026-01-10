@@ -40,9 +40,9 @@ const { data } = useSuspenseQuery(convexQuery(api.todos.getAll, {}));
 
 // Auth check in route
 beforeLoad: async (ctx) => {
-  const token = await getAuth();
-  ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
-}
+	const token = await getAuth();
+	ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+};
 ```
 
 ## NOTES

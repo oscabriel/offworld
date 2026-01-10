@@ -8,170 +8,151 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TodosRouteImport } from './routes/todos'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as BrowseRouteImport } from './routes/browse'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as RepoOwnerRepoRouteImport } from './routes/repo/$owner/$repo'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as TodosRouteImport } from "./routes/todos";
+import { Route as DashboardRouteImport } from "./routes/dashboard";
+import { Route as BrowseRouteImport } from "./routes/browse";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as RepoOwnerRepoRouteImport } from "./routes/repo/$owner/$repo";
+import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 
 const TodosRoute = TodosRouteImport.update({
-  id: '/todos',
-  path: '/todos',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/todos",
+	path: "/todos",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/dashboard",
+	path: "/dashboard",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const BrowseRoute = BrowseRouteImport.update({
-  id: '/browse',
-  path: '/browse',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/browse",
+	path: "/browse",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/",
+	path: "/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const RepoOwnerRepoRoute = RepoOwnerRepoRouteImport.update({
-  id: '/repo/$owner/$repo',
-  path: '/repo/$owner/$repo',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/repo/$owner/$repo",
+	path: "/repo/$owner/$repo",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/api/auth/$",
+	path: "/api/auth/$",
+	getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/browse': typeof BrowseRoute
-  '/dashboard': typeof DashboardRoute
-  '/todos': typeof TodosRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/repo/$owner/$repo': typeof RepoOwnerRepoRoute
+	"/": typeof IndexRoute;
+	"/browse": typeof BrowseRoute;
+	"/dashboard": typeof DashboardRoute;
+	"/todos": typeof TodosRoute;
+	"/api/auth/$": typeof ApiAuthSplatRoute;
+	"/repo/$owner/$repo": typeof RepoOwnerRepoRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/browse': typeof BrowseRoute
-  '/dashboard': typeof DashboardRoute
-  '/todos': typeof TodosRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/repo/$owner/$repo': typeof RepoOwnerRepoRoute
+	"/": typeof IndexRoute;
+	"/browse": typeof BrowseRoute;
+	"/dashboard": typeof DashboardRoute;
+	"/todos": typeof TodosRoute;
+	"/api/auth/$": typeof ApiAuthSplatRoute;
+	"/repo/$owner/$repo": typeof RepoOwnerRepoRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/browse': typeof BrowseRoute
-  '/dashboard': typeof DashboardRoute
-  '/todos': typeof TodosRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/repo/$owner/$repo': typeof RepoOwnerRepoRoute
+	__root__: typeof rootRouteImport;
+	"/": typeof IndexRoute;
+	"/browse": typeof BrowseRoute;
+	"/dashboard": typeof DashboardRoute;
+	"/todos": typeof TodosRoute;
+	"/api/auth/$": typeof ApiAuthSplatRoute;
+	"/repo/$owner/$repo": typeof RepoOwnerRepoRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/browse'
-    | '/dashboard'
-    | '/todos'
-    | '/api/auth/$'
-    | '/repo/$owner/$repo'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/browse'
-    | '/dashboard'
-    | '/todos'
-    | '/api/auth/$'
-    | '/repo/$owner/$repo'
-  id:
-    | '__root__'
-    | '/'
-    | '/browse'
-    | '/dashboard'
-    | '/todos'
-    | '/api/auth/$'
-    | '/repo/$owner/$repo'
-  fileRoutesById: FileRoutesById
+	fileRoutesByFullPath: FileRoutesByFullPath;
+	fullPaths: "/" | "/browse" | "/dashboard" | "/todos" | "/api/auth/$" | "/repo/$owner/$repo";
+	fileRoutesByTo: FileRoutesByTo;
+	to: "/" | "/browse" | "/dashboard" | "/todos" | "/api/auth/$" | "/repo/$owner/$repo";
+	id: "__root__" | "/" | "/browse" | "/dashboard" | "/todos" | "/api/auth/$" | "/repo/$owner/$repo";
+	fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  BrowseRoute: typeof BrowseRoute
-  DashboardRoute: typeof DashboardRoute
-  TodosRoute: typeof TodosRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  RepoOwnerRepoRoute: typeof RepoOwnerRepoRoute
+	IndexRoute: typeof IndexRoute;
+	BrowseRoute: typeof BrowseRoute;
+	DashboardRoute: typeof DashboardRoute;
+	TodosRoute: typeof TodosRoute;
+	ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
+	RepoOwnerRepoRoute: typeof RepoOwnerRepoRoute;
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/todos': {
-      id: '/todos'
-      path: '/todos'
-      fullPath: '/todos'
-      preLoaderRoute: typeof TodosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/browse': {
-      id: '/browse'
-      path: '/browse'
-      fullPath: '/browse'
-      preLoaderRoute: typeof BrowseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/repo/$owner/$repo': {
-      id: '/repo/$owner/$repo'
-      path: '/repo/$owner/$repo'
-      fullPath: '/repo/$owner/$repo'
-      preLoaderRoute: typeof RepoOwnerRepoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
+declare module "@tanstack/react-router" {
+	interface FileRoutesByPath {
+		"/todos": {
+			id: "/todos";
+			path: "/todos";
+			fullPath: "/todos";
+			preLoaderRoute: typeof TodosRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/dashboard": {
+			id: "/dashboard";
+			path: "/dashboard";
+			fullPath: "/dashboard";
+			preLoaderRoute: typeof DashboardRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/browse": {
+			id: "/browse";
+			path: "/browse";
+			fullPath: "/browse";
+			preLoaderRoute: typeof BrowseRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/": {
+			id: "/";
+			path: "/";
+			fullPath: "/";
+			preLoaderRoute: typeof IndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/repo/$owner/$repo": {
+			id: "/repo/$owner/$repo";
+			path: "/repo/$owner/$repo";
+			fullPath: "/repo/$owner/$repo";
+			preLoaderRoute: typeof RepoOwnerRepoRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/api/auth/$": {
+			id: "/api/auth/$";
+			path: "/api/auth/$";
+			fullPath: "/api/auth/$";
+			preLoaderRoute: typeof ApiAuthSplatRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+	}
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  BrowseRoute: BrowseRoute,
-  DashboardRoute: DashboardRoute,
-  TodosRoute: TodosRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
-  RepoOwnerRepoRoute: RepoOwnerRepoRoute,
-}
+	IndexRoute: IndexRoute,
+	BrowseRoute: BrowseRoute,
+	DashboardRoute: DashboardRoute,
+	TodosRoute: TodosRoute,
+	ApiAuthSplatRoute: ApiAuthSplatRoute,
+	RepoOwnerRepoRoute: RepoOwnerRepoRoute,
+};
 export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+	._addFileChildren(rootRouteChildren)
+	._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
+import type { getRouter } from "./router.tsx";
+import type { createStart } from "@tanstack/react-start";
+declare module "@tanstack/react-start" {
+	interface Register {
+		ssr: true;
+		router: Awaited<ReturnType<typeof getRouter>>;
+	}
 }

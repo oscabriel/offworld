@@ -18,20 +18,20 @@ Convex functions, schema, auth. Reactive backend-as-a-service.
 ```ts
 // Query with auth
 export const myQuery = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await authComponent.safeGetAuthUser(ctx);
-    if (!user) throw new Error("Unauthorized");
-    return await ctx.db.query("myTable").collect();
-  },
+	args: {},
+	handler: async (ctx) => {
+		const user = await authComponent.safeGetAuthUser(ctx);
+		if (!user) throw new Error("Unauthorized");
+		return await ctx.db.query("myTable").collect();
+	},
 });
 
 // Mutation
 export const create = mutation({
-  args: { text: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("todos", { text: args.text, completed: false });
-  },
+	args: { text: v.string() },
+	handler: async (ctx, args) => {
+		return await ctx.db.insert("todos", { text: args.text, completed: false });
+	},
 });
 ```
 

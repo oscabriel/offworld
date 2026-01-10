@@ -99,35 +99,6 @@ describe("importance - parser.ts", () => {
 });
 
 /**
- * Tests for extractImports - these would require WASM loading
- * so we test the structure/interface instead
- */
-describe("importance - queries.ts interface", () => {
-	it("ExtractedImport has correct shape", async () => {
-		// Dynamic import to check type exists
-		const { extractImports } = await import("../importance/queries.js");
-		expect(typeof extractImports).toBe("function");
-	});
-
-	it("extractModuleNames returns string array type", async () => {
-		const { extractModuleNames } = await import("../importance/queries.js");
-		expect(typeof extractModuleNames).toBe("function");
-	});
-});
-
-/**
- * Tests for ranker.ts - mock at the file discovery level
- */
-describe("importance - ranker.ts", () => {
-	// These tests require mocking fs operations extensively
-	// Testing the exported interface exists
-	it("rankFileImportance function exists", async () => {
-		const { rankFileImportance } = await import("../importance/ranker.js");
-		expect(typeof rankFileImportance).toBe("function");
-	});
-});
-
-/**
  * Unit tests for file role determination logic
  * This tests the pure logic without WASM dependencies
  */

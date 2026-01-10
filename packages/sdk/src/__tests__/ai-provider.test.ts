@@ -319,9 +319,7 @@ describe("ai/provider.ts", () => {
 		describe("realistic detection scenarios", () => {
 			it("handles realistic claude --version output", async () => {
 				// Real-world claude --version output
-				mockExecSync.mockReturnValue(
-					"Claude Code v1.0.23\n@anthropic-ai/claude-code@1.0.23",
-				);
+				mockExecSync.mockReturnValue("Claude Code v1.0.23\n@anthropic-ai/claude-code@1.0.23");
 				mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
 				const result = await detectProvider();

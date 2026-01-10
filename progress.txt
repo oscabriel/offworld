@@ -6,3 +6,11 @@
 - Added test:smoke script to package.json
 - Pre-existing TS error in parser.ts (unrelated)
 - Files: packages/sdk/package.json, packages/sdk/src/__tests__/ai-provider.smoke.test.ts
+
+## 2026-01-10: T2.0-T2.2 Playwright Setup
+
+- Installed @playwright/test as devDependency
+- Created apps/web/playwright.config.ts (Chromium only, port 3001)
+- Created apps/web/e2e/ directory with example.spec.ts
+- Added scripts: test:e2e, test:e2e:ui, test:e2e:headed
+- Files: apps/web/package.json, apps/web/playwright.config.ts, apps/web/e2e/example.spec.ts

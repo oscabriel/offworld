@@ -81,7 +81,7 @@ Add critical missing test coverage to the offworld codebase: AI provider smoke t
 			"Config sets webServer.reuseExistingServer based on CI env var",
 			"Config sets use.baseURL to http://localhost:3001"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "T2.1",
@@ -91,7 +91,7 @@ Add critical missing test coverage to the offworld codebase: AI provider smoke t
 			"Directory exists at apps/web/e2e/",
 			"At least one .spec.ts file exists in apps/web/e2e/"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "T2.2",
@@ -102,7 +102,7 @@ Add critical missing test coverage to the offworld codebase: AI provider smoke t
 			"Script 'test:e2e:ui' exists and runs 'playwright test --ui'",
 			"Script 'test:e2e:headed' exists and runs 'playwright test --headed'"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "T3.0",

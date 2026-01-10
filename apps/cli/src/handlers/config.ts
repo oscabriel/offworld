@@ -8,14 +8,7 @@ import { loadConfig, saveConfig, getConfigPath } from "@offworld/sdk";
 import { ConfigSchema } from "@offworld/types/schemas";
 
 // Valid config keys
-const VALID_KEYS = [
-	"repoRoot",
-	"metaRoot",
-	"skillDir",
-	"defaultShallow",
-	"autoAnalyze",
-	"preferredProvider",
-] as const;
+const VALID_KEYS = ["repoRoot", "metaRoot", "skillDir", "defaultShallow", "autoAnalyze"] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
 
 function isValidKey(key: string): key is ConfigKey {
@@ -96,16 +89,6 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 				message: `Invalid boolean value: ${value}`,
 			};
 		}
-	} else if (key === "preferredProvider") {
-		// Validate provider
-		if (value !== "claude-code" && value !== "opencode") {
-			p.log.error(`Invalid provider: ${value}. Use 'claude-code' or 'opencode'.`);
-			return {
-				success: false,
-				message: `Invalid provider: ${value}`,
-			};
-		}
-		parsedValue = value;
 	} else {
 		// String values
 		parsedValue = value;

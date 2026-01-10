@@ -31,6 +31,7 @@ export interface PullOptions {
 	shallow?: boolean;
 	branch?: string;
 	force?: boolean;
+	verbose?: boolean;
 }
 
 export interface PullResult {
@@ -213,20 +214,40 @@ function loadLocalSkill(source: RepoSource): Skill | null {
 	}
 }
 
+function timestamp(): string {
+	return new Date().toISOString().slice(11, 23);
+}
+
+function verboseLog(message: string, verbose: boolean): void {
+	if (verbose) {
+		p.log.info(`[${timestamp()}] ${message}`);
+	}
+}
+
 /**
  * Main pull handler
  */
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const { repo, shallow = true, branch, force = false } = options;
+	const { repo, shallow = true, branch, force = false, verbose = false } = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
+
+	if (verbose) {
+		p.log.info(
+			`[verbose] Options: repo=${repo}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
+		);
+	}
 
 	try {
 		// Parse repo input
 		s.start("Parsing repository input...");
 		const source = parseRepoInput(repo);
 		s.stop("Repository parsed");
+		verboseLog(
+			`Parsed source: type=${source.type}, qualifiedName=${source.qualifiedName}`,
+			verbose,
+		);
 
 		let repoPath: string;
 
@@ -256,9 +277,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						force,
 					});
 					s.stop("Repository cloned");
+					verboseLog(`Cloned to: ${repoPath}`, verbose);
 				} catch (err) {
 					if (err instanceof RepoExistsError && !force) {
-						// This shouldn't happen since we checked isRepoCloned
 						s.stop("Repository exists");
 						throw err;
 					}
@@ -271,6 +292,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 
 		// Check for cached local analysis (if not forcing)
+		verboseLog(`Checking for cached analysis at: ${repoPath}`, verbose);
 		if (!force && hasLocalAnalysis(source, repoPath)) {
 			const skill = loadLocalSkill(source);
 			if (skill) {
@@ -291,6 +313,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 		// Try to pull remote analysis (for remote repos only)
 		if (source.type === "remote") {
+			verboseLog(`Fetching remote analysis for: ${source.fullName}`, verbose);
 			s.start("Checking offworld.sh for analysis...");
 			const remoteAnalysis = await pullAnalysis(source.fullName);
 
@@ -330,24 +353,45 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 
 		// No remote analysis - generate locally using analysis pipeline
+		verboseLog(`Starting local analysis pipeline for: ${repoPath}`, verbose);
 		s.start("Generating local analysis...");
 
 		try {
+			const onProgress = (step: string, message: string) => {
+				if (verbose) {
+					p.log.info(`[${timestamp()}] [${step}] ${message}`);
+				} else {
+					s.message(message);
+				}
+			};
+
+			const onDebug = verbose
+				? (message: string) => {
+						p.log.info(`[${timestamp()}] [debug] ${message}`);
+					}
+				: undefined;
+
+			const onStream = verbose
+				? (text: string) => {
+						process.stdout.write(text);
+					}
+				: undefined;
+
 			const pipelineOptions =
 				source.type === "remote"
 					? {
 							config,
 							provider: source.provider,
 							fullName: source.fullName,
-							onProgress: (_step: string, message: string) => {
-								s.message(message);
-							},
+							onProgress,
+							onDebug,
+							onStream,
 						}
 					: {
 							config,
-							onProgress: (_step: string, message: string) => {
-								s.message(message);
-							},
+							onProgress,
+							onDebug,
+							onStream,
 						};
 
 			await runAnalysisPipeline(repoPath, pipelineOptions);

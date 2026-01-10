@@ -32,6 +32,7 @@ export const router = os.router({
 				shallow: z.boolean().default(true).describe("Use shallow clone (--depth 1)"),
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-analysis"),
+				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),
 			}),
 		)
 		.meta({
@@ -45,6 +46,7 @@ export const router = os.router({
 				shallow: input.shallow,
 				branch: input.branch,
 				force: input.force,
+				verbose: input.verbose,
 			});
 		}),
 

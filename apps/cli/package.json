@@ -1,68 +1,68 @@
 {
-  "name": "offworld",
-  "version": "0.1.0",
-  "description": "Offworld CLI - Repository analysis and skill generation for AI coding agents",
-  "type": "module",
-  "bin": {
-    "ow": "./dist/cli.mjs",
-    "offworld": "./dist/cli.mjs"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "build": "tsdown && chmod +x ./dist/cli.mjs",
-    "dev": "tsdown --watch",
-    "check-types": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
-  },
-  "keywords": [
-    "cli",
-    "ai",
-    "repository",
-    "analysis",
-    "skill",
-    "claude",
-    "opencode",
-    "coding-agent"
-  ],
-  "author": "Oscar Gabriel",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/oscabriel/offworld.git",
-    "directory": "apps/cli"
-  },
-  "homepage": "https://offworld.sh",
-  "bugs": {
-    "url": "https://github.com/oscabriel/offworld/issues"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "@clack/prompts": "^0.9.1",
-    "@offworld/sdk": "workspace:*",
-    "@offworld/types": "workspace:*",
-    "@orpc/server": "^1.5.0",
-    "open": "^10.1.0",
-    "trpc-cli": "^0.7.0",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@types/node": "^22",
-    "tsdown": "^0.12.9",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
-  }
+	"name": "offworld",
+	"version": "0.1.0",
+	"description": "Offworld CLI - Repository analysis and skill generation for AI coding agents",
+	"keywords": [
+		"ai",
+		"analysis",
+		"claude",
+		"cli",
+		"coding-agent",
+		"opencode",
+		"repository",
+		"skill"
+	],
+	"homepage": "https://offworld.sh",
+	"bugs": {
+		"url": "https://github.com/oscabriel/offworld/issues"
+	},
+	"license": "MIT",
+	"author": "Oscar Gabriel",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/oscabriel/offworld.git",
+		"directory": "apps/cli"
+	},
+	"bin": {
+		"offworld": "./dist/cli.mjs",
+		"ow": "./dist/cli.mjs"
+	},
+	"files": [
+		"dist",
+		"LICENSE",
+		"README.md"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsdown && chmod +x ./dist/cli.mjs",
+		"dev": "tsdown --watch",
+		"check-types": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepublishOnly": "npm run build"
+	},
+	"dependencies": {
+		"@clack/prompts": "^0.11.0",
+		"@offworld/sdk": "workspace:*",
+		"@offworld/types": "workspace:*",
+		"@orpc/server": "^1.13.2",
+		"open": "^11.0.0",
+		"trpc-cli": "^0.12.2",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.3",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
+	"engines": {
+		"node": ">=18"
+	}
 }

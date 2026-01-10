@@ -226,6 +226,159 @@ describe("ai/provider.ts", () => {
 			// Should not call loadConfig when config is provided
 			expect(mockLoadConfig).not.toHaveBeenCalled();
 		});
+
+		// T2.3: Provider priority tests - claude-code preferred when both available
+		describe("provider priority logic", () => {
+			it("chooses claude-code when both providers are available (no preference set)", async () => {
+				// Both providers available
+				mockExecSync.mockReturnValue("Claude Code v1.0.23");
+				mockFetch.mockResolvedValue({ ok: true, status: 200 });
+
+				const result = await detectProvider();
+
+				// Claude Code should be chosen as it has higher priority
+				expect(result.provider).toBe("claude-code");
+				expect(result.isPreferred).toBe(false);
+			});
+
+			it("respects opencode preference even when claude-code is available", async () => {
+				const configWithPref: Config = {
+					...defaultConfig,
+					preferredProvider: "opencode",
+				};
+				mockLoadConfig.mockReturnValue(configWithPref);
+
+				// Both providers available
+				mockExecSync.mockReturnValue("Claude Code v1.0.23");
+				mockFetch.mockResolvedValue({ ok: true, status: 200 });
+
+				const result = await detectProvider();
+
+				// OpenCode should be chosen because it's preferred
+				expect(result.provider).toBe("opencode");
+				expect(result.isPreferred).toBe(true);
+			});
+
+			it("respects claude-code preference when both are available", async () => {
+				const configWithPref: Config = {
+					...defaultConfig,
+					preferredProvider: "claude-code",
+				};
+				mockLoadConfig.mockReturnValue(configWithPref);
+
+				// Both providers available
+				mockExecSync.mockReturnValue("Claude Code v1.0.23");
+				mockFetch.mockResolvedValue({ ok: true, status: 200 });
+
+				const result = await detectProvider();
+
+				expect(result.provider).toBe("claude-code");
+				expect(result.isPreferred).toBe(true);
+			});
+
+			it("falls back from preferred opencode to claude-code when opencode unavailable", async () => {
+				const configWithPref: Config = {
+					...defaultConfig,
+					preferredProvider: "opencode",
+				};
+				mockLoadConfig.mockReturnValue(configWithPref);
+
+				// Claude available, OpenCode down
+				mockExecSync.mockReturnValue("Claude Code v1.0.23");
+				mockFetch.mockResolvedValue({ ok: false, status: 503 });
+
+				const result = await detectProvider();
+
+				// Falls back to claude-code
+				expect(result.provider).toBe("claude-code");
+				expect(result.isPreferred).toBe(false);
+			});
+
+			it("falls back from preferred claude-code to opencode when claude-code unavailable", async () => {
+				const configWithPref: Config = {
+					...defaultConfig,
+					preferredProvider: "claude-code",
+				};
+				mockLoadConfig.mockReturnValue(configWithPref);
+
+				// Claude unavailable, OpenCode available
+				mockExecSync.mockImplementation(() => {
+					throw new Error("command not found: claude");
+				});
+				mockFetch.mockResolvedValue({ ok: true, status: 200 });
+
+				const result = await detectProvider();
+
+				// Falls back to opencode
+				expect(result.provider).toBe("opencode");
+				expect(result.isPreferred).toBe(false);
+			});
+		});
+
+		// T2.3: Realistic mock response tests
+		describe("realistic detection scenarios", () => {
+			it("handles realistic claude --version output", async () => {
+				// Real-world claude --version output
+				mockExecSync.mockReturnValue(
+					"Claude Code v1.0.23\n@anthropic-ai/claude-code@1.0.23",
+				);
+				mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
+
+				const result = await detectProvider();
+
+				expect(result.provider).toBe("claude-code");
+			});
+
+			it("handles opencode health check with realistic response", async () => {
+				mockExecSync.mockImplementation(() => {
+					throw new Error("command not found: claude");
+				});
+				mockFetch.mockResolvedValue({
+					ok: true,
+					status: 200,
+					json: async () => ({ status: "healthy", version: "0.5.2" }),
+				});
+
+				const result = await detectProvider();
+
+				expect(result.provider).toBe("opencode");
+			});
+
+			it("handles opencode server error (500)", async () => {
+				mockExecSync.mockImplementation(() => {
+					throw new Error("command not found");
+				});
+				mockFetch.mockResolvedValue({
+					ok: false,
+					status: 500,
+				});
+
+				await expect(detectProvider()).rejects.toThrow(AIProviderNotFoundError);
+			});
+
+			it("handles network timeout scenario", async () => {
+				mockExecSync.mockImplementation(() => {
+					throw new Error("command not found");
+				});
+				mockFetch.mockRejectedValue(new Error("AbortError: The operation was aborted"));
+
+				await expect(detectProvider()).rejects.toThrow(AIProviderNotFoundError);
+			});
+
+			it("handles claude permission denied error", async () => {
+				mockExecSync.mockImplementation(() => {
+					const error = new Error("EACCES: permission denied") as any;
+					error.code = "EACCES";
+					throw error;
+				});
+				mockFetch.mockResolvedValue({ ok: true, status: 200 });
+
+				const result = await detectProvider();
+
+				// Falls back to opencode since claude failed
+				expect(result.provider).toBe("opencode");
+			});
+		});
 	});
 
 	// =========================================================================

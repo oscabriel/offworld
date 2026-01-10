@@ -20,7 +20,7 @@ npm install sample-project
 import { sampleFunction } from "sample-project";
 
 const result = sampleFunction({
-  option: "value",
+	option: "value",
 });
 ```
 

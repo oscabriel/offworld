@@ -16,6 +16,7 @@ import type {
 	AnalysisMetaSchema,
 	QuickPathSchema,
 	SearchPatternSchema,
+	CommonPatternSchema,
 	SkillSchema,
 	RepoIndexEntrySchema,
 	RepoIndexSchema,
@@ -41,6 +42,7 @@ export type AnalysisMeta = z.infer<typeof AnalysisMetaSchema>;
 
 export type QuickPath = z.infer<typeof QuickPathSchema>;
 export type SearchPattern = z.infer<typeof SearchPatternSchema>;
+export type CommonPattern = z.infer<typeof CommonPatternSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
 
 export type RepoIndexEntry = z.infer<typeof RepoIndexEntrySchema>;

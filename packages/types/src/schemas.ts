@@ -101,11 +101,25 @@ export const SearchPatternSchema = z.object({
 	path: z.string(),
 });
 
+export const CommonPatternSchema = z.object({
+	name: z.string(),
+	steps: z.array(z.string()),
+});
+
 export const SkillSchema = z.object({
 	name: z.string(),
 	description: z.string(),
+	basePaths: z
+		.object({
+			repo: z.string(),
+			analysis: z.string(),
+		})
+		.optional(),
 	quickPaths: z.array(QuickPathSchema),
 	searchPatterns: z.array(SearchPatternSchema),
+	whenToUse: z.array(z.string()).optional(),
+	bestPractices: z.array(z.string()).optional(),
+	commonPatterns: z.array(CommonPatternSchema).optional(),
 });
 
 export const RepoIndexEntrySchema = z.object({

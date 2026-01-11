@@ -157,7 +157,8 @@ function parseRelationshipsSection(text: string): Architecture["relationships"] 
 	const relationships: Architecture["relationships"] = [];
 
 	for (const item of items) {
-		const arrowMatch = /^(.+?)\s*->\s*([^:\s]+):?\s*(.*)$/.exec(item);
+		// Fixed regex: [^:]+? allows spaces in "to" like "API Resources"
+		const arrowMatch = /^(.+?)\s*->\s*([^:]+?)(?::\s*(.*))?$/.exec(item);
 		if (arrowMatch?.[1] && arrowMatch[2]) {
 			relationships.push({
 				from: arrowMatch[1].trim(),
@@ -261,6 +262,83 @@ function parseFrontmatter(text: string): { frontmatter: Record<string, string>; 
 	return { frontmatter, body };
 }
 
+/**
+ * Parse base paths (REPO: and ANALYSIS: lines) from skill markdown.
+ */
+function parseBasePaths(text: string): { repo: string; analysis: string } | undefined {
+	const repoMatch = /^REPO:\s*(.+)$/m.exec(text);
+	const analysisMatch = /^ANALYSIS:\s*(.+)$/m.exec(text);
+
+	if (repoMatch?.[1] && analysisMatch?.[1]) {
+		return {
+			repo: repoMatch[1].trim(),
+			analysis: analysisMatch[1].trim(),
+		};
+	}
+	return undefined;
+}
+
+/**
+ * Parse "When to Use This Skill" section.
+ */
+function parseWhenToUse(text: string): string[] {
+	return parseListSection(text, "When to Use This Skill");
+}
+
+/**
+ * Parse "Best Practices" section (numbered list).
+ */
+function parseBestPractices(text: string): string[] {
+	const section = extractSection(text, "Best Practices");
+	if (!section) return [];
+
+	const practices: string[] = [];
+	const lines = section.split("\n");
+	for (const line of lines) {
+		const match = /^\d+\.\s+(.+)$/.exec(line.trim());
+		if (match?.[1]) {
+			practices.push(match[1]);
+		}
+	}
+	return practices;
+}
+
+/**
+ * Parse "Common Patterns" section into named pattern blocks with steps.
+ */
+function parseCommonPatterns(text: string): Array<{ name: string; steps: string[] }> {
+	const section = extractSection(text, "Common Patterns");
+	if (!section) return [];
+
+	const patterns: Array<{ name: string; steps: string[] }> = [];
+
+	// Split by bold headers: **Pattern Name:**
+	const blocks = section.split(/\n\*\*/).filter((b) => b.trim());
+
+	for (const block of blocks) {
+		// Match pattern name ending with ** and optional colon
+		const nameMatch = /^([^*]+)\*\*:?\s*/.exec(block);
+		if (!nameMatch?.[1]) continue;
+
+		const name = nameMatch[1].trim();
+		const steps: string[] = [];
+		const lines = block.split("\n").slice(1);
+
+		for (const line of lines) {
+			const stepMatch = /^\d+\.\s+(.+)$/.exec(line.trim());
+			if (stepMatch?.[1]) {
+				steps.push(stepMatch[1]);
+			}
+		}
+
+		if (steps.length > 0) {
+			patterns.push({ name, steps });
+		}
+	}
+
+	return patterns;
+}
+
 export function parseSkillMarkdown(text: string): Skill {
 	const { frontmatter, body } = parseFrontmatter(text);
 
@@ -278,14 +356,16 @@ export function parseSkillMarkdown(text: string): Skill {
 	}
 
 	const contentToParse = body || text;
-	const quickPaths = parseQuickPathsSection(contentToParse);
-	const searchPatterns = parseSearchPatternsTable(contentToParse);
 
 	return {
 		name,
 		description,
-		quickPaths,
-		searchPatterns,
+		basePaths: parseBasePaths(contentToParse),
+		quickPaths: parseQuickPathsSection(contentToParse),
+		searchPatterns: parseSearchPatternsTable(contentToParse),
+		whenToUse: parseWhenToUse(contentToParse),
+		bestPractices: parseBestPractices(contentToParse),
+		commonPatterns: parseCommonPatterns(contentToParse),
 	};
 }
 

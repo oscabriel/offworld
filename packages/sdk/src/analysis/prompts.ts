@@ -42,9 +42,9 @@ export function createSkillPrompt(params: {
 
 	return `You are a technical writer creating navigation skills for AI coding assistants.
 
-Your task is to generate a SKILL.md file that helps AI agents quickly navigate and understand a codebase. Skills are reference documents that provide quick paths to important files and search patterns for finding code.
+Your task is to generate a SKILL.md file that helps AI agents quickly navigate and understand a codebase. Skills are reference documents that provide quick paths to important files, search patterns, activation triggers, and workflow guidance.
 
-Be concise and technical. No prose, explanations, or commentary outside the skill format.
+Be concise and technical. No prose or explanations outside the skill format.
 
 <repository>
 <path>${repoPath}</path>
@@ -75,59 +75,101 @@ ${summary}
 ${architectureJson ? `<architecture>\n${architectureJson}\n</architecture>` : ""}
 
 <rules>
-1. Output EXACTLY ~100 lines (80-120 acceptable)
-2. Use full absolute paths starting with ${repoPath}
-3. Include 15-20 Quick Paths - the most important files only
-4. Search Patterns must be a markdown table with 4-6 rows
-5. NO commentary before or after the skill content
-6. NO verbose prose, NO "Best Practices", NO "When to Use" sections
-7. Start immediately with completing the YAML frontmatter
+1. Start immediately with the YAML frontmatter
+2. Define REPO and ANALYSIS paths at the top, then use \${REPO} and \${ANALYSIS} variables
+3. CRITICAL - Quick Paths section MUST contain 15-20 file paths from <top_files> and <file_tree>
+4. CRITICAL - Search Patterns table MUST contain 5-8 rows with regex patterns for finding code
+5. "When to Use This Skill" section: 6-10 activation triggers
+6. "Best Practices" section: 5-6 numbered guidelines
+7. "Common Patterns" section: 3-4 step-by-step workflows
+8. Output 120-180 lines total
 </rules>
 
 <example>
 ---
 name: express
 description: Express.js web framework - fast, unopinionated, minimalist web framework for Node.js.
+allowed-tools: [Read, Grep, Glob, Task]
 ---
 
 # express
 
 Minimalist web framework for Node.js providing routing, middleware, and HTTP utilities.
 
-Cloned to: /Users/dev/clones/expressjs/express
-Analysis: /Users/dev/.ow/analyses/github--expressjs--express/
+REPO: /Users/dev/clones/expressjs/express
+ANALYSIS: /Users/dev/.ow/analyses/github--expressjs--express
 
 ## Quick Paths
 
-- \`/Users/dev/clones/expressjs/express/lib/express.js\` - Main entry point, creates application
-- \`/Users/dev/clones/expressjs/express/lib/router/index.js\` - Core router implementation
-- \`/Users/dev/clones/expressjs/express/lib/application.js\` - Application prototype methods
-- \`/Users/dev/clones/expressjs/express/lib/request.js\` - Request object extensions
-- \`/Users/dev/clones/expressjs/express/lib/response.js\` - Response object extensions
-- \`/Users/dev/clones/expressjs/express/lib/middleware/init.js\` - Default middleware initialization
-- \`/Users/dev/clones/expressjs/express/lib/view.js\` - View rendering engine
-- \`/Users/dev/clones/expressjs/express/lib/utils.js\` - Internal utilities
+- \`\${REPO}/lib/express.js\` - Main entry point, creates application
+- \`\${REPO}/lib/router/index.js\` - Core router implementation
+- \`\${REPO}/lib/application.js\` - Application prototype methods
+- \`\${REPO}/lib/request.js\` - Request object extensions
+- \`\${REPO}/lib/response.js\` - Response object extensions
+- \`\${REPO}/lib/middleware/init.js\` - Default middleware initialization
+- \`\${REPO}/lib/view.js\` - View rendering engine
+- \`\${REPO}/lib/utils.js\` - Internal utilities
 
 ## Search Patterns
 
 | Find | Pattern | Path |
 |------|---------|------|
-| Middleware | \`exports\\.\\w+\\s*=\` | \`/Users/dev/clones/expressjs/express/lib/middleware/\` |
-| Route methods | \`methods\\.forEach\` | \`/Users/dev/clones/expressjs/express/lib/router/\` |
-| Request helpers | \`defineGetter\` | \`/Users/dev/clones/expressjs/express/lib/request.js\` |
-| Response methods | \`res\\.\\w+\\s*=\` | \`/Users/dev/clones/expressjs/express/lib/response.js\` |
+| Middleware exports | \`exports\\.\\w+\\s*=\` | \`\${REPO}/lib/middleware/\` |
+| Route methods | \`methods\\.forEach\` | \`\${REPO}/lib/router/\` |
+| Request helpers | \`defineGetter\` | \`\${REPO}/lib/request.js\` |
+| Response methods | \`res\\.\\w+\\s*=\` | \`\${REPO}/lib/response.js\` |
+| App settings | \`app\\.set\\(\` | \`\${REPO}/lib/application.js\` |
+
+## When to Use This Skill
+
+- User asks about Express routing or middleware implementation
+- Questions about request/response object extensions
+- Understanding Express application lifecycle
+- Router internals or route matching logic
+- Middleware chain execution order
+- View rendering or template engine integration
+- Error handling patterns in Express
+
+## Best Practices
+
+1. Check lib/ directory first - contains all core implementations
+2. Read middleware/init.js for default middleware patterns
+3. Use Grep to find method definitions across multiple files
+4. Reference tests/ for edge cases and expected behavior
+5. Use Task tool for complex multi-file exploration
+6. Always cite file paths when referencing implementation details
+
+## Common Patterns
+
+**Understanding a middleware:**
+1. Find middleware in \`\${REPO}/lib/middleware/\`
+2. Check how it accesses req/res objects
+3. Look at next() call patterns for chain continuation
+4. Reference tests for expected behavior
+
+**Adding route handling:**
+1. Read \`\${REPO}/lib/router/index.js\` for router setup
+2. Check \`\${REPO}/lib/router/route.js\` for route matching
+3. See how params are extracted in layer.js
+4. Reference application.js for app.use() patterns
+
+**Extending request/response:**
+1. Study \`\${REPO}/lib/request.js\` for req extensions
+2. Check defineGetter patterns for lazy properties
+3. Look at \`\${REPO}/lib/response.js\` for res methods
+4. Reference how content-type is handled
 
 ## Deep Context
 
-- Architecture: Read \`/Users/dev/.ow/analyses/github--expressjs--express/architecture.md\`
-- Summary: Read \`/Users/dev/.ow/analyses/github--expressjs--express/summary.md\`
+- Architecture: \`\${ANALYSIS}/architecture.md\`
+- Summary: \`\${ANALYSIS}/summary.md\`
 </example>
 
 Now generate a skill for "${displayName}".
 
 Use these paths in your output:
-- Cloned to: ${repoPath}
-- Analysis: ${analysisPath || `~/.ow/analyses/${skillName}`}/
+- REPO: ${repoPath}
+- ANALYSIS: ${analysisPath || `~/.ow/analyses/${skillName}`}
 
 Output ONLY the skill markdown. Complete the YAML frontmatter that follows.
 
@@ -144,9 +186,6 @@ export const SUMMARY_TEMPLATE = `Based on the repository context provided, write
 
 ## Purpose
 [1-2 sentences about what this project does and why it exists]
-
-## What Makes It Unique
-[1-2 sentences about how this differs from alternatives or what's special about it]
 
 ## Key Features
 - [Feature 1]
@@ -167,6 +206,14 @@ export const SUMMARY_TEMPLATE = `Based on the repository context provided, write
 ## Entry Points
 - [Main entry point and what it does]
 - [Secondary entry point if applicable]
+
+## Public API
+[For libraries/SDKs only - skip this section entirely for apps, CLIs, or internal tools]
+[List the main exported classes/functions and their key methods]
+- \`ClassName\` - purpose
+  - \`.method1(params)\` - what it does
+  - \`.method2(params)\` - what it does
+- \`functionName(params)\` - what it does
 
 Keep the summary under 600 words. Focus on what's most useful for a developer trying to understand this project quickly.`;
 
@@ -226,9 +273,6 @@ Your response MUST follow this exact format with clearly separated sections:
 ## Purpose
 [1-2 sentences about what this project does and why it exists]
 
-## What Makes It Unique
-[1-2 sentences about how this differs from alternatives or what's special about it]
-
 ## Key Features
 - [Feature 1]
 - [Feature 2]
@@ -248,6 +292,14 @@ Your response MUST follow this exact format with clearly separated sections:
 ## Entry Points
 - [Main entry point and what it does]
 - [Secondary entry point if applicable]
+
+## Public API
+[For libraries/SDKs only - skip this section entirely for apps, CLIs, or internal tools]
+[List the main exported classes/functions and their key methods]
+- \`ClassName\` - purpose
+  - \`.method1(params)\` - what it does
+  - \`.method2(params)\` - what it does
+- \`functionName(params)\` - what it does
 
 === ARCHITECTURE ===
 ## Project Type

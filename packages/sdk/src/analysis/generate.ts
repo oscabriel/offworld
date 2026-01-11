@@ -160,7 +160,11 @@ export async function generateRichSkill(
 		systemPrompt: `You generate navigation skills for AI coding assistants.
 Output ONLY valid SKILL.md content. No preamble, no commentary, no explanations.
 Start your response by completing the YAML frontmatter that was started for you.
-Include 15-20 Quick Paths with full absolute paths and a Search Patterns markdown table.`,
+
+CRITICAL REQUIREMENTS - your output MUST include:
+1. Quick Paths section with 15-20 file paths (use \${REPO}/path format)
+2. Search Patterns table with 5-8 regex patterns for finding code
+These are the CORE sections - do not skip them. Generate them BEFORE other sections.`,
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	});
@@ -332,7 +336,12 @@ export interface FormatSkillOptions {
 }
 
 export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
-	const lines = ["---", `name: ${skill.name}`, `description: ${skill.description}`];
+	const lines = [
+		"---",
+		`name: ${skill.name}`,
+		`description: ${skill.description}`,
+		"allowed-tools: [Read, Grep, Glob, Task]",
+	];
 
 	if (options.commitSha) {
 		lines.push(`commit: ${options.commitSha.slice(0, 7)}`);
@@ -341,24 +350,24 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 		lines.push(`generated: ${options.generated}`);
 	}
 
-	lines.push("---");
-	lines.push("");
-	lines.push(`# ${skill.name}`);
-	lines.push("");
-	lines.push(skill.description);
-	lines.push("");
+	lines.push("---", "", `# ${skill.name}`, "", skill.description, "");
+
+	// Base paths
+	if (skill.basePaths) {
+		lines.push(`REPO: ${skill.basePaths.repo}`);
+		lines.push(`ANALYSIS: ${skill.basePaths.analysis}`);
+		lines.push("");
+	}
 
 	// Quick Paths
-	lines.push("## Quick Paths");
-	lines.push("");
+	lines.push("## Quick Paths", "");
 	for (const qp of skill.quickPaths) {
 		lines.push(`- \`${qp.path}\` - ${qp.description}`);
 	}
 	lines.push("");
 
 	// Search Patterns
-	lines.push("## Search Patterns");
-	lines.push("");
+	lines.push("## Search Patterns", "");
 	lines.push("| Find | Pattern | Path |");
 	lines.push("|------|---------|------|");
 	for (const sp of skill.searchPatterns) {
@@ -366,11 +375,40 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 	}
 	lines.push("");
 
+	// When to Use (if provided)
+	if (skill.whenToUse?.length) {
+		lines.push("## When to Use This Skill", "");
+		for (const trigger of skill.whenToUse) {
+			lines.push(`- ${trigger}`);
+		}
+		lines.push("");
+	}
+
+	// Best Practices (if provided)
+	if (skill.bestPractices?.length) {
+		lines.push("## Best Practices", "");
+		skill.bestPractices.forEach((practice: string, i: number) => {
+			lines.push(`${i + 1}. ${practice}`);
+		});
+		lines.push("");
+	}
+
+	// Common Patterns (if provided)
+	if (skill.commonPatterns?.length) {
+		lines.push("## Common Patterns", "");
+		for (const pattern of skill.commonPatterns) {
+			lines.push(`**${pattern.name}:**`);
+			pattern.steps.forEach((step: string, i: number) => {
+				lines.push(`${i + 1}. ${step}`);
+			});
+			lines.push("");
+		}
+	}
+
 	// Deep Context
-	lines.push("## Deep Context");
-	lines.push("");
-	lines.push("- Architecture: Read analysis/architecture.md");
-	lines.push("- Summary: Read analysis/summary.md");
+	lines.push("## Deep Context", "");
+	lines.push("- Architecture: `${ANALYSIS}/architecture.md`");
+	lines.push("- Summary: `${ANALYSIS}/summary.md`");
 
 	return lines.join("\n");
 }

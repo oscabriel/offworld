@@ -35,6 +35,7 @@ import { homedir } from "node:os";
 export interface PullOptions {
 	repo: string;
 	shallow?: boolean;
+	sparse?: boolean;
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
@@ -278,6 +279,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 	const {
 		repo,
 		shallow = true,
+		sparse = false,
 		branch,
 		force = false,
 		verbose = false,
@@ -321,11 +323,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					s.stop("Already up to date");
 				}
 			} else {
-				// Clone repo
 				s.start(`Cloning ${source.fullName}...`);
 				try {
 					repoPath = await cloneRepo(source, {
 						shallow,
+						sparse,
 						branch,
 						config,
 						force,

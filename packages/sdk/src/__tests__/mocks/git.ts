@@ -119,6 +119,12 @@ export function createExecSyncMock(): Mock {
 				return config?.sha ?? "abc123def456abc123def456abc123def456abc1";
 			}
 
+			case "sparse-checkout":
+				return "";
+
+			case "checkout":
+				return "";
+
 			default:
 				throw new Error(`Unhandled git command: ${gitCommand}`);
 		}

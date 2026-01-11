@@ -60,6 +60,8 @@ export interface CloneOptions {
 	config?: Config;
 	/** Force clone even if directory exists (removes existing) */
 	force?: boolean;
+	/** Use sparse checkout for large repos (only src/, lib/, packages/, docs/) */
+	sparse?: boolean;
 }
 
 // ============================================================================
@@ -100,6 +102,8 @@ export function getCommitSha(repoPath: string): string {
 // Clone Operations
 // ============================================================================
 
+const SPARSE_CHECKOUT_DIRS = ["src", "lib", "packages", "docs", "README.md", "package.json"];
+
 /**
  * Clone a remote repository to the local repo root.
  *
@@ -116,7 +120,6 @@ export async function cloneRepo(
 	const config = options.config ?? loadConfig();
 	const repoPath = getRepoPath(source.fullName, source.provider, config);
 
-	// Check if already exists
 	if (existsSync(repoPath)) {
 		if (options.force) {
 			rmSync(repoPath, { recursive: true, force: true });
@@ -125,30 +128,17 @@ export async function cloneRepo(
 		}
 	}
 
-	// Ensure parent directory exists
 	const parentDir = dirname(repoPath);
 	await mkdir(parentDir, { recursive: true });
 
-	// Build git clone command
-	const args = ["clone"];
-
-	if (options.shallow) {
-		args.push("--depth", "1");
+	if (options.sparse) {
+		await cloneSparse(source.cloneUrl, repoPath, options);
+	} else {
+		await cloneStandard(source.cloneUrl, repoPath, options);
 	}
 
-	if (options.branch) {
-		args.push("--branch", options.branch);
-	}
-
-	args.push(source.cloneUrl, repoPath);
-
-	// Execute clone
-	execGit(args);
-
-	// Get commit SHA for index entry
 	const commitSha = getCommitSha(repoPath);
 
-	// Update index
 	const indexEntry: RepoIndexEntry = {
 		fullName: source.fullName,
 		qualifiedName: source.qualifiedName,
@@ -159,6 +149,47 @@ export async function cloneRepo(
 	updateIndex(indexEntry);
 
 	return repoPath;
+}
+
+async function cloneStandard(
+	cloneUrl: string,
+	repoPath: string,
+	options: CloneOptions,
+): Promise<void> {
+	const args = ["clone"];
+
+	if (options.shallow) {
+		args.push("--depth", "1");
+	}
+
+	if (options.branch) {
+		args.push("--branch", options.branch);
+	}
+
+	args.push(cloneUrl, repoPath);
+	execGit(args);
+}
+
+async function cloneSparse(
+	cloneUrl: string,
+	repoPath: string,
+	options: CloneOptions,
+): Promise<void> {
+	const args = ["clone", "--filter=blob:none", "--no-checkout", "--sparse"];
+
+	if (options.shallow) {
+		args.push("--depth", "1");
+	}
+
+	if (options.branch) {
+		args.push("--branch", options.branch);
+	}
+
+	args.push(cloneUrl, repoPath);
+	execGit(args);
+
+	execGit(["sparse-checkout", "set", ...SPARSE_CHECKOUT_DIRS], repoPath);
+	execGit(["checkout"], repoPath);
 }
 
 // ============================================================================

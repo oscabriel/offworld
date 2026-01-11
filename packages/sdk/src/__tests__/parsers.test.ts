@@ -290,4 +290,60 @@ describe("parseSkillMarkdown", () => {
 Name: plain-skill`;
 		expect(parseSkillMarkdown(plainName).name).toBe("plain-skill");
 	});
+
+	it("parses YAML frontmatter format", () => {
+		const frontmatterSkill = `---
+name: zod
+description: TypeScript-first schema validation
+---
+
+# colinhacks/zod
+
+## Repository Structure
+- \`packages/zod/src/\`: Core source code
+
+## Key Files
+- \`packages/zod/src/index.ts\`: Main entry point
+
+## Search Strategies
+- Use Grep for schema definitions
+
+## When to Use
+- When validating data schemas`;
+
+		const result = parseSkillMarkdown(frontmatterSkill);
+		expect(result.name).toBe("zod");
+		expect(result.description).toBe("TypeScript-first schema validation");
+		expect(result.repositoryStructure).toHaveLength(1);
+		expect(result.keyFiles).toHaveLength(1);
+	});
+
+	it("parses frontmatter with quoted values", () => {
+		const quotedFrontmatter = `---
+name: "test-skill"
+description: 'A skill with quotes'
+---
+
+## Key Files
+- \`index.ts\`: Entry`;
+
+		const result = parseSkillMarkdown(quotedFrontmatter);
+		expect(result.name).toBe("test-skill");
+		expect(result.description).toBe("A skill with quotes");
+	});
+
+	it("prefers frontmatter over section format", () => {
+		const mixedSkill = `---
+name: frontmatter-name
+description: frontmatter-desc
+---
+
+## Skill Info
+- **Name**: section-name
+- **Description**: section-desc`;
+
+		const result = parseSkillMarkdown(mixedSkill);
+		expect(result.name).toBe("frontmatter-name");
+		expect(result.description).toBe("frontmatter-desc");
+	});
 });

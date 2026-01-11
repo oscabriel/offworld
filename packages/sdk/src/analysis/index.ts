@@ -29,6 +29,7 @@ export {
 	type AnalysisPipelineResult,
 	type AnalysisMeta,
 	type AnalysisPipelineOptions,
+	type PipelineTiming,
 } from "./pipeline.js";
 
 // Markdown parsers (M2.x)

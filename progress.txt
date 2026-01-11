@@ -357,3 +357,33 @@
 - TypeScript: SDK/CLI pass
 - Tests: 447 passed (+4 new)
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-017 - Performance timing breakdown
+
+### Completed
+- PRD-017: Add timing breakdown to verbose output
+
+### Changes
+- `packages/sdk/src/analysis/pipeline.ts`:
+  - Added `PipelineTiming` interface with total and per-step timings
+  - Added `onTiming` callback to `AnalysisPipelineOptions`
+  - Wrapped all pipeline steps with `timeStep`/`timeStepAsync` for measurement
+  - Calls `onTiming` at end of pipeline
+- `packages/sdk/src/analysis/index.ts`:
+  - Export `PipelineTiming` type
+- `apps/cli/src/handlers/pull.ts`:
+  - Added `onTiming` callback in verbose mode
+  - Prints total time and per-step breakdown
+
+### Notes
+- Actual <15s performance depends on AI API latency
+- Local steps (rank, context, save, install) are ~1-2s total
+- AI calls (analyze, skill) dominate at 5-10s+ per call
+- Timing breakdown helps identify bottlenecks
+
+### Verification
+- TypeScript: SDK/CLI pass
+- Tests: 447 passed
+- Lint: 0 errors

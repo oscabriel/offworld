@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { streamPrompt } from "../ai/index.js"
+import { validateProseQuality, type QualityReport } from "../validation/quality.js"
 import type { SkillSkeleton } from "./skeleton.js"
 
 /**
@@ -176,4 +177,108 @@ export function extractJSON(text: string): unknown {
 	} catch {
 		throw new Error(`Failed to extract JSON from AI response: ${trimmed.slice(0, 200)}...`)
 	}
+}
+
+/**
+ * Result from prose generation with retry
+ */
+export interface ProseWithRetryResult {
+	prose: ProseEnhancements
+	qualityReport: QualityReport
+	attempts: number
+}
+
+/**
+ * Generate prose enhancements with a single retry on failure.
+ * - First attempt runs generateProseEnhancements normally
+ * - Quality validation runs after first attempt
+ * - If quality fails, single retry with feedback prompt
+ * - If JSON parse fails, single retry without feedback
+ * - Max 2 total attempts (1 original + 1 retry)
+ */
+export async function generateProseWithRetry(
+	skeleton: SkillSkeleton,
+	options: ProseGenerateOptions = {},
+): Promise<ProseWithRetryResult> {
+	const entityNames = skeleton.entities.map((e) => e.name)
+	let attempts = 0
+
+	// First attempt
+	attempts++
+	try {
+		const prose = await generateProseEnhancements(skeleton, options)
+		const qualityReport = validateProseQuality(prose)
+
+		if (qualityReport.passed) {
+			return { prose, qualityReport, attempts }
+		}
+
+		// Quality failed - retry with feedback
+		options.onDebug?.(`Quality validation failed: ${qualityReport.issues.map((i) => i.message).join(", ")}`)
+		options.onDebug?.("Retrying prose generation with feedback...")
+
+		attempts++
+		const feedbackPrompt = buildRetryPrompt(skeleton, entityNames, qualityReport)
+		const retryResult = await streamPrompt({
+			prompt: feedbackPrompt,
+			cwd: skeleton.repoPath,
+			systemPrompt: `You are a technical documentation expert.
+Generate ONLY valid JSON output that matches the EXACT schema specified.
+Do not include any text before or after the JSON.
+Do not include markdown code fences.
+Output raw JSON only.
+IMPORTANT: Your previous response had quality issues. Address them carefully.`,
+			onDebug: options.onDebug,
+			onStream: options.onStream,
+		})
+
+		const retryJson = extractJSON(retryResult.text)
+		const retryProse = ProseEnhancementsSchema.parse(retryJson)
+		const retryQualityReport = validateProseQuality(retryProse)
+
+		return { prose: retryProse, qualityReport: retryQualityReport, attempts }
+	} catch (error) {
+		// JSON parse or Zod validation failed
+		if (attempts >= 2) {
+			throw error
+		}
+
+		const isJsonError = error instanceof Error && error.message.includes("Failed to extract JSON")
+		const isZodError = (error as { issues?: unknown })?.issues !== undefined
+
+		if (!isJsonError && !isZodError) {
+			throw error
+		}
+
+		options.onDebug?.(`First attempt failed: ${error instanceof Error ? error.message : String(error)}`)
+		options.onDebug?.("Retrying prose generation...")
+
+		// Retry without feedback (just re-run)
+		attempts++
+		const prose = await generateProseEnhancements(skeleton, options)
+		const qualityReport = validateProseQuality(prose)
+
+		return { prose, qualityReport, attempts }
+	}
+}
+
+/**
+ * Build a retry prompt with feedback about quality issues
+ */
+function buildRetryPrompt(skeleton: SkillSkeleton, entityNames: string[], qualityReport: QualityReport): string {
+	const basePrompt = buildProsePrompt(skeleton, entityNames)
+
+	const issues = qualityReport.issues
+		.map((i) => `- ${i.field}: ${i.message}`)
+		.join("\n")
+
+	return `${basePrompt}
+
+IMPORTANT: Your previous response had these quality issues:
+${issues}
+
+Please fix these issues in your response:
+- Ensure summary is specific and detailed (avoid generic phrases like "this is a", "provides functionality", etc.)
+- Ensure all use cases are descriptive (at least 20 characters each)
+- Ensure entity descriptions are specific and detailed (at least 20 characters each)`
 }

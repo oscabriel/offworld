@@ -231,20 +231,57 @@ export function parseArchitectureMarkdown(text: string): Architecture {
 	};
 }
 
-export function parseSkillMarkdown(text: string): Skill {
-	const skillInfoSection = extractSection(text, "Skill Info");
+function parseFrontmatter(text: string): { frontmatter: Record<string, string>; body: string } {
+	const frontmatterMatch = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text.trim());
+	if (!frontmatterMatch) {
+		return { frontmatter: {}, body: text };
+	}
 
-	const name = extractField(skillInfoSection, "Name");
+	const frontmatterBlock = frontmatterMatch[1] ?? "";
+	const body = frontmatterMatch[2] ?? "";
+	const frontmatter: Record<string, string> = {};
+
+	for (const line of frontmatterBlock.split("\n")) {
+		const colonIdx = line.indexOf(":");
+		if (colonIdx === -1) continue;
+
+		const key = line.slice(0, colonIdx).trim();
+		let value = line.slice(colonIdx + 1).trim();
+
+		const isQuoted =
+			(value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+		if (isQuoted) {
+			value = value.slice(1, -1);
+		}
+
+		frontmatter[key] = value;
+	}
+
+	return { frontmatter, body };
+}
+
+export function parseSkillMarkdown(text: string): Skill {
+	const { frontmatter, body } = parseFrontmatter(text);
+
+	let name = frontmatter.name || "";
+	let description = frontmatter.description || "";
+
+	if (!name) {
+		const skillInfoSection = extractSection(text, "Skill Info");
+		name = extractField(skillInfoSection, "Name");
+		description = extractField(skillInfoSection, "Description") || description;
+	}
+
 	if (!name) {
 		throw new ParseError("Missing required field: name", "Skill Info");
 	}
 
-	const description = extractField(skillInfoSection, "Description") || "";
-	const allowedTools = parseListSection(text, "Allowed Tools");
-	const repositoryStructure = parsePathPurposeSection(text, "Repository Structure");
-	const keyFiles = parsePathDescSection(text, "Key Files");
-	const searchStrategies = parseListSection(text, "Search Strategies");
-	const whenToUse = parseListSection(text, "When to Use");
+	const contentToParse = body || text;
+	const allowedTools = parseListSection(contentToParse, "Allowed Tools");
+	const repositoryStructure = parsePathPurposeSection(contentToParse, "Repository Structure");
+	const keyFiles = parsePathDescSection(contentToParse, "Key Files");
+	const searchStrategies = parseListSection(contentToParse, "Search Strategies");
+	const whenToUse = parseListSection(contentToParse, "When to Use");
 
 	return {
 		name,

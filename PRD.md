@@ -153,7 +153,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Remote check includes commit SHA comparison",
 			"Graceful fallback to local generation if API unavailable"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-013",
@@ -165,7 +165,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Upload requires authentication",
 			"Failed uploads don't block local workflow"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-014",

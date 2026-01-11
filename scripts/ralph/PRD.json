@@ -1,0 +1,379 @@
+{
+  "branchName": "ralph/ui-migration",
+  "title": "UI Migration: offworld-v1 to offworld",
+  "version": "1.0.0",
+  "created": "2026-01-10",
+  "summary": "Port all UI and styles from offworld-v1/apps/web to current offworld codebase, adapting components to work with the analyses data model instead of repositories. Read exact contents of original codebase that we're adapting to this codebase at /Users/oscargabriel/Developer/projects/offworld-v1",
+  "userStories": [
+    {
+      "id": "PRD-1.1",
+      "title": "Replace index.css with V1's complete theme system",
+      "acceptanceCriteria": [
+        "index.css contains oklch color variables for both :root and .dark",
+        "Custom fonts defined: Sorts Mill Goudy (serif), Geist Mono (mono), Not Jam Third Dimension (special)",
+        "--radius: 0rem is set for zero border-radius design",
+        "Custom shadow system variables (--shadow-2xs through --shadow-2xl) are defined",
+        ".prose class styles are present for markdown rendering",
+        "Custom scrollbar styles (::-webkit-scrollbar) are defined",
+        "@font-face for Not Jam Third Dimension woff2 is included"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-1.2",
+      "title": "Copy static assets from V1's public directory",
+      "acceptanceCriteria": [
+        "apps/web/public/background-image.png exists",
+        "apps/web/public/logotype.svg exists",
+        "apps/web/public/logotype-mobile.svg exists",
+        "apps/web/public/favicon.svg exists",
+        "apps/web/public/opengraph-image.png exists",
+        "apps/web/public/not-jam-third-dimension.woff2 exists"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-1.3",
+      "title": "Update __root.tsx with V1's meta tags and preloads",
+      "acceptanceCriteria": [
+        "head() contains OpenGraph meta tags (og:title, og:description, og:image, og:type, og:url)",
+        "head() contains Twitter Card meta tags (twitter:card, twitter:title, twitter:description, twitter:image)",
+        "head() contains preload links for background-image.png, logotype.svg, logotype-mobile.svg, favicon.svg",
+        "head() contains Google Fonts stylesheet link for Sorts Mill Goudy and Geist Mono",
+        "BackgroundImage component is imported and rendered",
+        "Body has className 'relative min-h-screen'",
+        "Content is wrapped in 'relative z-10' div"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.1",
+      "title": "Create components/layout/background-image.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/layout/background-image.tsx",
+        "Component renders fixed positioned div with background-image.png",
+        "Has opacity-5 dark:opacity-5 classes",
+        "Exports BackgroundImage function component"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.2",
+      "title": "Create components/layout/header.tsx with floating design",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/layout/header.tsx",
+        "Header is positioned absolute with pointer-events-none on container",
+        "Contains Link to '/' with favicon.svg logo (pointer-events-auto)",
+        "Contains UserMenu component (pointer-events-auto)",
+        "Uses container mx-auto with responsive max-width classes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.3",
+      "title": "Create components/layout/footer.tsx with navigation",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/layout/footer.tsx",
+        "Contains 'offworld.sh' brand text with Link to '/'",
+        "Contains Navigate section with Explore and Login links",
+        "Contains Learn section with Docs (external) and About links",
+        "Contains Connect section with Twitter (external) and GitHub links",
+        "Contains tagline 'Explore distant code.'",
+        "Contains copyright with link to oscargabriel.dev"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.4",
+      "title": "Create components/layout/user-menu.tsx with base-ui dropdown",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/layout/user-menu.tsx",
+        "Uses base-ui DropdownMenu components (not radix)",
+        "Shows 'Sign In' button when user is not authenticated",
+        "Shows user's first name in dropdown trigger when authenticated",
+        "Dropdown contains user name and email display",
+        "Dropdown contains Sign Out option that calls authClient.signOut with location.reload",
+        "Uses convexQuery with api.auth.getCurrentUser or getCurrentUserSafe"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.5",
+      "title": "Create components/home/hero-section.tsx with animated logotype",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/home/hero-section.tsx",
+        "Contains fade-in animation using useState/useEffect pattern",
+        "Renders logotype-mobile.svg for mobile (md:hidden)",
+        "Renders logotype.svg for desktop (hidden md:block)",
+        "Contains RepoUrlInput component with 'A New Codebase Awaits You' label",
+        "Has min-h-[85vh] for hero height"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.6",
+      "title": "Create components/home/info-section.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/home/info-section.tsx",
+        "Contains h3 with 'What is Offworld?' text",
+        "Has font-mono uppercase tracking-[0.3em] styling on heading",
+        "Contains descriptive paragraphs with font-serif styling",
+        "Content explains the purpose of Offworld (may be adapted for CLI focus)"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.7",
+      "title": "Create components/home/how-it-works.tsx with numbered steps",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/home/how-it-works.tsx",
+        "Contains h3 with 'How it Works' text",
+        "Contains 3 numbered steps (01, 02, 03)",
+        "Each step has border-l-2 styling with hover effect",
+        "Each step has uppercase heading and descriptive paragraph"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.8",
+      "title": "Create components/home/repo-url-input.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/home/repo-url-input.tsx",
+        "Accepts labelText, placeholder, buttonText, onError, variant props",
+        "Parses GitHub URL to extract owner/repo",
+        "Also handles 'owner/repo' format without full URL",
+        "Navigates to /repo/$owner/$repo on valid input",
+        "Does NOT use validateRepo action (removed)",
+        "Shows error state for invalid URL format",
+        "Has hero and standard variants with different styling"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Decision: Navigate to /repo/$owner/$repo directly, route handles 'not found'"
+    },
+    {
+      "id": "PRD-2.9",
+      "title": "Create components/home/recently-indexed-carousel.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/home/recently-indexed-carousel.tsx",
+        "Uses Carousel components from @/components/ui/carousel",
+        "Accepts analyses array prop (not repositories)",
+        "Renders RepoCard for each analysis",
+        "Has 'View All' link to /browse",
+        "Returns null if analyses array is empty",
+        "Has responsive basis classes for different screen sizes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Decision: Sort by pullCount (popularity)"
+    },
+    {
+      "id": "PRD-2.10",
+      "title": "Create components/repo/repo-card.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/repo/repo-card.tsx",
+        "Links to /repo/$owner/$repo route",
+        "Displays fullName (owner/repo)",
+        "Displays pullCount with download icon",
+        "Has 'Indexed' badge",
+        "Uses Card component with hover effect",
+        "Does NOT require language or stars props (not in analyses)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.11",
+      "title": "Create components/repo/content-card.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/repo/content-card.tsx",
+        "Accepts title, children, and variant props",
+        "Has default, warning, and error variants",
+        "Renders title with font-mono uppercase styling",
+        "Has border and background styling matching V1 design"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.12",
+      "title": "Create components/repo/markdown-content.tsx",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/components/repo/markdown-content.tsx",
+        "Uses react-markdown package",
+        "Applies prose class for styling",
+        "Renders markdown content passed as prop"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-2.13",
+      "title": "Create hooks/use-mobile.ts for responsive behavior",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/hooks/use-mobile.ts",
+        "Exports useIsMobile hook",
+        "Returns boolean based on window width",
+        "Uses matchMedia for 768px breakpoint",
+        "Handles SSR (returns false initially)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-3.1",
+      "title": "Update routes/index.tsx with V1's homepage design",
+      "acceptanceCriteria": [
+        "Imports and renders HeroSection component",
+        "Imports and renders RecentlyIndexedCarousel with analyses data",
+        "Imports and renders InfoSection component",
+        "Imports and renders HowItWorks component",
+        "Imports and renders Footer component",
+        "Uses convexQuery to fetch api.analyses.list",
+        "Has BackgroundImage or relies on __root.tsx for background",
+        "Removes old CLI quickstart content"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-3.2",
+      "title": "Update routes/browse.tsx with V1's explore page design",
+      "acceptanceCriteria": [
+        "Has large serif heading 'Explore Repositories' or similar",
+        "Contains RepoUrlInput for searching",
+        "Displays grid of RepoCard components",
+        "Shows empty state when no analyses exist",
+        "Renders Footer component",
+        "Uses convexQuery to fetch api.analyses.list"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-3.3",
+      "title": "Create routes/sign-in.tsx with GitHub OAuth",
+      "acceptanceCriteria": [
+        "File exists at apps/web/src/routes/sign-in.tsx",
+        "Has centered layout with 'Welcome to Offworld' heading",
+        "Contains GitHub sign-in button with GitHub icon",
+        "Uses authClient.signIn.social with provider: 'github'",
+        "Accepts redirect search param for post-login redirect"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Decision: GitHub OAuth only (not email/password)"
+    },
+    {
+      "id": "PRD-3.4",
+      "title": "Update routes/repo/$owner/$repo.tsx with V1 styling",
+      "acceptanceCriteria": [
+        "Uses ContentCard component for wrapping content",
+        "Uses MarkdownContent component for rendering summary",
+        "Shows 'Analysis Not Found' state when analysis doesn't exist",
+        "Displays analysis summary from api.analyses.get",
+        "Has consistent styling with V1 design (serif fonts, borders)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-4.1",
+      "title": "Add required npm packages for V1 features",
+      "acceptanceCriteria": [
+        "embla-carousel-react is in package.json dependencies",
+        "react-markdown is in package.json dependencies",
+        "Running 'bun install' succeeds without errors"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-5.1",
+      "title": "Delete starter kit remnant files",
+      "acceptanceCriteria": [
+        "apps/web/src/routes/dashboard.tsx does NOT exist",
+        "apps/web/src/routes/todos.tsx does NOT exist",
+        "apps/web/src/components/sign-in-form.tsx does NOT exist",
+        "apps/web/src/components/sign-up-form.tsx does NOT exist",
+        "Old apps/web/src/components/header.tsx is removed (replaced by layout/header.tsx)",
+        "Old apps/web/src/components/user-menu.tsx is removed (replaced by layout/user-menu.tsx)"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-5.2",
+      "title": "Update routeTree.gen.ts after route changes",
+      "acceptanceCriteria": [
+        "routeTree.gen.ts does NOT reference /dashboard route",
+        "routeTree.gen.ts does NOT reference /todos route",
+        "routeTree.gen.ts references /sign-in route",
+        "Running 'bun run dev:web' generates updated route tree without errors"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-6.1",
+      "title": "Application builds and type-checks successfully",
+      "acceptanceCriteria": [
+        "'bun run check' passes without errors",
+        "'bun run check-types' passes without errors",
+        "'bun run build' completes successfully"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "PRD-6.2",
+      "title": "Visual verification of migrated UI",
+      "acceptanceCriteria": [
+        "Homepage displays hero section with logotype",
+        "Homepage displays recently indexed carousel (or empty state)",
+        "Homepage displays info section and how it works",
+        "Homepage displays footer with navigation",
+        "Background image is visible with low opacity",
+        "Dark theme is applied with correct oklch colors",
+        "Fonts are loading (Sorts Mill Goudy, Geist Mono)",
+        "Zero border-radius is applied to UI elements",
+        "Browse page displays analysis grid",
+        "Repo detail page displays analysis content"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

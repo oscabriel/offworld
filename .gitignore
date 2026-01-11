@@ -48,9 +48,3 @@ coverage
 .cache
 tmp
 temp
-
-# Ralph
-history/
-CLAUDE.md
-ralph.sh
-ralph-once.sh

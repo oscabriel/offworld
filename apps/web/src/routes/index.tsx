@@ -6,6 +6,7 @@ import { HeroSection } from "@/components/home/hero-section";
 import { HowItWorks } from "@/components/home/how-it-works";
 import { InfoSection } from "@/components/home/info-section";
 import { RecentlyIndexedCarousel } from "@/components/home/recently-indexed-carousel";
+import { BackgroundImage } from "@/components/layout/background-image";
 import { Footer } from "@/components/layout/footer";
 
 export const Route = createFileRoute("/")({
@@ -20,6 +21,8 @@ function HomeComponent() {
 
 	return (
 		<div className="relative min-h-screen overflow-x-hidden bg-background">
+			<BackgroundImage />
+
 			<div className="pointer-events-none fixed inset-0 bg-linear-to-b from-transparent via-transparent to-background/60" />
 
 			<HeroSection />

@@ -186,3 +186,31 @@
 - TypeScript: SDK/CLI pass
 - Tests: 398 passed (+6 new)
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-005 - Reduce skill output to ~100 lines
+
+### Completed
+- PRD-005: Slim skill format (~100 lines vs 250-400)
+
+### Changes
+- `packages/sdk/src/analysis/prompts.ts`:
+  - Rewrote `createSkillPrompt()` for slim output
+  - Target: 80-120 lines, no prose
+  - Format: Quick Paths (15-20 files), Search Patterns table, Deep Context section
+  - Removed: verbose sections (Best Practices, When to Use, Key Concepts, etc.)
+  - Removed: file content samples (topFiles with content)
+- `packages/sdk/src/analysis/generate.ts`:
+  - Updated system prompt for slim skill generation
+
+### Decisions
+- Skills now focus on: paths, patterns, and references
+- No prose sections - agents can read Deep Context files for details
+- Search Patterns as markdown table (4-6 rows)
+- File content removed from prompt to reduce token usage
+
+### Verification
+- TypeScript: SDK pass
+- Tests: 392 unit tests pass (integration tests have pre-existing issues)
+- Lint: 0 errors

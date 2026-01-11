@@ -1,28 +1,14 @@
 /**
  * Prompt Templates for Skill Generation
  *
- * These prompts are designed to generate skills that match the quality of
- * manually-created reference skills in ~/.config/opencode/skill/
- *
  * Key principles:
  * 1. Full absolute paths throughout (agent can immediately Read them)
- * 2. "What is X?" context for orientation
- * 3. 30+ Quick Reference Paths organized by category
- * 4. Search Strategies with actual grep/glob patterns
- * 5. Common Patterns with step-by-step procedures
- * 6. 250-400 lines of dense, high-signal content
+ * 2. Quick Paths (15-20 files) - most important files
+ * 3. Search Patterns table - grep patterns for common searches
+ * 4. Deep Context references to analysis files
+ * 5. Target ~100 lines - dense, no prose
  */
 
-// ============================================================================
-// Skill Generation Prompt
-// ============================================================================
-
-/**
- * Generate the main SKILL.md prompt.
- *
- * This produces a rich markdown document that serves as an "onboarding guide"
- * for AI agents working with the codebase.
- */
 export function createSkillPrompt(params: {
 	repoPath: string;
 	repoName: string;
@@ -49,235 +35,79 @@ export function createSkillPrompt(params: {
 	} = params;
 
 	const displayName = fullName || repoName;
-	const deepContextSection = analysisPath
-		? `
-## Deep Context
+	const skillName = repoName.toLowerCase().replace(/[^a-z0-9]/g, "-");
 
-For detailed analysis, read these files:
-- Architecture: \`${analysisPath}/architecture.md\`
-- Summary: \`${analysisPath}/summary.md\`
-`
-		: "";
+	return `Generate a SLIM skill (~100 lines) for "${displayName}".
 
-	return `You are creating a comprehensive "skill" file for an AI coding assistant. This skill helps the AI understand and work with the "${displayName}" codebase efficiently.
+## Repository Context
 
-A skill is like an onboarding guide for a new engineer - it should contain everything an AI needs to navigate and understand this codebase WITHOUT having to grep/search for basic information.
+Path: ${repoPath}
+Name: ${repoName}
+${fullName ? `Full: ${fullName}` : ""}
 
-## Context About This Repository
+README:
+${readme || "(none)"}
 
-**Absolute Path:** ${repoPath}
-**Repository Name:** ${repoName}
-${fullName ? `**Full Name:** ${fullName}` : ""}
+Package:
+${packageConfig || "(none)"}
 
-### README
-${readme || "(No README found)"}
-
-### Package Configuration
-\`\`\`
-${packageConfig || "(No package config found)"}
-\`\`\`
-
-### File Tree (Top Files by Importance)
+File Tree:
 ${fileTree}
 
-### Summary
+Summary:
 ${summary}
-${architectureJson ? `\n### Architecture\n${architectureJson}` : ""}
+${architectureJson ? `\nArchitecture:\n${architectureJson}` : ""}
 
-### Sample File Contents
-${topFiles
-	.map(
-		(f) => `
-#### ${f.path} (${f.role}, importance: ${(f.importance * 100).toFixed(0)}%)
-\`\`\`
-${f.content}
-\`\`\`
-`,
-	)
-	.join("\n")}
+Top Files:
+${topFiles.map((f) => `- ${f.path} (${f.role})`).join("\n")}
 
 ---
 
-## Your Task
-
-Generate a SKILL.md file using the EXACT format below. This skill will be installed to help AI agents work with this codebase.
-
-**CRITICAL REQUIREMENTS:**
-1. Use FULL ABSOLUTE PATHS everywhere (starting with ${repoPath})
-2. Generate 30+ specific file paths in Quick Reference Paths
-3. Include actual grep/glob patterns in Search Strategies
-4. Write step-by-step procedures in Common Patterns
-5. Target 250-400 lines of content
-6. Make every line actionable and specific to THIS codebase
-
----
-
-## Required Output Format
+## Output Format (EXACTLY ~100 lines)
 
 \`\`\`markdown
 ---
-name: ${repoName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-reference
-description: [Write a 2-3 sentence description that explains: (1) what this codebase is, (2) when to consult it, (3) what kinds of questions it answers. Include keywords that would trigger skill activation like "implementation details", "source code", "internal patterns", etc.]
+name: ${skillName}
+description: [1 sentence: what it is + when to use this skill]
 ---
 
-# ${displayName} Source Code Reference
+# ${displayName}
 
-When the user asks about ${repoName}, consult the cloned repository for accurate implementation details, patterns, and examples.
+[1-2 sentences: what this is and its purpose]
 
-## What is ${repoName}?
+Cloned to: ${repoPath}
+${analysisPath ? `Analysis: ${analysisPath}/` : ""}
 
-[2-4 sentences explaining:
-- What this project does (its purpose)
-- What makes it unique or different from alternatives
-- Key technologies or patterns it uses
-- Why someone would use it]
+## Quick Paths
 
-## Repository Structure
+[15-20 most important files with full absolute paths]
+- \`${repoPath}/path/to/file.ts\` - description
+- \`${repoPath}/path/to/other.ts\` - description
 
-**Base Path:** ${repoPath}
+## Search Patterns
 
-**Main Areas:**
-- \`${repoPath}/[dir1]/\` - [purpose]
-- \`${repoPath}/[dir2]/\` - [purpose]
-- \`${repoPath}/[dir3]/\` - [purpose]
-[List 5-10 top-level directories with their purposes]
+| Find | Pattern | Path |
+|------|---------|------|
+| Hooks | \`export function use\` | \`${repoPath}/src/\` |
+| Types | \`export (type|interface)\` | \`${repoPath}/src/\` |
+| Components | \`export const.*=\` | \`${repoPath}/src/\` |
+[4-6 rows with actual grep patterns]
 
-## Quick Reference Paths
+## Deep Context
 
-[Organize into logical categories. Include 30+ specific file paths with descriptions.]
-
-### Core Implementation
-- \`${repoPath}/[path/to/main.ts]\` - [what this file does]
-- \`${repoPath}/[path/to/core.ts]\` - [what this file does]
-[Continue with 5-10 core files]
-
-### [Category 2 - e.g., "API/Routes", "Components", "Hooks", "Plugins"]
-- \`${repoPath}/[path]\` - [description]
-[Continue with 5-10 files per category]
-
-### [Category 3]
-[Continue pattern]
-
-### Type Definitions
-- \`${repoPath}/[path/to/types.ts]\` - [description]
-[List key type files]
-
-### Configuration
-- \`${repoPath}/[config files]\` - [description]
-
-### Examples/Tests
-- \`${repoPath}/examples/[example1]/\` - [what it demonstrates]
-- \`${repoPath}/examples/[example2]/\` - [what it demonstrates]
-[List 3-5 key examples]
-
-## Search Strategies
-
-[Provide ACTUAL grep/glob patterns for common searches]
-
-### Finding [Thing 1 - e.g., "Hook Implementations"]
+- Architecture: Read \`${analysisPath || "~/.ow/analyses/<repo>"}/architecture.md\`
+- Summary: Read \`${analysisPath || "~/.ow/analyses/<repo>"}/summary.md\`
 \`\`\`
-pattern: "[actual regex pattern like 'export function use']"
-path: ${repoPath}/[specific/directory/]
-\`\`\`
-
-### Finding [Thing 2 - e.g., "Component Definitions"]
-\`\`\`
-pattern: "[actual regex pattern]"
-path: ${repoPath}/[specific/directory/]
-\`\`\`
-
-### Finding [Thing 3 - e.g., "Type Definitions"]
-\`\`\`
-Read: ${repoPath}/[path/to/types.ts]
-Or Grep: pattern: "export (type|interface)"
-\`\`\`
-
-### Finding Examples
-\`\`\`
-Use Glob: ${repoPath}/examples/*/
-Or search: pattern: "[relevant pattern]"
-\`\`\`
-
-[Include 5-8 search strategies covering common lookup needs]
-
-## Common Patterns
-
-[Step-by-step procedures for common tasks. These should be ACTIONABLE.]
-
-**[Task 1 - e.g., "Understanding a hook implementation"]:**
-1. Read the hook in \`${repoPath}/packages/[pkg]/src/use[Hook].ts\`
-2. Check types in \`${repoPath}/packages/[pkg]/src/types.ts\`
-3. Find usage examples in \`${repoPath}/examples/\`
-4. Look at tests in \`${repoPath}/packages/[pkg]/src/__tests__/\`
-
-**[Task 2 - e.g., "Adding a new feature"]:**
-1. [Step 1 with specific file path]
-2. [Step 2 with specific file path]
-3. [Step 3]
-4. [Step 4]
-
-**[Task 3 - e.g., "Finding how X works"]:**
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
-
-[Include 4-6 common patterns/procedures]
-
-## When to Use This Skill
-
-[List 10-15 specific trigger conditions]
-
-- User asks about ${repoName} implementation details
-- Questions about [specific feature 1]
-- Questions about [specific feature 2]
-- [Continue with specific triggers relevant to this codebase]
-- Internal behavior or edge cases
-- Type definitions and TypeScript usage
-- Advanced features not well-documented
-- Debugging or troubleshooting ${repoName} issues
-
-## Best Practices
-
-[Workflow guidance for working with this codebase]
-
-1. **Check examples first** - [path] contains N examples covering most patterns
-2. **Read core implementations** - [path] has the source of truth
-3. **Check tests** - Tests show edge cases and internal behavior
-4. **Use Task tool for broad searches** - When searching across multiple files
-5. **Reference file paths** - Always cite specific source locations
-
-## Key Concepts
-
-[If applicable, explain 3-5 key concepts unique to this codebase]
-
-### [Concept 1]
-[Brief explanation of how it works in this codebase]
-
-### [Concept 2]
-[Brief explanation]
-
-## Architecture Overview
-
-[Optional: ASCII diagram showing data flow or component relationships]
-
-\`\`\`
-[Component A]
-    ↓
-[Component B] → [Component C]
-    ↓
-[Component D]
-\`\`\`
-${deepContextSection}\`\`\`
 
 ---
 
-**REMEMBER:**
-- Every path must be a FULL ABSOLUTE PATH starting with ${repoPath}
-- Include 30+ specific file paths
-- Search strategies must have actual grep patterns
-- Common patterns must be step-by-step with specific paths
-- Target 250-400 lines of content
-- Make it immediately usable without editing`;
+RULES:
+1. EXACTLY ~100 lines (80-120 acceptable)
+2. Full absolute paths starting with ${repoPath}
+3. 15-20 Quick Paths - most important files only
+4. Search Patterns as markdown table (4-6 rows)
+5. NO verbose prose, NO "Best Practices", NO "When to Use" sections
+6. Dense, actionable, grep-ready`;
 }
 
 // ============================================================================

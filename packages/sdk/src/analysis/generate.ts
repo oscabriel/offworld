@@ -163,7 +163,7 @@ export async function generateRichSkill(
 		prompt,
 		cwd: context.repoPath,
 		systemPrompt:
-			"You are an expert at creating comprehensive AI assistant skills. Generate detailed, actionable skills with 250-400 lines of high-signal content. Use full absolute paths throughout.",
+			"Generate slim, dense skills (~100 lines). Include 15-20 Quick Paths, Search Patterns table, and Deep Context. Full absolute paths. No prose.",
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	});

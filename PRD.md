@@ -69,7 +69,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"No verbose prose or redundant sections",
 			"Prompt template in prompts.ts specifies ~100 line target"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-006",

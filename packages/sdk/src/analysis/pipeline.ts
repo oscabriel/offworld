@@ -16,9 +16,8 @@ import { gatherContext } from "./context.js";
 import {
 	generateSummary,
 	extractArchitecture,
-	generateSkill,
+	generateRichSkill,
 	formatArchitectureMd,
-	formatSkillMd,
 } from "./generate.js";
 
 // ============================================================================
@@ -219,8 +218,8 @@ export async function runAnalysisPipeline(
 
 	// Step 6: Generate skill
 	onProgress("skill", "Generating skill...");
-	const skill = await generateSkill(context, summary, architecture, generateOptions);
-	const skillMd = formatSkillMd(skill);
+	const skillOptions = { ...generateOptions, fullName: options.fullName };
+	const { skill, skillMd } = await generateRichSkill(context, summary, architecture, skillOptions);
 
 	// Build metadata
 	const meta: AnalysisMeta = {

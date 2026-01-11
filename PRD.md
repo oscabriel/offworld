@@ -223,21 +223,21 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"architecture.md exists in analysis directory",
 			"architecture.json exists in analysis directory",
 			"file-index.json exists in analysis directory",
-			"meta.json exists with commitSha and generated fields"
+			"meta.json exists with commitSha and analyzedAt fields"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-019",
 		"category": "artifacts",
 		"description": "Skill is installed to both OpenCode and Claude skill directories",
 		"steps_to_verify": [
-			"SKILL.md copied to ~/.config/opencode/skill/{name}.md",
-			"SKILL.md copied to ~/.claude/skills/{name}.md",
+			"SKILL.md copied to ~/.config/opencode/skill/{name}/SKILL.md",
+			"SKILL.md copied to ~/.claude/skills/{name}/SKILL.md",
 			"Both directories created if they don't exist",
 			"Existing skills are overwritten"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-020",
@@ -249,7 +249,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Final message shows installed skill path",
 			"--verbose flag shows detailed timing and debug info"
 		],
-		"passes": false
+		"passes": true
 	}
 ]
 ```

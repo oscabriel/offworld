@@ -154,3 +154,35 @@
 - TypeScript: pass
 - Tests: 392 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-010 - Validate file paths in skills
+
+### Completed
+- PRD-010: Validate paths exist before writing to skill
+
+### Changes
+- Created `packages/sdk/src/validation/paths.ts`:
+  - `validateSkillPaths()` filters invalid paths from skill
+  - `pathExists()` helper for individual path checks
+- Created `packages/sdk/src/validation/index.ts`: exports
+- Updated `packages/sdk/src/analysis/pipeline.ts`:
+  - Imports validateSkillPaths
+  - Calls validation after skill generation
+  - Re-formats skillMd if paths were removed
+  - Uses onDebug for warning about removed paths
+- Updated `packages/sdk/src/index.ts`: exports validation module
+- Added `packages/sdk/src/__tests__/validation.test.ts`: unit tests
+- Updated pipeline.test.ts: added existsSync/formatSkillMd mocks
+- Updated pipeline-io.test.ts: mocked validation for real fs tests
+
+### Decisions
+- Validation happens post-generation, before save
+- Only repositoryStructure and keyFiles paths are validated
+- Paths starting with ~ are not resolved (assumed home-relative)
+
+### Verification
+- TypeScript: SDK/CLI pass
+- Tests: 398 passed (+6 new)
+- Lint: 0 errors

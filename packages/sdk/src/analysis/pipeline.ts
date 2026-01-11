@@ -18,7 +18,9 @@ import {
 	generateSummary,
 	generateRichSkill,
 	formatArchitectureMd,
+	formatSkillMd,
 } from "./generate.js";
+import { validateSkillPaths } from "../validation/paths.js";
 
 // ============================================================================
 // Types
@@ -220,7 +222,21 @@ export async function runAnalysisPipeline(
 		generated,
 		analysisPath,
 	};
-	const { skill, skillMd } = await generateRichSkill(context, summary, architecture, skillOptions);
+	const { skill: rawSkill, skillMd: rawSkillMd } = await generateRichSkill(
+		context,
+		summary,
+		architecture,
+		skillOptions,
+	);
+
+	onProgress("validate", "Validating paths...");
+	const { validatedSkill: skill, removedPaths } = validateSkillPaths(rawSkill, {
+		basePath: repoPath,
+		onWarning: (path) => options.onDebug?.(`Removed non-existent path: ${path}`),
+	});
+
+	const skillMd =
+		removedPaths.length > 0 ? formatSkillMd(skill, { commitSha, generated }) : rawSkillMd;
 
 	const meta: AnalysisMeta = {
 		analyzedAt: new Date().toISOString(),

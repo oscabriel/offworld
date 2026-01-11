@@ -129,7 +129,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Warning is logged for removed paths",
 			"Skill is still valid with reduced paths"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-011",

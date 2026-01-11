@@ -139,3 +139,10 @@ export {
 	type AuthData,
 	type AuthStatus,
 } from "./auth.js";
+
+export {
+	validateSkillPaths,
+	pathExists,
+	type PathValidationResult,
+	type ValidatePathsOptions,
+} from "./validation/index.js";

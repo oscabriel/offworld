@@ -118,6 +118,20 @@ export function installSkill(repoName: string, skillContent: string): void {
 // Analysis Saving
 // ============================================================================
 
+/**
+ * Clean architecture data for output by stripping empty responsibilities arrays.
+ * This reduces file size and noise in the JSON output.
+ */
+function cleanArchitectureForOutput(arch: Architecture): object {
+	return {
+		...arch,
+		entities: arch.entities.map((entity) => {
+			const { responsibilities, ...rest } = entity;
+			return responsibilities?.length ? { ...rest, responsibilities } : rest;
+		}),
+	};
+}
+
 function saveAnalysis(
 	analysisPath: string,
 	result: Omit<AnalysisPipelineResult, "analysisPath">,
@@ -127,27 +141,23 @@ function saveAnalysis(
 	writeFileSync(join(analysisPath, "summary.md"), result.summary, "utf-8");
 
 	if (result.architecture) {
-		writeFileSync(
-			join(analysisPath, "architecture.json"),
-			JSON.stringify(result.architecture, null, 2),
-			"utf-8",
-		);
+		// Compress JSON (no pretty-printing) and clean empty responsibilities
+		const cleanedArch = cleanArchitectureForOutput(result.architecture);
+		writeFileSync(join(analysisPath, "architecture.json"), JSON.stringify(cleanedArch), "utf-8");
 	}
 
 	if (result.architectureMd) {
 		writeFileSync(join(analysisPath, "architecture.md"), result.architectureMd, "utf-8");
 	}
 
-	writeFileSync(
-		join(analysisPath, "file-index.json"),
-		JSON.stringify(result.fileIndex, null, 2),
-		"utf-8",
-	);
+	// Compress JSON (no pretty-printing) for file-index and skill
+	writeFileSync(join(analysisPath, "file-index.json"), JSON.stringify(result.fileIndex), "utf-8");
 
-	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(result.skill, null, 2), "utf-8");
+	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(result.skill), "utf-8");
 
 	writeFileSync(join(analysisPath, "SKILL.md"), result.skillMd, "utf-8");
 
+	// Keep meta.json pretty-printed for human readability
 	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(result.meta, null, 2), "utf-8");
 }
 
@@ -263,6 +273,7 @@ export async function runAnalysisPipeline(
 	} = timeStep("validate", () =>
 		validateSkillPaths(rawSkill, {
 			basePath: repoPath,
+			analysisPath,
 			onWarning: (path, type) => options.onDebug?.(`Removed non-existent ${type}: ${path}`),
 		}),
 	);

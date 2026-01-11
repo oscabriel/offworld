@@ -10,19 +10,34 @@ export interface PathValidationResult {
 
 export interface ValidatePathsOptions {
 	basePath: string;
+	/** Path to substitute for ${ANALYSIS} variable */
+	analysisPath?: string;
 	onWarning?: (path: string, type: "quickPath" | "searchPattern") => void;
+}
+
+/**
+ * Substitute ${REPO} and ${ANALYSIS} variables in a path.
+ */
+function substituteVariables(path: string, repoPath: string, analysisPath?: string): string {
+	let result = path.replace(/\$\{REPO\}/g, repoPath);
+	if (analysisPath) {
+		result = result.replace(/\$\{ANALYSIS\}/g, analysisPath);
+	}
+	return result;
 }
 
 export function validateSkillPaths(
 	skill: Skill,
 	options: ValidatePathsOptions,
 ): PathValidationResult {
-	const { basePath, onWarning } = options;
+	const { basePath, analysisPath, onWarning } = options;
 	const removedPaths: string[] = [];
 	const removedSearchPaths: string[] = [];
 
 	const validQuickPaths = skill.quickPaths.filter((entry) => {
-		const fullPath = resolvePath(entry.path, basePath);
+		// Substitute variables before checking existence
+		const substitutedPath = substituteVariables(entry.path, basePath, analysisPath);
+		const fullPath = resolvePath(substitutedPath, basePath);
 		if (existsSync(fullPath)) {
 			return true;
 		}
@@ -32,7 +47,9 @@ export function validateSkillPaths(
 	});
 
 	const validSearchPatterns = skill.searchPatterns.filter((entry) => {
-		const fullPath = resolvePath(entry.path, basePath);
+		// Substitute variables before checking existence
+		const substitutedPath = substituteVariables(entry.path, basePath, analysisPath);
+		const fullPath = resolvePath(substitutedPath, basePath);
 		if (existsSync(fullPath)) {
 			return true;
 		}

@@ -81,6 +81,37 @@ export async function installSkill(repoName: string, skillContent: string): Prom
 }
 
 /**
+ * Rewrite skill paths from remote analysis to use local paths.
+ * Replaces ${REPO} and ${ANALYSIS} variables with actual local values.
+ */
+function rewriteSkillPaths(skill: Skill, localRepoPath: string, localAnalysisPath: string): Skill {
+	const rewritePath = (path: string): string => {
+		return path.replace(/\$\{REPO\}/g, localRepoPath).replace(/\$\{ANALYSIS\}/g, localAnalysisPath);
+	};
+
+	return {
+		...skill,
+		basePaths: {
+			repo: localRepoPath,
+			analysis: localAnalysisPath,
+		},
+		quickPaths: skill.quickPaths.map((qp) => ({
+			...qp,
+			path: rewritePath(qp.path),
+		})),
+		searchPatterns: skill.searchPatterns.map((sp) => ({
+			...sp,
+			path: rewritePath(sp.path),
+		})),
+		// commonPatterns steps may contain paths too
+		commonPatterns: skill.commonPatterns?.map((cp: { name: string; steps: string[] }) => ({
+			...cp,
+			steps: cp.steps.map(rewritePath),
+		})),
+	};
+}
+
+/**
  * Save pulled analysis to local analysis directory
  */
 function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
@@ -321,13 +352,24 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						if (remoteAnalysis) {
 							s.stop("Downloaded remote analysis");
 
-							// Save analysis locally
+							// Rewrite skill paths for local environment
+							const localAnalysisPath = getAnalysisPath(source.fullName, source.provider);
+							const rewrittenSkill = rewriteSkillPaths(
+								remoteAnalysis.skill,
+								repoPath,
+								localAnalysisPath,
+							);
+
+							// Save analysis locally with rewritten skill
 							s.start("Saving analysis...");
-							saveAnalysisLocally(source, remoteAnalysis);
+							saveAnalysisLocally(source, {
+								...remoteAnalysis,
+								skill: rewrittenSkill,
+							});
 							s.stop("Analysis saved");
 
 							s.start("Installing skill...");
-							const skillMd = formatSkillMd(remoteAnalysis.skill, {
+							const skillMd = formatSkillMd(rewrittenSkill, {
 								commitSha: remoteAnalysis.commitSha,
 								generated: remoteAnalysis.analyzedAt?.split("T")[0],
 							});

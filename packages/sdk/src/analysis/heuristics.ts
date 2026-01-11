@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 import type { FileIndexEntry, FileRole } from "@offworld/types";
 import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS, HEURISTICS_LIMITS } from "../constants.js";
@@ -209,6 +209,50 @@ function scoreFile(filePath: string): number {
 	return 0.55;
 }
 
+/**
+ * Detect if a file is a re-export shim (barrel file with only exports).
+ * These files add noise to analysis - they don't contain meaningful logic.
+ */
+function isReExportShim(content: string): boolean {
+	const lines = content
+		.split("\n")
+		.map((l) => l.trim())
+		.filter((l) => l && !l.startsWith("//") && !l.startsWith("/*") && !l.startsWith("*"));
+
+	if (lines.length === 0 || lines.length > 5) return false;
+
+	return lines.every(
+		(l) =>
+			/^export \* from ['"]/.test(l) ||
+			/^export \{[^}]+\} from ['"]/.test(l) ||
+			/^\/\*\*.*\*\/\s*$/.test(l) ||
+			l === "",
+	);
+}
+
+/**
+ * Check if a file at the given path is a re-export shim.
+ * Only checks files named index.ts/js to limit I/O.
+ */
+function checkReExportShim(fullPath: string, fileName: string): boolean {
+	// Only check index files - most common barrel pattern
+	if (
+		fileName !== "index.ts" &&
+		fileName !== "index.js" &&
+		fileName !== "index.tsx" &&
+		fileName !== "index.mjs"
+	) {
+		return false;
+	}
+
+	try {
+		const content = readFileSync(fullPath, "utf-8");
+		return isReExportShim(content);
+	} catch {
+		return false;
+	}
+}
+
 export async function rankFilesByHeuristics(
 	repoPath: string,
 	options: HeuristicsOptions = {},
@@ -229,11 +273,22 @@ export async function rankFilesByHeuristics(
 		return [];
 	}
 
-	const entries: FileIndexEntry[] = files.map((path) => ({
-		path,
-		importance: Math.round(scoreFile(path) * 1000) / 1000,
-		type: determineFileRole(path),
-	}));
+	const entries: FileIndexEntry[] = files.map((path) => {
+		const fileName = basename(path);
+		const fullPath = join(repoPath, path);
+		let importance = scoreFile(path);
+
+		// Penalize re-export shims (barrel files)
+		if (checkReExportShim(fullPath, fileName)) {
+			importance = 0.05;
+		}
+
+		return {
+			path,
+			importance: Math.round(importance * 1000) / 1000,
+			type: determineFileRole(path),
+		};
+	});
 
 	entries.sort((a, b) => b.importance - a.importance);
 

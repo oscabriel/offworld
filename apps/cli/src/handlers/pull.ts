@@ -72,45 +72,48 @@ export async function installSkill(repoName: string, skillContent: string): Prom
 	}
 }
 
-/**
- * Format SKILL.md content from Skill object
- */
-function formatSkillMd(skill: Skill): string {
-	// Build YAML frontmatter
-	const frontmatter = [
+interface FormatSkillOptions {
+	commitSha?: string;
+	generated?: string;
+}
+
+function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
+	const lines = [
 		"---",
 		`name: "${skill.name}"`,
 		`description: "${skill.description.replace(/"/g, '\\"')}"`,
-		"allowed-tools:",
-		...skill.allowedTools.map((tool) => `  - ${tool}`),
-		"---",
-	].join("\n");
+	];
 
-	// Build body sections
+	if (options.commitSha) {
+		lines.push(`commit: ${options.commitSha.slice(0, 7)}`);
+	}
+	if (options.generated) {
+		lines.push(`generated: ${options.generated}`);
+	}
+
+	lines.push("---");
+	const frontmatter = lines.join("\n");
+
 	const sections = [];
 
-	// Repository Structure
 	sections.push("## Repository Structure\n");
 	for (const entry of skill.repositoryStructure) {
 		sections.push(`- \`${entry.path}\`: ${entry.purpose}`);
 	}
 	sections.push("");
 
-	// Quick Reference Paths (Key Files)
 	sections.push("## Quick Reference Paths\n");
 	for (const file of skill.keyFiles) {
 		sections.push(`- \`${file.path}\`: ${file.description}`);
 	}
 	sections.push("");
 
-	// Search Strategies
 	sections.push("## Search Strategies\n");
 	for (const strategy of skill.searchStrategies) {
 		sections.push(`- ${strategy}`);
 	}
 	sections.push("");
 
-	// When to Use
 	sections.push("## When to Use\n");
 	for (const condition of skill.whenToUse) {
 		sections.push(`- ${condition}`);
@@ -149,11 +152,12 @@ function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
 	);
 	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(analysis.skill, null, 2), "utf-8");
 
-	// Write SKILL.md
-	const skillMd = formatSkillMd(analysis.skill);
+	const skillMd = formatSkillMd(analysis.skill, {
+		commitSha: analysis.commitSha,
+		generated: analysis.analyzedAt?.split("T")[0],
+	});
 	writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
 
-	// Write meta.json
 	const meta = {
 		analyzedAt: analysis.analyzedAt,
 		commitSha: analysis.commitSha,
@@ -191,18 +195,16 @@ function hasLocalAnalysis(source: RepoSource, repoPath: string): boolean {
 	}
 }
 
-/**
- * Load local skill content if available
- */
-function loadLocalSkill(source: RepoSource): Skill | null {
-	let analysisPath: string;
+function getLocalAnalysisPath(source: RepoSource): string {
 	if (source.type === "remote") {
-		analysisPath = getAnalysisPath(source.fullName, source.provider);
-	} else {
-		const hash = source.qualifiedName.replace("local:", "");
-		analysisPath = join(getMetaRoot(), "analyses", `local--${hash}`);
+		return getAnalysisPath(source.fullName, source.provider);
 	}
+	const hash = source.qualifiedName.replace("local:", "");
+	return join(getMetaRoot(), "analyses", `local--${hash}`);
+}
 
+function loadLocalSkill(source: RepoSource): Skill | null {
+	const analysisPath = getLocalAnalysisPath(source);
 	const skillPath = join(analysisPath, "skill.json");
 	if (!existsSync(skillPath)) {
 		return null;
@@ -210,6 +212,20 @@ function loadLocalSkill(source: RepoSource): Skill | null {
 
 	try {
 		return JSON.parse(readFileSync(skillPath, "utf-8"));
+	} catch {
+		return null;
+	}
+}
+
+function loadLocalMeta(source: RepoSource): { commitSha?: string; analyzedAt?: string } | null {
+	const analysisPath = getLocalAnalysisPath(source);
+	const metaPath = join(analysisPath, "meta.json");
+	if (!existsSync(metaPath)) {
+		return null;
+	}
+
+	try {
+		return JSON.parse(readFileSync(metaPath, "utf-8"));
 	} catch {
 		return null;
 	}
@@ -299,14 +315,17 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			repoPath = source.path;
 		}
 
-		// Check for cached local analysis (if not forcing)
 		verboseLog(`Checking for cached analysis at: ${repoPath}`, verbose);
 		if (!force && hasLocalAnalysis(source, repoPath)) {
 			const skill = loadLocalSkill(source);
+			const meta = loadLocalMeta(source);
 			if (skill) {
 				s.start("Installing skill from cache...");
 				const repoName = source.type === "remote" ? source.fullName : source.name;
-				const skillMd = formatSkillMd(skill);
+				const skillMd = formatSkillMd(skill, {
+					commitSha: meta?.commitSha,
+					generated: meta?.analyzedAt?.split("T")[0],
+				});
 				await installSkill(repoName, skillMd);
 				s.stop("Skill installed from cache");
 
@@ -333,9 +352,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				saveAnalysisLocally(source, remoteAnalysis);
 				s.stop("Analysis saved");
 
-				// Install skill
 				s.start("Installing skill...");
-				const skillMd = formatSkillMd(remoteAnalysis.skill);
+				const skillMd = formatSkillMd(remoteAnalysis.skill, {
+					commitSha: remoteAnalysis.commitSha,
+					generated: remoteAnalysis.analyzedAt?.split("T")[0],
+				});
 				await installSkill(source.fullName, skillMd);
 				s.stop("Skill installed");
 

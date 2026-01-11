@@ -81,7 +81,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"formatSkillMd() function does not output allowed-tools",
 			"Existing skills still work when installed to agent directories"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-007",
@@ -93,7 +93,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"SHA is 7+ characters (short SHA format acceptable)",
 			"meta.json also includes commitSha field"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-008",
@@ -104,7 +104,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Date is ISO 8601 format (date only, no time)",
 			"Date reflects actual generation time, not repo date"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-009",

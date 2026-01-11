@@ -100,14 +100,23 @@ describe("skill formatting", () => {
 			expect(result).toContain("## When to Use");
 		});
 
-		it("includes allowed-tools in frontmatter", () => {
+		it("includes commit and generated in frontmatter when provided", () => {
+			const result = formatSkillMd(mockSkill, {
+				commitSha: "abc1234def5678",
+				generated: "2026-01-10",
+			});
+
+			expect(result).toContain("commit: abc1234");
+			expect(result).toContain("generated: 2026-01-10");
+			expect(result).not.toContain("allowed-tools:");
+		});
+
+		it("omits commit and generated when not provided", () => {
 			const result = formatSkillMd(mockSkill);
 
-			expect(result).toContain("allowed-tools:");
-			expect(result).toContain("  - Read");
-			expect(result).toContain("  - Glob");
-			expect(result).toContain("  - Grep");
-			expect(result).toContain("  - Bash");
+			expect(result).not.toContain("commit:");
+			expect(result).not.toContain("generated:");
+			expect(result).not.toContain("allowed-tools:");
 		});
 
 		it("escapes special characters in YAML", () => {

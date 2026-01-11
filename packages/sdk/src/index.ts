@@ -69,31 +69,7 @@ export {
 	type RemoveOptions,
 } from "./clone.js";
 
-export {
-	type Parser,
-	type Language,
-	type SyntaxNode,
-	type Tree,
-	ParserError,
-	ParserNotInitializedError,
-	LanguageNotSupportedError,
-	LanguageLoadError,
-	getLanguage,
-	isExtensionSupported,
-	initializeParser,
-	isParserInitialized,
-	loadLanguage,
-	loadLanguageForExtension,
-	createParser,
-	parse,
-	parseByExtension,
-	clearLanguageCache,
-	resetParser,
-} from "./importance/index.js";
-
-export { type ExtractedImport, extractImports, extractModuleNames } from "./importance/index.js";
-
-export { type RankOptions, rankFileImportance } from "./importance/index.js";
+export { rankFilesByHeuristics, type HeuristicsOptions } from "./analysis/heuristics.js";
 
 export {
 	streamPrompt,

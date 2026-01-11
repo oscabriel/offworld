@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import type { FileIndexEntry } from "@offworld/types";
-import { rankFileImportance } from "../importance/ranker.js";
+import { rankFilesByHeuristics } from "./heuristics.js";
 import { isBinaryBuffer } from "../util.js";
 
 // ============================================================================
@@ -248,7 +248,7 @@ export async function gatherContext(
 	const packageConfig = findPackageConfig(repoPath);
 
 	// Get ranked files (or use provided for testing)
-	const rankedFiles = options.rankedFiles ?? (await rankFileImportance(repoPath));
+	const rankedFiles = options.rankedFiles ?? (await rankFilesByHeuristics(repoPath));
 
 	// Take top N files
 	const topFilesRanked = rankedFiles.slice(0, maxTopFiles);

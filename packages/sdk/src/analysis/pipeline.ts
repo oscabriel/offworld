@@ -10,7 +10,7 @@ import { homedir } from "node:os";
 import type { Architecture, Config, FileIndex, Skill } from "@offworld/types";
 import { getAnalysisPath, getMetaRoot, loadConfig } from "../config.js";
 import { getCommitSha } from "../clone.js";
-import { rankFileImportance } from "../importance/ranker.js";
+import { rankFilesByHeuristics } from "./heuristics.js";
 import { VERSION } from "../constants.js";
 import { gatherContext } from "./context.js";
 import {
@@ -198,7 +198,7 @@ export async function runAnalysisPipeline(
 
 	// Step 1: Rank files
 	onProgress("rank", "Ranking files by importance...");
-	const fileIndex = await rankFileImportance(repoPath);
+	const fileIndex = await rankFilesByHeuristics(repoPath);
 
 	// Step 2: Gather context
 	onProgress("context", "Gathering repository context...");

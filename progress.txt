@@ -1,0 +1,25 @@
+## 2026-01-10: PRD-001, PRD-002 - Remove tree-sitter, add heuristics
+
+### Completed
+- PRD-001: Removed tree-sitter dependency
+- PRD-002: Implemented heuristics-based file scoring
+
+### Changes
+- Deleted `/packages/sdk/src/importance/` (parser.ts, queries.ts, ranker.ts, index.ts)
+- Deleted `/packages/sdk/src/__tests__/importance.test.ts`
+- Created `/packages/sdk/src/analysis/heuristics.ts` - path-based scoring:
+  - Entry points: 0.9, Config: 0.8, Types: 0.75, Source: 0.6-0.7, Tests: 0.3
+- Updated `context.ts`, `pipeline.ts` to use `rankFilesByHeuristics`
+- Updated `index.ts` to export heuristics instead of tree-sitter
+- Removed `web-tree-sitter` from package.json
+- Fixed tests: analysis.test.ts, pipeline.test.ts, pipeline-io.test.ts
+
+### Decisions
+- Scoring uses pure path heuristics, no parsing
+- Default limits: maxFiles=500, maxFileSize=100KB (down from 10000/1MB)
+- Tests mock `rankFilesByHeuristics` and `generateRichSkill`
+
+### Verification
+- TypeScript: passes
+- Tests: 391 passed
+- Lint: 0 errors

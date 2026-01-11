@@ -84,9 +84,8 @@ vi.mock("../clone.js", () => ({
 	getCommitSha: vi.fn(() => mockCommitSha),
 }));
 
-// Mock ranker.js
-vi.mock("../importance/ranker.js", () => ({
-	rankFileImportance: vi.fn(async () => mockFileIndex),
+vi.mock("../analysis/heuristics.js", () => ({
+	rankFilesByHeuristics: vi.fn(async () => mockFileIndex),
 }));
 
 // Mock context.js
@@ -94,13 +93,11 @@ vi.mock("../analysis/context.js", () => ({
 	gatherContext: vi.fn(async () => mockContext),
 }));
 
-// Mock generate.js
 vi.mock("../analysis/generate.js", () => ({
 	generateSummary: vi.fn(async () => mockSummary),
 	extractArchitecture: vi.fn(async () => mockArchitecture),
-	generateSkill: vi.fn(async () => mockSkill),
+	generateRichSkill: vi.fn(async () => ({ skill: mockSkill, skillMd: mockSkillMd })),
 	formatArchitectureMd: vi.fn(() => mockArchitectureMd),
-	formatSkillMd: vi.fn(() => mockSkillMd),
 }));
 
 // Import after mocking

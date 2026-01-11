@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 import type { FileIndexEntry, FileRole } from "@offworld/types";
+import type { ParsedFile } from "../ast/parser.js";
 import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS, HEURISTICS_LIMITS } from "../constants.js";
 import { loadGitignorePatternsSimple } from "../util.js";
 
@@ -293,4 +294,93 @@ export async function rankFilesByHeuristics(
 	entries.sort((a, b) => b.importance - a.importance);
 
 	return entries;
+}
+
+/**
+ * Extended file entry with AST-derived metadata
+ */
+export interface ASTEnhancedFileEntry extends FileIndexEntry {
+	exportCount?: number;
+	functionCount?: number;
+	hasTests?: boolean;
+	reason?: string;
+}
+
+/**
+ * Rank files using both heuristics and AST data.
+ * Boosts scores based on export count, function count, and test file detection.
+ */
+export async function rankFilesWithAST(
+	repoPath: string,
+	parsedFiles: Map<string, ParsedFile>,
+	options: HeuristicsOptions = {},
+): Promise<ASTEnhancedFileEntry[]> {
+	// Start with standard heuristic ranking
+	const baseEntries = await rankFilesByHeuristics(repoPath, options);
+
+	// Enhance with AST data
+	const enhancedEntries: ASTEnhancedFileEntry[] = baseEntries.map((entry) => {
+		const parsed = parsedFiles.get(entry.path);
+		if (!parsed) {
+			return entry;
+		}
+
+		let importance = entry.importance;
+		const reasons: string[] = [];
+
+		// Count exports (exported functions + exported classes)
+		const exportCount =
+			parsed.functions.filter((f) => f.isExported).length +
+			parsed.classes.filter((c) => c.isExported).length +
+			parsed.exports.length;
+
+		// Count functions
+		const functionCount = parsed.functions.length;
+
+		// Boost for high export count (more public API surface)
+		if (exportCount > 10) {
+			importance += 0.15;
+			reasons.push(`${exportCount} exports`);
+		} else if (exportCount > 5) {
+			importance += 0.1;
+			reasons.push(`${exportCount} exports`);
+		} else if (exportCount > 0) {
+			importance += 0.05;
+			reasons.push(`${exportCount} exports`);
+		}
+
+		// Boost for high function count (more logic)
+		if (functionCount > 15) {
+			importance += 0.1;
+			reasons.push(`${functionCount} functions`);
+		} else if (functionCount > 5) {
+			importance += 0.05;
+			reasons.push(`${functionCount} functions`);
+		}
+
+		// Flag test files from AST detection (may catch cases path heuristics miss)
+		const hasTests = parsed.hasTests;
+		if (hasTests && entry.type !== "test") {
+			// AST detected test content in a file not caught by path heuristics
+			// This is informational - don't change the score
+			reasons.push("contains tests");
+		}
+
+		// Cap importance at 1.0
+		importance = Math.min(1.0, importance);
+
+		return {
+			...entry,
+			importance: Math.round(importance * 1000) / 1000,
+			exportCount,
+			functionCount,
+			hasTests,
+			reason: reasons.length > 0 ? reasons.join(", ") : undefined,
+		};
+	});
+
+	// Re-sort after boosting
+	enhancedEntries.sort((a, b) => b.importance - a.importance);
+
+	return enhancedEntries;
 }

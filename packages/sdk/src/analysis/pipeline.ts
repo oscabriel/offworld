@@ -4,13 +4,13 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { homedir } from "node:os";
 import type { Architecture, Config, FileIndex, Skill } from "@offworld/types";
 import { getAnalysisPath, getMetaRoot, loadConfig } from "../config.js";
 import { getCommitSha } from "../clone.js";
-import { rankFilesByHeuristics } from "./heuristics.js";
+import { rankFilesByHeuristics, rankFilesWithAST } from "./heuristics.js";
 import { VERSION } from "../constants.js";
 import { gatherContext } from "./context.js";
 import {
@@ -21,6 +21,14 @@ import {
 	formatSkillMd,
 } from "./generate.js";
 import { validateSkillPaths } from "../validation/paths.js";
+import { initLanguages, isSupportedExtension } from "../ast/index.js";
+import { parseFile, type ParsedFile } from "../ast/parser.js";
+import { buildSkeleton } from "./skeleton.js";
+import { generateProseWithRetry } from "./prose.js";
+import { validateConsistency } from "../validation/consistency.js";
+import { mergeProseIntoSkeleton, type MergedSkillResult } from "./merge.js";
+import { buildDependencyGraph, type DependencyGraph } from "./imports.js";
+import { buildIncrementalState, type IncrementalState } from "./incremental.js";
 
 // ============================================================================
 // Types
@@ -314,4 +322,188 @@ export async function runAnalysisPipeline(
 	onProgress("done", "Analysis complete!");
 
 	return result;
+}
+
+// ============================================================================
+// Enhanced Pipeline with AST Analysis
+// ============================================================================
+
+/** Statistics from AST-enhanced analysis */
+export interface EnhancedPipelineStats {
+	filesParsed: number;
+	symbolsExtracted: number;
+	entitiesCreated: number;
+}
+
+/** Result from the enhanced analysis pipeline */
+export interface EnhancedPipelineResult {
+	skill: MergedSkillResult;
+	graph: DependencyGraph;
+	incrementalState: IncrementalState;
+	stats: EnhancedPipelineStats;
+}
+
+/** Options for the enhanced pipeline */
+export interface EnhancedPipelineOptions {
+	/** Progress callback for status updates */
+	onProgress?: (step: string, message: string) => void;
+	/** Debug callback for detailed logging */
+	onDebug?: (message: string) => void;
+	/** Stream callback for real-time AI output */
+	onStream?: (text: string) => void;
+}
+
+/**
+ * Recursively discover all files in a directory, respecting common ignore patterns.
+ */
+function discoverFiles(repoPath: string, subPath = ""): string[] {
+	const fullPath = subPath ? join(repoPath, subPath) : repoPath;
+	const files: string[] = [];
+
+	const ignorePatterns = [
+		"node_modules",
+		".git",
+		"dist",
+		"build",
+		".next",
+		".nuxt",
+		"coverage",
+		"__pycache__",
+		".pytest_cache",
+		"target",
+		".idea",
+		".vscode",
+	];
+
+	try {
+		const entries = readdirSync(fullPath);
+
+		for (const entry of entries) {
+			if (ignorePatterns.includes(entry)) continue;
+
+			const entryPath = subPath ? join(subPath, entry) : entry;
+			const fullEntryPath = join(repoPath, entryPath);
+
+			try {
+				const stat = statSync(fullEntryPath);
+
+				if (stat.isDirectory()) {
+					files.push(...discoverFiles(repoPath, entryPath));
+				} else if (stat.isFile() && isSupportedExtension(entry)) {
+					files.push(entryPath);
+				}
+			} catch {
+				// Skip files we can't stat
+			}
+		}
+	} catch {
+		// Skip directories we can't read
+	}
+
+	return files;
+}
+
+/**
+ * Run the enhanced analysis pipeline with AST-based processing.
+ *
+ * This pipeline integrates:
+ * 1. AST parsing with multi-language support
+ * 2. Enhanced file ranking with AST metrics
+ * 3. Deterministic skeleton building
+ * 4. AI prose generation with retry logic
+ * 5. Consistency validation
+ * 6. Dependency graph construction
+ * 7. Incremental state tracking
+ */
+export async function runEnhancedPipeline(
+	repoPath: string,
+	options: EnhancedPipelineOptions = {},
+): Promise<EnhancedPipelineResult> {
+	const onProgress = options.onProgress ?? (() => {});
+	const onDebug = options.onDebug;
+
+	// Step 1: Initialize language parsers
+	onProgress("init", "Initializing language parsers...");
+	await initLanguages();
+
+	// Step 2: Discover all source files
+	onProgress("discover", "Discovering source files...");
+	const filePaths = discoverFiles(repoPath);
+	onDebug?.(`Discovered ${filePaths.length} source files`);
+
+	// Step 3: Parse all files
+	onProgress("parse", "Parsing source files...");
+	const parsedFiles = new Map<string, ParsedFile>();
+	const fileContents = new Map<string, string>();
+	let symbolsExtracted = 0;
+
+	for (const filePath of filePaths) {
+		try {
+			const fullPath = join(repoPath, filePath);
+			const content = readFileSync(fullPath, "utf-8");
+			fileContents.set(filePath, content);
+
+			const parsed = parseFile(filePath, content);
+			if (parsed) {
+				parsedFiles.set(filePath, parsed);
+				symbolsExtracted += parsed.functions.length + parsed.classes.length;
+			}
+		} catch {
+			// Skip files we can't read or parse
+		}
+	}
+	onDebug?.(`Parsed ${parsedFiles.size} files, extracted ${symbolsExtracted} symbols`);
+
+	// Step 4: Rank files with AST-enhanced heuristics
+	onProgress("rank", "Ranking files by importance...");
+	const rankedFiles = await rankFilesWithAST(repoPath, parsedFiles);
+
+	// Step 5: Build deterministic skeleton
+	onProgress("skeleton", "Building skill skeleton...");
+	const skeleton = buildSkeleton(basename(repoPath), repoPath, rankedFiles, parsedFiles);
+
+	// Step 6: Generate prose with AI (with retry)
+	onProgress("prose", "Generating prose with AI...");
+	const proseResult = await generateProseWithRetry(skeleton, {
+		onDebug,
+		onStream: options.onStream,
+	});
+	onDebug?.(`Prose generation completed in ${proseResult.attempts} attempt(s)`);
+
+	// Step 7: Validate consistency
+	onProgress("validate", "Validating consistency...");
+	const consistencyReport = validateConsistency(skeleton, proseResult.prose);
+	if (!consistencyReport.passed) {
+		onDebug?.(`Consistency warnings: ${consistencyReport.issues.map((i) => i.message).join(", ")}`);
+	}
+
+	// Step 8: Merge skeleton + prose
+	onProgress("merge", "Merging skeleton and prose...");
+	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose);
+
+	// Step 9: Build dependency graph
+	onProgress("graph", "Building dependency graph...");
+	const graph = buildDependencyGraph(parsedFiles, repoPath);
+	onDebug?.(`Graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
+
+	// Step 10: Build incremental state
+	onProgress("state", "Building incremental state...");
+	const commitSha = getCommitSha(repoPath);
+	const incrementalState = buildIncrementalState(parsedFiles, fileContents, commitSha);
+
+	// Compute stats
+	const stats: EnhancedPipelineStats = {
+		filesParsed: parsedFiles.size,
+		symbolsExtracted,
+		entitiesCreated: skeleton.entities.length,
+	};
+
+	onProgress("done", "Enhanced analysis complete!");
+
+	return {
+		skill,
+		graph,
+		incrementalState,
+		stats,
+	};
 }

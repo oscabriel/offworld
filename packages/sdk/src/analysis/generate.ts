@@ -105,30 +105,23 @@ ${SUMMARY_ARCHITECTURE_TEMPLATE}`;
 
 function parseSummaryAndArchitecture(text: string): SummaryAndArchitectureResult {
 	const summaryDelimiter = "=== SUMMARY ===";
-	const architectureDelimiter = "=== ARCHITECTURE ===";
+	const archDelimiter = "=== ARCHITECTURE ===";
 
-	// Use lastIndexOf to find the AI's actual response, not the template in the prompt
-	// The prompt may be echoed back before the actual response, so we need the last occurrence
+	// Use lastIndexOf - the prompt may be echoed before the AI's actual response
 	const summaryStart = text.lastIndexOf(summaryDelimiter);
-	const architectureStart = text.lastIndexOf(architectureDelimiter);
+	const archStart = text.lastIndexOf(archDelimiter);
 
-	let summaryText: string;
-	let architectureText: string;
+	const summaryText =
+		summaryStart !== -1 && archStart !== -1 && summaryStart < archStart
+			? text.slice(summaryStart + summaryDelimiter.length, archStart).trim()
+			: "";
 
-	if (summaryStart !== -1 && architectureStart !== -1 && summaryStart < architectureStart) {
-		summaryText = text.slice(summaryStart + summaryDelimiter.length, architectureStart).trim();
-		architectureText = text.slice(architectureStart + architectureDelimiter.length).trim();
-	} else {
-		const midpoint = Math.floor(text.length / 2);
-		summaryText = text.slice(0, midpoint).trim();
-		architectureText = text.slice(midpoint).trim();
-	}
-
-	const architecture = parseArchitectureMarkdown(architectureText);
+	const archText =
+		archStart !== -1 ? text.slice(archStart + archDelimiter.length).trim() : text.trim();
 
 	return {
 		summary: summaryText,
-		architecture,
+		architecture: parseArchitectureMarkdown(archText),
 	};
 }
 
@@ -200,38 +193,23 @@ function injectSkillMetadata(skillMd: string, commitSha?: string, generated?: st
 }
 
 function extractSkillMarkdown(text: string): string {
-	// Find ALL markdown code blocks
-	const codeBlockMatches = [...text.matchAll(/```markdown\n([\s\S]*?)\n```/g)];
+	let result: string;
 
-	// If there are multiple code blocks, use the LAST one (AI's response, not template)
-	// If there's only one, it's likely the template example - skip to fallback
-	if (codeBlockMatches.length > 1) {
-		const lastMatch = codeBlockMatches[codeBlockMatches.length - 1];
-		if (lastMatch?.[1]) {
-			return lastMatch[1].trim();
-		}
+	// Primary: find the last skill frontmatter (--- followed by name:)
+	// The AI outputs skill markdown directly; the prompt template comes before it
+	const frontmatterMatches = [...text.matchAll(/---\s*\nname:/g)];
+	const lastFrontmatter = frontmatterMatches.at(-1);
+	if (lastFrontmatter?.index !== undefined) {
+		result = text.slice(lastFrontmatter.index);
+	} else {
+		// Fallback: if AI wrapped response in a markdown code block, use the last one
+		const codeBlockMatches = [...text.matchAll(/```markdown\n([\s\S]*?)\n```/g)];
+		const lastCodeBlock = codeBlockMatches.at(-1);
+		result = lastCodeBlock?.[1] ?? text;
 	}
 
-	// Primary extraction: find the last skill frontmatter (--- followed by name:)
-	// This handles when the AI outputs skill markdown directly without code fences
-	const skillFrontmatterMatches = [...text.matchAll(/---\s*\nname:/g)];
-	const lastFrontmatterMatch = skillFrontmatterMatches[skillFrontmatterMatches.length - 1];
-	if (lastFrontmatterMatch?.index !== undefined) {
-		return text.slice(lastFrontmatterMatch.index).trim();
-	}
-
-	// Fallback: if there's exactly one code block and no frontmatter found, use it
-	if (codeBlockMatches.length === 1 && codeBlockMatches[0]?.[1]) {
-		return codeBlockMatches[0][1].trim();
-	}
-
-	// Final fallback: look for any --- near the end of the text
-	const lastDashIndex = text.lastIndexOf("---");
-	if (lastDashIndex !== -1 && lastDashIndex > text.length / 2) {
-		return text.slice(lastDashIndex).trim();
-	}
-
-	return text.trim();
+	// Clean up: trim whitespace and any trailing code fence
+	return result.trim().replace(/\n```\s*$/, "");
 }
 
 export function formatArchitectureMd(architecture: Architecture): string {

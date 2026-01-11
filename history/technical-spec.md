@@ -1,0 +1,1416 @@
+# Offworld: Technical Specification
+
+> **Scaffold:** `/Users/oscargabriel/Developer/projects/offworld`
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         User's Machine                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   ┌─────────────┐                           ┌─────────────────┐     │
+│   │  ow CLI     │───┐                   ┌───│ OpenCode Plugin │     │
+│   │             │   │                   │   │                 │     │
+│   │ @offworld-  │   │  ┌─────────────┐  │   │ @offworld/      │     │
+│   │ new/cli     │   └─▶│ packages/   │◀─┘   │ plugin          │     │
+│   └─────────────┘      │ sdk/        │      │ (npm)           │     │
+│                        │ (internal)  │      └─────────────────┘     │
+│                        └─────────────┘                              │
+│                               │                                     │
+│                               ▼                                     │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │  ~/ow/                    (repos - visible, provider-scoped)│   │
+│   │  ├── github/                                                │   │
+│   │  │   ├── tanstack/router/                                   │   │
+│   │  │   ├── vercel/ai/                                         │   │
+│   │  │   └── sst/opencode/                                      │   │
+│   │  └── gitlab/                                                │   │
+│   │      └── inkscape/inkscape/                                 │   │
+│   ├─────────────────────────────────────────────────────────────┤   │
+│   │  ~/.ow/                   (metadata - hidden)               │   │
+│   │  ├── config.json                                            │   │
+│   │  ├── index.db                                               │   │
+│   │  └── analyses/{provider}--{owner}--{repo}/                  │   │
+│   │      ├── meta.json                                          │   │
+│   │      ├── summary.md                                         │   │
+│   │      ├── architecture.json                                  │   │
+│   │      ├── architecture.md (with Mermaid diagrams)            │   │
+│   │      ├── file-index.json                                    │   │
+│   │      └── SKILL.md                                           │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               │ sync API (push/pull)
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       offworld.sh (Web)                             │
+├─────────────────────────────────────────────────────────────────────┤
+│  Directory + Sync Only (NO AI)                                      │
+│  - Browse shared analyses                                           │
+│  - Push/pull sync with local                                        │
+│  - Live GitHub stats                                                │
+│  - Copy skill command button                                        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Monorepo Structure (Actual Scaffold)
+
+```
+offworld/
+├── apps/
+│   ├── web/              # offworld.sh (TanStack Start + Convex)
+│   ├── docs/             # Documentation (Astro Starlight)
+│   ├── tui/              # Terminal UI (OpenTUI)
+│   └── cli/              # @offworld/cli (TO CREATE)
+├── packages/
+│   ├── backend/          # @offworld/backend (Convex functions)
+│   │   └── convex/       # Schema, functions, auth
+│   ├── env/              # @offworld/env (environment handling)
+│   ├── config/           # @offworld/config (shared config)
+│   ├── infra/            # @offworld/infra (Alchemy deployment)
+│   ├── sdk/              # @offworld/sdk (TO CREATE)
+│   ├── plugin/           # @offworld/plugin (TO CREATE)
+│   └── types/            # @offworld/types (TO CREATE)
+├── package.json          # Bun workspaces with catalog
+├── turbo.json            # Turborepo config
+├── .oxlintrc.json        # Linter config
+├── .oxfmtrc.json         # Formatter config
+└── bts.jsonc             # Better-T-Stack config
+```
+
+### Published Packages
+
+| Package | Purpose | Distribution |
+|---------|---------|--------------|
+| `@offworld/cli` | Terminal interface (`ow` command) | npm, Homebrew, curl install |
+| `@offworld/plugin` | AI agent integration (OpenCode) | npm |
+| `offworld.sh` | Web directory + sync | Hosted (Convex + Cloudflare via Alchemy) |
+
+**Note:** Skills generated by the CLI work with both Claude Code and OpenCode. The plugin is OpenCode-specific, but Claude Code users get skill files installed to `~/.claude/skills/` automatically.
+
+### Internal Packages
+
+| Package | Purpose |
+|---------|---------|
+| `packages/sdk` | Shared core: clone, analyze, sync |
+| `packages/types` | Shared Zod schemas |
+| `packages/backend` | Convex functions and schema |
+| `packages/env` | Environment variable handling |
+| `packages/config` | Shared TypeScript config |
+| `packages/infra` | Alchemy deployment infrastructure |
+
+### Apps
+
+| App | Purpose | Tech |
+|-----|---------|------|
+| `apps/web` | Web frontend | TanStack Start + React + Convex |
+| `apps/docs` | Documentation | Astro Starlight |
+| `apps/tui` | Interactive terminal UI | OpenTUI |
+| `apps/cli` | CLI commands (TO CREATE) | trpc-cli + @orpc/server |
+
+---
+
+## CLI Commands
+
+### Input Formats
+
+`ow pull` accepts multiple input formats:
+
+| Input | Type | Example |
+|-------|------|---------|
+| `owner/repo` | GitHub shorthand | `tanstack/router` |
+| GitHub URL | Full URL | `https://github.com/tanstack/router` |
+| SSH URL | Git SSH | `git@github.com:tanstack/router.git` |
+| Absolute path | Local repo | `/Users/oscar/projects/my-app` |
+| Relative path | Local repo | `./my-app` or `.` |
+
+### Behavior by Source Type
+
+| Source | Clone? | Analysis Location | Skill Install | Push to Web |
+|--------|--------|-------------------|---------------|-------------|
+| GitHub | Yes → `~/ow/github/{owner}/{repo}` | `~/.ow/analyses/github--{owner}--{repo}/` | Yes | If 5+ stars |
+| GitLab | Yes → `~/ow/gitlab/{owner}/{repo}` | `~/.ow/analyses/gitlab--{owner}--{repo}/` | Yes | V2 |
+| Bitbucket | Yes → `~/ow/bitbucket/{owner}/{repo}` | `~/.ow/analyses/bitbucket--{owner}--{repo}/` | Yes | V2 |
+| Local | No (analyze in place) | `~/.ow/analyses/local--{hash}/` | Yes | No |
+
+### Commands
+
+```bash
+# Core Commands
+ow pull <repo>                     # Get repo ready (clone + analysis), sync if exists
+ow push <repo>                     # Share analysis to offworld.sh (GitHub repos with 5+ stars only)
+ow generate <repo>                 # Force local AI generation (warns if remote exists)
+ow list                            # Show cloned repos with status
+ow rm <repo>                       # Remove repo and analysis
+
+# Aliases (all equivalent to `pull`)
+ow clone <repo>                    # git-style
+ow get <repo>                      # ghq-style
+
+# Auth
+ow auth login                      # GitHub OAuth for push
+ow auth logout                     # Clear auth session
+ow auth status                     # Show login state
+
+# Config
+ow config                          # Show all settings
+ow config set <key> <value>        # Set a config value
+ow config get <key>                # Get a specific value
+ow config reset                    # Reset to defaults
+ow config path                     # Show config file location
+
+# No Args
+ow                                 # Shows help (same as ow --help)
+
+# V2: TUI
+ow explore                         # Interactive TUI for browsing repos (deferred)
+
+# Global Flags
+-v, --verbose                      # Debug output (git ops, API calls, file writes)
+-q, --quiet                        # Suppress output (errors only)
+-V, --version                      # Print version and exit
+-h, --help                         # Show help (TTY-aware: human OR JSON)
+
+# Command-Specific Flags
+ow pull --shallow                  # Shallow clone (depth=1)
+ow generate --shallow              # Shallow clone if needed
+ow generate --force                # Skip remote-exists warning
+ow list -p                         # Show full paths
+ow list --stale                    # Only repos needing sync
+ow list --json                     # Machine-readable JSON
+ow rm -y                           # Skip confirmation
+ow rm --keep-skill                 # Keep installed skill files
+ow rm --dry-run                    # Preview without deleting
+ow config --json                   # Output as JSON
+```
+
+### Config Keys
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `root` | `~/ow` | Where repos are cloned |
+| `skill-dir` | `~/.config/opencode/skill` | Where skills are installed |
+| `default-shallow` | `false` | Always use shallow clone |
+| `auto-analyze` | `true` | Run analysis on pull |
+| `skill-install-path` | (computed) | Override skill install location |
+
+### Environment Variables
+
+- `OW_ROOT` - Override repo root (default: `~/ow`)
+- `OW_PROVIDER` - Override AI provider (`claude-code`, `opencode`, `auto`)
+
+---
+
+## SDK Exports
+
+```typescript
+// packages/sdk/src/index.ts
+
+// Repository management
+export { cloneRepo, listRepos, updateRepo, removeRepo } from "./repos"
+
+// Analysis pipeline
+export { analyzeRepo, generateSummary, extractArchitecture } from "./analysis"
+
+// File importance
+export { rankFileImportance } from "./importance"
+
+// Skill generation
+export { generateSkill, formatSkillMd } from "./skill"
+
+// Sync with offworld.sh
+export { syncPush, syncPull } from "./sync"
+
+// Config & paths
+export { loadConfig, getRepoPath, getAnalysisPath } from "./config"
+
+// Database
+export { openDatabase, getIndex } from "./db"
+```
+
+---
+
+## Data Schemas
+
+### Repo Source (Input Normalization)
+
+```typescript
+// Supported git hosting providers
+const GitProviderSchema = z.enum(["github", "gitlab", "bitbucket"]);
+
+// Flexible input that accepts multiple formats
+const RepoInputSchema = z.string().describe(
+  "Repository: owner/repo, GitHub/GitLab URL, or local path"
+);
+
+// Normalized result after parsing - provider-aware for future extensibility
+const RemoteRepoSourceSchema = z.object({
+  type: z.literal("remote"),
+  provider: GitProviderSchema,
+  owner: z.string(),
+  repo: z.string(),
+  fullName: z.string(),         // "owner/repo" (for display)
+  qualifiedName: z.string(),    // "github:owner/repo" (for storage keys)
+  cloneUrl: z.string(),         // "https://github.com/owner/repo.git"
+});
+
+const LocalRepoSourceSchema = z.object({
+  type: z.literal("local"),
+  path: z.string(),             // Absolute path
+  name: z.string(),             // Directory name for display
+  qualifiedName: z.string(),    // "local:{hash}" (for storage keys)
+});
+
+const RepoSourceSchema = z.discriminatedUnion("type", [
+  RemoteRepoSourceSchema,
+  LocalRepoSourceSchema,
+]);
+```
+
+### Storage Keys
+
+All storage paths use `qualifiedName` to avoid collisions:
+
+| Source | qualifiedName | Analysis Path |
+|--------|---------------|---------------|
+| GitHub | `github:tanstack/router` | `~/.ow/analyses/github--tanstack--router/` |
+| GitLab | `gitlab:tanstack/router` | `~/.ow/analyses/gitlab--tanstack--router/` |
+| Local | `local:a1b2c3d4` | `~/.ow/analyses/local--a1b2c3d4/` |
+
+### Config (`~/.ow/config.json`)
+
+```typescript
+const AIProviderSchema = z.enum(['claude-code', 'opencode']);
+
+const ConfigSchema = z.object({
+  // Where repos are cloned
+  root: z.string().default(join(homedir(), 'ow')),
+  
+  // Where skills are installed (OpenCode path; Claude path computed)
+  skillDir: z.string().default(join(homedir(), '.config/opencode/skill')),
+  
+  // Always use shallow clone
+  defaultShallow: z.boolean().default(false),
+  
+  // Run analysis on pull (if no remote exists)
+  autoAnalyze: z.boolean().default(true),
+  
+  // Override skill install location (optional)
+  skillInstallPath: z.string().optional(),
+  
+  // AI provider preference (auto-detect if not set)
+  // No direct API keys - uses user's existing CC/OC auth
+  preferredProvider: AIProviderSchema.optional(),
+});
+```
+
+**Config key mapping:**
+
+| CLI Key | Schema Key | Description |
+|---------|------------|-------------|
+| `root` | `root` | Where repos are cloned |
+| `skill-dir` | `skillDir` | Where skills are installed |
+| `default-shallow` | `defaultShallow` | Always use shallow clone |
+| `auto-analyze` | `autoAnalyze` | Run analysis on pull |
+| `skill-install-path` | `skillInstallPath` | Override skill location |
+
+**Provider selection:**
+- If `preferredProvider` is set and available → use it
+- If not set or unavailable → auto-detect (Claude Code → OpenCode)
+- If neither available → error with install instructions
+
+### Analysis Meta (`~/.ow/analyses/{owner}--{repo}/meta.json`)
+
+```typescript
+const AnalysisMetaSchema = z.object({
+  analyzedAt: z.string().datetime(),
+  commitSha: z.string(),
+  version: z.string(),  // Offworld version used
+  tokenCost: z.number().optional(),
+});
+```
+
+### Architecture (`architecture.json`)
+
+```typescript
+const ArchitectureSchema = z.object({
+  projectType: z.enum(['monorepo', 'library', 'cli', 'app', 'framework']),
+  
+  entities: z.array(z.object({
+    name: z.string(),
+    type: z.enum(['package', 'module', 'feature', 'util', 'config']),
+    path: z.string(),
+    description: z.string(),
+    responsibilities: z.array(z.string()),
+    exports: z.array(z.string()),
+    dependencies: z.array(z.string()),  // Internal deps (other entities)
+  })),
+  
+  relationships: z.array(z.object({
+    from: z.string(),
+    to: z.string(),
+    type: z.enum(['imports', 'extends', 'implements', 'uses']),
+  })),
+  
+  keyFiles: z.array(z.object({
+    path: z.string(),
+    role: z.enum(['entry', 'core', 'types', 'config', 'test']),
+    description: z.string(),
+  })),
+  
+  patterns: z.object({
+    framework: z.string().optional(),
+    buildTool: z.string().optional(),
+    testFramework: z.string().optional(),
+    monorepoTool: z.string().optional(),
+  }),
+});
+```
+
+### File Index (`file-index.json`)
+
+```typescript
+const FileIndexSchema = z.array(z.object({
+  path: z.string(),
+  importance: z.number(),  // 0-1 score from tree-sitter analysis
+  type: z.enum(['entry', 'core', 'util', 'test', 'config', 'doc']),
+  exports: z.array(z.string()).optional(),
+  imports: z.array(z.string()).optional(),
+  summary: z.string().optional(),  // AI-generated, only for top ~50 files
+}));
+```
+
+### Skill (`SKILL.md`)
+
+```typescript
+const SkillSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  allowedTools: z.array(z.string()),
+  repositoryStructure: z.array(z.object({
+    path: z.string(),
+    purpose: z.string(),
+  })),
+  keyFiles: z.array(z.object({
+    path: z.string(),
+    description: z.string(),
+  })),
+  searchStrategies: z.array(z.string()),
+  whenToUse: z.array(z.string()),
+});
+```
+
+---
+
+## OpenCode Plugin Design
+
+### Single Tool with Modes
+
+```typescript
+offworld: tool({
+  description: "Manage local repository clones and analyses",
+  args: {
+    mode: z.enum(["list", "summary", "architecture", "clone", "help"]),
+    repo: z.string().optional(),
+    query: z.string().optional(),
+    path: z.string().optional(),
+    limit: z.number().optional(),
+  },
+})
+```
+
+### Context Injection
+
+- Injects on first message + on-demand when relevant
+- Uses `synthetic: true` (visible to agent, not user)
+- Smart nudging when library mentions detected
+
+### Package Detection
+
+1. Parse project's package.json on plugin init (once)
+2. Map package names to GitHub repos via npm registry
+3. Pre-populate common mappings for top 100 packages
+4. Skip nudging on registry lookup failure
+
+### Skill Auto-Installation
+
+When analysis completes (via `ow pull` or `ow generate`), skill is auto-installed to:
+- `~/.config/opencode/skill/{repo}/SKILL.md` (OpenCode)
+- `~/.claude/skills/{repo}/SKILL.md` (Claude Code compatible)
+
+---
+
+## File Importance Ranking
+
+### Tree-sitter Multi-Language
+
+Supported languages for V1:
+- TypeScript/JavaScript
+- Rust
+- Go
+- Python
+
+### Algorithm
+
+1. Parse all files with tree-sitter
+2. Extract import statements per language
+3. Build reverse map: module → files that import it
+4. Score = count of inbound imports
+5. Rank files by score
+
+### Import Query Patterns
+
+```scheme
+# TypeScript/JavaScript
+(import_statement source: (string (string_fragment) @module))
+
+# Python
+(import_statement (dotted_name (identifier) @module))
+(import_from_statement (dotted_name (identifier) @module))
+
+# Go
+(import_declaration (import_spec (interpreted_string_literal) @module))
+
+# Rust
+(use_declaration (scoped_identifier path: (identifier) @module))
+```
+
+---
+
+## Skill Generation Pipeline
+
+### Flow
+
+```
+Gather context → generateObject (AI) → Zod validate → Format as SKILL.md
+```
+
+### Context Budget (~3500-4000 tokens)
+
+| Context Item | Token Cost | Purpose |
+|--------------|------------|---------|
+| README.md (truncated) | ~500 | Purpose, getting started |
+| package.json / config | ~200 | Entry points, scripts, deps |
+| File tree (important files) | ~400 | Structure overview |
+| Top 10-20 files by importance | ~1500 | Actual code patterns |
+| Generated summary.md | ~300 | Already-computed overview |
+| Generated architecture.json | ~500 | Entity/relationship map |
+| Detected exports/APIs | ~200 | Public interface |
+
+### Output Structure
+
+```yaml
+---
+name: {repo}-reference
+description: Consult cloned {repo} source when user asks about [topics].
+allowed-tools: [Read, Grep, Glob, Task]
+---
+
+# {Repo} Source Code Reference
+
+## Repository Structure
+**Base Path:** `~/ow/{owner}/{repo}`
+- `/{dir}/` - {purpose}
+
+## Quick Reference Paths
+### {Category}
+- `{path}` - {description}
+
+## Search Strategies
+### For {Pattern Type}
+pattern: "{grep pattern}"
+path: {search path}
+
+## When to Use This Skill
+- {trigger scenario 1}
+- {trigger scenario 2}
+
+## Best Practices
+1. {practice}
+
+## Common Patterns
+**{Pattern name}:**
+1. {step}
+```
+
+---
+
+## AI Provider Strategy
+
+### V1: Dual Provider (Claude Code + OpenCode)
+
+Offworld supports **both** Claude Code and OpenCode out of the box. This is a novel approach — no existing CLI tools auto-detect and use whichever AI coding agent the user has installed.
+
+**Why dual provider:**
+- Expands audience significantly (Claude Code has official Anthropic backing)
+- Users don't have to commit to one ecosystem
+- Uses user's existing auth/billing (no API key management in Offworld)
+- Consistent with user's model preferences
+
+### Provider Detection
+
+```typescript
+// packages/sdk/src/ai/provider.ts
+
+export type AIProvider = 'claude-code' | 'opencode';
+
+export async function detectProvider(): Promise<AIProvider> {
+  // 1. Check user preference in ~/.ow/config.json
+  const config = loadConfig();
+  if (config.preferredProvider) {
+    const available = await isProviderAvailable(config.preferredProvider);
+    if (available) return config.preferredProvider;
+    // Preferred not available, fall through to auto-detect
+  }
+  
+  // 2. Auto-detect: Claude Code first (larger user base)
+  if (await isClaudeCodeAvailable()) return 'claude-code';
+  
+  // 3. Try OpenCode
+  if (await isOpenCodeAvailable()) return 'opencode';
+  
+  throw new AIProviderNotFoundError();
+}
+
+async function isClaudeCodeAvailable(): Promise<boolean> {
+  try {
+    await execa('claude', ['--version']);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isOpenCodeAvailable(): Promise<boolean> {
+  try {
+    await fetch('http://localhost:4096/health');
+    return true;
+  } catch {
+    return false;
+  }
+}
+```
+
+### Claude Code Integration
+
+```typescript
+// packages/sdk/src/ai/claude-code.ts
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+export async function analyzeWithClaudeCode(
+  repoPath: string,
+  prompt: string,
+  schema: z.ZodSchema
+): Promise<unknown> {
+  for await (const message of query({
+    prompt,
+    options: {
+      cwd: repoPath,
+      allowedTools: ["Read", "Glob", "Grep"],
+      permissionMode: 'bypassPermissions',
+      outputFormat: { 
+        type: 'json_schema', 
+        schema: zodToJsonSchema(schema)
+      }
+    }
+  })) {
+    if (message.type === 'result' && message.subtype === 'success') {
+      return message.structured_output;
+    }
+    if (message.type === 'result' && message.subtype.startsWith('error')) {
+      throw new AnalysisError(message.errors?.join(', ') ?? 'Unknown error');
+    }
+  }
+}
+```
+
+### OpenCode Integration
+
+```typescript
+// packages/sdk/src/ai/opencode.ts
+import { createOpencodeClient } from "@opencode-ai/sdk";
+
+export async function analyzeWithOpenCode(
+  repoPath: string,
+  prompt: string,
+  schema: z.ZodSchema
+): Promise<unknown> {
+  const client = createOpencodeClient({ baseUrl: "http://localhost:4096" });
+  
+  const session = await client.session.create({
+    body: {
+      agent: "build",
+      model: { providerID: "anthropic", modelID: "claude-sonnet-4-20250514" }
+    }
+  });
+  
+  const result = await client.session.prompt({
+    path: { id: session.id },
+    body: { 
+      parts: [{ type: "text", text: prompt }],
+      // OpenCode uses generateObject internally
+    }
+  });
+  
+  return schema.parse(result);
+}
+```
+
+### Unified Analysis Interface
+
+```typescript
+// packages/sdk/src/ai/index.ts
+
+export async function runAnalysis(
+  repoPath: string,
+  prompt: string,
+  schema: z.ZodSchema
+): Promise<unknown> {
+  const provider = await detectProvider();
+  
+  switch (provider) {
+    case 'claude-code':
+      return analyzeWithClaudeCode(repoPath, prompt, schema);
+    case 'opencode':
+      return analyzeWithOpenCode(repoPath, prompt, schema);
+  }
+}
+```
+
+### Error Handling
+
+```typescript
+// packages/sdk/src/ai/errors.ts
+
+export class AIProviderNotFoundError extends Error {
+  constructor() {
+    super(
+      'No AI provider found.\n\n' +
+      'Install one of the following:\n' +
+      '  • Claude Code: https://claude.ai/code\n' +
+      '  • OpenCode:    https://opencode.ai\n\n' +
+      'Then run `ow generate` again.'
+    );
+    this.name = 'AIProviderNotFoundError';
+  }
+}
+
+export class AnalysisError extends Error {
+  constructor(message: string, public provider: AIProvider) {
+    super(`Analysis failed (${provider}): ${message}`);
+    this.name = 'AnalysisError';
+  }
+}
+```
+
+### Provider Priority
+
+| Priority | Provider | Detection Method | Rationale |
+|----------|----------|------------------|-----------|
+| 1 | User config | `~/.ow/config.json` | Explicit preference wins |
+| 2 | Claude Code | `claude --version` | Larger user base, official Anthropic |
+| 3 | OpenCode | `localhost:4096/health` | Power users, requires server running |
+
+### V2: Direct API Fallback
+
+For users without Claude Code or OpenCode installed, V2 will add direct Anthropic/OpenAI API support via Vercel AI SDK. This requires users to provide their own API keys.
+
+```typescript
+// V2: packages/sdk/src/ai/direct.ts (deferred)
+import { generateObject } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+
+export async function analyzeWithDirectAPI(...) {
+  // Requires ANTHROPIC_API_KEY in environment
+  return generateObject({
+    model: anthropic("claude-sonnet-4-20250514"),
+    schema,
+    prompt,
+  });
+}
+```
+
+**V2 Priority:** Only implement if significant demand from users without CC/OC.
+
+---
+
+## Authentication Strategy
+
+### V1: Better Auth + Convex
+
+Web app auth uses Better Auth Convex component for GitHub OAuth.
+
+**Reference:** https://labs.convex.dev/better-auth
+
+CLI `ow push` authenticates via the same OAuth flow:
+1. User runs `ow auth login`
+2. Opens browser to offworld.sh/login
+3. GitHub OAuth via Better Auth
+4. Token stored by Better Auth session management
+
+**No separate CLI token storage needed** - reuses web auth infrastructure.
+
+---
+
+## Repo Source Parsing
+
+```typescript
+// packages/sdk/src/repo-source.ts
+import path from "path";
+import fs from "fs-extra";
+import crypto from "node:crypto";
+import type { RepoSource, GitProvider } from "@offworld/types";
+import { getMetaRoot } from "./config";
+
+// Provider configurations - easily extensible
+const PROVIDERS: Record<GitProvider, {
+  urlPatterns: RegExp[];
+  cloneUrl: (owner: string, repo: string) => string;
+  apiUrl: (owner: string, repo: string) => string;
+}> = {
+  github: {
+    urlPatterns: [
+      /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+      /^git@github\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+    ],
+    cloneUrl: (owner, repo) => `https://github.com/${owner}/${repo}.git`,
+    apiUrl: (owner, repo) => `https://api.github.com/repos/${owner}/${repo}`,
+  },
+  gitlab: {
+    urlPatterns: [
+      /^https?:\/\/gitlab\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+      /^git@gitlab\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+    ],
+    cloneUrl: (owner, repo) => `https://gitlab.com/${owner}/${repo}.git`,
+    apiUrl: (owner, repo) => `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}`,
+  },
+  bitbucket: {
+    urlPatterns: [
+      /^https?:\/\/bitbucket\.org\/([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+      /^git@bitbucket\.org:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+    ],
+    cloneUrl: (owner, repo) => `https://bitbucket.org/${owner}/${repo}.git`,
+    apiUrl: (owner, repo) => `https://api.bitbucket.org/2.0/repositories/${owner}/${repo}`,
+  },
+};
+
+// Shorthand defaults to GitHub (most common)
+const SHORTHAND_PATTERN = /^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/;
+
+export async function parseRepoInput(input: string): Promise<RepoSource> {
+  // 1. Try all provider URL patterns
+  for (const [provider, config] of Object.entries(PROVIDERS)) {
+    for (const pattern of config.urlPatterns) {
+      const match = input.match(pattern);
+      if (match) {
+        const [, owner, repo] = match;
+        return createRemoteSource(provider as GitProvider, owner, repo);
+      }
+    }
+  }
+
+  // 2. Try shorthand (owner/repo) - defaults to GitHub
+  const shorthand = input.match(SHORTHAND_PATTERN);
+  if (shorthand) {
+    const [, owner, repo] = shorthand;
+    return createRemoteSource("github", owner, repo);
+  }
+
+  // 3. Treat as local path
+  const absolutePath = path.resolve(input);
+  
+  if (!(await fs.pathExists(absolutePath))) {
+    throw new Error(`Path does not exist: ${absolutePath}`);
+  }
+  
+  if (!(await fs.pathExists(path.join(absolutePath, ".git")))) {
+    throw new Error(`Not a git repository: ${absolutePath}`);
+  }
+
+  const hash = crypto.createHash("sha256").update(absolutePath).digest("hex").slice(0, 12);
+  
+  return {
+    type: "local",
+    path: absolutePath,
+    name: path.basename(absolutePath),
+    qualifiedName: `local:${hash}`,
+  };
+}
+
+function createRemoteSource(provider: GitProvider, owner: string, repo: string): RepoSource {
+  const config = PROVIDERS[provider];
+  return {
+    type: "remote",
+    provider,
+    owner,
+    repo,
+    fullName: `${owner}/${repo}`,
+    qualifiedName: `${provider}:${owner}/${repo}`,
+    cloneUrl: config.cloneUrl(owner, repo),
+  };
+}
+
+// Analysis path uses qualifiedName for collision-free storage
+export function getAnalysisPath(source: RepoSource): string {
+  const sanitized = source.qualifiedName.replace(/[:/]/g, "--");
+  return path.join(getMetaRoot(), "analyses", sanitized);
+}
+
+export function getRepoPath(source: RepoSource, repoRoot: string): string {
+  if (source.type === "local") {
+    return source.path;
+  }
+  return path.join(repoRoot, source.provider, source.owner, source.repo);
+}
+```
+
+---
+
+## Push Gate (5+ Stars)
+
+Repos pushed to offworld.sh must have 5+ stars. This filters spam and test repositories. Currently GitHub-only for V1; GitLab/Bitbucket support deferred.
+
+```typescript
+// packages/sdk/src/sync.ts
+
+export async function canPushToWeb(source: RepoSource): Promise<{
+  allowed: boolean;
+  reason?: string;
+}> {
+  if (source.type === "local") {
+    return { allowed: false, reason: "Local repos cannot be pushed to offworld.sh" };
+  }
+
+  // V1: GitHub only for push
+  if (source.provider !== "github") {
+    return { allowed: false, reason: `${source.provider} repos not yet supported for push (coming soon)` };
+  }
+
+  // Check stars via provider-specific API
+  const stars = await fetchRepoStars(source);
+  
+  if (stars < 5) {
+    return { 
+      allowed: false, 
+      reason: `Repo has ${stars} stars (minimum 5 required)` 
+    };
+  }
+
+  return { allowed: true };
+}
+
+// Provider-specific star fetching
+async function fetchRepoStars(source: RemoteRepoSource): Promise<number> {
+  const { provider, owner, repo } = source;
+  
+  switch (provider) {
+    case "github": {
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return data.stargazers_count ?? 0;
+    }
+    case "gitlab": {
+      const res = await fetch(`https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}`);
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return data.star_count ?? 0;
+    }
+    case "bitbucket": {
+      // Bitbucket doesn't have stars, uses watchers
+      const res = await fetch(`https://api.bitbucket.org/2.0/repositories/${owner}/${repo}`);
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return data.size ?? 0; // Approximate using watchers
+    }
+  }
+}
+```
+
+---
+
+## CLI ↔ Convex Sync Architecture
+
+### How It Works
+
+The CLI uses plain `fetch()` to communicate with Convex HTTP Actions - standard REST endpoints exposed by offworld.sh. No Convex SDK needed in the CLI.
+
+**Pattern validated by:** `create-better-t-stack` analytics (see `apps/cli/src/utils/analytics.ts`)
+
+```typescript
+// packages/sdk/src/sync.ts
+
+const OFFWORLD_API = "https://offworld.convex.site/api";
+
+// Pull: Public endpoint, no auth needed
+export async function pullAnalysis(fullName: string): Promise<Analysis | null> {
+  const res = await fetch(`${OFFWORLD_API}/analyses/pull`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullName }),
+  });
+  
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// Push: Requires auth token from Better Auth session
+export async function pushAnalysis(
+  fullName: string,
+  analysis: Analysis,
+  sessionToken: string
+): Promise<{ success: boolean; error?: string }> {
+  const res = await fetch(`${OFFWORLD_API}/analyses/push`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${sessionToken}`,
+    },
+    body: JSON.stringify({ fullName, ...analysis }),
+  });
+  
+  if (!res.ok) {
+    const error = await res.text();
+    return { success: false, error };
+  }
+  return { success: true };
+}
+
+// Check staleness without full pull
+export async function checkRemote(fullName: string): Promise<{
+  exists: boolean;
+  commitSha?: string;
+  analyzedAt?: string;
+} | null> {
+  const res = await fetch(`${OFFWORLD_API}/analyses/check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullName }),
+  });
+  
+  if (!res.ok) return null;
+  return res.json();
+}
+```
+
+### Why HTTP Actions (Not ConvexHttpClient)
+
+| Approach | `ConvexHttpClient` | HTTP Actions |
+|----------|-------------------|--------------|
+| CLI deps | `convex/browser` package | just `fetch` |
+| Type safety | `as any` casts (no codegen) | none (same) |
+| Auth | `client.setAuth()` | standard `Authorization` header |
+| Pattern | Convex-specific | standard REST |
+| Bundle size | ~50KB+ | zero |
+
+**HTTP Actions are the right choice** because:
+1. CLI stays lightweight (no Convex SDK)
+2. Standard HTTP patterns (easier to debug, test, mock)
+3. Same pattern used by better-t-stack for analytics
+4. Auth via standard Bearer token
+
+### Convex HTTP Actions Implementation
+
+```typescript
+// packages/backend/convex/http.ts
+import { httpRouter } from "convex/server";
+import { httpAction } from "./_generated/server";
+import { internal } from "./_generated/api";
+
+const http = httpRouter();
+
+// ============================================================
+// Pull: Public, anyone can download analyses
+// ============================================================
+http.route({
+  path: "/api/analyses/pull",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const { fullName } = await req.json();
+    if (!fullName) {
+      return new Response("Missing fullName", { status: 400 });
+    }
+    
+    const analysis = await ctx.runQuery(internal.analyses.getByRepo, { fullName });
+    if (!analysis) {
+      return new Response("Not found", { status: 404 });
+    }
+    
+    // Increment pull count (fire-and-forget)
+    ctx.runMutation(internal.analyses.incrementPullCount, { fullName });
+    
+    return Response.json(analysis);
+  }),
+});
+
+// ============================================================
+// Push: Authenticated, rate-limited
+// ============================================================
+http.route({
+  path: "/api/analyses/push",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    // Auth check via Better Auth
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    
+    // Verify token and get user
+    const session = await ctx.runQuery(internal.auth.verifySession, { token });
+    if (!session) {
+      return new Response("Invalid session", { status: 401 });
+    }
+    
+    const body = await req.json();
+    const { fullName, summary, architecture, skill, commitSha, analyzedAt } = body;
+    
+    if (!fullName || !summary || !skill || !commitSha) {
+      return new Response("Missing required fields", { status: 400 });
+    }
+    
+    try {
+      await ctx.runMutation(internal.analyses.upsert, {
+        fullName,
+        summary,
+        architecture,
+        skill,
+        commitSha,
+        analyzedAt,
+        userId: session.userId,
+      });
+      return new Response("ok");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return new Response(message, { status: 400 });
+    }
+  }),
+});
+
+// ============================================================
+// Check: Public, lightweight metadata check
+// ============================================================
+http.route({
+  path: "/api/analyses/check",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const { fullName } = await req.json();
+    if (!fullName) {
+      return new Response("Missing fullName", { status: 400 });
+    }
+    
+    const meta = await ctx.runQuery(internal.analyses.getMeta, { fullName });
+    if (!meta) {
+      return Response.json({ exists: false });
+    }
+    
+    return Response.json({
+      exists: true,
+      commitSha: meta.commitSha,
+      analyzedAt: meta.analyzedAt,
+    });
+  }),
+});
+
+export default http;
+```
+
+### Internal Convex Functions
+
+```typescript
+// packages/backend/convex/analyses.ts
+import { internalQuery, internalMutation } from "./_generated/server";
+import { v } from "convex/values";
+
+// INTERNAL: Only callable from HTTP Actions
+export const getByRepo = internalQuery({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("analyses")
+      .withIndex("by_fullName", q => q.eq("fullName", args.fullName))
+      .unique();
+  },
+});
+
+export const getMeta = internalQuery({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db
+      .query("analyses")
+      .withIndex("by_fullName", q => q.eq("fullName", args.fullName))
+      .unique();
+    
+    if (!analysis) return null;
+    return {
+      commitSha: analysis.commitSha,
+      analyzedAt: analysis.analyzedAt,
+    };
+  },
+});
+
+export const incrementPullCount = internalMutation({
+  args: { fullName: v.string() },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db
+      .query("analyses")
+      .withIndex("by_fullName", q => q.eq("fullName", args.fullName))
+      .unique();
+    
+    if (analysis) {
+      await ctx.db.patch(analysis._id, {
+        pullCount: (analysis.pullCount || 0) + 1,
+      });
+    }
+  },
+});
+
+export const upsert = internalMutation({
+  args: {
+    fullName: v.string(),
+    summary: v.string(),
+    architecture: v.any(),
+    skill: v.string(),
+    commitSha: v.string(),
+    analyzedAt: v.string(),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Rate limit: 3 pushes per repo per day
+    const today = new Date().toISOString().split("T")[0];
+    const pushesToday = await ctx.db
+      .query("pushLogs")
+      .withIndex("by_repo_date", q => 
+        q.eq("fullName", args.fullName).eq("date", today)
+      )
+      .collect();
+    
+    if (pushesToday.length >= 3) {
+      throw new Error("Rate limit: max 3 pushes per repo per day");
+    }
+    
+    // Conflict resolution
+    const existing = await ctx.db
+      .query("analyses")
+      .withIndex("by_fullName", q => q.eq("fullName", args.fullName))
+      .unique();
+    
+    if (existing) {
+      const existingTime = new Date(existing.analyzedAt).getTime();
+      const newTime = new Date(args.analyzedAt).getTime();
+      
+      if (newTime < existingTime) {
+        throw new Error("Cannot push older analysis over newer one");
+      }
+      
+      if (existing.commitSha === args.commitSha && 
+          existing.analyzedAt !== args.analyzedAt) {
+        throw new Error("Cannot push different analysis for same commit");
+      }
+      
+      await ctx.db.patch(existing._id, {
+        summary: args.summary,
+        architecture: args.architecture,
+        skill: args.skill,
+        commitSha: args.commitSha,
+        analyzedAt: args.analyzedAt,
+      });
+    } else {
+      await ctx.db.insert("analyses", {
+        fullName: args.fullName,
+        summary: args.summary,
+        architecture: args.architecture,
+        skill: args.skill,
+        commitSha: args.commitSha,
+        analyzedAt: args.analyzedAt,
+        pullCount: 0,
+        isVerified: false,
+      });
+    }
+    
+    // Log push for rate limiting
+    await ctx.db.insert("pushLogs", {
+      fullName: args.fullName,
+      date: today,
+      userId: args.userId,
+    });
+  },
+});
+```
+
+### Security Model
+
+All business logic lives server-side in Convex internal functions. HTTP Actions are thin wrappers that handle:
+1. Request parsing
+2. Auth token verification
+3. Response formatting
+
+**Security guarantees:**
+- ✅ Reads are public (anyone can pull)
+- ✅ Writes require valid Better Auth session token
+- ✅ Rate limits enforced server-side (can't bypass)
+- ✅ Conflict resolution enforced server-side
+- ✅ Internal functions not directly callable from outside
+
+### Command Flow
+
+**`ow pull tanstack/router`:**
+```
+1. Is repo already cloned?
+   - No → Clone it
+   - Yes → Git fetch, pull if behind
+2. Is analysis fresh?
+   - No analysis → Check remote, pull if exists, else generate locally
+   - Stale (different commit) → Check remote, pull if newer, else regenerate
+   - Fresh → No-op, print status
+3. Install/update SKILL.md to both:
+   - ~/.config/opencode/skill/{repo}/SKILL.md
+   - ~/.claude/skills/{repo}/SKILL.md
+```
+
+**`ow push tanstack/router`:**
+```
+1. Check: User authenticated? (ow auth login)
+2. Read: Load local analysis from ~/.ow/analyses/
+3. HTTP: POST /api/analyses/push { fullName, ... }
+   - Headers: Authorization: Bearer <token>
+   - 200 → Success
+   - 400 → Rate limit or conflict error
+   - 401 → Need to re-authenticate
+```
+
+**`ow generate tanstack/router`:**
+```
+1. Is repo cloned?
+   - No → Clone it first
+   - Yes → Git fetch, pull if behind
+2. Check if remote analysis exists on offworld.sh
+   - Yes → Warn and exit (use --force to override)
+   - No → Continue
+3. Detect AI provider:
+   - Check ~/.ow/config.json for preferredProvider
+   - If not set: try Claude Code (`claude --version`)
+   - If not found: try OpenCode (`localhost:4096/health`)
+   - If neither: error with install instructions
+4. Run local analysis pipeline via detected provider
+5. Write: Save to ~/.ow/analyses/, install skill to both:
+   - ~/.config/opencode/skill/{repo}/SKILL.md
+   - ~/.claude/skills/{repo}/SKILL.md
+6. Print: "Run `ow push` to share on offworld.sh"
+```
+
+**`ow generate tanstack/router --force`:**
+```
+Same as above, but skips step 2 (remote check warning).
+```
+
+---
+
+## Web App Simplified Schema
+
+```typescript
+// repositories
+{
+  fullName: "tanstack/router",
+  summary: "...",           // synced from CLI
+  architecture: {...},      // synced from CLI
+  skill: "...",             // SKILL.md content
+  analyzedAt: Date,
+  commitSha: string,        // commit analyzed
+  pullCount: number,        // download count
+  isVerified: boolean,      // manually reviewed
+  stars: number,            // live from GitHub
+  language: string
+}
+// NOTE: No analyzedBy/username - analyses are anonymous until V2 maintainer verification
+
+// users (keep existing auth via Better Auth)
+
+// syncLogs
+{
+  repoId, visitorId, action: "push" | "pull", timestamp
+}
+```
+
+### Web Display Metadata
+
+Each repo on offworld.sh displays:
+
+| Field | Source |
+|-------|--------|
+| GitHub stars | Live from GitHub API |
+| Analysis date | analyzedAt |
+| Commit SHA | commitSha |
+| Pull count | pullCount (incremented on download) |
+| "Verified" badge | isVerified (manual review) |
+
+**NOT displayed:** Analyzer username, CLI version used
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Package manager | Bun |
+| Monorepo | Turborepo |
+| Build | tsdown (CLI/SDK), Vite (web) |
+| Lint/Format | oxlint + oxfmt |
+| Types | TypeScript strict mode |
+| Test | Vitest |
+| CLI framework | trpc-cli + @clack/prompts |
+| TUI framework | OpenTUI |
+| Web frontend | TanStack Start + React |
+| Web styling | TailwindCSS v4 + shadcn/ui |
+| Web backend | Convex (in packages/backend) |
+| Auth | Better Auth + Convex component |
+| Deployment | Cloudflare via Alchemy |
+| Documentation | Astro Starlight |
+| AI | Claude Code SDK + OpenCode SDK (auto-detect) |
+
+---
+
+## Incremental Analysis
+
+- **Unit:** Commit-level (store last analyzed commit SHA)
+- **Behavior:** Only re-analyze if commits changed since last analysis
+- **Trigger:** Manual `ow generate` or `ow pull` (when stale)
+
+---
+
+## Sync Rules
+
+### Push Requirements
+
+| Requirement | Value |
+|-------------|-------|
+| Minimum GitHub stars | 5 |
+| Local repos | Cannot push |
+
+### Conflict Resolution
+
+| Scenario | Action |
+|----------|--------|
+| Push newer analysis | Overwrites remote |
+| Push older analysis | Blocked |
+| Push same commit, different analysis | Blocked |
+| Pull when local exists | Overwrites local (warn first) |
+
+### Rate Limits
+
+| Limit | Value |
+|-------|-------|
+| Pushes per repo per day | 3 |
+
+### File Limits
+
+| Limit | Value |
+|-------|-------|
+| Max files to analyze | 500 (top by importance) |
+| Max file size | 100KB (skip larger - likely generated/minified) |

@@ -212,7 +212,13 @@ export async function runAnalysisPipeline(
 	}
 
 	onProgress("skill", "Generating skill...");
-	const skillOptions = { ...generateOptions, fullName: options.fullName };
+	const generated = new Date().toISOString().split("T")[0];
+	const skillOptions = {
+		...generateOptions,
+		fullName: options.fullName,
+		commitSha,
+		generated,
+	};
 	const { skill, skillMd } = await generateRichSkill(context, summary, architecture, skillOptions);
 
 	const meta: AnalysisMeta = {

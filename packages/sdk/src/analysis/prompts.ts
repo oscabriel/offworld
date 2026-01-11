@@ -107,7 +107,6 @@ Generate a SKILL.md file using the EXACT format below. This skill will be instal
 ---
 name: ${repoName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-reference
 description: [Write a 2-3 sentence description that explains: (1) what this codebase is, (2) when to consult it, (3) what kinds of questions it answers. Include keywords that would trigger skill activation like "implementation details", "source code", "internal patterns", etc.]
-allowed-tools: [Read, Grep, Glob, Task]
 ---
 
 # ${displayName} Source Code Reference

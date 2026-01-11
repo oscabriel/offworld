@@ -17,6 +17,8 @@ export interface GenerateOptions {
 
 export interface SkillGenerateOptions extends GenerateOptions {
 	fullName?: string;
+	commitSha?: string;
+	generated?: string;
 }
 
 export interface RichSkillResult {
@@ -164,10 +166,33 @@ export async function generateRichSkill(
 		onStream: options.onStream,
 	});
 
-	const skillMd = extractSkillMarkdown(result.text);
+	let skillMd = extractSkillMarkdown(result.text);
+	skillMd = injectSkillMetadata(skillMd, options.commitSha, options.generated);
 	const skill = parseSkillMarkdown(skillMd);
 
 	return { skill, skillMd };
+}
+
+function injectSkillMetadata(skillMd: string, commitSha?: string, generated?: string): string {
+	if (!commitSha && !generated) return skillMd;
+
+	const endOfFrontmatter = skillMd.indexOf("---", 3);
+	if (endOfFrontmatter === -1) return skillMd;
+
+	const newFields: string[] = [];
+	if (commitSha) {
+		newFields.push(`commit: ${commitSha.slice(0, 7)}`);
+	}
+	if (generated) {
+		newFields.push(`generated: ${generated}`);
+	}
+
+	return (
+		skillMd.slice(0, endOfFrontmatter) +
+		newFields.join("\n") +
+		"\n" +
+		skillMd.slice(endOfFrontmatter)
+	);
 }
 
 function extractSkillMarkdown(text: string): string {
@@ -268,15 +293,27 @@ function sanitizeMermaidId(name: string): string {
 	);
 }
 
-export function formatSkillMd(skill: Skill): string {
-	const frontmatter = [
+export interface FormatSkillOptions {
+	commitSha?: string;
+	generated?: string;
+}
+
+export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
+	const lines = [
 		"---",
 		`name: "${escapeYaml(skill.name)}"`,
 		`description: "${escapeYaml(skill.description)}"`,
-		"allowed-tools:",
-		...skill.allowedTools.map((tool) => `  - ${tool}`),
-		"---",
-	].join("\n");
+	];
+
+	if (options.commitSha) {
+		lines.push(`commit: ${options.commitSha.slice(0, 7)}`);
+	}
+	if (options.generated) {
+		lines.push(`generated: ${options.generated}`);
+	}
+
+	lines.push("---");
+	const frontmatter = lines.join("\n");
 
 	const sections: string[] = [];
 

@@ -390,7 +390,7 @@ describe("formatSkillMd", () => {
 
 		expect(result).toContain("---");
 		expect(result).toContain('name: "test-skill"');
-		expect(result).toContain("allowed-tools:");
+		expect(result).not.toContain("allowed-tools:");
 		expect(result).toContain("## Repository Structure");
 		expect(result).toContain("## Quick Reference Paths");
 		expect(result).toContain("## Search Strategies");
@@ -410,19 +410,17 @@ describe("formatSkillMd", () => {
 		expect(result).toContain('description: "Uses: colons, and [brackets]"');
 	});
 
-	it("formats allowed tools correctly", () => {
-		const skill = createMinimalSkill({
-			allowedTools: ["Read", "Glob", "Grep", "Bash", "Edit"],
+	it("includes commit and generated in frontmatter when provided", () => {
+		const skill = createMinimalSkill();
+
+		const result = formatSkillMd(skill, {
+			commitSha: "abc1234def5678",
+			generated: "2026-01-10",
 		});
 
-		const result = formatSkillMd(skill);
-
-		expect(result).toContain("allowed-tools:");
-		expect(result).toContain("  - Read");
-		expect(result).toContain("  - Glob");
-		expect(result).toContain("  - Grep");
-		expect(result).toContain("  - Bash");
-		expect(result).toContain("  - Edit");
+		expect(result).toContain("commit: abc1234");
+		expect(result).toContain("generated: 2026-01-10");
+		expect(result).not.toContain("allowed-tools:");
 	});
 
 	it("formats repository structure section", () => {
@@ -499,17 +497,19 @@ describe("formatSkillMd", () => {
 			whenToUse: ["When working with this library", "When debugging issues"],
 		};
 
-		const result = formatSkillMd(skill);
+		const result = formatSkillMd(skill, {
+			commitSha: "abc1234",
+			generated: "2026-01-10",
+		});
 
-		// Check frontmatter
 		expect(result).toMatch(/^---\n/);
 		expect(result).toContain('name: "complete-skill"');
 		expect(result).toContain('description: "A complete skill with all sections"');
-		expect(result).toContain("allowed-tools:");
-		expect(result).toContain("  - Read");
+		expect(result).toContain("commit: abc1234");
+		expect(result).toContain("generated: 2026-01-10");
+		expect(result).not.toContain("allowed-tools:");
 		expect(result).toContain("---\n\n");
 
-		// Check body sections
 		expect(result).toContain("## Repository Structure");
 		expect(result).toContain("- `src/`: Source code directory");
 

@@ -78,3 +78,36 @@
 - TypeScript: SDK/CLI pass (web has pre-existing errors)
 - Tests: 391 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-006/007/008 - Update skill frontmatter
+
+### Completed
+- PRD-006: Remove allowed-tools from frontmatter
+- PRD-007: Add commit SHA (7-char) to frontmatter
+- PRD-008: Add generated date (YYYY-MM-DD) to frontmatter
+
+### Changes
+- `packages/sdk/src/analysis/generate.ts`:
+  - `FormatSkillOptions` interface with commitSha/generated
+  - `formatSkillMd()` now accepts options, outputs commit/generated fields
+  - `injectSkillMetadata()` post-processes AI output to add fields
+  - `SkillGenerateOptions` extended with commitSha/generated
+- `packages/sdk/src/analysis/prompts.ts`:
+  - Removed `allowed-tools: [Read, Grep, Glob, Task]` from template
+- `packages/sdk/src/analysis/pipeline.ts`:
+  - Passes commitSha and generated date to skill generation
+- `apps/cli/src/handlers/pull.ts`:
+  - Updated `formatSkillMd()` with same signature
+  - Added `loadLocalMeta()` helper
+  - All formatSkillMd calls now pass metadata
+
+### Tests updated
+- skill.test.ts: Tests for commit/generated, no allowed-tools
+- generate.test.ts: Updated formatSkillMd assertions
+
+### Verification
+- TypeScript: SDK/CLI pass
+- Tests: 392 passed (+1)
+- Lint: 0 errors

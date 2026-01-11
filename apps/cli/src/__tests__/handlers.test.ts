@@ -50,6 +50,7 @@ vi.mock("@offworld/sdk", () => ({
 	checkRemote: vi.fn(),
 	checkStaleness: vi.fn(),
 	runAnalysisPipeline: vi.fn(),
+	isAnalysisStale: vi.fn(),
 	RepoExistsError: class RepoExistsError extends Error {},
 }));
 
@@ -71,6 +72,7 @@ import {
 	pullAnalysis,
 	checkRemote,
 	runAnalysisPipeline,
+	isAnalysisStale,
 } from "@offworld/sdk";
 import type { RemoteRepoSource, LocalRepoSource, Config, RepoIndexEntry } from "@offworld/types";
 
@@ -96,6 +98,7 @@ describe("CLI handlers", () => {
 	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
 	const mockCheckRemote = checkRemote as ReturnType<typeof vi.fn>;
 	const mockRunAnalysisPipeline = runAnalysisPipeline as ReturnType<typeof vi.fn>;
+	const mockIsAnalysisStale = isAnalysisStale as ReturnType<typeof vi.fn>;
 	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
 	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
 	const mockConfirm = p.confirm as ReturnType<typeof vi.fn>;
@@ -164,6 +167,7 @@ describe("CLI handlers", () => {
 		mockLoadConfig.mockReturnValue(defaultConfig);
 		mockGetMetaRoot.mockReturnValue("/home/user/.ow");
 		mockExistsSync.mockReturnValue(false);
+		mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 	});
 
 	afterEach(() => {
@@ -268,6 +272,11 @@ describe("CLI handlers", () => {
 				return "";
 			});
 			mockGetCommitSha.mockReturnValue("abc123");
+			mockIsAnalysisStale.mockReturnValue({
+				isStale: false,
+				cachedSha: "abc123",
+				currentSha: "abc123",
+			});
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 

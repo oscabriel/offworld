@@ -143,6 +143,9 @@ export {
 export {
 	validateSkillPaths,
 	pathExists,
+	isAnalysisStale,
+	getCachedCommitSha,
 	type PathValidationResult,
 	type ValidatePathsOptions,
+	type StalenessCheckResult,
 } from "./validation/index.js";

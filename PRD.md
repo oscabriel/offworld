@@ -141,7 +141,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Returns true if SHAs differ or meta.json missing",
 			"pull.ts checks staleness before skipping regeneration"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-012",

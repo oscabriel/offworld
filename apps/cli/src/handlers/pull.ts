@@ -19,6 +19,7 @@ import {
 	getIndexEntry,
 	RepoExistsError,
 	runAnalysisPipeline,
+	isAnalysisStale,
 	type PullResponse,
 } from "@offworld/sdk";
 import type { RepoSource, Skill } from "@offworld/types";
@@ -167,32 +168,11 @@ function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
 	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 }
 
-/**
- * Check if local analysis exists and is current
- */
 function hasLocalAnalysis(source: RepoSource, repoPath: string): boolean {
-	let analysisPath: string;
-	if (source.type === "remote") {
-		analysisPath = getAnalysisPath(source.fullName, source.provider);
-	} else {
-		const hash = source.qualifiedName.replace("local:", "");
-		analysisPath = join(getMetaRoot(), "analyses", `local--${hash}`);
-	}
-
-	// Check if analysis files exist
-	const metaPath = join(analysisPath, "meta.json");
-	if (!existsSync(metaPath)) {
-		return false;
-	}
-
-	// Check if analysis is for current commit
-	try {
-		const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
-		const currentSha = getCommitSha(repoPath);
-		return meta.commitSha === currentSha;
-	} catch {
-		return false;
-	}
+	const analysisPath = getLocalAnalysisPath(source);
+	const currentSha = getCommitSha(repoPath);
+	const stalenessResult = isAnalysisStale(analysisPath, currentSha);
+	return !stalenessResult.isStale;
 }
 
 function getLocalAnalysisPath(source: RepoSource): string {

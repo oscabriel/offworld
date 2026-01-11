@@ -19,6 +19,7 @@ import {
 export interface GenerateOptions {
 	repo: string;
 	force?: boolean;
+	skipArchitecture?: boolean;
 }
 
 export interface GenerateResult {
@@ -31,7 +32,7 @@ export interface GenerateResult {
  * Generate command handler - runs full local analysis
  */
 export async function generateHandler(options: GenerateOptions): Promise<GenerateResult> {
-	const { repo, force = false } = options;
+	const { repo, force = false, skipArchitecture = false } = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
@@ -94,12 +95,14 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 						config,
 						provider: source.provider,
 						fullName: source.fullName,
+						includeArchitecture: !skipArchitecture,
 						onProgress: (_step: string, message: string) => {
 							s.message(message);
 						},
 					}
 				: {
 						config,
+						includeArchitecture: !skipArchitecture,
 						onProgress: (_step: string, message: string) => {
 							s.message(message);
 						},

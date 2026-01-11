@@ -57,7 +57,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Skill generation works with or without architecture data",
 			"CLI supports --skip-architecture flag"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-005",

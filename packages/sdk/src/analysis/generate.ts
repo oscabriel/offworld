@@ -130,7 +130,7 @@ function parseSummaryAndArchitecture(text: string): SummaryAndArchitectureResult
 export async function generateSkill(
 	context: GatheredContext,
 	summary: string,
-	architecture: Architecture,
+	architecture: Architecture | null,
 	options: SkillGenerateOptions = {},
 ): Promise<Skill> {
 	const result = await generateRichSkill(context, summary, architecture, options);
@@ -140,7 +140,7 @@ export async function generateSkill(
 export async function generateRichSkill(
 	context: GatheredContext,
 	summary: string,
-	architecture: Architecture,
+	architecture: Architecture | null,
 	options: SkillGenerateOptions = {},
 ): Promise<RichSkillResult> {
 	const prompt = createSkillPrompt({
@@ -152,7 +152,7 @@ export async function generateRichSkill(
 		fileTree: context.fileTree,
 		topFiles: context.topFiles,
 		summary,
-		architectureJson: JSON.stringify(architecture, null, 2),
+		architectureJson: architecture ? JSON.stringify(architecture, null, 2) : null,
 	});
 
 	const result = await streamPrompt({

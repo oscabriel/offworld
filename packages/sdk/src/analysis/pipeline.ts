@@ -15,6 +15,7 @@ import { VERSION } from "../constants.js";
 import { gatherContext } from "./context.js";
 import {
 	generateSummaryAndArchitecture,
+	generateSummary,
 	generateRichSkill,
 	formatArchitectureMd,
 } from "./generate.js";
@@ -27,10 +28,10 @@ import {
 export interface AnalysisPipelineResult {
 	/** Markdown summary */
 	summary: string;
-	/** Architecture data */
-	architecture: Architecture;
-	/** Architecture markdown with Mermaid */
-	architectureMd: string;
+	/** Architecture data (null if includeArchitecture=false) */
+	architecture: Architecture | null;
+	/** Architecture markdown with Mermaid (null if includeArchitecture=false) */
+	architectureMd: string | null;
 	/** File index with importance ranking */
 	fileIndex: FileIndex;
 	/** Generated skill */
@@ -60,6 +61,8 @@ export interface AnalysisPipelineOptions {
 	provider?: "github" | "gitlab" | "bitbucket";
 	/** Full name of the repo (owner/repo) - for remote repos */
 	fullName?: string;
+	/** Skip architecture generation (summary-only mode) */
+	includeArchitecture?: boolean;
 	/** Progress callback for status updates */
 	onProgress?: (step: string, message: string) => void;
 	/** Debug callback for detailed logging */
@@ -105,43 +108,36 @@ export function installSkill(repoName: string, skillContent: string): void {
 // Analysis Saving
 // ============================================================================
 
-/**
- * Save all analysis artifacts to the analysis directory.
- */
 function saveAnalysis(
 	analysisPath: string,
 	result: Omit<AnalysisPipelineResult, "analysisPath">,
 ): void {
-	// Ensure directory exists
 	mkdirSync(analysisPath, { recursive: true });
 
-	// Write summary.md
 	writeFileSync(join(analysisPath, "summary.md"), result.summary, "utf-8");
 
-	// Write architecture.json
-	writeFileSync(
-		join(analysisPath, "architecture.json"),
-		JSON.stringify(result.architecture, null, 2),
-		"utf-8",
-	);
+	if (result.architecture) {
+		writeFileSync(
+			join(analysisPath, "architecture.json"),
+			JSON.stringify(result.architecture, null, 2),
+			"utf-8",
+		);
+	}
 
-	// Write architecture.md
-	writeFileSync(join(analysisPath, "architecture.md"), result.architectureMd, "utf-8");
+	if (result.architectureMd) {
+		writeFileSync(join(analysisPath, "architecture.md"), result.architectureMd, "utf-8");
+	}
 
-	// Write file-index.json
 	writeFileSync(
 		join(analysisPath, "file-index.json"),
 		JSON.stringify(result.fileIndex, null, 2),
 		"utf-8",
 	);
 
-	// Write skill.json
 	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(result.skill, null, 2), "utf-8");
 
-	// Write SKILL.md
 	writeFileSync(join(analysisPath, "SKILL.md"), result.skillMd, "utf-8");
 
-	// Write meta.json
 	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(result.meta, null, 2), "utf-8");
 }
 
@@ -171,52 +167,54 @@ export async function runAnalysisPipeline(
 	options: AnalysisPipelineOptions = {},
 ): Promise<AnalysisPipelineResult> {
 	const onProgress = options.onProgress ?? (() => {});
+	const includeArchitecture = options.includeArchitecture ?? true;
 	const generateOptions = {
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	};
 
-	// Determine analysis path
 	let analysisPath: string;
 	let repoName: string;
 
 	if (options.fullName && options.provider) {
-		// Remote repo
 		analysisPath = getAnalysisPath(options.fullName, options.provider);
 		repoName = options.fullName;
 	} else {
-		// Local repo - use path hash
 		const pathHash = createHash("sha256").update(repoPath).digest("hex").slice(0, 12);
 		analysisPath = join(getMetaRoot(), "analyses", `local--${pathHash}`);
 		repoName = basename(repoPath);
 	}
 
-	// Get commit SHA
 	onProgress("commit", "Getting current commit...");
 	const commitSha = getCommitSha(repoPath);
 
-	// Step 1: Rank files
 	onProgress("rank", "Ranking files by importance...");
 	const fileIndex = await rankFilesByHeuristics(repoPath);
 
-	// Step 2: Gather context
 	onProgress("context", "Gathering repository context...");
 	const context = await gatherContext(repoPath, { rankedFiles: fileIndex });
 
-	// Step 3: Generate summary + architecture (combined AI call)
-	onProgress("analyze", "Generating summary and architecture...");
-	const { summary, architecture } = await generateSummaryAndArchitecture(context, generateOptions);
+	let summary: string;
+	let architecture: Architecture | null = null;
+	let architectureMd: string | null = null;
 
-	// Step 4: Format architecture markdown
-	onProgress("format", "Formatting architecture diagram...");
-	const architectureMd = formatArchitectureMd(architecture);
+	if (includeArchitecture) {
+		onProgress("analyze", "Generating summary and architecture...");
+		const result = await generateSummaryAndArchitecture(context, generateOptions);
+		summary = result.summary;
+		architecture = result.architecture;
 
-	// Step 6: Generate skill
+		onProgress("format", "Formatting architecture diagram...");
+		architectureMd = formatArchitectureMd(architecture);
+	} else {
+		onProgress("analyze", "Generating summary...");
+		summary = await generateSummary(context, generateOptions);
+	}
+
 	onProgress("skill", "Generating skill...");
 	const skillOptions = { ...generateOptions, fullName: options.fullName };
 	const { skill, skillMd } = await generateRichSkill(context, summary, architecture, skillOptions);
 
-	// Build metadata
 	const meta: AnalysisMeta = {
 		analyzedAt: new Date().toISOString(),
 		commitSha,
@@ -224,7 +222,6 @@ export async function runAnalysisPipeline(
 		estimatedTokens: context.estimatedTokens,
 	};
 
-	// Build result
 	const result: AnalysisPipelineResult = {
 		summary,
 		architecture,
@@ -236,11 +233,9 @@ export async function runAnalysisPipeline(
 		analysisPath,
 	};
 
-	// Step 7: Save artifacts
 	onProgress("save", "Saving analysis...");
 	saveAnalysis(analysisPath, result);
 
-	// Step 8: Install skill
 	onProgress("install", "Installing skill...");
 	installSkill(repoName, skillMd);
 

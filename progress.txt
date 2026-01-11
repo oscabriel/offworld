@@ -47,3 +47,34 @@
 - TypeScript: passes
 - Tests: 391 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-004 - Optional architecture generation
+
+### Completed
+- PRD-004: Added `--skip-architecture` flag for faster summary-only mode
+
+### Changes
+- `packages/sdk/src/analysis/pipeline.ts`:
+  - Added `includeArchitecture?: boolean` option (default: true)
+  - Architecture fields now nullable in `AnalysisPipelineResult`
+  - Conditional save: skip architecture.json/md when null
+  - Uses `generateSummary()` when architecture skipped
+- `packages/sdk/src/analysis/generate.ts`:
+  - `generateRichSkill()` accepts `Architecture | null`
+- `packages/sdk/src/analysis/prompts.ts`:
+  - `createSkillPrompt()` handles null architectureJson
+- `apps/cli/src/handlers/generate.ts`, `pull.ts`:
+  - Added `skipArchitecture` option
+- `apps/cli/src/index.ts`:
+  - Added `--skip-architecture` flag to `generate` and `pull` commands
+
+### Decisions
+- Default is `includeArchitecture: true` for backward compat
+- Skill generation still works without architecture (just excludes arch section)
+
+### Verification
+- TypeScript: SDK/CLI pass (web has pre-existing errors)
+- Tests: 391 passed
+- Lint: 0 errors

@@ -8,10 +8,10 @@ export {
 	type ContextOptions,
 } from "./context.js";
 
-// Generation functions (PRD 5.2-5.5)
 export {
 	generateSummary,
 	extractArchitecture,
+	generateSummaryAndArchitecture,
 	generateSkill,
 	generateRichSkill,
 	formatArchitectureMd,
@@ -19,6 +19,7 @@ export {
 	type GenerateOptions,
 	type SkillGenerateOptions,
 	type RichSkillResult,
+	type SummaryAndArchitectureResult,
 } from "./generate.js";
 
 // Pipeline (PRD 5.1-5.6)

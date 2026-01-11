@@ -14,8 +14,7 @@ import { rankFilesByHeuristics } from "./heuristics.js";
 import { VERSION } from "../constants.js";
 import { gatherContext } from "./context.js";
 import {
-	generateSummary,
-	extractArchitecture,
+	generateSummaryAndArchitecture,
 	generateRichSkill,
 	formatArchitectureMd,
 } from "./generate.js";
@@ -204,15 +203,11 @@ export async function runAnalysisPipeline(
 	onProgress("context", "Gathering repository context...");
 	const context = await gatherContext(repoPath, { rankedFiles: fileIndex });
 
-	// Step 3: Generate summary
-	onProgress("summary", "Generating summary...");
-	const summary = await generateSummary(context, generateOptions);
+	// Step 3: Generate summary + architecture (combined AI call)
+	onProgress("analyze", "Generating summary and architecture...");
+	const { summary, architecture } = await generateSummaryAndArchitecture(context, generateOptions);
 
-	// Step 4: Extract architecture
-	onProgress("architecture", "Extracting architecture...");
-	const architecture = await extractArchitecture(context, generateOptions);
-
-	// Step 5: Format architecture markdown
+	// Step 4: Format architecture markdown
 	onProgress("format", "Formatting architecture diagram...");
 	const architectureMd = formatArchitectureMd(architecture);
 

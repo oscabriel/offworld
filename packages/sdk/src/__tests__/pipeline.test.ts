@@ -117,17 +117,14 @@ vi.mock("../analysis/context.js", () => ({
 }));
 
 vi.mock("../analysis/generate.js", () => ({
-	generateSummary: vi.fn(async () => {
+	generateSummaryAndArchitecture: vi.fn(async () => {
 		if (shouldSummaryFail) {
 			throw new Error("Summary generation failed");
 		}
-		return mockSummary;
-	}),
-	extractArchitecture: vi.fn(async () => {
 		if (shouldArchitectureFail) {
 			throw new Error("Architecture extraction failed");
 		}
-		return mockArchitecture;
+		return { summary: mockSummary, architecture: mockArchitecture };
 	}),
 	generateRichSkill: vi.fn(async () => {
 		if (shouldSkillFail) {
@@ -144,8 +141,7 @@ import { getCommitSha } from "../clone.js";
 import { rankFilesByHeuristics } from "../analysis/heuristics.js";
 import { gatherContext } from "../analysis/context.js";
 import {
-	generateSummary,
-	extractArchitecture,
+	generateSummaryAndArchitecture,
 	generateRichSkill,
 	formatArchitectureMd,
 } from "../analysis/generate.js";
@@ -301,8 +297,7 @@ describe("runAnalysisPipeline", () => {
 			expect(getCommitSha).toHaveBeenCalledWith("/path/to/repo");
 			expect(rankFilesByHeuristics).toHaveBeenCalledWith("/path/to/repo");
 			expect(gatherContext).toHaveBeenCalledWith("/path/to/repo", { rankedFiles: mockFileIndex });
-			expect(generateSummary).toHaveBeenCalled();
-			expect(extractArchitecture).toHaveBeenCalled();
+			expect(generateSummaryAndArchitecture).toHaveBeenCalled();
 			expect(generateRichSkill).toHaveBeenCalled();
 			expect(formatArchitectureMd).toHaveBeenCalledWith(mockArchitecture);
 		});
@@ -343,13 +338,11 @@ describe("runAnalysisPipeline", () => {
 
 			await runAnalysisPipeline("/path/to/repo", { onProgress });
 
-			// Verify all expected steps are reported
 			const stepNames = progressSteps.map((s) => s.step);
 			expect(stepNames).toContain("commit");
 			expect(stepNames).toContain("rank");
 			expect(stepNames).toContain("context");
-			expect(stepNames).toContain("summary");
-			expect(stepNames).toContain("architecture");
+			expect(stepNames).toContain("analyze");
 			expect(stepNames).toContain("format");
 			expect(stepNames).toContain("skill");
 			expect(stepNames).toContain("save");
@@ -365,12 +358,10 @@ describe("runAnalysisPipeline", () => {
 
 			await runAnalysisPipeline("/path/to/repo", { onProgress });
 
-			// Verify order: commit -> rank -> context -> summary -> architecture -> format -> skill -> save -> install -> done
 			const commitIndex = stepOrder.indexOf("commit");
 			const rankIndex = stepOrder.indexOf("rank");
 			const contextIndex = stepOrder.indexOf("context");
-			const summaryIndex = stepOrder.indexOf("summary");
-			const architectureIndex = stepOrder.indexOf("architecture");
+			const analyzeIndex = stepOrder.indexOf("analyze");
 			const formatIndex = stepOrder.indexOf("format");
 			const skillIndex = stepOrder.indexOf("skill");
 			const saveIndex = stepOrder.indexOf("save");
@@ -379,9 +370,8 @@ describe("runAnalysisPipeline", () => {
 
 			expect(commitIndex).toBeLessThan(rankIndex);
 			expect(rankIndex).toBeLessThan(contextIndex);
-			expect(contextIndex).toBeLessThan(summaryIndex);
-			expect(summaryIndex).toBeLessThan(architectureIndex);
-			expect(architectureIndex).toBeLessThan(formatIndex);
+			expect(contextIndex).toBeLessThan(analyzeIndex);
+			expect(analyzeIndex).toBeLessThan(formatIndex);
 			expect(formatIndex).toBeLessThan(skillIndex);
 			expect(skillIndex).toBeLessThan(saveIndex);
 			expect(saveIndex).toBeLessThan(installIndex);
@@ -638,15 +628,13 @@ describe("runAnalysisPipeline", () => {
 			const customConfig = { skillDir: "/custom/skill", repoRoot: "/custom/repos" };
 			await runAnalysisPipeline("/path/to/repo", { config: customConfig as never });
 
-			// The pipeline should run successfully with custom config
-			expect(generateSummary).toHaveBeenCalled();
+			expect(generateSummaryAndArchitecture).toHaveBeenCalled();
 		});
 
 		it("uses default config if not provided", async () => {
 			await runAnalysisPipeline("/path/to/repo");
 
-			// Should complete successfully
-			expect(generateSummary).toHaveBeenCalled();
+			expect(generateSummaryAndArchitecture).toHaveBeenCalled();
 		});
 	});
 });

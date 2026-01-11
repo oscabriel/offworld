@@ -3,7 +3,12 @@ import type { Architecture, Skill } from "@offworld/types";
 import type { GatheredContext } from "./context.js";
 import { formatContextForPrompt } from "./context.js";
 import { parseArchitectureMarkdown, parseSkillMarkdown } from "./parsers.js";
-import { createSkillPrompt, SUMMARY_TEMPLATE, ARCHITECTURE_TEMPLATE } from "./prompts.js";
+import {
+	createSkillPrompt,
+	SUMMARY_TEMPLATE,
+	ARCHITECTURE_TEMPLATE,
+	SUMMARY_ARCHITECTURE_TEMPLATE,
+} from "./prompts.js";
 
 export interface GenerateOptions {
 	onDebug?: (message: string) => void;
@@ -17,6 +22,11 @@ export interface SkillGenerateOptions extends GenerateOptions {
 export interface RichSkillResult {
 	skill: Skill;
 	skillMd: string;
+}
+
+export interface SummaryAndArchitectureResult {
+	summary: string;
+	architecture: Architecture;
 }
 
 export async function generateSummary(
@@ -64,6 +74,57 @@ ${ARCHITECTURE_TEMPLATE}`;
 	});
 
 	return parseArchitectureMarkdown(result.text);
+}
+
+export async function generateSummaryAndArchitecture(
+	context: GatheredContext,
+	options: GenerateOptions = {},
+): Promise<SummaryAndArchitectureResult> {
+	const contextPrompt = formatContextForPrompt(context);
+
+	const prompt = `You are analyzing a software repository.
+
+${contextPrompt}
+
+${SUMMARY_ARCHITECTURE_TEMPLATE}`;
+
+	const result = await streamPrompt({
+		prompt,
+		cwd: context.repoPath,
+		systemPrompt:
+			"You are a technical documentation expert and software architect. Analyze codebases thoroughly.",
+		onDebug: options.onDebug,
+		onStream: options.onStream,
+	});
+
+	return parseSummaryAndArchitecture(result.text);
+}
+
+function parseSummaryAndArchitecture(text: string): SummaryAndArchitectureResult {
+	const summaryDelimiter = "=== SUMMARY ===";
+	const architectureDelimiter = "=== ARCHITECTURE ===";
+
+	const summaryStart = text.indexOf(summaryDelimiter);
+	const architectureStart = text.indexOf(architectureDelimiter);
+
+	let summaryText: string;
+	let architectureText: string;
+
+	if (summaryStart !== -1 && architectureStart !== -1) {
+		summaryText = text.slice(summaryStart + summaryDelimiter.length, architectureStart).trim();
+		architectureText = text.slice(architectureStart + architectureDelimiter.length).trim();
+	} else {
+		const midpoint = Math.floor(text.length / 2);
+		summaryText = text.slice(0, midpoint).trim();
+		architectureText = text.slice(midpoint).trim();
+	}
+
+	const architecture = parseArchitectureMarkdown(architectureText);
+
+	return {
+		summary: summaryText,
+		architecture,
+	};
 }
 
 export async function generateSkill(

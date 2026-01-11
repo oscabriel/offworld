@@ -94,8 +94,10 @@ vi.mock("../analysis/context.js", () => ({
 }));
 
 vi.mock("../analysis/generate.js", () => ({
-	generateSummary: vi.fn(async () => mockSummary),
-	extractArchitecture: vi.fn(async () => mockArchitecture),
+	generateSummaryAndArchitecture: vi.fn(async () => ({
+		summary: mockSummary,
+		architecture: mockArchitecture,
+	})),
 	generateRichSkill: vi.fn(async () => ({ skill: mockSkill, skillMd: mockSkillMd })),
 	formatArchitectureMd: vi.fn(() => mockArchitectureMd),
 }));

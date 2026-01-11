@@ -324,3 +324,36 @@
 - TypeScript: SDK/CLI pass
 - Tests: 23 passed (+1 new test)
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-015 - Sparse checkout for large repos
+
+### Completed
+- PRD-015: Implement sparse checkout via --sparse flag
+
+### Changes
+- `packages/sdk/src/clone.ts`:
+  - Added `sparse?: boolean` to `CloneOptions`
+  - Added `SPARSE_CHECKOUT_DIRS` constant: src, lib, packages, docs, README.md, package.json
+  - Split cloneRepo into `cloneStandard()` and `cloneSparse()` helpers
+  - Sparse uses `--filter=blob:none --no-checkout --sparse` then `sparse-checkout set`
+- `apps/cli/src/index.ts`:
+  - Added `--sparse` flag to pull command
+- `apps/cli/src/handlers/pull.ts`:
+  - Added `sparse` to PullOptions, passed to cloneRepo
+- `packages/sdk/src/__tests__/clone.test.ts`:
+  - Added 4 tests for sparse checkout functionality
+  - Updated inline git mock to handle sparse-checkout/checkout commands
+- `packages/sdk/src/__tests__/mocks/git.ts`:
+  - Added sparse-checkout and checkout cases
+
+### Decisions
+- Sparse is opt-in (--sparse flag) not auto-detected
+- Auto-detection of large repos deferred (requires remote API query)
+- Sparse directories include README.md and package.json for metadata
+
+### Verification
+- TypeScript: SDK/CLI pass
+- Tests: 447 passed (+4 new)
+- Lint: 0 errors

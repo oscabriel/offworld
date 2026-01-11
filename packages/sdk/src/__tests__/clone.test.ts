@@ -175,6 +175,12 @@ vi.mock("node:child_process", () => ({
 				return config.sha ?? "abc123def456";
 			}
 
+			case "sparse-checkout":
+				return "";
+
+			case "checkout":
+				return "";
+
 			default:
 				throw new Error(`Unhandled git command: ${gitCommand} (cwd: ${cwd})`);
 		}
@@ -344,6 +350,68 @@ describe("cloneRepo", () => {
 
 		expect(rmSync).toHaveBeenCalledWith(expect.any(String), { recursive: true, force: true });
 		expect(execSync).toHaveBeenCalledWith(expect.stringContaining("git clone"), expect.any(Object));
+	});
+
+	describe("sparse checkout", () => {
+		it("uses sparse checkout flags when sparse=true", async () => {
+			const { execSync } = await import("node:child_process");
+
+			await cloneRepo(mockSource, { sparse: true });
+
+			expect(execSync).toHaveBeenCalledWith(
+				expect.stringContaining("--filter=blob:none"),
+				expect.any(Object),
+			);
+			expect(execSync).toHaveBeenCalledWith(
+				expect.stringContaining("--no-checkout"),
+				expect.any(Object),
+			);
+			expect(execSync).toHaveBeenCalledWith(
+				expect.stringContaining("--sparse"),
+				expect.any(Object),
+			);
+		});
+
+		it("sets sparse-checkout directories after clone", async () => {
+			const { execSync } = await import("node:child_process");
+
+			await cloneRepo(mockSource, { sparse: true });
+
+			expect(execSync).toHaveBeenCalledWith(
+				expect.stringContaining("git sparse-checkout set"),
+				expect.any(Object),
+			);
+		});
+
+		it("runs checkout after setting sparse-checkout", async () => {
+			const { execSync } = await import("node:child_process");
+
+			await cloneRepo(mockSource, { sparse: true });
+
+			const calls = (execSync as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+			const sparseSetIdx = calls.findIndex((c: string) => c.includes("sparse-checkout set"));
+			const checkoutIdx = calls.findIndex(
+				(c: string) => c.includes("git checkout") && !c.includes("sparse-checkout"),
+			);
+
+			expect(sparseSetIdx).toBeGreaterThan(-1);
+			expect(checkoutIdx).toBeGreaterThan(sparseSetIdx);
+		});
+
+		it("combines sparse with shallow clone", async () => {
+			const { execSync } = await import("node:child_process");
+
+			await cloneRepo(mockSource, { sparse: true, shallow: true });
+
+			expect(execSync).toHaveBeenCalledWith(
+				expect.stringContaining("--depth 1"),
+				expect.any(Object),
+			);
+			expect(execSync).toHaveBeenCalledWith(
+				expect.stringContaining("--sparse"),
+				expect.any(Object),
+			);
+		});
 	});
 
 	// New tests for git command failure scenarios

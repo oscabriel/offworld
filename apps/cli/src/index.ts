@@ -33,6 +33,10 @@ export const router = os.router({
 					.default(true)
 					.describe("Use shallow clone (--depth 1)")
 					.meta({ negativeAlias: "full-history" }),
+				sparse: z
+					.boolean()
+					.default(false)
+					.describe("Use sparse checkout (only src/, lib/, packages/, docs/)"),
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-analysis"),
 				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),
@@ -51,6 +55,7 @@ export const router = os.router({
 			return pullHandler({
 				repo: input.repo,
 				shallow: input.shallow,
+				sparse: input.sparse,
 				branch: input.branch,
 				force: input.force,
 				verbose: input.verbose,

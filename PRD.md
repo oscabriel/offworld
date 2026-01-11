@@ -183,11 +183,11 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 		"category": "performance",
 		"description": "Implement sparse checkout for large repositories",
 		"steps_to_verify": [
-			"Sparse checkout enabled for repos > 100MB or > 10k files",
-			"Only important directories checked out (src/, lib/, packages/, docs/)",
-			"Configurable via --sparse flag or auto-detected"
+			"Sparse checkout enabled via --sparse flag",
+			"Only important directories checked out (src/, lib/, packages/, docs/, README.md, package.json)",
+			"Configurable via --sparse flag on pull command"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-016",

@@ -23,12 +23,12 @@ This plan addresses the test audit findings to improve test quality and coverage
 
 Test these pure functions from `analysis/generate.ts`:
 
-| Function | Test Cases |
-|----------|------------|
-| `sanitizeMermaidId()` | Empty string, special chars, unicode, numeric-only, leading/trailing underscores |
-| `escapeYaml()` | Quotes, backslashes, newlines, combinations |
+| Function                 | Test Cases                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `sanitizeMermaidId()`    | Empty string, special chars, unicode, numeric-only, leading/trailing underscores         |
+| `escapeYaml()`           | Quotes, backslashes, newlines, combinations                                              |
 | `formatArchitectureMd()` | Empty entities, special chars in labels, missing optional patterns, entity relationships |
-| `formatSkillMd()` | Empty arrays, special YAML chars, multiline descriptions, all sections populated |
+| `formatSkillMd()`        | Empty arrays, special YAML chars, multiline descriptions, all sections populated         |
 
 ### 1.2 Create `auth.test.ts`
 
@@ -36,18 +36,19 @@ Test these pure functions from `analysis/generate.ts`:
 
 Test these pure/near-pure functions from `auth.ts`:
 
-| Function | Test Cases |
-|----------|------------|
-| `getAuthPath()` | Returns correct path based on metaRoot |
-| `getTokenOrNull()` | Returns null on error, returns token on success |
-| `isLoggedIn()` | True/false cases |
-| `getAuthStatus()` | Not logged in, expired token, valid token, missing expiresAt |
+| Function           | Test Cases                                                   |
+| ------------------ | ------------------------------------------------------------ |
+| `getAuthPath()`    | Returns correct path based on metaRoot                       |
+| `getTokenOrNull()` | Returns null on error, returns token on success              |
+| `isLoggedIn()`     | True/false cases                                             |
+| `getAuthStatus()`  | Not logged in, expired token, valid token, missing expiresAt |
 
 ### 1.3 Create `pipeline.test.ts` (pure parts)
 
 **File:** `packages/sdk/src/__tests__/pipeline.test.ts`
 
 Test `expandTilde()` from `analysis/pipeline.ts`:
+
 - Paths with `~/`
 - Absolute paths (no expansion)
 - Paths without tilde
@@ -70,12 +71,13 @@ import { createExecSyncMock, configureGitMock } from "./mocks/git.js";
 
 // Configure realistic git behavior
 configureGitMock({
-  clone: { success: true },
-  'rev-parse': { output: 'abc123def456' }
+	clone: { success: true },
+	"rev-parse": { output: "abc123def456" },
 });
 ```
 
 **Add tests for:**
+
 - Git command failure scenarios (network errors, auth failures)
 - Partial clone failures (cleanup behavior)
 - Index update verification after clone
@@ -90,13 +92,14 @@ configureGitMock({
 import { initVirtualFs, addVirtualFile, clearVirtualFs } from "./mocks/fs.js";
 
 beforeEach(() => {
-  initVirtualFs({
-    "~/.ow/config.json": JSON.stringify({ repoRoot: "/custom/path" })
-  });
+	initVirtualFs({
+		"~/.ow/config.json": JSON.stringify({ repoRoot: "/custom/path" }),
+	});
 });
 ```
 
 **Add tests for:**
+
 - Real JSON parsing with malformed files
 - Directory creation logic
 - File permission scenarios
@@ -110,12 +113,12 @@ beforeEach(() => {
 ```typescript
 // Test the priority logic in detectProvider
 it("prefers claude-code when both available", async () => {
-  mockExecSync.mockReturnValue("Claude Code v1.0"); // Claude available
-  mockFetch.mockResolvedValue({ ok: true }); // OpenCode available
+	mockExecSync.mockReturnValue("Claude Code v1.0"); // Claude available
+	mockFetch.mockResolvedValue({ ok: true }); // OpenCode available
 
-  const result = await detectProvider();
-  expect(result.provider).toBe("claude-code"); // Verify priority
-  expect(result.isPreferred).toBe(false); // No preference set
+	const result = await detectProvider();
+	expect(result.provider).toBe("claude-code"); // Verify priority
+	expect(result.isPreferred).toBe(false); // No preference set
 });
 ```
 
@@ -133,11 +136,12 @@ Mock the `@anthropic-ai/claude-agent-sdk`:
 
 ```typescript
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
-  query: vi.fn()
+	query: vi.fn(),
 }));
 ```
 
 **Test scenarios:**
+
 - Successful analysis with valid structured output
 - Error: max_turns exceeded
 - Error: budget exceeded
@@ -152,6 +156,7 @@ vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
 Mock the `@opencode-ai/sdk` and fetch:
 
 **Test scenarios:**
+
 - Server health check passes → successful analysis
 - Server health check fails → OpenCodeConnectionError
 - Session creation failure
@@ -176,13 +181,14 @@ vi.mock("../clone.js", () => ({ getCommitSha: vi.fn() }));
 vi.mock("../importance/ranker.js", () => ({ rankFileImportance: vi.fn() }));
 vi.mock("./context.js", () => ({ gatherContext: vi.fn() }));
 vi.mock("./generate.js", () => ({
-  generateSummary: vi.fn(),
-  extractArchitecture: vi.fn(),
-  generateSkill: vi.fn()
+	generateSummary: vi.fn(),
+	extractArchitecture: vi.fn(),
+	generateSkill: vi.fn(),
 }));
 ```
 
 **Test scenarios:**
+
 - Full pipeline execution with all steps
 - Progress callback invocation
 - Local repo path handling (hashed)
@@ -201,11 +207,11 @@ import { tmpdir } from "os";
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "offworld-test-"));
+	tempDir = mkdtempSync(join(tmpdir(), "offworld-test-"));
 });
 
 afterEach(() => {
-  rmSync(tempDir, { recursive: true });
+	rmSync(tempDir, { recursive: true });
 });
 ```
 
@@ -222,17 +228,18 @@ Delete tests like:
 ```typescript
 // DELETE THESE
 it("rankFileImportance function exists", async () => {
-  expect(typeof rankFileImportance).toBe("function");
+	expect(typeof rankFileImportance).toBe("function");
 });
 
 it("ExtractedImport has correct shape", async () => {
-  expect(typeof extractImports).toBe("function");
+	expect(typeof extractImports).toBe("function");
 });
 ```
 
 TypeScript already guarantees exports exist. These tests waste CI time.
 
 **Files to clean up:**
+
 - `importance.test.ts` - Remove ~10 "function exists" tests
 
 ---
@@ -257,11 +264,11 @@ packages/sdk/src/__tests__/
 
 ```json
 {
-  "scripts": {
-    "test": "vitest run",
-    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run --include '**/*.integration.test.ts'"
-  }
+	"scripts": {
+		"test": "vitest run",
+		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
+		"test:integration": "vitest run --include '**/*.integration.test.ts'"
+	}
 }
 ```
 
@@ -270,12 +277,12 @@ packages/sdk/src/__tests__/
 ```typescript
 // clone.integration.test.ts
 describe("cloneRepo integration", () => {
-  it("clones a real small repo", async () => {
-    const source = parseRepoInput("octocat/Hello-World");
-    const path = await cloneRepo(source, { shallow: true });
+	it("clones a real small repo", async () => {
+		const source = parseRepoInput("octocat/Hello-World");
+		const path = await cloneRepo(source, { shallow: true });
 
-    expect(existsSync(join(path, ".git"))).toBe(true);
-  }, 30000);
+		expect(existsSync(join(path, ".git"))).toBe(true);
+	}, 30000);
 });
 ```
 
@@ -283,20 +290,21 @@ describe("cloneRepo integration", () => {
 
 ## Implementation Order
 
-| Priority | Phase | Effort | Impact |
-|----------|-------|--------|--------|
-| 1 | Phase 1: Pure function tests | Low | High |
-| 2 | Phase 5: Remove useless tests | Low | Medium |
-| 3 | Phase 2: Upgrade mock tests | Medium | High |
-| 4 | Phase 3: AI integration tests | Medium | High |
-| 5 | Phase 4: Pipeline tests | Medium | High |
-| 6 | Phase 6: Integration infra | High | Medium |
+| Priority | Phase                         | Effort | Impact |
+| -------- | ----------------------------- | ------ | ------ |
+| 1        | Phase 1: Pure function tests  | Low    | High   |
+| 2        | Phase 5: Remove useless tests | Low    | Medium |
+| 3        | Phase 2: Upgrade mock tests   | Medium | High   |
+| 4        | Phase 3: AI integration tests | Medium | High   |
+| 5        | Phase 4: Pipeline tests       | Medium | High   |
+| 6        | Phase 6: Integration infra    | High   | Medium |
 
 ---
 
 ## Files to Create/Modify
 
 ### New Files
+
 - `packages/sdk/src/__tests__/generate.test.ts`
 - `packages/sdk/src/__tests__/auth.test.ts`
 - `packages/sdk/src/__tests__/claude-code.test.ts`
@@ -304,6 +312,7 @@ describe("cloneRepo integration", () => {
 - `packages/sdk/src/__tests__/pipeline.test.ts`
 
 ### Files to Modify
+
 - `packages/sdk/src/__tests__/clone.test.ts` - Upgrade mocking
 - `packages/sdk/src/__tests__/config.test.ts` - Use virtual fs
 - `packages/sdk/src/__tests__/index-manager.test.ts` - Use virtual fs
@@ -330,6 +339,7 @@ bunx vitest run packages/sdk/src/__tests__/pipeline.test.ts
 ```
 
 **Expected outcomes:**
+
 - Test count increases by ~80-100 tests
 - Coverage for `generate.ts` increases from 0% to 80%+
 - Coverage for `auth.ts` increases from 0% to 90%+

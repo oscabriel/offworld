@@ -8,13 +8,13 @@
 
 Five projects were analyzed for similarity to Offworld:
 
-| Project | Similarity | Threat Level | Key Insight |
-|---------|------------|--------------|-------------|
-| **better-context (btca)** | Very High | Medium | Validates approach; no skills generation |
-| **repogrep (fernandoabolafio)** | Very High | None | Closest prior art; inactive but rich learnings |
-| **opensrc (vercel-labs)** | Medium | Very Low | npm-only, no analysis, validates demand |
-| **Repogrep (ami.dev)** | Medium | Low | Web-only, no local ownership |
-| **AnswerOverflow** | Low | None | Different domain (Discord → Web) |
+| Project                         | Similarity | Threat Level | Key Insight                                    |
+| ------------------------------- | ---------- | ------------ | ---------------------------------------------- |
+| **better-context (btca)**       | Very High  | Medium       | Validates approach; no skills generation       |
+| **repogrep (fernandoabolafio)** | Very High  | None         | Closest prior art; inactive but rich learnings |
+| **opensrc (vercel-labs)**       | Medium     | Very Low     | npm-only, no analysis, validates demand        |
+| **Repogrep (ami.dev)**          | Medium     | Low          | Web-only, no local ownership                   |
+| **AnswerOverflow**              | Low        | None         | Different domain (Discord → Web)               |
 
 **Bottom line:** btca validates the "clone + AI search" market. repogrep (fernandoabolafio) provides the closest technical prior art with code worth stealing. opensrc validates demand for source code access for agents. Offworld's moat is **auto-generated skills** — something no competitor offers.
 
@@ -45,43 +45,43 @@ btca serve -p 8080
 
 #### Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Runtime | Bun |
-| Framework | Effect-TS |
-| CLI | @effect/cli |
-| AI | @opencode-ai/sdk (same as Offworld!) |
-| TUI | Solid.js + @opentui |
-| Database | Drizzle + SQLite |
-| Monorepo | Turborepo |
+| Component | Technology                           |
+| --------- | ------------------------------------ |
+| Runtime   | Bun                                  |
+| Framework | Effect-TS                            |
+| CLI       | @effect/cli                          |
+| AI        | @opencode-ai/sdk (same as Offworld!) |
+| TUI       | Solid.js + @opentui                  |
+| Database  | Drizzle + SQLite                     |
+| Monorepo  | Turborepo                            |
 
 #### Key Dependencies
 
 ```json
 {
-  "@opencode-ai/sdk": "^1.0.208",
-  "effect": "^3.19.13",
-  "@effect/cli": "^0.72.1",
-  "@effect/platform-bun": "^0.85.0",
-  "drizzle-orm": "^0.45.1",
-  "solid-js": "^1.9.10"
+	"@opencode-ai/sdk": "^1.0.208",
+	"effect": "^3.19.13",
+	"@effect/cli": "^0.72.1",
+	"@effect/platform-bun": "^0.85.0",
+	"drizzle-orm": "^0.45.1",
+	"solid-js": "^1.9.10"
 }
 ```
 
 #### Feature Comparison
 
-| Feature | btca | Offworld |
-|---------|------|----------|
-| Clone repos locally | Yes | Yes |
-| AI-powered Q&A | Yes | Yes |
-| OpenCode SDK | Yes | Yes |
-| TUI mode | Yes | Deferred |
-| Server mode | Yes | Not planned |
-| **Skill generation** | No | **Yes (Unique)** |
-| **Analysis artifacts** | No | **Yes (Unique)** |
-| **Web directory** | No | **Yes (Unique)** |
-| **Agent plugin** | No | **Yes (Unique)** |
-| **File importance ranking** | No | **Yes (Unique)** |
+| Feature                     | btca | Offworld         |
+| --------------------------- | ---- | ---------------- |
+| Clone repos locally         | Yes  | Yes              |
+| AI-powered Q&A              | Yes  | Yes              |
+| OpenCode SDK                | Yes  | Yes              |
+| TUI mode                    | Yes  | Deferred         |
+| Server mode                 | Yes  | Not planned      |
+| **Skill generation**        | No   | **Yes (Unique)** |
+| **Analysis artifacts**      | No   | **Yes (Unique)** |
+| **Web directory**           | No   | **Yes (Unique)** |
+| **Agent plugin**            | No   | **Yes (Unique)** |
+| **File importance ranking** | No   | **Yes (Unique)** |
 
 #### Threat Assessment
 
@@ -112,6 +112,7 @@ btca serve -p 8080
 AI coding agent that searches across any public GitHub repository. Web-based interface for quick code exploration.
 
 **Features:**
+
 - Search any public GitHub repo
 - AI-powered code understanding
 - No installation required
@@ -119,14 +120,14 @@ AI coding agent that searches across any public GitHub repository. Web-based int
 
 #### Comparison
 
-| Feature | Repogrep | Offworld |
-|---------|----------|----------|
-| Web interface | Primary | Directory |
-| Local clones | No | Yes |
-| Persistent analysis | No | Yes |
-| Skills generation | No | Yes |
-| Agent integration | No | Yes |
-| Offline usage | No | Yes |
+| Feature             | Repogrep | Offworld  |
+| ------------------- | -------- | --------- |
+| Web interface       | Primary  | Directory |
+| Local clones        | No       | Yes       |
+| Persistent analysis | No       | Yes       |
+| Skills generation   | No       | Yes       |
+| Agent integration   | No       | Yes       |
+| Offline usage       | No       | Yes       |
 
 #### Threat Assessment
 
@@ -148,6 +149,7 @@ AI coding agent that searches across any public GitHub repository. Web-based int
 #### What It Does
 
 A **fully local CLI** for indexing source repositories and searching them with both:
+
 1. **Full-text search** (BM25 via SQLite FTS5)
 2. **Semantic search** (vector similarity via LanceDB + local embeddings)
 
@@ -175,26 +177,26 @@ repogrep read Effect-TS-effect/packages/effect/src/Effect.ts
 
 #### Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Runtime | Node.js 18+ |
-| CLI | Commander.js |
-| Full-text Search | SQLite FTS5 (BM25) |
-| Vector Search | LanceDB |
-| Embeddings | @xenova/transformers (MiniLM-L6-v2, local) |
-| Git | simple-git |
-| File Discovery | fast-glob |
+| Component        | Technology                                 |
+| ---------------- | ------------------------------------------ |
+| Runtime          | Node.js 18+                                |
+| CLI              | Commander.js                               |
+| Full-text Search | SQLite FTS5 (BM25)                         |
+| Vector Search    | LanceDB                                    |
+| Embeddings       | @xenova/transformers (MiniLM-L6-v2, local) |
+| Git              | simple-git                                 |
+| File Discovery   | fast-glob                                  |
 
 #### Key Dependencies
 
 ```json
 {
-  "@lancedb/lancedb": "^0.4.0",
-  "@xenova/transformers": "^2.10.0",
-  "better-sqlite3": "^12.4.1",
-  "commander": "^11.1.0",
-  "simple-git": "^3.20.0",
-  "fast-glob": "^3.3.2"
+	"@lancedb/lancedb": "^0.4.0",
+	"@xenova/transformers": "^2.10.0",
+	"better-sqlite3": "^12.4.1",
+	"commander": "^11.1.0",
+	"simple-git": "^3.20.0",
+	"fast-glob": "^3.3.2"
 }
 ```
 
@@ -211,19 +213,19 @@ repogrep read Effect-TS-effect/packages/effect/src/Effect.ts
 
 #### Feature Comparison
 
-| Feature | repogrep | Offworld |
-|---------|----------|----------|
-| Clone repos locally | Yes | Yes |
-| Full-text search | Yes (SQLite FTS5) | No (agent uses grep) |
-| Semantic search | Yes (LanceDB) | No (decided against embeddings) |
-| Hybrid search | Yes | No |
-| Local embeddings | Yes (@xenova/transformers) | No |
-| **Skill generation** | No | **Yes (Unique)** |
-| **AI analysis** | No | **Yes (Unique)** |
-| **Architecture extraction** | No | **Yes (Unique)** |
-| **File importance ranking** | No | **Yes (Unique)** |
-| **Web directory** | No | **Yes (Unique)** |
-| Cursor rule (manual skill) | Yes | Auto-generated |
+| Feature                     | repogrep                   | Offworld                        |
+| --------------------------- | -------------------------- | ------------------------------- |
+| Clone repos locally         | Yes                        | Yes                             |
+| Full-text search            | Yes (SQLite FTS5)          | No (agent uses grep)            |
+| Semantic search             | Yes (LanceDB)              | No (decided against embeddings) |
+| Hybrid search               | Yes                        | No                              |
+| Local embeddings            | Yes (@xenova/transformers) | No                              |
+| **Skill generation**        | No                         | **Yes (Unique)**                |
+| **AI analysis**             | No                         | **Yes (Unique)**                |
+| **Architecture extraction** | No                         | **Yes (Unique)**                |
+| **File importance ranking** | No                         | **Yes (Unique)**                |
+| **Web directory**           | No                         | **Yes (Unique)**                |
+| Cursor rule (manual skill)  | Yes                        | Auto-generated                  |
 
 #### Threat Assessment
 
@@ -307,32 +309,33 @@ project/
 
 ```markdown
 ## Source Code Reference
+
 Source code for dependencies is available in `opensrc/` for deeper understanding.
 See `opensrc/sources.json` for available packages.
 ```
 
 #### Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Runtime | Node.js |
-| CLI | Commander.js |
-| Git | simple-git (likely) |
+| Component | Technology          |
+| --------- | ------------------- |
+| Runtime   | Node.js             |
+| CLI       | Commander.js        |
+| Git       | simple-git (likely) |
 
 #### Feature Comparison
 
-| Feature | opensrc | Offworld |
-|---------|---------|----------|
-| **Scope** | npm packages only | Any GitHub repo |
-| **Version Detection** | From lockfile (clever) | Not yet |
-| **Storage** | Project-local (`opensrc/`) | Global (`~/ow/`) |
-| **Analysis** | None | Full AI analysis |
-| **Skill Generation** | None | **Yes (Unique)** |
-| **File Importance** | None | Tree-sitter ranking |
-| **Architecture** | None | Full entity/relationship mapping |
-| **Agent Integration** | AGENTS.md (static text) | OpenCode plugin (dynamic) |
-| **Web Directory** | None | offworld.sh |
-| **Output** | Raw source + JSON index | SKILL.md + architecture + summary |
+| Feature               | opensrc                    | Offworld                          |
+| --------------------- | -------------------------- | --------------------------------- |
+| **Scope**             | npm packages only          | Any GitHub repo                   |
+| **Version Detection** | From lockfile (clever)     | Not yet                           |
+| **Storage**           | Project-local (`opensrc/`) | Global (`~/ow/`)                  |
+| **Analysis**          | None                       | Full AI analysis                  |
+| **Skill Generation**  | None                       | **Yes (Unique)**                  |
+| **File Importance**   | None                       | Tree-sitter ranking               |
+| **Architecture**      | None                       | Full entity/relationship mapping  |
+| **Agent Integration** | AGENTS.md (static text)    | OpenCode plugin (dynamic)         |
+| **Web Directory**     | None                       | offworld.sh                       |
+| **Output**            | Raw source + JSON index    | SKILL.md + architecture + summary |
 
 #### Threat Assessment
 
@@ -356,6 +359,7 @@ See `opensrc/sources.json` for available packages.
 opensrc is a "dumb pipe"—just clones and indexes. Offworld's value is the **intelligence layer**: analysis, ranking, skill generation.
 
 Could position as:
+
 - opensrc = "quick fetch for npm packages"
 - Offworld = "deep analysis for any repo"
 
@@ -432,11 +436,11 @@ This quote validates Offworld's core thesis about source context improving AI ou
 
 ### The Skills Moat
 
-| Metric | Value |
-|--------|-------|
-| Skills on SkillsMP marketplace | 40,779+ |
-| Skills that are auto-generated | **0** |
-| Offworld's opportunity | **First skill generation engine** |
+| Metric                         | Value                             |
+| ------------------------------ | --------------------------------- |
+| Skills on SkillsMP marketplace | 40,779+                           |
+| Skills that are auto-generated | **0**                             |
+| Offworld's opportunity         | **First skill generation engine** |
 
 No competitor is generating skills for OSS repositories. This is Offworld's primary differentiator.
 
@@ -447,38 +451,41 @@ No competitor is generating skills for OSS repositories. This is Offworld's prim
 ### 1. Market Validation
 
 btca's existence and traction (347 stars, active development) validates:
+
 - The "clone repos locally + AI search" approach works
 - OpenCode SDK is the right choice
 - There's demand for local codebase understanding
 
 ### 2. Differentiation is Clear
 
-| btca | Offworld |
-|------|----------|
-| Ephemeral Q&A | Persistent analysis |
+| btca                | Offworld                  |
+| ------------------- | ------------------------- |
+| Ephemeral Q&A       | Persistent analysis       |
 | User asks questions | Agent knows automatically |
-| No artifacts | Skills + architecture |
-| No sharing | Web directory |
+| No artifacts        | Skills + architecture     |
+| No sharing          | Web directory             |
 
 ### 3. Speed Matters
 
 btca is actively developing. While skills remain unaddressed, this could change:
 
-| Risk | Likelihood | Impact |
-|------|------------|--------|
-| btca adds skill generation | Low | High |
-| btca gains significant traction | Medium | Medium |
-| opensrc adds analysis/skills | Very Low | Medium |
-| New competitor enters with skills | Low | High |
+| Risk                              | Likelihood | Impact |
+| --------------------------------- | ---------- | ------ |
+| btca adds skill generation        | Low        | High   |
+| btca gains significant traction   | Medium     | Medium |
+| opensrc adds analysis/skills      | Very Low   | Medium |
+| New competitor enters with skills | Low        | High   |
 
 ### 4. Learning Opportunities
 
 From btca:
+
 - Effect-TS provides excellent error handling and composability
 - TUI mode is good UX (consider for V2)
 - Server mode enables IDE integrations
 
 From repogrep (fernandoabolafio):
+
 - Hybrid search (SQLite FTS5 + LanceDB) architecture
 - Comprehensive ignore patterns list (100+ patterns)
 - Binary file detection heuristic
@@ -486,10 +493,12 @@ From repogrep (fernandoabolafio):
 - Cursor rule validates skill file format
 
 From Repogrep (ami.dev):
+
 - Web-first discovery can drive CLI adoption
 - "Copy command" pattern for onboarding
 
 From opensrc (vercel-labs):
+
 - Lockfile version detection for npm packages
 - AGENTS.md as agent instruction convention
 - Project-local storage as alternative to global
@@ -502,6 +511,7 @@ From opensrc (vercel-labs):
 ### Do Not Change Course
 
 The competitive analysis confirms Offworld's direction is correct:
+
 1. btca validates the market
 2. Skills moat is real and unaddressed
 3. Web directory adds unique value
@@ -533,17 +543,17 @@ The competitive analysis confirms Offworld's direction is correct:
 
 ```json
 {
-  "name": "btca",
-  "version": "0.6.42",
-  "dependencies": {
-    "@effect/cli": "^0.72.1",
-    "@effect/platform-bun": "^0.85.0",
-    "@opencode-ai/sdk": "^1.0.208",
-    "@opentui/solid": "^0.1.65",
-    "drizzle-orm": "^0.45.1",
-    "effect": "^3.19.13",
-    "solid-js": "^1.9.10"
-  }
+	"name": "btca",
+	"version": "0.6.42",
+	"dependencies": {
+		"@effect/cli": "^0.72.1",
+		"@effect/platform-bun": "^0.85.0",
+		"@opencode-ai/sdk": "^1.0.208",
+		"@opentui/solid": "^0.1.65",
+		"drizzle-orm": "^0.45.1",
+		"effect": "^3.19.13",
+		"solid-js": "^1.9.10"
+	}
 }
 ```
 
@@ -551,23 +561,23 @@ The competitive analysis confirms Offworld's direction is correct:
 
 ```typescript
 // btca's approach using Effect-TS
-import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { Effect } from 'effect';
-import { CliService } from './services/cli.ts';
+import { BunContext, BunRuntime } from "@effect/platform-bun";
+import { Effect } from "effect";
+import { CliService } from "./services/cli.ts";
 
 const hasNoArgs = process.argv.length <= 2;
 
 if (hasNoArgs) {
-  launchTui();  // TUI as default
+	launchTui(); // TUI as default
 } else {
-  Effect.gen(function* () {
-    const cli = yield* CliService;
-    yield* cli.run(process.argv);
-  }).pipe(
-    Effect.provide(CliService.Default),
-    Effect.provide(BunContext.layer),
-    BunRuntime.runMain()
-  );
+	Effect.gen(function* () {
+		const cli = yield* CliService;
+		yield* cli.run(process.argv);
+	}).pipe(
+		Effect.provide(CliService.Default),
+		Effect.provide(BunContext.layer),
+		BunRuntime.runMain(),
+	);
 }
 ```
 
@@ -579,29 +589,32 @@ if (hasNoArgs) {
 
 ```typescript
 // embed.ts - Local embeddings via ONNX
-const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
 const EMBEDDING_DIMENSION = 384;
 
 export async function embedText(text: string): Promise<Float32Array> {
-  const extractor = await getExtractor();
-  const output = await extractor(input, { pooling: 'mean', normalize: true });
-  return output;
+	const extractor = await getExtractor();
+	const output = await extractor(input, { pooling: "mean", normalize: true });
+	return output;
 }
 ```
 
 ### Hybrid Search Implementation
 
 ```typescript
-export async function hybridSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
-  const semanticWeight = options.semanticWeight ?? 0.6;
-  const keywordWeight = options.keywordWeight ?? 0.4;
+export async function hybridSearch(
+	query: string,
+	options: SearchOptions = {},
+): Promise<SearchResult[]> {
+	const semanticWeight = options.semanticWeight ?? 0.6;
+	const keywordWeight = options.keywordWeight ?? 0.4;
 
-  const [keywordResults, semanticResults] = await Promise.all([
-    keywordSearch(query, options),  // SQLite FTS5
-    semanticSearch(query, options)  // LanceDB vectors
-  ]);
+	const [keywordResults, semanticResults] = await Promise.all([
+		keywordSearch(query, options), // SQLite FTS5
+		semanticSearch(query, options), // LanceDB vectors
+	]);
 
-  // Merge and weight results...
+	// Merge and weight results...
 }
 ```
 
@@ -609,16 +622,16 @@ export async function hybridSearch(query: string, options: SearchOptions = {}): 
 
 ```typescript
 export function isBinaryBuffer(buffer: Buffer): boolean {
-  const sample = buffer.subarray(0, Math.min(buffer.length, 1024));
-  let suspicious = 0;
-  for (let i = 0; i < sample.length; i += 1) {
-    const byte = sample[i];
-    if (byte === 0) return true;  // Null byte = binary
-    if (byte < 7 || (byte > 13 && byte < 32) || byte === 255) {
-      suspicious += 1;
-    }
-  }
-  return suspicious / sample.length > 0.3;  // >30% suspicious = binary
+	const sample = buffer.subarray(0, Math.min(buffer.length, 1024));
+	let suspicious = 0;
+	for (let i = 0; i < sample.length; i += 1) {
+		const byte = sample[i];
+		if (byte === 0) return true; // Null byte = binary
+		if (byte < 7 || (byte > 13 && byte < 32) || byte === 255) {
+			suspicious += 1;
+		}
+	}
+	return suspicious / sample.length > 0.3; // >30% suspicious = binary
 }
 ```
 
@@ -627,20 +640,20 @@ export function isBinaryBuffer(buffer: Buffer): boolean {
 ```typescript
 // Track file state for incremental indexing
 export interface FileMetaRow {
-  id?: number;
-  repo: string;
-  path: string;
-  filename: string;
-  mtime_ms: number;
-  size_bytes: number;
-  hash: string;  // SHA-256 of file contents
+	id?: number;
+	repo: string;
+	path: string;
+	filename: string;
+	mtime_ms: number;
+	size_bytes: number;
+	hash: string; // SHA-256 of file contents
 }
 
 // Skip unchanged files
 const existing = existingByPath.get(relativePath);
 if (existing && existing.hash === hash && !force) {
-  unchangedSkipped += 1;
-  continue;
+	unchangedSkipped += 1;
+	continue;
 }
 ```
 
@@ -652,14 +665,17 @@ repogrep includes a `cursor-rule.md` that teaches Cursor how to use the CLI:
 # Cursor Rule: repogrep CLI Integration
 
 ## When to Use repogrep
+
 Use `repogrep` when you need to:
+
 - Search code in repositories that are NOT in the current workspace
 - Find examples of patterns across multiple indexed codebases
-...
+  ...
 
 ## Command Selection Guide
-| Need to... | Use Command | Example |
-|------------|-------------|---------|
+
+| Need to...           | Use Command         | Example                                            |
+| -------------------- | ------------------- | -------------------------------------------------- |
 | Find code by meaning | `search --semantic` | `repogrep search "validate user input" --semantic` |
 ```
 
@@ -679,4 +695,4 @@ This validates that skill files work for teaching agents CLI usage — Offworld 
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

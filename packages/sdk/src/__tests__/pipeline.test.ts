@@ -535,7 +535,14 @@ describe("runAnalysisPipeline", () => {
 			const archPath = "/mock/.ow/analyses/github--test--project/architecture.json";
 			expect(writtenFiles.has(archPath)).toBe(true);
 			const savedArch = JSON.parse(writtenFiles.get(archPath)!);
-			expect(savedArch).toEqual(mockArchitecture);
+			// Pipeline strips empty responsibilities arrays via cleanArchitectureForOutput
+			const expectedArch = {
+				...mockArchitecture,
+				entities: mockArchitecture.entities.map(({ responsibilities, ...rest }) =>
+					responsibilities?.length ? { ...rest, responsibilities } : rest,
+				),
+			};
+			expect(savedArch).toEqual(expectedArch);
 		});
 
 		it("saves architecture.md", async () => {

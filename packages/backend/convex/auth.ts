@@ -35,6 +35,28 @@ export { createAuth };
 export const getCurrentUser = query({
 	args: {},
 	handler: async (ctx) => {
+		return await authComponent.getAuthUser(ctx);
+	},
+});
+
+export const getCurrentUserSafe = query({
+	args: {},
+	handler: async (ctx) => {
 		return await authComponent.safeGetAuthUser(ctx);
+	},
+});
+
+function getAdminEmails(): string[] {
+	const emails = process.env.ADMIN_EMAILS;
+	if (!emails) return [];
+	return emails.split(",").map((e) => e.trim().toLowerCase());
+}
+
+export const isAdmin = query({
+	args: {},
+	handler: async (ctx) => {
+		const user = await authComponent.safeGetAuthUser(ctx);
+		if (!user) return false;
+		return getAdminEmails().includes(user.email.toLowerCase());
 	},
 });

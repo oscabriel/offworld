@@ -127,8 +127,8 @@ describe("skill formatting", () => {
 			const result = formatSkillMd(mockSkill);
 
 			expect(result).toContain("## Deep Context");
-			expect(result).toContain("Architecture: Read analysis/architecture.md");
-			expect(result).toContain("Summary: Read analysis/summary.md");
+			expect(result).toContain("- Architecture: `${ANALYSIS}/architecture.md`");
+			expect(result).toContain("- Summary: `${ANALYSIS}/summary.md`");
 		});
 
 		it("handles empty arrays", () => {

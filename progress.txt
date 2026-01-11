@@ -275,3 +275,20 @@
 - TypeScript: pass
 - Tests: 428 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-018/019/020 - Verification of existing behavior
+
+### Completed
+- PRD-018: Verified all artifacts are generated (SKILL.md, summary.md, architecture.md/json, file-index.json, meta.json)
+- PRD-019: Verified skill installation to ~/.config/opencode/skill/{name}/SKILL.md and ~/.claude/skills/{name}/SKILL.md
+- PRD-020: Verified CLI progress feedback (spinner, onProgress callback, --verbose flag)
+
+### Notes
+- Updated PRD-018: field name is "analyzedAt" not "generated" in meta.json
+- Updated PRD-019: path structure is {name}/SKILL.md not {name}.md
+- No code changes needed - features already implemented
+
+### Verification
+- Code review confirmed implementations exist

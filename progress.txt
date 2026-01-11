@@ -111,3 +111,25 @@
 - TypeScript: SDK/CLI pass
 - Tests: 392 passed (+1)
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-009 - Deep Context section in skills
+
+### Completed
+- PRD-009: Add Deep Context section referencing analysis files
+
+### Changes
+- `packages/sdk/src/analysis/prompts.ts`:
+  - Added `analysisPath` parameter to `createSkillPrompt()`
+  - Added `deepContextSection` template with paths to architecture.md/summary.md
+- `packages/sdk/src/analysis/generate.ts`:
+  - Added `analysisPath` to `SkillGenerateOptions`
+  - Passed to `createSkillPrompt()`
+- `packages/sdk/src/analysis/pipeline.ts`:
+  - Passes `analysisPath` to skill generation
+
+### Verification
+- TypeScript: SDK pass
+- Tests: 392 passed
+- Lint: 0 errors

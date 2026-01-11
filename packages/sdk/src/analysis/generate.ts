@@ -19,6 +19,7 @@ export interface SkillGenerateOptions extends GenerateOptions {
 	fullName?: string;
 	commitSha?: string;
 	generated?: string;
+	analysisPath?: string;
 }
 
 export interface RichSkillResult {
@@ -155,6 +156,7 @@ export async function generateRichSkill(
 		topFiles: context.topFiles,
 		summary,
 		architectureJson: architecture ? JSON.stringify(architecture, null, 2) : null,
+		analysisPath: options.analysisPath,
 	});
 
 	const result = await streamPrompt({

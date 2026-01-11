@@ -218,6 +218,7 @@ export async function runAnalysisPipeline(
 		fullName: options.fullName,
 		commitSha,
 		generated,
+		analysisPath,
 	};
 	const { skill, skillMd } = await generateRichSkill(context, summary, architecture, skillOptions);
 

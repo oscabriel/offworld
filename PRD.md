@@ -116,7 +116,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Section includes path to summary.md",
 			"Paths use absolute ~/.ow/analyses/... format"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-010",

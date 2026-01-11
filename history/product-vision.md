@@ -1,7 +1,7 @@
 # Offworld: Product Vision
 
-> *"Your dependencies should be as understandable as your own code."*
-> 
+> _"Your dependencies should be as understandable as your own code."_
+>
 > **Scaffold:** `/Users/oscargabriel/Developer/projects/offworld`
 
 ---
@@ -10,15 +10,15 @@
 
 Engineers struggle to understand unfamiliar codebases:
 
-| Problem | Evidence |
-|---------|----------|
-| **Onboarding takes months** | 3-9 months for new engineers to fully ramp |
+| Problem                            | Evidence                                                    |
+| ---------------------------------- | ----------------------------------------------------------- |
+| **Onboarding takes months**        | 3-9 months for new engineers to fully ramp                  |
 | **50%+ time reading others' code** | "AI assistants help with side projects, not with real work" |
-| **Dependency blindness** | 70-90% of modern software is OSS we never read |
-| **AI hallucination** | LLMs trained on stale data give wrong answers about APIs |
-| **Context limits** | Can't paste entire codebase into an LLM prompt |
-| **Finding the right files** | "Which 15 files out of 10,000 actually matter?" |
-| **Repeated scanning waste** | Agent re-reads the same files every session, burning tokens |
+| **Dependency blindness**           | 70-90% of modern software is OSS we never read              |
+| **AI hallucination**               | LLMs trained on stale data give wrong answers about APIs    |
+| **Context limits**                 | Can't paste entire codebase into an LLM prompt              |
+| **Finding the right files**        | "Which 15 files out of 10,000 actually matter?"             |
+| **Repeated scanning waste**        | Agent re-reads the same files every session, burning tokens |
 
 ### Real Quotes
 
@@ -60,11 +60,11 @@ When debugging why `tanstack/router` behaves a certain way, you shouldn't need t
 
 Skills have become the dominant standard for extending AI coding assistants:
 
-| Metric | Value |
-|--------|-------|
-| Skills on SkillsMP marketplace | **40,779+** |
-| Adopting platforms | Claude Code, OpenCode, Codex CLI, ChatGPT, LangChain |
-| Context efficiency | **~100 tokens** (vs MCP's ~10k) |
+| Metric                         | Value                                                |
+| ------------------------------ | ---------------------------------------------------- |
+| Skills on SkillsMP marketplace | **40,779+**                                          |
+| Adopting platforms             | Claude Code, OpenCode, Codex CLI, ChatGPT, LangChain |
+| Context efficiency             | **~100 tokens** (vs MCP's ~10k)                      |
 
 **No one is auto-generating skills for OSS repositories.** SkillsMP has 40k+ skills, ALL manually authored. Offworld would be the **first skill generation engine**.
 
@@ -111,18 +111,21 @@ For types: `pattern: "export (type|interface) [TypeName]"`
 ## User Personas
 
 ### The Contributor
+
 - Wants to contribute to open source
 - Needs to understand codebase before making PRs
 - Uses CLI to clone and analyze repos locally
 - Appreciates issue difficulty ratings
 
 ### The Integrator
+
 - Building apps with many dependencies
 - Needs to understand how libraries work internally
 - Uses OpenCode with Offworld plugin for research
 - Values accurate, up-to-date information
 
 ### The Explorer
+
 - Curious about how things work
 - Browses interesting projects for learning
 - Uses web app to discover and bookmark repos
@@ -205,13 +208,13 @@ Agent: "Based on the TanStack Router source code, preloading works by..."
 
 ## Four Surfaces
 
-| Surface | Purpose | Priority |
-|---------|---------|----------|
-| **CLI** (`ow`) | Clone, analyze, manage repos locally | P1 (build first) |
-| **TUI** (`ow` interactive) | Interactive terminal UI via OpenTUI | P2 (scaffolded) |
-| **OpenCode Plugin** | Agent integration, context injection | P1 (after CLI) |
-| **Web** (offworld.sh) | Directory, sync, skill copy-paste | P1 (scaffolded) |
-| **Docs** | Documentation via Astro Starlight | P2 (scaffolded) |
+| Surface                    | Purpose                              | Priority         |
+| -------------------------- | ------------------------------------ | ---------------- |
+| **CLI** (`ow`)             | Clone, analyze, manage repos locally | P1 (build first) |
+| **TUI** (`ow` interactive) | Interactive terminal UI via OpenTUI  | P2 (scaffolded)  |
+| **OpenCode Plugin**        | Agent integration, context injection | P1 (after CLI)   |
+| **Web** (offworld.sh)      | Directory, sync, skill copy-paste    | P1 (scaffolded)  |
+| **Docs**                   | Documentation via Astro Starlight    | P2 (scaffolded)  |
 
 ### The User Loop
 

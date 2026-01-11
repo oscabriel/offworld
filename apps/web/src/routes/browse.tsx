@@ -1,151 +1,67 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, Clock, Download, Search, Star } from "lucide-react";
-import { useState, useEffect } from "react";
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { RepoUrlInput } from "@/components/home/repo-url-input";
+import { Footer } from "@/components/layout/footer";
+import { RepoCard } from "@/components/repo/repo-card";
+import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/browse")({
-	component: BrowsePage,
+	component: BrowseComponent,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(convexQuery(api.analyses.list, {}));
+	},
 });
 
-function BrowsePage() {
-	const [search, setSearch] = useState("");
+function BrowseComponent() {
+	const [error, setError] = useState<string | null>(null);
 
-	const analysesQuery = useQuery(convexQuery(api.analyses.list, { limit: 100 }));
-	const analyses = analysesQuery.data ?? [];
-	const isLoading = analysesQuery.isLoading;
-
-	const filteredAnalyses = analyses.filter((a) =>
-		a.fullName.toLowerCase().includes(search.toLowerCase()),
-	);
+	const { data: analyses } = useSuspenseQuery(convexQuery(api.analyses.list, {}));
 
 	return (
-		<div className="container mx-auto max-w-4xl py-10">
-			<div className="mb-8">
-				<h1 className="mb-2 text-3xl font-bold">Browse Repositories</h1>
-				<p className="text-muted-foreground">Explore analyzed repositories sorted by popularity</p>
-			</div>
+		<div className="relative flex min-h-screen flex-col">
+			<div className="container mx-auto max-w-7xl flex-1 px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+				<div className="space-y-14">
+					{/* Header */}
+					<div className="space-y-6">
+						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Explore Repositories</h1>
+					</div>
 
-			<div className="mb-6">
-				<div className="relative">
-					<Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-					<Input
-						placeholder="Search repositories..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						className="pl-10"
-					/>
-				</div>
-			</div>
+					{/* URL Input Section */}
+					<div>
+						<RepoUrlInput
+							labelText="Search for a repository"
+							buttonText="Search"
+							onError={setError}
+						/>
+						{error && <p className="mt-2 font-mono text-red-500 text-sm">{error}</p>}
+					</div>
 
-			{isLoading ? (
-				<div className="space-y-4">
-					{[...Array(5)].map((_, i) => (
-						<Card key={i}>
-							<CardHeader>
-								<Skeleton className="h-6 w-48" />
-								<Skeleton className="h-4 w-32" />
-							</CardHeader>
-						</Card>
-					))}
-				</div>
-			) : filteredAnalyses.length === 0 ? (
-				<Card>
-					<CardContent className="py-10 text-center">
-						<p className="text-muted-foreground">
-							{search ? `No repositories found matching "${search}"` : "No analyses available yet"}
-						</p>
-					</CardContent>
-				</Card>
-			) : (
-				<div className="space-y-4">
-					{filteredAnalyses.map((analysis) => (
-						<RepoCard key={analysis.fullName} analysis={analysis} />
-					))}
-				</div>
-			)}
-		</div>
-	);
-}
-
-interface AnalysisListItem {
-	fullName: string;
-	provider: string;
-	pullCount: number;
-	analyzedAt: string;
-	commitSha: string;
-	isVerified: boolean;
-}
-
-function RepoCard({ analysis }: { analysis: AnalysisListItem }) {
-	const [owner, repo] = analysis.fullName.split("/");
-	const { stars } = useGitHubStars(owner, repo);
-
-	const formattedDate = new Date(analysis.analyzedAt).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-
-	return (
-		<Link to="/repo/$owner/$repo" params={{ owner, repo }}>
-			<Card className="transition-colors hover:bg-muted/50">
-				<CardHeader className="pb-2">
-					<div className="flex items-start justify-between">
-						<div>
-							<CardTitle className="text-lg">{analysis.fullName}</CardTitle>
-							<CardDescription className="mt-1 flex items-center gap-3">
-								<span className="flex items-center gap-1">
-									<Clock className="h-3 w-3" />
-									{formattedDate}
-								</span>
-								<span className="flex items-center gap-1">
-									<Download className="h-3 w-3" />
-									{analysis.pullCount} pulls
-								</span>
-								{stars !== null && (
-									<span className="flex items-center gap-1">
-										<Star className="h-3 w-3 text-yellow-500" />
-										{stars.toLocaleString()}
-									</span>
-								)}
-							</CardDescription>
-						</div>
-						{analysis.isVerified && (
-							<span className="flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-500">
-								<Check className="h-3 w-3" />
-								Verified
-							</span>
+					{/* Pre-Indexed Repositories Grid */}
+					<div className="space-y-8">
+						{!analyses || analyses.length === 0 ? (
+							<Card className="rounded-none border-primary/10 p-12 text-center shadow-none">
+								<p className="font-serif text-lg text-muted-foreground">
+									No repositories have been analyzed yet. Be the first!
+								</p>
+							</Card>
+						) : (
+							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+								{analyses.map((analysis) => (
+									<RepoCard
+										key={analysis.fullName}
+										fullName={analysis.fullName}
+										pullCount={analysis.pullCount}
+									/>
+								))}
+							</div>
 						)}
 					</div>
-				</CardHeader>
-			</Card>
-		</Link>
+				</div>
+			</div>
+			<Footer />
+		</div>
 	);
-}
-
-function useGitHubStars(owner: string, repo: string) {
-	const [stars, setStars] = useState<number | null>(null);
-
-	useEffect(() => {
-		async function fetchStars() {
-			try {
-				const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-				if (response.ok) {
-					const data = await response.json();
-					setStars(data.stargazers_count);
-				}
-			} catch {
-				// Silently fail
-			}
-		}
-		fetchStars();
-	}, [owner, repo]);
-
-	return { stars };
 }

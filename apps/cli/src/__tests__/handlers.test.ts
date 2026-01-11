@@ -51,6 +51,7 @@ vi.mock("@offworld/sdk", () => ({
 	checkStaleness: vi.fn(),
 	runAnalysisPipeline: vi.fn(),
 	isAnalysisStale: vi.fn(),
+	formatSkillMd: vi.fn(() => "---\nname: test\n---\n# Skill"),
 	RepoExistsError: class RepoExistsError extends Error {},
 }));
 
@@ -141,10 +142,8 @@ describe("CLI handlers", () => {
 		skill: {
 			name: "tanstack-router",
 			description: "TanStack Router expert",
-			allowedTools: ["Read", "Glob", "Grep"],
-			repositoryStructure: [{ path: "src", purpose: "Source code" }],
-			keyFiles: [{ path: "src/index.ts", description: "Main entry" }],
-			searchStrategies: ["Use Glob for file patterns"],
+			quickPaths: [{ path: "src", description: "Source code" }],
+			searchPatterns: [{ find: "Routes", pattern: "createRoute", path: "src" }],
 			whenToUse: ["When working with TanStack Router"],
 		},
 		fileIndex: [],

@@ -1,7 +1,7 @@
 # Offworld: Distribution Guide
 
 > How to distribute the `ow` CLI to users via three methods.
-> 
+>
 > **Scaffold:** `/Users/oscargabriel/Developer/projects/offworld`
 
 ---
@@ -140,7 +140,7 @@ main() {
   local arch=$(detect_arch)
   local version=$(get_latest_version)
   local version_num="${version#v}"  # Remove 'v' prefix
-  
+
   info "Installing ow $version for $os-$arch..."
 
   # Create install directory
@@ -157,7 +157,7 @@ main() {
   # Download and verify checksum
   local checksums_url="https://github.com/$REPO/releases/download/$version/checksums.txt"
   local checksums="$tmp_dir/checksums.txt"
-  
+
   if curl -fsSL "$checksums_url" -o "$checksums" 2>/dev/null; then
     local expected_checksum=$(grep "ow-$os-$arch.tar.gz" "$checksums" | cut -d' ' -f1)
     if [ -n "$expected_checksum" ]; then
@@ -169,13 +169,13 @@ main() {
   # Extract and install
   info "Extracting..."
   tar -xzf "$archive" -C "$tmp_dir"
-  
+
   # Find the binary (might be ow or ow-darwin-arm64, etc.)
   local binary=$(find "$tmp_dir" -name "ow*" -type f -perm -u+x | head -1)
   if [ -z "$binary" ]; then
     binary=$(find "$tmp_dir" -name "ow*" -type f | head -1)
   fi
-  
+
   if [ -z "$binary" ]; then
     error "Could not find ow binary in archive"
   fi
@@ -221,21 +221,21 @@ main "$@"
 
 ```typescript
 // apps/web/app/routes/install.ts
-import { createAPIFileRoute } from '@tanstack/start/api'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { createAPIFileRoute } from "@tanstack/start/api";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
-export const APIRoute = createAPIFileRoute('/install')({
-  GET: async () => {
-    const script = await readFile(join(process.cwd(), 'public', 'install'), 'utf-8')
-    return new Response(script, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'public, max-age=300', // 5 min cache
-      },
-    })
-  },
-})
+export const APIRoute = createAPIFileRoute("/install")({
+	GET: async () => {
+		const script = await readFile(join(process.cwd(), "public", "install"), "utf-8");
+		return new Response(script, {
+			headers: {
+				"Content-Type": "text/plain; charset=utf-8",
+				"Cache-Control": "public, max-age=300", // 5 min cache
+			},
+		});
+	},
+});
 ```
 
 Then place script at `public/install.txt`.
@@ -380,17 +380,17 @@ update-homebrew:
       run: |
         VERSION="${{ github.ref_name }}"
         VERSION="${VERSION#v}"  # Remove 'v' prefix
-        
+
         DARWIN_ARM64_SHA=$(grep "ow-darwin-arm64.tar.gz" checksums.txt | cut -d' ' -f1)
         DARWIN_X64_SHA=$(grep "ow-darwin-x64.tar.gz" checksums.txt | cut -d' ' -f1)
         LINUX_ARM64_SHA=$(grep "ow-linux-arm64.tar.gz" checksums.txt | cut -d' ' -f1)
         LINUX_X64_SHA=$(grep "ow-linux-x64.tar.gz" checksums.txt | cut -d' ' -f1)
-        
+
         cd homebrew-tap
-        
+
         # Update version
         sed -i "s/version \".*\"/version \"$VERSION\"/" Formula/ow.rb
-        
+
         # Update checksums (order matters - match the file structure)
         # This is a simplified approach; production should use proper Ruby parsing
         sed -i "0,/sha256 \".*\"/s//sha256 \"$DARWIN_ARM64_SHA\"/" Formula/ow.rb
@@ -464,40 +464,30 @@ apps/cli/
 
 ```json
 {
-  "name": "offworld",
-  "version": "0.1.0",
-  "description": "Clone OSS repos and auto-generate AI agent skills",
-  "bin": {
-    "ow": "dist/cli.mjs"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "engines": {
-    "node": ">=18"
-  },
-  "keywords": [
-    "cli",
-    "git",
-    "clone",
-    "ai",
-    "skills",
-    "opencode",
-    "agent"
-  ],
-  "author": "offworld-sh",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/offworld-sh/offworld.git",
-    "directory": "apps/cli"
-  },
-  "homepage": "https://offworld.sh",
-  "scripts": {
-    "build": "tsdown src/cli.ts --format esm --out-dir dist",
-    "prepublishOnly": "bun run build"
-  }
+	"name": "offworld",
+	"version": "0.1.0",
+	"description": "Clone OSS repos and auto-generate AI agent skills",
+	"bin": {
+		"ow": "dist/cli.mjs"
+	},
+	"files": ["dist"],
+	"type": "module",
+	"engines": {
+		"node": ">=18"
+	},
+	"keywords": ["cli", "git", "clone", "ai", "skills", "opencode", "agent"],
+	"author": "offworld-sh",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/offworld-sh/offworld.git",
+		"directory": "apps/cli"
+	},
+	"homepage": "https://offworld.sh",
+	"scripts": {
+		"build": "tsdown src/cli.ts --format esm --out-dir dist",
+		"prepublishOnly": "bun run build"
+	}
 }
 ```
 
@@ -518,18 +508,18 @@ Note: The shebang `#!/usr/bin/env node` is required for npm to execute it as a C
 
 ```typescript
 // apps/cli/tsdown.config.ts
-import { defineConfig } from 'tsdown'
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ['src/cli.ts'],
-  format: ['esm'],
-  outDir: 'dist',
-  clean: true,
-  dts: false,
-  minify: true,
-  // Bundle all dependencies
-  noExternal: [/.*/],
-})
+	entry: ["src/cli.ts"],
+	format: ["esm"],
+	outDir: "dist",
+	clean: true,
+	dts: false,
+	minify: true,
+	// Bundle all dependencies
+	noExternal: [/.*/],
+});
 ```
 
 #### Publishing
@@ -556,17 +546,17 @@ publish-npm:
   steps:
     - uses: actions/checkout@v4
     - uses: oven-sh/setup-bun@v2
-    
+
     - name: Install dependencies
       run: bun install
-    
+
     - name: Build
       run: bun run build
       working-directory: apps/cli
-    
+
     - name: Setup npm
       run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-    
+
     - name: Publish
       run: npm publish
       working-directory: apps/cli
@@ -584,7 +574,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -594,17 +584,17 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-14        # Apple Silicon runner
+          - os: macos-14 # Apple Silicon runner
             target: darwin-arm64
-          - os: macos-13        # Intel runner
+          - os: macos-13 # Intel runner
             target: darwin-x64
           - os: ubuntu-latest
             target: linux-x64
-          - os: ubuntu-24.04-arm  # ARM runner
+          - os: ubuntu-24.04-arm # ARM runner
             target: linux-arm64
 
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -634,7 +624,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -658,7 +648,7 @@ jobs:
   publish-npm:
     needs: release
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -674,7 +664,7 @@ jobs:
   update-homebrew:
     needs: release
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -685,28 +675,28 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
-          
+
           # Download checksums
           curl -fsSL "https://github.com/offworld-sh/offworld/releases/download/${{ github.ref_name }}/checksums.txt" -o /tmp/checksums.txt
-          
+
           # Update formula with new version and checksums
           # (simplified - use proper script in production)
           python3 << 'EOF'
           import re
-          
+
           version = "$VERSION"
-          
+
           with open("/tmp/checksums.txt") as f:
               checksums = {}
               for line in f:
                   sha, name = line.strip().split()
                   checksums[name] = sha
-          
+
           with open("Formula/ow.rb") as f:
               content = f.read()
-          
+
           content = re.sub(r'version ".*"', f'version "{version}"', content)
-          
+
           # Update each sha256 in order
           targets = ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"]
           for target in targets:
@@ -718,7 +708,7 @@ jobs:
                   count=1,
                   flags=re.DOTALL
               )
-          
+
           with open("Formula/ow.rb", "w") as f:
               f.write(content)
           EOF
@@ -736,9 +726,9 @@ jobs:
 
 ## Secrets Required
 
-| Secret | Where to Set | Purpose |
-|--------|--------------|---------|
-| `NPM_TOKEN` | Repo Settings → Secrets | npm publish |
+| Secret               | Where to Set            | Purpose                             |
+| -------------------- | ----------------------- | ----------------------------------- |
+| `NPM_TOKEN`          | Repo Settings → Secrets | npm publish                         |
 | `HOMEBREW_TAP_TOKEN` | Repo Settings → Secrets | Push to oscabriel/homebrew-tap repo |
 
 ### Creating NPM Token
@@ -796,4 +786,4 @@ ow --version
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

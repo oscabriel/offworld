@@ -6,7 +6,7 @@
 2. Read `scripts/ralph/progress.txt`
    (check Codebase Patterns first)
 3. Check you're on the correct branch
-4. Pick highest priority story 
+4. Pick highest priority story
    where `passes: false`
 5. Implement that ONE story
 6. Run typecheck and tests
@@ -20,29 +20,33 @@
 APPEND to progress.txt:
 
 ## [Date] - [Story ID]
+
 - What was implemented
 - Files changed
 - **Learnings:**
   - Patterns discovered
   - Gotchas encountered
+
 ---
 
 ## Codebase Patterns
 
 ### Route Files
+
 ```tsx
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/path")({
-  component: PageComponent,
+	component: PageComponent,
 });
 
 function PageComponent() {
-  return <div>...</div>;
+	return <div>...</div>;
 }
 ```
 
 ### Convex Queries
+
 ```tsx
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
@@ -56,22 +60,27 @@ const { data } = useSuspenseQuery(convexQuery(api.module.function, {}));
 ```
 
 ### Imports
+
 - Path alias: `@/` → `src/`
 - API: `@offworld/backend/convex/_generated/api`
 - UI components: `@/components/ui/button`
 - Icons: `lucide-react`
 
 ### UI Components
+
 ```tsx
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@tanstack/react-router";
 
 // Link with params
-<Link to="/repo/$owner/$repo" params={{ owner, repo }}>...</Link>
+<Link to="/repo/$owner/$repo" params={{ owner, repo }}>
+	...
+</Link>;
 ```
 
 ### Auth Pattern
+
 ```tsx
 import { authClient } from "@/lib/auth-client";
 
@@ -83,6 +92,7 @@ const user = await authComponent.safeGetAuthUser(ctx);
 ```
 
 ### Styling
+
 - Tailwind v4 (no config file, uses CSS)
 - Dark mode: class on `<html className="dark">`
 - shadcn/ui components in `components/ui/`

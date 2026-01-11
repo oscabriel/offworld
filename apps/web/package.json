@@ -39,6 +39,7 @@
 		"react": "19.2.3",
 		"react-day-picker": "^9.13.0",
 		"react-dom": "19.2.3",
+		"react-markdown": "^10.1.0",
 		"react-resizable-panels": "^4.3.3",
 		"recharts": "2.15.4",
 		"shadcn": "^3.6.3",

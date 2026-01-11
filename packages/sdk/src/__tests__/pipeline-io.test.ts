@@ -266,7 +266,14 @@ describe("saveAnalysis with temp directories (via runAnalysisPipeline)", () => {
 
 		const content = readFileSync(archPath, "utf-8");
 		const parsed = JSON.parse(content);
-		expect(parsed).toEqual(mockArchitecture);
+		// Pipeline strips empty responsibilities arrays via cleanArchitectureForOutput
+		const expectedArch = {
+			...mockArchitecture,
+			entities: mockArchitecture.entities.map(({ responsibilities, ...rest }) =>
+				responsibilities?.length ? { ...rest, responsibilities } : rest,
+			),
+		};
+		expect(parsed).toEqual(expectedArch);
 	});
 
 	it("saves architecture.md with correct content", async () => {

@@ -84,27 +84,27 @@ When sources disagree, what wins:
 
 ### Existing (from scaffold)
 
-| File | Purpose |
-|------|---------|
-| `packages/backend/convex/schema.ts` | Convex database schema |
-| `packages/backend/convex/auth.ts` | Better Auth + Convex integration |
-| `apps/web/src/router.tsx` | TanStack Start router setup |
-| `apps/docs/astro.config.mjs` | Starlight docs config |
-| `apps/tui/src/index.ts` | OpenTUI entry point |
-| `turbo.json` | Monorepo task config |
-| `package.json` | Bun workspaces with catalog |
+| File                                | Purpose                          |
+| ----------------------------------- | -------------------------------- |
+| `packages/backend/convex/schema.ts` | Convex database schema           |
+| `packages/backend/convex/auth.ts`   | Better Auth + Convex integration |
+| `apps/web/src/router.tsx`           | TanStack Start router setup      |
+| `apps/docs/astro.config.mjs`        | Starlight docs config            |
+| `apps/tui/src/index.ts`             | OpenTUI entry point              |
+| `turbo.json`                        | Monorepo task config             |
+| `package.json`                      | Bun workspaces with catalog      |
 
 ### To Create
 
-| File | Purpose |
-|------|---------|
-| `packages/types/src/schemas.ts` | All Zod schemas (single source of truth) |
-| `packages/sdk/src/config.ts` | Path utilities, config loading |
-| `packages/sdk/src/clone.ts` | Git clone operations |
-| `packages/sdk/src/importance/index.ts` | Tree-sitter file ranking |
-| `packages/sdk/src/analysis.ts` | Summary/architecture generation |
-| `packages/sdk/src/skill.ts` | SKILL.md generation |
-| `apps/cli/src/index.ts` | CLI router definition |
+| File                                   | Purpose                                  |
+| -------------------------------------- | ---------------------------------------- |
+| `packages/types/src/schemas.ts`        | All Zod schemas (single source of truth) |
+| `packages/sdk/src/config.ts`           | Path utilities, config loading           |
+| `packages/sdk/src/clone.ts`            | Git clone operations                     |
+| `packages/sdk/src/importance/index.ts` | Tree-sitter file ranking                 |
+| `packages/sdk/src/analysis.ts`         | Summary/architecture generation          |
+| `packages/sdk/src/skill.ts`            | SKILL.md generation                      |
+| `apps/cli/src/index.ts`                | CLI router definition                    |
 
 ---
 
@@ -132,9 +132,9 @@ createCli({ router, name: "ow", version: "0.1.0" }).run();
 ```typescript
 // All types derived from Zod schemas
 export const ArchitectureSchema = z.object({
-  projectType: z.enum(['monorepo', 'library', 'cli', 'app', 'framework']),
-  entities: z.array(EntitySchema),
-  // ...
+	projectType: z.enum(["monorepo", "library", "cli", "app", "framework"]),
+	entities: z.array(EntitySchema),
+	// ...
 });
 
 export type Architecture = z.infer<typeof ArchitectureSchema>;
@@ -145,9 +145,9 @@ export type Architecture = z.infer<typeof ArchitectureSchema>;
 ```typescript
 // Structured output → Zod validate → Format as markdown
 const { object } = await generateObject({
-  model,
-  schema: SkillSchema,
-  prompt: skillGenerationPrompt,
+	model,
+	schema: SkillSchema,
+	prompt: skillGenerationPrompt,
 });
 const markdown = formatSkillMd(object);
 ```
@@ -268,6 +268,7 @@ ow pull /path/to/local/repo                  # Absolute path (local)
 ### Input: `ow pull tanstack/router`
 
 **Expected output:**
+
 ```
 ~/ow/github/tanstack/router/    # Full git clone (provider-scoped)
 ~/.ow/analyses/github--tanstack--router/
@@ -285,6 +286,7 @@ ow pull /path/to/local/repo                  # Absolute path (local)
 ### Input: `ow pull https://gitlab.com/inkscape/inkscape`
 
 **Expected output:**
+
 ```
 ~/ow/gitlab/inkscape/inkscape/  # Full git clone (provider-scoped)
 ~/.ow/analyses/gitlab--inkscape--inkscape/
@@ -304,6 +306,7 @@ ow pull /path/to/local/repo                  # Absolute path (local)
 ### Input: `ow pull .` (local repo)
 
 **Expected output:**
+
 ```
 # Repo stays in place (no cloning)
 ~/.ow/analyses/local--a1b2c3d4e5f6/
@@ -323,6 +326,7 @@ ow pull /path/to/local/repo                  # Absolute path (local)
 ### Input: `ow list`
 
 **Expected output:**
+
 ```
 tanstack/router    ✓ analyzed 2h ago
 vercel/ai          ✓ analyzed 1d ago  (47 commits behind)
@@ -332,11 +336,23 @@ sst/opencode       ○ not analyzed
 ### Input: `ow list --json`
 
 **Expected output:**
+
 ```json
 [
-  { "fullName": "tanstack/router", "path": "~/ow/tanstack/router", "analyzed": true, "stale": false },
-  { "fullName": "vercel/ai", "path": "~/ow/vercel/ai", "analyzed": true, "stale": true, "commitsBehind": 47 },
-  { "fullName": "sst/opencode", "path": "~/ow/sst/opencode", "analyzed": false, "stale": false }
+	{
+		"fullName": "tanstack/router",
+		"path": "~/ow/tanstack/router",
+		"analyzed": true,
+		"stale": false
+	},
+	{
+		"fullName": "vercel/ai",
+		"path": "~/ow/vercel/ai",
+		"analyzed": true,
+		"stale": true,
+		"commitsBehind": 47
+	},
+	{ "fullName": "sst/opencode", "path": "~/ow/sst/opencode", "analyzed": false, "stale": false }
 ]
 ```
 
@@ -346,12 +362,12 @@ sst/opencode       ○ not analyzed
 
 ### Risks
 
-| Risk | Mitigation |
-|------|------------|
-| Tree-sitter native compilation fails | Use `web-tree-sitter` (WASM) as fallback |
-| OpenCode SDK unstable | Implement direct Vercel AI SDK fallback |
-| Large repo timeout | Set file limits, implement progressive analysis |
-| Analysis quality variance | Add quality checks, allow manual override |
+| Risk                                 | Mitigation                                      |
+| ------------------------------------ | ----------------------------------------------- |
+| Tree-sitter native compilation fails | Use `web-tree-sitter` (WASM) as fallback        |
+| OpenCode SDK unstable                | Implement direct Vercel AI SDK fallback         |
+| Large repo timeout                   | Set file limits, implement progressive analysis |
+| Analysis quality variance            | Add quality checks, allow manual override       |
 
 ### How to Fail Safely
 
@@ -409,11 +425,11 @@ Phase 2 (TO DO):
 
 ## Quick Reference
 
-| What | Where |
-|------|-------|
-| Product vision | `product-vision.md` |
-| Technical spec | `technical-spec.md` |
-| Decision rationale | `decisions-log.md` |
-| Implementation phases | `implementation-plan.md` |
-| CLI patterns | `research/cli-architecture.md` |
-| Market context | `research/market-analysis.md` |
+| What                  | Where                          |
+| --------------------- | ------------------------------ |
+| Product vision        | `product-vision.md`            |
+| Technical spec        | `technical-spec.md`            |
+| Decision rationale    | `decisions-log.md`             |
+| Implementation phases | `implementation-plan.md`       |
+| CLI patterns          | `research/cli-architecture.md` |
+| Market context        | `research/market-analysis.md`  |

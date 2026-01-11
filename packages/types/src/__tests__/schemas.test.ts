@@ -259,20 +259,19 @@ describe("SkillSchema", () => {
 		const skill = {
 			name: "tanstack-router",
 			description: "Expert on TanStack Router for type-safe routing",
-			allowedTools: ["Read", "Glob", "Grep"],
-			repositoryStructure: [
+			quickPaths: [
 				{
 					path: "packages/router/src",
-					purpose: "Core router implementation",
+					description: "Core router implementation",
 				},
 			],
-			keyFiles: [
+			searchPatterns: [
 				{
-					path: "packages/router/src/router.ts",
-					description: "Main Router class",
+					find: "router instantiation",
+					pattern: "createRouter",
+					path: "packages/router/src",
 				},
 			],
-			searchStrategies: ["grep for 'createRouter' to find router instantiation"],
 			whenToUse: ["User asks about file-based routing"],
 		};
 		const result = SkillSchema.safeParse(skill);
@@ -292,10 +291,8 @@ describe("SkillSchema", () => {
 		const skill = {
 			name: "minimal",
 			description: "Minimal skill",
-			allowedTools: [],
-			repositoryStructure: [],
-			keyFiles: [],
-			searchStrategies: [],
+			quickPaths: [],
+			searchPatterns: [],
 			whenToUse: [],
 		};
 		const result = SkillSchema.safeParse(skill);

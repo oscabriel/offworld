@@ -32,6 +32,7 @@ export interface PullOptions {
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
+	skipArchitecture?: boolean;
 }
 
 export interface PullResult {
@@ -228,7 +229,14 @@ function verboseLog(message: string, verbose: boolean): void {
  * Main pull handler
  */
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const { repo, shallow = true, branch, force = false, verbose = false } = options;
+	const {
+		repo,
+		shallow = true,
+		branch,
+		force = false,
+		verbose = false,
+		skipArchitecture = false,
+	} = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
@@ -383,12 +391,14 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							config,
 							provider: source.provider,
 							fullName: source.fullName,
+							includeArchitecture: !skipArchitecture,
 							onProgress,
 							onDebug,
 							onStream,
 						}
 					: {
 							config,
+							includeArchitecture: !skipArchitecture,
 							onProgress,
 							onDebug,
 							onStream,

@@ -24,7 +24,6 @@ export const version = "0.1.0";
  * Commands: pull (default), push, generate, list, rm, auth, config
  */
 export const router = os.router({
-	// Pull command - default, clones repo and fetches/generates analysis
 	pull: os
 		.input(
 			z.object({
@@ -33,6 +32,10 @@ export const router = os.router({
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-analysis"),
 				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),
+				skipArchitecture: z
+					.boolean()
+					.default(false)
+					.describe("Skip architecture generation (faster, summary only)"),
 			}),
 		)
 		.meta({
@@ -47,6 +50,7 @@ export const router = os.router({
 				branch: input.branch,
 				force: input.force,
 				verbose: input.verbose,
+				skipArchitecture: input.skipArchitecture,
 			});
 		}),
 
@@ -71,12 +75,15 @@ export const router = os.router({
 			});
 		}),
 
-	// Generate command - run local analysis
 	generate: os
 		.input(
 			z.object({
 				repo: z.string().describe("Repository (owner/repo, URL, or local path)"),
 				force: z.boolean().default(false).describe("Force even if remote exists"),
+				skipArchitecture: z
+					.boolean()
+					.default(false)
+					.describe("Skip architecture generation (faster, summary only)"),
 			}),
 		)
 		.meta({
@@ -87,6 +94,7 @@ export const router = os.router({
 			return generateHandler({
 				repo: input.repo,
 				force: input.force,
+				skipArchitecture: input.skipArchitecture,
 			});
 		}),
 

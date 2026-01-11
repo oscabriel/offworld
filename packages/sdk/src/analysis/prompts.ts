@@ -26,13 +26,13 @@
 export function createSkillPrompt(params: {
 	repoPath: string;
 	repoName: string;
-	fullName?: string; // e.g., "tanstack/router"
+	fullName?: string;
 	readme: string | null;
 	packageConfig: string | null;
 	fileTree: string;
 	topFiles: Array<{ path: string; importance: number; role: string; content: string }>;
 	summary: string;
-	architectureJson: string;
+	architectureJson: string | null;
 }): string {
 	const {
 		repoPath,
@@ -71,9 +71,7 @@ ${fileTree}
 
 ### Summary
 ${summary}
-
-### Architecture
-${architectureJson}
+${architectureJson ? `\n### Architecture\n${architectureJson}` : ""}
 
 ### Sample File Contents
 ${topFiles

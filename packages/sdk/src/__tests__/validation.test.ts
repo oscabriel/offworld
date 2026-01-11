@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Skill } from "@offworld/types";
 import { validateSkillPaths, pathExists } from "../validation/paths.js";
+import { isAnalysisStale, getCachedCommitSha } from "../validation/staleness.js";
 
 const mockExistsSync = vi.fn();
+const mockReadFileSync = vi.fn();
 
 vi.mock("node:fs", () => ({
 	existsSync: (path: string) => mockExistsSync(path),
+	readFileSync: (path: string, encoding?: string) => mockReadFileSync(path, encoding),
 }));
 
 describe("validateSkillPaths", () => {
@@ -108,5 +111,95 @@ describe("pathExists", () => {
 
 		expect(pathExists("/abs/path", "/base")).toBe(true);
 		expect(mockExistsSync).toHaveBeenCalledWith("/abs/path");
+	});
+});
+
+describe("isAnalysisStale", () => {
+	const analysisPath = "/test/analysis";
+
+	beforeEach(() => {
+		mockExistsSync.mockReset();
+		mockReadFileSync.mockReset();
+	});
+
+	it("should return stale with missing_meta when meta.json does not exist", () => {
+		mockExistsSync.mockReturnValue(false);
+
+		const result = isAnalysisStale(analysisPath, "abc1234");
+
+		expect(result.isStale).toBe(true);
+		expect(result.reason).toBe("missing_meta");
+		expect(result.currentSha).toBe("abc1234");
+	});
+
+	it("should return stale with sha_mismatch when SHAs differ", () => {
+		mockExistsSync.mockReturnValue(true);
+		mockReadFileSync.mockReturnValue(JSON.stringify({ commitSha: "old1234" }));
+
+		const result = isAnalysisStale(analysisPath, "new5678");
+
+		expect(result.isStale).toBe(true);
+		expect(result.reason).toBe("sha_mismatch");
+		expect(result.cachedSha).toBe("old1234");
+		expect(result.currentSha).toBe("new5678");
+	});
+
+	it("should return not stale when SHAs match", () => {
+		mockExistsSync.mockReturnValue(true);
+		mockReadFileSync.mockReturnValue(JSON.stringify({ commitSha: "abc1234def" }));
+
+		const result = isAnalysisStale(analysisPath, "abc1234xyz");
+
+		expect(result.isStale).toBe(false);
+		expect(result.cachedSha).toBe("abc1234def");
+	});
+
+	it("should return stale with parse_error when JSON is invalid", () => {
+		mockExistsSync.mockReturnValue(true);
+		mockReadFileSync.mockReturnValue("invalid json");
+
+		const result = isAnalysisStale(analysisPath, "abc1234");
+
+		expect(result.isStale).toBe(true);
+		expect(result.reason).toBe("parse_error");
+	});
+
+	it("should return stale with missing_meta when commitSha is not in meta", () => {
+		mockExistsSync.mockReturnValue(true);
+		mockReadFileSync.mockReturnValue(JSON.stringify({ analyzedAt: "2025-01-01" }));
+
+		const result = isAnalysisStale(analysisPath, "abc1234");
+
+		expect(result.isStale).toBe(true);
+		expect(result.reason).toBe("missing_meta");
+	});
+});
+
+describe("getCachedCommitSha", () => {
+	const analysisPath = "/test/analysis";
+
+	beforeEach(() => {
+		mockExistsSync.mockReset();
+		mockReadFileSync.mockReset();
+	});
+
+	it("should return null when meta.json does not exist", () => {
+		mockExistsSync.mockReturnValue(false);
+
+		expect(getCachedCommitSha(analysisPath)).toBe(null);
+	});
+
+	it("should return commitSha from meta.json", () => {
+		mockExistsSync.mockReturnValue(true);
+		mockReadFileSync.mockReturnValue(JSON.stringify({ commitSha: "abc1234" }));
+
+		expect(getCachedCommitSha(analysisPath)).toBe("abc1234");
+	});
+
+	it("should return null on parse error", () => {
+		mockExistsSync.mockReturnValue(true);
+		mockReadFileSync.mockReturnValue("invalid json");
+
+		expect(getCachedCommitSha(analysisPath)).toBe(null);
 	});
 });

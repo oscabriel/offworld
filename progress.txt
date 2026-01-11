@@ -214,3 +214,34 @@
 - TypeScript: SDK pass
 - Tests: 392 unit tests pass (integration tests have pre-existing issues)
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-011 - Staleness detection for cached analyses
+
+### Completed
+- PRD-011: isAnalysisStale() function comparing commit SHAs
+
+### Changes
+- Created `packages/sdk/src/validation/staleness.ts`:
+  - `isAnalysisStale(analysisPath, currentSha)` returns `StalenessCheckResult`
+  - `getCachedCommitSha(analysisPath)` helper
+  - Compares first 7 chars of SHA for match
+  - Returns reason: "missing_meta" | "sha_mismatch" | "parse_error"
+- Updated `packages/sdk/src/validation/index.ts`: exports staleness functions
+- Updated `packages/sdk/src/index.ts`: exports to public API
+- Refactored `apps/cli/src/handlers/pull.ts`:
+  - `hasLocalAnalysis()` now uses SDK's `isAnalysisStale()`
+  - Removed duplicate meta.json parsing logic
+- Added tests in `packages/sdk/src/__tests__/validation.test.ts`: 8 new tests
+- Updated `apps/cli/src/__tests__/handlers.test.ts`: mock isAnalysisStale
+
+### Decisions
+- Normalized SHA comparison (7-char prefix) for flexibility
+- Staleness result includes reason for debugging
+- CLI delegates staleness logic to SDK (single source of truth)
+
+### Verification
+- TypeScript: SDK/CLI pass
+- Tests: 406 + 22 = 428 passed
+- Lint: 0 errors

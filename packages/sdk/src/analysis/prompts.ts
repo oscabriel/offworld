@@ -33,6 +33,7 @@ export function createSkillPrompt(params: {
 	topFiles: Array<{ path: string; importance: number; role: string; content: string }>;
 	summary: string;
 	architectureJson: string | null;
+	analysisPath?: string;
 }): string {
 	const {
 		repoPath,
@@ -44,9 +45,19 @@ export function createSkillPrompt(params: {
 		topFiles,
 		summary,
 		architectureJson,
+		analysisPath,
 	} = params;
 
 	const displayName = fullName || repoName;
+	const deepContextSection = analysisPath
+		? `
+## Deep Context
+
+For detailed analysis, read these files:
+- Architecture: \`${analysisPath}/architecture.md\`
+- Summary: \`${analysisPath}/summary.md\`
+`
+		: "";
 
 	return `You are creating a comprehensive "skill" file for an AI coding assistant. This skill helps the AI understand and work with the "${displayName}" codebase efficiently.
 
@@ -256,7 +267,7 @@ Or search: pattern: "[relevant pattern]"
     ↓
 [Component D]
 \`\`\`
-\`\`\`
+${deepContextSection}\`\`\`
 
 ---
 

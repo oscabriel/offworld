@@ -446,7 +446,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 		// No remote analysis - generate locally using analysis pipeline
 		verboseLog(`Starting local analysis pipeline for: ${repoPath}`, verbose);
-		s.start("Generating local analysis...");
+
+		// Don't use spinner when verbose - the streaming output conflicts with spinner animation
+		if (!verbose) {
+			s.start("Generating local analysis...");
+		}
 
 		try {
 			const onProgress = (step: string, message: string) => {
@@ -500,7 +504,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						};
 
 			await runAnalysisPipeline(repoPath, pipelineOptions);
-			s.stop("Analysis complete");
+			if (!verbose) {
+				s.stop("Analysis complete");
+			} else {
+				p.log.success("Analysis complete");
+			}
 
 			const analysisCommitSha = getCommitSha(repoPath);
 			const analyzedAt = new Date().toISOString();
@@ -527,7 +535,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				skillInstalled: true,
 			};
 		} catch (err) {
-			s.stop("Analysis failed");
+			if (!verbose) {
+				s.stop("Analysis failed");
+			}
 			const errMessage = err instanceof Error ? err.message : "Unknown error";
 			p.log.error(`Failed to generate analysis: ${errMessage}`);
 

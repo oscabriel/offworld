@@ -107,13 +107,15 @@ function parseSummaryAndArchitecture(text: string): SummaryAndArchitectureResult
 	const summaryDelimiter = "=== SUMMARY ===";
 	const architectureDelimiter = "=== ARCHITECTURE ===";
 
-	const summaryStart = text.indexOf(summaryDelimiter);
-	const architectureStart = text.indexOf(architectureDelimiter);
+	// Use lastIndexOf to find the AI's actual response, not the template in the prompt
+	// The prompt may be echoed back before the actual response, so we need the last occurrence
+	const summaryStart = text.lastIndexOf(summaryDelimiter);
+	const architectureStart = text.lastIndexOf(architectureDelimiter);
 
 	let summaryText: string;
 	let architectureText: string;
 
-	if (summaryStart !== -1 && architectureStart !== -1) {
+	if (summaryStart !== -1 && architectureStart !== -1 && summaryStart < architectureStart) {
 		summaryText = text.slice(summaryStart + summaryDelimiter.length, architectureStart).trim();
 		architectureText = text.slice(architectureStart + architectureDelimiter.length).trim();
 	} else {
@@ -198,14 +200,35 @@ function injectSkillMetadata(skillMd: string, commitSha?: string, generated?: st
 }
 
 function extractSkillMarkdown(text: string): string {
-	const codeBlockMatch = text.match(/```markdown\n([\s\S]*?)\n```/);
-	if (codeBlockMatch?.[1]) {
-		return codeBlockMatch[1].trim();
+	// Find ALL markdown code blocks
+	const codeBlockMatches = [...text.matchAll(/```markdown\n([\s\S]*?)\n```/g)];
+
+	// If there are multiple code blocks, use the LAST one (AI's response, not template)
+	// If there's only one, it's likely the template example - skip to fallback
+	if (codeBlockMatches.length > 1) {
+		const lastMatch = codeBlockMatches[codeBlockMatches.length - 1];
+		if (lastMatch?.[1]) {
+			return lastMatch[1].trim();
+		}
 	}
 
-	const yamlStart = text.indexOf("---");
-	if (yamlStart !== -1) {
-		return text.slice(yamlStart).trim();
+	// Primary extraction: find the last skill frontmatter (--- followed by name:)
+	// This handles when the AI outputs skill markdown directly without code fences
+	const skillFrontmatterMatches = [...text.matchAll(/---\s*\nname:/g)];
+	const lastFrontmatterMatch = skillFrontmatterMatches[skillFrontmatterMatches.length - 1];
+	if (lastFrontmatterMatch?.index !== undefined) {
+		return text.slice(lastFrontmatterMatch.index).trim();
+	}
+
+	// Fallback: if there's exactly one code block and no frontmatter found, use it
+	if (codeBlockMatches.length === 1 && codeBlockMatches[0]?.[1]) {
+		return codeBlockMatches[0][1].trim();
+	}
+
+	// Final fallback: look for any --- near the end of the text
+	const lastDashIndex = text.lastIndexOf("---");
+	if (lastDashIndex !== -1 && lastDashIndex > text.length / 2) {
+		return text.slice(lastDashIndex).trim();
 	}
 
 	return text.trim();

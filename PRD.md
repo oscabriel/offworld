@@ -176,7 +176,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Full clone available via --full-history flag",
 			"Shallow clone sufficient for analysis pipeline"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-015",

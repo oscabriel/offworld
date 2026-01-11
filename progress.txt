@@ -23,3 +23,27 @@
 - TypeScript: passes
 - Tests: 391 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-003 - Combine summary+architecture into single AI call
+
+### Completed
+- PRD-003: Combined AI calls (3→2)
+
+### Changes
+- Added `SUMMARY_ARCHITECTURE_TEMPLATE` to prompts.ts with "=== SECTION ===" delimiters
+- Added `generateSummaryAndArchitecture()` to generate.ts
+- Added `parseSummaryAndArchitecture()` parser using delimiter extraction
+- Updated pipeline.ts: replaced separate calls with combined `analyze` step
+- Updated tests: mocks, progress step assertions
+
+### Decisions
+- Delimiter format: `=== SUMMARY ===` and `=== ARCHITECTURE ===`
+- Fallback: split at midpoint if delimiters missing
+- Progress step renamed from "summary"/"architecture" to "analyze"
+
+### Verification
+- TypeScript: passes
+- Tests: 391 passed
+- Lint: 0 errors

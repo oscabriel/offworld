@@ -1,9 +1,9 @@
 /**
  * Prompt Templates for Skill Generation
- * 
+ *
  * These prompts are designed to generate skills that match the quality of
  * manually-created reference skills in ~/.config/opencode/skill/
- * 
+ *
  * Key principles:
  * 1. Full absolute paths throughout (agent can immediately Read them)
  * 2. "What is X?" context for orientation
@@ -19,7 +19,7 @@
 
 /**
  * Generate the main SKILL.md prompt.
- * 
+ *
  * This produces a rich markdown document that serves as an "onboarding guide"
  * for AI agents working with the codebase.
  */
@@ -34,7 +34,17 @@ export function createSkillPrompt(params: {
 	summary: string;
 	architectureJson: string;
 }): string {
-	const { repoPath, repoName, fullName, readme, packageConfig, fileTree, topFiles, summary, architectureJson } = params;
+	const {
+		repoPath,
+		repoName,
+		fullName,
+		readme,
+		packageConfig,
+		fileTree,
+		topFiles,
+		summary,
+		architectureJson,
+	} = params;
 
 	const displayName = fullName || repoName;
 
@@ -66,12 +76,16 @@ ${summary}
 ${architectureJson}
 
 ### Sample File Contents
-${topFiles.map(f => `
+${topFiles
+	.map(
+		(f) => `
 #### ${f.path} (${f.role}, importance: ${(f.importance * 100).toFixed(0)}%)
 \`\`\`
 ${f.content}
 \`\`\`
-`).join("\n")}
+`,
+	)
+	.join("\n")}
 
 ---
 
@@ -339,3 +353,74 @@ export const ARCHITECTURE_TEMPLATE = `Analyze the repository and extract structu
 - \`examples/\` - [what goes here]
 
 Be thorough. Include all significant directories and files visible in the codebase.`;
+
+export const SUMMARY_ARCHITECTURE_TEMPLATE = `Analyze this repository and generate BOTH a summary AND architecture analysis in a single response.
+
+Your response MUST follow this exact format with clearly separated sections:
+
+=== SUMMARY ===
+## Purpose
+[1-2 sentences about what this project does and why it exists]
+
+## What Makes It Unique
+[1-2 sentences about how this differs from alternatives or what's special about it]
+
+## Key Features
+- [Feature 1]
+- [Feature 2]
+- [Feature 3]
+- [Feature 4]
+- [Feature 5]
+
+## Technologies
+- **Language**: [primary language]
+- **Framework**: [if applicable]
+- **Build Tool**: [build system]
+- **Key Dependencies**: [important deps]
+
+## Architecture Overview
+[2-3 sentences about how the codebase is organized - monorepo structure, package organization, etc.]
+
+## Entry Points
+- [Main entry point and what it does]
+- [Secondary entry point if applicable]
+
+=== ARCHITECTURE ===
+## Project Type
+[ONE of: monorepo, library, cli, app, framework, plugin]
+
+## Entities
+[For each major module/package/directory, use this subsection format. Include 5-15 entities.]
+
+### [Entity Name]
+- **Type**: [ONE of: package, module, feature, util, config, test, docs, example]
+- **Path**: [relative path from repo root]
+- **Description**: [one sentence describing purpose]
+- **Key Files**:
+  - \`[file1.ts]\` - [what it does]
+  - \`[file2.ts]\` - [what it does]
+- **Exports**: [main exports if applicable]
+- **Dependencies**: [internal dependencies on other entities]
+
+## Relationships
+[How entities connect to each other]
+- [from] -> [to]: [relationship type: imports, extends, uses, configures]
+
+## Key Files
+[List 15-25 most important files with their roles]
+- \`[path]\`: [role - entry point, core logic, types, config, etc.]
+
+## Patterns
+- **Framework**: [detected framework or "none"]
+- **Build Tool**: [detected build tool]
+- **Test Framework**: [detected test framework]
+- **Language**: [primary language]
+- **Package Manager**: [npm, pnpm, bun, cargo, etc.]
+- **Monorepo Tool**: [turborepo, nx, lerna, or "none"]
+
+## Directory Conventions
+[Describe any naming or organization patterns]
+- \`src/\` - [what goes here]
+- \`packages/\` - [what goes here]
+
+IMPORTANT: Use "=== SUMMARY ===" and "=== ARCHITECTURE ===" as exact section delimiters.`;

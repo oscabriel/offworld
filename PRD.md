@@ -45,7 +45,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Response is parsed into separate summary (string) and architecture (Architecture) objects",
 			"Pipeline makes 2 AI calls max (combined + skill) instead of 3"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-004",

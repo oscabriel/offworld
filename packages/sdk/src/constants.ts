@@ -136,3 +136,27 @@ export const SUPPORTED_EXTENSIONS = Object.values(SUPPORTED_LANGUAGES).flat();
 
 /** Language identifier type */
 export type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES;
+
+/** Context gathering constants (PRD-016) */
+export const CONTEXT_LIMITS = {
+	/** Maximum token budget for context (roughly 4 chars per token) */
+	MAX_CONTEXT_TOKENS: 3000,
+	/** Number of top files to include content for */
+	TOP_FILES_COUNT: 10,
+	/** Maximum characters per file content */
+	MAX_FILE_CONTENT_CHARS: 2000,
+	/** Token budget for README */
+	README_TOKEN_BUDGET: 400,
+	/** Token budget for package.json */
+	PACKAGE_JSON_TOKEN_BUDGET: 250,
+	/** Token budget for file tree */
+	FILE_TREE_TOKEN_BUDGET: 350,
+} as const;
+
+/** Heuristics constants (PRD-016) */
+export const HEURISTICS_LIMITS = {
+	/** Maximum files to discover */
+	MAX_FILES: 500,
+	/** Maximum file size in bytes (50KB) */
+	MAX_FILE_SIZE: 50 * 1024,
+} as const;

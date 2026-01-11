@@ -8,23 +8,9 @@ import { basename, extname, join } from "node:path";
 import type { FileIndexEntry } from "@offworld/types";
 import { rankFilesByHeuristics } from "./heuristics.js";
 import { isBinaryBuffer } from "../util.js";
+import { CONTEXT_LIMITS } from "../constants.js";
 
-// ============================================================================
-// Configuration
-// ============================================================================
-
-/** Maximum token budget for context (roughly 4 chars per token) */
-const MAX_CONTEXT_TOKENS = 4000;
 const CHARS_PER_TOKEN = 4;
-
-/** Token budget allocations */
-const README_TOKEN_BUDGET = 500;
-const PACKAGE_JSON_TOKEN_BUDGET = 300;
-const FILE_TREE_TOKEN_BUDGET = 400;
-
-/** Number of top files to include content for */
-const TOP_FILES_COUNT = 15;
-const MAX_FILE_CONTENT_CHARS = 2000;
 
 // ============================================================================
 // Types
@@ -101,7 +87,7 @@ function findReadme(repoPath: string): string | null {
 		if (existsSync(readmePath)) {
 			try {
 				const content = readFileSync(readmePath, "utf-8");
-				return truncateToTokens(content, README_TOKEN_BUDGET);
+				return truncateToTokens(content, CONTEXT_LIMITS.README_TOKEN_BUDGET);
 			} catch {
 				return null;
 			}
@@ -136,7 +122,7 @@ function findPackageConfig(repoPath: string): string | null {
 		if (existsSync(configPath)) {
 			try {
 				const content = readFileSync(configPath, "utf-8");
-				return truncateToTokens(content, PACKAGE_JSON_TOKEN_BUDGET);
+				return truncateToTokens(content, CONTEXT_LIMITS.PACKAGE_JSON_TOKEN_BUDGET);
 			} catch {
 				return null;
 			}
@@ -180,7 +166,7 @@ function buildFileTree(topFiles: FileIndexEntry[]): string {
 	}
 
 	const tree = lines.join("\n");
-	return truncateToTokens(tree, FILE_TREE_TOKEN_BUDGET);
+	return truncateToTokens(tree, CONTEXT_LIMITS.FILE_TREE_TOKEN_BUDGET);
 }
 
 // ============================================================================
@@ -235,8 +221,8 @@ export async function gatherContext(
 	repoPath: string,
 	options: ContextOptions = {},
 ): Promise<GatheredContext> {
-	const maxTopFiles = options.maxTopFiles ?? TOP_FILES_COUNT;
-	const maxFileContentChars = options.maxFileContentChars ?? MAX_FILE_CONTENT_CHARS;
+	const maxTopFiles = options.maxTopFiles ?? CONTEXT_LIMITS.TOP_FILES_COUNT;
+	const maxFileContentChars = options.maxFileContentChars ?? CONTEXT_LIMITS.MAX_FILE_CONTENT_CHARS;
 
 	// Get repository name
 	const repoName = basename(repoPath);
@@ -262,7 +248,7 @@ export async function gatherContext(
 	usedTokens += packageConfig ? estimateTokens(packageConfig) : 0;
 	usedTokens += estimateTokens(fileTree);
 
-	const remainingTokenBudget = MAX_CONTEXT_TOKENS - usedTokens;
+	const remainingTokenBudget = CONTEXT_LIMITS.MAX_CONTEXT_TOKENS - usedTokens;
 	const tokensPerFile = Math.floor(remainingTokenBudget / maxTopFiles);
 	const charsPerFile = Math.min(maxFileContentChars, tokensPerFile * CHARS_PER_TOKEN);
 

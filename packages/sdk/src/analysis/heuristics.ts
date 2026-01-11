@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 import type { FileIndexEntry, FileRole } from "@offworld/types";
-import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS } from "../constants.js";
+import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS, HEURISTICS_LIMITS } from "../constants.js";
 import { loadGitignorePatternsSimple } from "../util.js";
 
 export interface HeuristicsOptions {
@@ -42,8 +42,8 @@ function discoverFiles(
 	options: HeuristicsOptions,
 	files: string[] = [],
 ): string[] {
-	const maxFiles = options.maxFiles ?? 500;
-	const maxFileSize = options.maxFileSize ?? 100 * 1024;
+	const maxFiles = options.maxFiles ?? HEURISTICS_LIMITS.MAX_FILES;
+	const maxFileSize = options.maxFileSize ?? HEURISTICS_LIMITS.MAX_FILE_SIZE;
 
 	if (files.length >= maxFiles) {
 		return files;

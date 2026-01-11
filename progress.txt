@@ -245,3 +245,33 @@
 - TypeScript: SDK/CLI pass
 - Tests: 406 + 22 = 428 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-016 - Reduce context gathering limits
+
+### Completed
+- PRD-016: Performance optimization via reduced context limits
+
+### Changes
+- Created `CONTEXT_LIMITS` in `packages/sdk/src/constants.ts`:
+  - `MAX_CONTEXT_TOKENS`: 4000 → 3000
+  - `TOP_FILES_COUNT`: 15 → 10
+  - `README_TOKEN_BUDGET`: 500 → 400
+  - `PACKAGE_JSON_TOKEN_BUDGET`: 300 → 250
+  - `FILE_TREE_TOKEN_BUDGET`: 400 → 350
+- Created `HEURISTICS_LIMITS` in constants.ts:
+  - `MAX_FILES`: 500 (unchanged)
+  - `MAX_FILE_SIZE`: 100KB → 50KB
+- Updated `context.ts`: use CONTEXT_LIMITS constants
+- Updated `heuristics.ts`: use HEURISTICS_LIMITS constants
+
+### Decisions
+- Centralized constants in constants.ts for configurability
+- Reduced token budgets proportionally (~25% reduction)
+- File size limit halved to exclude large generated files
+
+### Verification
+- TypeScript: pass
+- Tests: 428 passed
+- Lint: 0 errors

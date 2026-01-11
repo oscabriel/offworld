@@ -70,7 +70,7 @@ bun run dev:server       # Convex backend only
 bun run dev:setup        # Initial Convex setup
 bun run build            # Build all
 bun run check            # Oxlint + Oxfmt
-bun run check-types      # TypeScript check
+bun run typecheck        # TypeScript check
 ```
 
 ## NOTES

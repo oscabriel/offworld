@@ -55,6 +55,12 @@ export interface AnalysisMeta {
 	costUsd?: number;
 }
 
+/** Timing breakdown for performance analysis */
+export interface PipelineTiming {
+	total: number;
+	steps: Record<string, number>;
+}
+
 /** Options for the analysis pipeline */
 export interface AnalysisPipelineOptions {
 	/** Custom config */
@@ -71,6 +77,8 @@ export interface AnalysisPipelineOptions {
 	onDebug?: (message: string) => void;
 	/** Stream callback for real-time AI output */
 	onStream?: (text: string) => void;
+	/** Timing callback for performance breakdown */
+	onTiming?: (timing: PipelineTiming) => void;
 }
 
 // ============================================================================
@@ -175,6 +183,23 @@ export async function runAnalysisPipeline(
 		onStream: options.onStream,
 	};
 
+	const timing: PipelineTiming = { total: 0, steps: {} };
+	const pipelineStart = Date.now();
+
+	function timeStep<T>(step: string, fn: () => T): T {
+		const start = Date.now();
+		const result = fn();
+		timing.steps[step] = Date.now() - start;
+		return result;
+	}
+
+	async function timeStepAsync<T>(step: string, fn: () => Promise<T>): Promise<T> {
+		const start = Date.now();
+		const result = await fn();
+		timing.steps[step] = Date.now() - start;
+		return result;
+	}
+
 	let analysisPath: string;
 	let repoName: string;
 
@@ -188,13 +213,15 @@ export async function runAnalysisPipeline(
 	}
 
 	onProgress("commit", "Getting current commit...");
-	const commitSha = getCommitSha(repoPath);
+	const commitSha = timeStep("commit", () => getCommitSha(repoPath));
 
 	onProgress("rank", "Ranking files by importance...");
-	const fileIndex = await rankFilesByHeuristics(repoPath);
+	const fileIndex = await timeStepAsync("rank", () => rankFilesByHeuristics(repoPath));
 
 	onProgress("context", "Gathering repository context...");
-	const context = await gatherContext(repoPath, { rankedFiles: fileIndex });
+	const context = await timeStepAsync("context", () =>
+		gatherContext(repoPath, { rankedFiles: fileIndex }),
+	);
 
 	let summary: string;
 	let architecture: Architecture | null = null;
@@ -202,15 +229,17 @@ export async function runAnalysisPipeline(
 
 	if (includeArchitecture) {
 		onProgress("analyze", "Generating summary and architecture...");
-		const result = await generateSummaryAndArchitecture(context, generateOptions);
+		const result = await timeStepAsync("analyze", () =>
+			generateSummaryAndArchitecture(context, generateOptions),
+		);
 		summary = result.summary;
 		architecture = result.architecture;
 
 		onProgress("format", "Formatting architecture diagram...");
-		architectureMd = formatArchitectureMd(architecture);
+		architectureMd = timeStep("format", () => formatArchitectureMd(architecture!));
 	} else {
 		onProgress("analyze", "Generating summary...");
-		summary = await generateSummary(context, generateOptions);
+		summary = await timeStepAsync("analyze", () => generateSummary(context, generateOptions));
 	}
 
 	onProgress("skill", "Generating skill...");
@@ -222,18 +251,17 @@ export async function runAnalysisPipeline(
 		generated,
 		analysisPath,
 	};
-	const { skill: rawSkill, skillMd: rawSkillMd } = await generateRichSkill(
-		context,
-		summary,
-		architecture,
-		skillOptions,
+	const { skill: rawSkill, skillMd: rawSkillMd } = await timeStepAsync("skill", () =>
+		generateRichSkill(context, summary, architecture, skillOptions),
 	);
 
 	onProgress("validate", "Validating paths...");
-	const { validatedSkill: skill, removedPaths } = validateSkillPaths(rawSkill, {
-		basePath: repoPath,
-		onWarning: (path) => options.onDebug?.(`Removed non-existent path: ${path}`),
-	});
+	const { validatedSkill: skill, removedPaths } = timeStep("validate", () =>
+		validateSkillPaths(rawSkill, {
+			basePath: repoPath,
+			onWarning: (path) => options.onDebug?.(`Removed non-existent path: ${path}`),
+		}),
+	);
 
 	const skillMd =
 		removedPaths.length > 0 ? formatSkillMd(skill, { commitSha, generated }) : rawSkillMd;
@@ -257,10 +285,16 @@ export async function runAnalysisPipeline(
 	};
 
 	onProgress("save", "Saving analysis...");
-	saveAnalysis(analysisPath, result);
+	timeStep("save", () => saveAnalysis(analysisPath, result));
 
 	onProgress("install", "Installing skill...");
-	installSkill(repoName, skillMd);
+	timeStep("install", () => installSkill(repoName, skillMd));
+
+	timing.total = Date.now() - pipelineStart;
+
+	if (options.onTiming) {
+		options.onTiming(timing);
+	}
 
 	onProgress("done", "Analysis complete!");
 

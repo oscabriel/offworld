@@ -469,6 +469,15 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					}
 				: undefined;
 
+			const onTiming = verbose
+				? (timing: { total: number; steps: Record<string, number> }) => {
+						p.log.info(`\n[timing] Total: ${(timing.total / 1000).toFixed(2)}s`);
+						for (const [step, ms] of Object.entries(timing.steps)) {
+							p.log.info(`[timing]   ${step}: ${(ms / 1000).toFixed(2)}s`);
+						}
+					}
+				: undefined;
+
 			const pipelineOptions =
 				source.type === "remote"
 					? {
@@ -479,6 +488,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							onProgress,
 							onDebug,
 							onStream,
+							onTiming,
 						}
 					: {
 							config,
@@ -486,6 +496,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							onProgress,
 							onDebug,
 							onStream,
+							onTiming,
 						};
 
 			await runAnalysisPipeline(repoPath, pipelineOptions);

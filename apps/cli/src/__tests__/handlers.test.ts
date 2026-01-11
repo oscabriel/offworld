@@ -219,33 +219,60 @@ describe("CLI handlers", () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
+			mockGetCommitSha.mockReturnValue("abc1234");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
 			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
+			expect(mockCheckRemote).toHaveBeenCalledWith("tanstack/router");
 			expect(mockPullAnalysis).toHaveBeenCalledWith("tanstack/router");
 			expect(mockRunAnalysisPipeline).not.toHaveBeenCalled();
 			expect(result.analysisSource).toBe("remote");
 		});
 
-		it("falls back to local generation on remote failure", async () => {
+		it("falls back to local generation when no remote analysis exists", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
+			mockGetCommitSha.mockReturnValue("abc123");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
-			mockPullAnalysis.mockResolvedValue(null); // No remote analysis
+			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
 			mockRunAnalysisPipeline.mockResolvedValue({
 				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
 				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "abc123" },
 			});
-			mockGetCommitSha.mockReturnValue("abc123");
+			mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
-			expect(mockPullAnalysis).toHaveBeenCalled();
+			expect(mockCheckRemote).toHaveBeenCalled();
+			expect(mockPullAnalysis).not.toHaveBeenCalled();
+			expect(mockRunAnalysisPipeline).toHaveBeenCalled();
+			expect(result.analysisSource).toBe("local");
+		});
+
+		it("falls back to local generation when remote SHA differs", async () => {
+			mockParseRepoInput.mockReturnValue(mockGitHubSource);
+			mockIsRepoCloned.mockReturnValue(false);
+			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
+			mockGetCommitSha.mockReturnValue("abc123");
+			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "xyz9999" });
+			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
+			mockRunAnalysisPipeline.mockResolvedValue({
+				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
+				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "abc123" },
+			});
+			mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
+
+			const result = await pullHandler({ repo: "tanstack/router" });
+
+			expect(mockCheckRemote).toHaveBeenCalled();
+			expect(mockPullAnalysis).not.toHaveBeenCalled();
 			expect(mockRunAnalysisPipeline).toHaveBeenCalled();
 			expect(result.analysisSource).toBe("local");
 		});

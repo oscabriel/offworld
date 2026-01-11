@@ -292,3 +292,35 @@
 
 ### Verification
 - Code review confirmed implementations exist
+
+---
+
+## 2026-01-10: PRD-012/013 - Remote-first analysis flow
+
+### Completed
+- PRD-012: Check offworld.sh API BEFORE local cache
+- PRD-013: Upload newly generated analyses to offworld.sh
+
+### Changes
+- `apps/cli/src/handlers/pull.ts`:
+  - Imported `checkRemote`, `pushAnalysis`, `canPushToWeb`, `loadAuthData`
+  - Reordered flow: remote check → local cache → local generation
+  - Remote check uses `checkRemote()` then `pullAnalysis()` only if SHA matches
+  - Added `tryUploadAnalysis()` helper after local generation
+  - Upload requires auth and canPushToWeb check (5+ stars, GitHub only)
+  - Upload failures are non-blocking (logged with verbose)
+- Updated `apps/cli/src/__tests__/handlers.test.ts`:
+  - Added `mockCheckRemote` setup
+  - Updated "tries remote analysis before local generation" test
+  - Split "falls back" test into two: no remote exists, remote SHA differs
+
+### Decisions
+- SHA comparison uses 7-char prefix normalization
+- Remote check happens BEFORE local cache check (per PRD)
+- Upload only attempts for GitHub repos with 5+ stars
+- Upload is best-effort, failures logged to verbose only
+
+### Verification
+- TypeScript: SDK/CLI pass
+- Tests: 23 passed (+1 new test)
+- Lint: 0 errors

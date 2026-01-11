@@ -4,6 +4,7 @@ export interface StreamPromptOptions {
 	prompt: string;
 	cwd: string;
 	systemPrompt?: string;
+	/** Timeout in milliseconds. Set to 0 or undefined for no timeout. */
 	timeoutMs?: number;
 	onDebug?: (message: string) => void;
 	onStream?: (text: string) => void;
@@ -121,7 +122,7 @@ async function getOpenCodeSDK(): Promise<{
  * No JSON parsing - just returns whatever the AI produces.
  */
 export async function streamPrompt(options: StreamPromptOptions): Promise<StreamPromptResult> {
-	const { prompt, cwd, systemPrompt, timeoutMs = 120000, onDebug, onStream } = options;
+	const { prompt, cwd, systemPrompt, timeoutMs, onDebug, onStream } = options;
 
 	const debug = onDebug ?? (() => {});
 	const stream = onStream ?? (() => {});
@@ -227,17 +228,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		let firstTextReceived = false;
 		debug("Waiting for response...");
 
-		// Set up timeout
 		let timeoutId: ReturnType<typeof setTimeout> | null = null;
-		const timeoutPromise = new Promise<never>((_, reject) => {
-			timeoutId = setTimeout(() => {
-				reject(
-					new OpenCodeAnalysisError(
-						`timeout: no session.idle event received within ${timeoutMs}ms`,
-					),
-				);
-			}, timeoutMs);
-		});
 
 		const processEvents = async (): Promise<string> => {
 			for await (const event of eventStream) {
@@ -277,9 +268,22 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			return Array.from(textParts.values()).join("");
 		};
 
-		const responseText = await Promise.race([processEvents(), timeoutPromise]);
-
-		if (timeoutId) clearTimeout(timeoutId);
+		let responseText: string;
+		if (timeoutMs && timeoutMs > 0) {
+			const timeoutPromise = new Promise<never>((_, reject) => {
+				timeoutId = setTimeout(() => {
+					reject(
+						new OpenCodeAnalysisError(
+							`timeout: no session.idle event received within ${timeoutMs}ms`,
+						),
+					);
+				}, timeoutMs);
+			});
+			responseText = await Promise.race([processEvents(), timeoutPromise]);
+			if (timeoutId) clearTimeout(timeoutId);
+		} else {
+			responseText = await processEvents();
+		}
 
 		await promptPromise;
 

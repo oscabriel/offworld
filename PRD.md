@@ -199,7 +199,7 @@ Refactor the `ow` CLI analysis pipeline to be faster, produce slimmer skills, an
 			"Total context budget ~3000 tokens (down from 4000)",
 			"Constants configurable in constants.ts"
 		],
-		"passes": false
+		"passes": true
 	},
 	{
 		"id": "PRD-017",

@@ -20,6 +20,46 @@ import { join } from "node:path";
 export const version = "0.1.0";
 
 // ============================================================================
+// GitHub Detection Patterns
+// ============================================================================
+
+/** Matches github.com/owner/repo URLs */
+const GITHUB_URL_PATTERN = /github\.com\/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+)/g;
+
+/** Matches owner/repo format (e.g., "tanstack/router") */
+const REPO_SHORTHAND_PATTERN = /\b([a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+)\b/g;
+
+const FALSE_POSITIVES = new Set([
+	"node_modules/package",
+	"src/components",
+	"dist/index",
+	"build/output",
+]);
+
+function extractGitHubRepos(text: string): string[] {
+	const repos = new Set<string>();
+
+	for (const match of text.matchAll(GITHUB_URL_PATTERN)) {
+		const repo = match[1]?.replace(/\.git$/, "").toLowerCase();
+		if (repo && !FALSE_POSITIVES.has(repo)) {
+			repos.add(repo);
+		}
+	}
+
+	for (const match of text.matchAll(REPO_SHORTHAND_PATTERN)) {
+		const repo = match[1]?.toLowerCase();
+		if (repo && repo.includes("/") && !FALSE_POSITIVES.has(repo)) {
+			const [owner, name] = repo.split("/");
+			if (owner && name && owner.length > 1 && name.length > 1) {
+				repos.add(repo);
+			}
+		}
+	}
+
+	return Array.from(repos);
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -276,34 +316,56 @@ Use the 'offworld' tool with mode='summary' or mode='architecture' to retrieve d
 // Plugin Export (PRD 6.1)
 // ============================================================================
 
-/**
- * Offworld OpenCode Plugin
- * Provides the offworld tool and context injection
- */
-// Using type assertion because Plugin type definitions may not match current OpenCode SDK
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const OffworldPlugin = (async (_ctx: any) => {
-	// Get context injection (may be null if no repos)
-	const contextInjection = generateContextInjection();
+export const OffworldPlugin = (async () => {
+	const injectedSessions = new Set<string>();
 
 	return {
-		// Register the offworld tool
-		tools: {
+		tool: {
 			offworld: offworldTool,
 		},
 
-		// Hook into chat system to inject context (PRD 6.3)
-		// Note: This uses experimental.chat.system.transform hook
-		hooks: contextInjection
-			? {
-					"message.created.before": async ({ message }: { message: unknown }) => {
-						// The context injection would be added to system prompt
-						// This is a synthetic injection that helps the AI know about available repos
-						// The actual implementation depends on OpenCode's hook API
-						return message;
-					},
+		"chat.message": async (
+			input: { sessionID: string },
+			output: { parts: Array<{ type: string; text?: string; id?: string; synthetic?: boolean }> },
+		) => {
+			const isFirstMessage = !injectedSessions.has(input.sessionID);
+
+			if (isFirstMessage) {
+				injectedSessions.add(input.sessionID);
+				const contextInjection = generateContextInjection();
+				if (contextInjection) {
+					output.parts.unshift({
+						id: `offworld-context-${Date.now()}`,
+						type: "text",
+						text: contextInjection,
+						synthetic: true,
+					});
 				}
-			: {},
+			}
+
+			const textParts = output.parts.filter(
+				(p): p is { type: "text"; text: string } => p.type === "text" && typeof p.text === "string",
+			);
+			if (textParts.length === 0) return;
+
+			const userMessage = textParts.map((p) => p.text).join("\n");
+			const detectedRepos = extractGitHubRepos(userMessage);
+			if (detectedRepos.length === 0) return;
+
+			const clonedRepos = listRepos().map((r) => r.fullName.toLowerCase());
+			const missingRepos = detectedRepos.filter((r) => !clonedRepos.includes(r));
+
+			if (missingRepos.length > 0) {
+				output.parts.push({
+					id: `offworld-detect-${Date.now()}`,
+					type: "text",
+					text:
+						`[OFFWORLD] Detected repositories not yet cloned: ${missingRepos.join(", ")}\n` +
+						`Use the offworld tool with mode='clone' and repo='${missingRepos[0]}' to clone and analyze.`,
+					synthetic: true,
+				});
+			}
+		},
 	};
 }) as Plugin;
 

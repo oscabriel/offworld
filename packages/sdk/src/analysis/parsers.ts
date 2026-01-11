@@ -249,7 +249,8 @@ function parseFrontmatter(text: string): { frontmatter: Record<string, string>; 
 		let value = line.slice(colonIdx + 1).trim();
 
 		const isQuoted =
-			(value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+			(value.startsWith('"') && value.endsWith('"')) ||
+			(value.startsWith("'") && value.endsWith("'"));
 		if (isQuoted) {
 			value = value.slice(1, -1);
 		}

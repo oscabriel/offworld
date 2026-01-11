@@ -157,8 +157,10 @@ export async function generateRichSkill(
 	const result = await streamPrompt({
 		prompt,
 		cwd: context.repoPath,
-		systemPrompt:
-			"Generate slim, dense skills (~100 lines). Include 15-20 Quick Paths, Search Patterns table, and Deep Context. Full absolute paths. No prose.",
+		systemPrompt: `You generate navigation skills for AI coding assistants.
+Output ONLY valid SKILL.md content. No preamble, no commentary, no explanations.
+Start your response by completing the YAML frontmatter that was started for you.
+Include 15-20 Quick Paths with full absolute paths and a Search Patterns markdown table.`,
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	});
@@ -193,23 +195,51 @@ function injectSkillMetadata(skillMd: string, commitSha?: string, generated?: st
 }
 
 function extractSkillMarkdown(text: string): string {
+	// The prompt ends with "---\nname: skillname\ndescription:"
+	// So the AI's response continues from mid-frontmatter
+	// We need to find the complete frontmatter and extract the skill
+
+	// Strategy: Find the LAST complete frontmatter block
+	// (The prompt may be echoed earlier, so take the last one)
+	const frontmatterPattern = /---\s*\nname:\s*[^\n]+\ndescription:/g;
+	const matches = [...text.matchAll(frontmatterPattern)];
+
 	let result: string;
 
-	// Primary: find the last skill frontmatter (--- followed by name:)
-	// The AI outputs skill markdown directly; the prompt template comes before it
-	const frontmatterMatches = [...text.matchAll(/---\s*\nname:/g)];
-	const lastFrontmatter = frontmatterMatches.at(-1);
-	if (lastFrontmatter?.index !== undefined) {
-		result = text.slice(lastFrontmatter.index);
+	const lastMatch = matches.at(-1);
+	if (lastMatch?.index !== undefined) {
+		// Take from the last frontmatter match
+		result = text.slice(lastMatch.index);
 	} else {
-		// Fallback: if AI wrapped response in a markdown code block, use the last one
-		const codeBlockMatches = [...text.matchAll(/```markdown\n([\s\S]*?)\n```/g)];
-		const lastCodeBlock = codeBlockMatches.at(-1);
-		result = lastCodeBlock?.[1] ?? text;
+		// Fallback: try code block extraction
+		const codeBlockMatch = text.match(/```markdown\n([\s\S]*?)\n```/);
+		if (codeBlockMatch?.[1]) {
+			return codeBlockMatch[1].trim();
+		}
+		// Last resort: return as-is
+		result = text;
 	}
 
-	// Clean up: trim whitespace and any trailing code fence
-	return result.trim().replace(/\n```\s*$/, "");
+	// Find end of skill: after "## Deep Context" section
+	// Stop at any obvious non-skill content (AI commentary)
+	const deepContextIdx = result.indexOf("## Deep Context");
+	if (deepContextIdx !== -1) {
+		// Find the end of Deep Context section
+		const afterDeepContext = result.slice(deepContextIdx);
+		// Look for end markers: blank line followed by non-markdown content, or code fence
+		const endMatch = afterDeepContext.match(/\n\n(?=[^-#\s`|*])|(\n```)/);
+		if (endMatch) {
+			const endOffset = endMatch.index! + (endMatch[1] ? 0 : 2); // Don't include trailing content
+			result = result.slice(0, deepContextIdx + endOffset);
+		}
+	}
+
+	// Clean up
+	return result
+		.trim()
+		.replace(/\n```[\s\S]*$/, "") // Remove trailing code fences and anything after
+		.replace(/\n\n\n+/g, "\n\n") // Normalize excessive blank lines
+		.trim();
 }
 
 export function formatArchitectureMd(architecture: Architecture): string {
@@ -302,11 +332,7 @@ export interface FormatSkillOptions {
 }
 
 export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
-	const lines = [
-		"---",
-		`name: "${escapeYaml(skill.name)}"`,
-		`description: "${escapeYaml(skill.description)}"`,
-	];
+	const lines = ["---", `name: ${skill.name}`, `description: ${skill.description}`];
 
 	if (options.commitSha) {
 		lines.push(`commit: ${options.commitSha.slice(0, 7)}`);
@@ -316,40 +342,35 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 	}
 
 	lines.push("---");
-	const frontmatter = lines.join("\n");
+	lines.push("");
+	lines.push(`# ${skill.name}`);
+	lines.push("");
+	lines.push(skill.description);
+	lines.push("");
 
-	const sections: string[] = [];
-
-	sections.push("## Repository Structure");
-	sections.push("");
-	for (const entry of skill.repositoryStructure) {
-		sections.push(`- \`${entry.path}\`: ${entry.purpose}`);
+	// Quick Paths
+	lines.push("## Quick Paths");
+	lines.push("");
+	for (const qp of skill.quickPaths) {
+		lines.push(`- \`${qp.path}\` - ${qp.description}`);
 	}
-	sections.push("");
+	lines.push("");
 
-	sections.push("## Quick Reference Paths");
-	sections.push("");
-	for (const file of skill.keyFiles) {
-		sections.push(`- \`${file.path}\`: ${file.description}`);
+	// Search Patterns
+	lines.push("## Search Patterns");
+	lines.push("");
+	lines.push("| Find | Pattern | Path |");
+	lines.push("|------|---------|------|");
+	for (const sp of skill.searchPatterns) {
+		lines.push(`| ${sp.find} | \`${sp.pattern}\` | \`${sp.path}\` |`);
 	}
-	sections.push("");
+	lines.push("");
 
-	sections.push("## Search Strategies");
-	sections.push("");
-	for (const strategy of skill.searchStrategies) {
-		sections.push(`- ${strategy}`);
-	}
-	sections.push("");
+	// Deep Context
+	lines.push("## Deep Context");
+	lines.push("");
+	lines.push("- Architecture: Read analysis/architecture.md");
+	lines.push("- Summary: Read analysis/summary.md");
 
-	sections.push("## When to Use");
-	sections.push("");
-	for (const condition of skill.whenToUse) {
-		sections.push(`- ${condition}`);
-	}
-
-	return `${frontmatter}\n\n${sections.join("\n")}`;
-}
-
-function escapeYaml(str: string): string {
-	return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+	return lines.join("\n");
 }

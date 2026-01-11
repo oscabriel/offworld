@@ -26,11 +26,8 @@ function createMinimalSkill(overrides: Partial<Skill> = {}): Skill {
 	return {
 		name: "test-skill",
 		description: "A test skill",
-		allowedTools: ["Read"],
-		repositoryStructure: [],
-		keyFiles: [],
-		searchStrategies: [],
-		whenToUse: [],
+		quickPaths: [],
+		searchPatterns: [],
 		...overrides,
 	};
 }
@@ -151,54 +148,6 @@ describe("sanitizeMermaidId (via formatArchitectureMd)", () => {
 
 // ============================================================================
 // escapeYaml tests (via formatSkillMd)
-// ============================================================================
-
-describe("escapeYaml (via formatSkillMd)", () => {
-	it("escapes double quotes", () => {
-		const skill = createMinimalSkill({
-			name: 'skill"with"quotes',
-			description: 'A "quoted" description',
-		});
-
-		const result = formatSkillMd(skill);
-		expect(result).toContain('name: "skill\\"with\\"quotes"');
-		expect(result).toContain('description: "A \\"quoted\\" description"');
-	});
-
-	it("escapes backslashes", () => {
-		const skill = createMinimalSkill({
-			name: "skill\\with\\backslashes",
-			description: "A \\path\\style\\ description",
-		});
-
-		const result = formatSkillMd(skill);
-		expect(result).toContain('name: "skill\\\\with\\\\backslashes"');
-		expect(result).toContain('description: "A \\\\path\\\\style\\\\ description"');
-	});
-
-	it("escapes newlines", () => {
-		const skill = createMinimalSkill({
-			name: "skill\nwith\nnewlines",
-			description: "Multi\nline\ndescription",
-		});
-
-		const result = formatSkillMd(skill);
-		expect(result).toContain('name: "skill\\nwith\\nnewlines"');
-		expect(result).toContain('description: "Multi\\nline\\ndescription"');
-	});
-
-	it("handles combined escape sequences", () => {
-		const skill = createMinimalSkill({
-			name: 'test\\path"name\nhere',
-			description: 'Combined: \\ and " and \n',
-		});
-
-		const result = formatSkillMd(skill);
-		expect(result).toContain('name: "test\\\\path\\"name\\nhere"');
-		expect(result).toContain('description: "Combined: \\\\ and \\" and \\n"');
-	});
-});
-
 // ============================================================================
 // formatArchitectureMd tests
 // ============================================================================
@@ -379,35 +328,29 @@ describe("formatArchitectureMd", () => {
 describe("formatSkillMd", () => {
 	it("formats empty arrays correctly", () => {
 		const skill = createMinimalSkill({
-			allowedTools: [],
-			repositoryStructure: [],
-			keyFiles: [],
-			searchStrategies: [],
-			whenToUse: [],
+			quickPaths: [],
+			searchPatterns: [],
 		});
 
 		const result = formatSkillMd(skill);
 
 		expect(result).toContain("---");
-		expect(result).toContain('name: "test-skill"');
-		expect(result).not.toContain("allowed-tools:");
-		expect(result).toContain("## Repository Structure");
-		expect(result).toContain("## Quick Reference Paths");
-		expect(result).toContain("## Search Strategies");
-		expect(result).toContain("## When to Use");
+		expect(result).toContain("name: test-skill");
+		expect(result).toContain("## Quick Paths");
+		expect(result).toContain("## Search Patterns");
+		expect(result).toContain("## Deep Context");
 	});
 
-	it("handles special YAML characters in name and description", () => {
+	it("handles special characters in name and description", () => {
 		const skill = createMinimalSkill({
-			name: "test: skill",
+			name: "test-skill",
 			description: "Uses: colons, and [brackets]",
 		});
 
 		const result = formatSkillMd(skill);
 
-		// Values are already in quotes, so colons and brackets are safe
-		expect(result).toContain('name: "test: skill"');
-		expect(result).toContain('description: "Uses: colons, and [brackets]"');
+		expect(result).toContain("name: test-skill");
+		expect(result).toContain("description: Uses: colons, and [brackets]");
 	});
 
 	it("includes commit and generated in frontmatter when provided", () => {
@@ -420,81 +363,52 @@ describe("formatSkillMd", () => {
 
 		expect(result).toContain("commit: abc1234");
 		expect(result).toContain("generated: 2026-01-10");
-		expect(result).not.toContain("allowed-tools:");
 	});
 
-	it("formats repository structure section", () => {
+	it("formats quick paths section", () => {
 		const skill = createMinimalSkill({
-			repositoryStructure: [
-				{ path: "src/", purpose: "Source code" },
-				{ path: "tests/", purpose: "Test files" },
+			quickPaths: [
+				{ path: "/path/to/src/index.ts", description: "Main entry point" },
+				{ path: "/path/to/package.json", description: "Package manifest" },
 			],
 		});
 
 		const result = formatSkillMd(skill);
 
-		expect(result).toContain("## Repository Structure");
-		expect(result).toContain("- `src/`: Source code");
-		expect(result).toContain("- `tests/`: Test files");
+		expect(result).toContain("## Quick Paths");
+		expect(result).toContain("- `/path/to/src/index.ts` - Main entry point");
+		expect(result).toContain("- `/path/to/package.json` - Package manifest");
 	});
 
-	it("formats key files section (Quick Reference Paths)", () => {
+	it("formats search patterns table", () => {
 		const skill = createMinimalSkill({
-			keyFiles: [
-				{ path: "src/index.ts", description: "Main entry point" },
-				{ path: "package.json", description: "Package manifest" },
+			searchPatterns: [
+				{ find: "Hooks", pattern: "export function use", path: "/path/to/src/" },
+				{ find: "Types", pattern: "export type", path: "/path/to/types/" },
 			],
 		});
 
 		const result = formatSkillMd(skill);
 
-		expect(result).toContain("## Quick Reference Paths");
-		expect(result).toContain("- `src/index.ts`: Main entry point");
-		expect(result).toContain("- `package.json`: Package manifest");
-	});
-
-	it("formats search strategies section", () => {
-		const skill = createMinimalSkill({
-			searchStrategies: [
-				"Use Grep for 'export function' to find public APIs",
-				"Use Glob for '**/*.test.ts' to find tests",
-			],
-		});
-
-		const result = formatSkillMd(skill);
-
-		expect(result).toContain("## Search Strategies");
-		expect(result).toContain("- Use Grep for 'export function' to find public APIs");
-		expect(result).toContain("- Use Glob for '**/*.test.ts' to find tests");
-	});
-
-	it("formats when to use section", () => {
-		const skill = createMinimalSkill({
-			whenToUse: ["When user asks about routing patterns", "When implementing new routes"],
-		});
-
-		const result = formatSkillMd(skill);
-
-		expect(result).toContain("## When to Use");
-		expect(result).toContain("- When user asks about routing patterns");
-		expect(result).toContain("- When implementing new routes");
+		expect(result).toContain("## Search Patterns");
+		expect(result).toContain("| Find | Pattern | Path |");
+		expect(result).toContain("|------|---------|------|");
+		expect(result).toContain("| Hooks | `export function use` | `/path/to/src/` |");
+		expect(result).toContain("| Types | `export type` | `/path/to/types/` |");
 	});
 
 	it("formats complete skill with all sections populated", () => {
 		const skill: Skill = {
 			name: "complete-skill",
 			description: "A complete skill with all sections",
-			allowedTools: ["Read", "Glob", "Grep"],
-			repositoryStructure: [
-				{ path: "src/", purpose: "Source code directory" },
-				{ path: "lib/", purpose: "Compiled output" },
+			quickPaths: [
+				{ path: "/repo/src/index.ts", description: "Main entry" },
+				{ path: "/repo/tsconfig.json", description: "TypeScript config" },
 			],
-			keyFiles: [
-				{ path: "src/index.ts", description: "Main entry" },
-				{ path: "tsconfig.json", description: "TypeScript config" },
+			searchPatterns: [
+				{ find: "Exports", pattern: "export", path: "/repo/src/" },
+				{ find: "Tests", pattern: "describe\\(", path: "/repo/tests/" },
 			],
-			searchStrategies: ["Grep for exports", "Glob for tests"],
-			whenToUse: ["When working with this library", "When debugging issues"],
 		};
 
 		const result = formatSkillMd(skill, {
@@ -503,34 +417,27 @@ describe("formatSkillMd", () => {
 		});
 
 		expect(result).toMatch(/^---\n/);
-		expect(result).toContain('name: "complete-skill"');
-		expect(result).toContain('description: "A complete skill with all sections"');
+		expect(result).toContain("name: complete-skill");
+		expect(result).toContain("description: A complete skill with all sections");
 		expect(result).toContain("commit: abc1234");
 		expect(result).toContain("generated: 2026-01-10");
-		expect(result).not.toContain("allowed-tools:");
-		expect(result).toContain("---\n\n");
 
-		expect(result).toContain("## Repository Structure");
-		expect(result).toContain("- `src/`: Source code directory");
+		expect(result).toContain("## Quick Paths");
+		expect(result).toContain("- `/repo/src/index.ts` - Main entry");
 
-		expect(result).toContain("## Quick Reference Paths");
-		expect(result).toContain("- `src/index.ts`: Main entry");
+		expect(result).toContain("## Search Patterns");
+		expect(result).toContain("| Exports | `export` | `/repo/src/` |");
 
-		expect(result).toContain("## Search Strategies");
-		expect(result).toContain("- Grep for exports");
-
-		expect(result).toContain("## When to Use");
-		expect(result).toContain("- When working with this library");
+		expect(result).toContain("## Deep Context");
 	});
 
-	it("handles multiline descriptions in search strategies", () => {
-		const skill = createMinimalSkill({
-			searchStrategies: ["Line one\nLine two should be on same bullet"],
-		});
+	it("includes deep context section", () => {
+		const skill = createMinimalSkill();
 
 		const result = formatSkillMd(skill);
 
-		// Multiline content in array items should be preserved as-is
-		expect(result).toContain("- Line one\nLine two should be on same bullet");
+		expect(result).toContain("## Deep Context");
+		expect(result).toContain("- Architecture: Read analysis/architecture.md");
+		expect(result).toContain("- Summary: Read analysis/summary.md");
 	});
 });

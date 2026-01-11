@@ -24,6 +24,7 @@ import {
 	RepoExistsError,
 	runAnalysisPipeline,
 	isAnalysisStale,
+	formatSkillMd,
 	type PullResponse,
 	type AnalysisData,
 } from "@offworld/sdk";
@@ -77,56 +78,6 @@ export async function installSkill(repoName: string, skillContent: string): Prom
 		mkdirSync(expanded, { recursive: true });
 		writeFileSync(join(expanded, "SKILL.md"), skillContent, "utf-8");
 	}
-}
-
-interface FormatSkillOptions {
-	commitSha?: string;
-	generated?: string;
-}
-
-function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
-	const lines = [
-		"---",
-		`name: "${skill.name}"`,
-		`description: "${skill.description.replace(/"/g, '\\"')}"`,
-	];
-
-	if (options.commitSha) {
-		lines.push(`commit: ${options.commitSha.slice(0, 7)}`);
-	}
-	if (options.generated) {
-		lines.push(`generated: ${options.generated}`);
-	}
-
-	lines.push("---");
-	const frontmatter = lines.join("\n");
-
-	const sections = [];
-
-	sections.push("## Repository Structure\n");
-	for (const entry of skill.repositoryStructure) {
-		sections.push(`- \`${entry.path}\`: ${entry.purpose}`);
-	}
-	sections.push("");
-
-	sections.push("## Quick Reference Paths\n");
-	for (const file of skill.keyFiles) {
-		sections.push(`- \`${file.path}\`: ${file.description}`);
-	}
-	sections.push("");
-
-	sections.push("## Search Strategies\n");
-	for (const strategy of skill.searchStrategies) {
-		sections.push(`- ${strategy}`);
-	}
-	sections.push("");
-
-	sections.push("## When to Use\n");
-	for (const condition of skill.whenToUse) {
-		sections.push(`- ${condition}`);
-	}
-
-	return `${frontmatter}\n\n${sections.join("\n")}`;
 }
 
 /**

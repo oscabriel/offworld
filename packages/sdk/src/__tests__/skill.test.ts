@@ -32,28 +32,17 @@ describe("skill formatting", () => {
 	const mockSkill: Skill = {
 		name: "tanstack-router",
 		description: "Expert knowledge of TanStack Router library",
-		allowedTools: ["Read", "Glob", "Grep", "Bash"],
-		repositoryStructure: [
-			{ path: "packages/", purpose: "Core packages and libraries" },
-			{ path: "docs/", purpose: "Documentation site" },
-			{ path: "examples/", purpose: "Example applications" },
+		quickPaths: [
+			{ path: "/repo/packages/router/src/index.ts", description: "Main entry point" },
+			{ path: "/repo/packages/router/src/router.ts", description: "Router core implementation" },
+			{ path: "/repo/packages/router/src/route.ts", description: "Route definitions" },
+			{ path: "/repo/packages/router/src/link.ts", description: "Link component" },
+			{ path: "/repo/README.md", description: "Project overview" },
 		],
-		keyFiles: [
-			{ path: "packages/router/src/index.ts", description: "Main entry point" },
-			{ path: "packages/router/src/router.ts", description: "Router core implementation" },
-			{ path: "packages/router/src/route.ts", description: "Route definitions" },
-			{ path: "packages/router/src/link.ts", description: "Link component" },
-			{ path: "README.md", description: "Project overview" },
-		],
-		searchStrategies: [
-			"Use Glob with pattern '**/*.ts' to find TypeScript files",
-			"Use Grep with 'createRouter' to find router instantiations",
-			"Use Grep with 'Route' to find route definitions",
-		],
-		whenToUse: [
-			"When user asks about TanStack Router",
-			"When navigating to routes or links",
-			"When setting up routing in a React app",
+		searchPatterns: [
+			{ find: "Components", pattern: "export.*function", path: "/repo/packages/" },
+			{ find: "Routes", pattern: "createRoute", path: "/repo/packages/router/" },
+			{ find: "Types", pattern: "export type", path: "/repo/packages/" },
 		],
 	};
 
@@ -87,17 +76,16 @@ describe("skill formatting", () => {
 			expect(result).toContain("\n---\n");
 
 			// Should have name and description
-			expect(result).toContain('name: "tanstack-router"');
-			expect(result).toContain('description: "Expert knowledge of TanStack Router library"');
+			expect(result).toContain("name: tanstack-router");
+			expect(result).toContain("description: Expert knowledge of TanStack Router library");
 		});
 
 		it("includes all required sections", () => {
 			const result = formatSkillMd(mockSkill);
 
-			expect(result).toContain("## Repository Structure");
-			expect(result).toContain("## Quick Reference Paths");
-			expect(result).toContain("## Search Strategies");
-			expect(result).toContain("## When to Use");
+			expect(result).toContain("## Quick Paths");
+			expect(result).toContain("## Search Patterns");
+			expect(result).toContain("## Deep Context");
 		});
 
 		it("includes commit and generated in frontmatter when provided", () => {
@@ -108,7 +96,6 @@ describe("skill formatting", () => {
 
 			expect(result).toContain("commit: abc1234");
 			expect(result).toContain("generated: 2026-01-10");
-			expect(result).not.toContain("allowed-tools:");
 		});
 
 		it("omits commit and generated when not provided", () => {
@@ -116,70 +103,47 @@ describe("skill formatting", () => {
 
 			expect(result).not.toContain("commit:");
 			expect(result).not.toContain("generated:");
-			expect(result).not.toContain("allowed-tools:");
 		});
 
-		it("escapes special characters in YAML", () => {
-			const skillWithQuotes: Skill = {
-				...mockSkill,
-				name: 'test-"skill"',
-				description: 'A skill with "quotes" and\nnewlines',
-			};
-
-			const result = formatSkillMd(skillWithQuotes);
-
-			// Should escape quotes
-			expect(result).toContain('name: "test-\\"skill\\""');
-			// Should escape newlines
-			expect(result).toContain("\\n");
-		});
-
-		it("includes repository structure entries", () => {
+		it("includes quick paths entries", () => {
 			const result = formatSkillMd(mockSkill);
 
-			expect(result).toContain("`packages/`");
-			expect(result).toContain("Core packages and libraries");
-			expect(result).toContain("`docs/`");
-			expect(result).toContain("Documentation site");
-		});
-
-		it("includes key files entries", () => {
-			const result = formatSkillMd(mockSkill);
-
-			expect(result).toContain("`packages/router/src/index.ts`");
+			expect(result).toContain("`/repo/packages/router/src/index.ts`");
 			expect(result).toContain("Main entry point");
-			expect(result).toContain("`packages/router/src/router.ts`");
+			expect(result).toContain("`/repo/packages/router/src/router.ts`");
 			expect(result).toContain("Router core implementation");
 		});
 
-		it("includes search strategies", () => {
+		it("includes search patterns table", () => {
 			const result = formatSkillMd(mockSkill);
 
-			expect(result).toContain("'**/*.ts'");
-			expect(result).toContain("'createRouter'");
+			expect(result).toContain("| Find | Pattern | Path |");
+			expect(result).toContain("|------|---------|------|");
+			expect(result).toContain("| Components |");
+			expect(result).toContain("| Routes |");
 		});
 
-		it("includes when to use conditions", () => {
+		it("includes deep context section", () => {
 			const result = formatSkillMd(mockSkill);
 
-			expect(result).toContain("When user asks about TanStack Router");
-			expect(result).toContain("When navigating to routes or links");
+			expect(result).toContain("## Deep Context");
+			expect(result).toContain("Architecture: Read analysis/architecture.md");
+			expect(result).toContain("Summary: Read analysis/summary.md");
 		});
 
 		it("handles empty arrays", () => {
 			const emptySkill: Skill = {
 				...mockSkill,
-				repositoryStructure: [],
-				keyFiles: [],
-				searchStrategies: [],
-				whenToUse: [],
+				quickPaths: [],
+				searchPatterns: [],
 			};
 
 			const result = formatSkillMd(emptySkill);
 
 			// Should still have sections, just empty
-			expect(result).toContain("## Repository Structure");
-			expect(result).toContain("## When to Use");
+			expect(result).toContain("## Quick Paths");
+			expect(result).toContain("## Search Patterns");
+			expect(result).toContain("## Deep Context");
 		});
 	});
 

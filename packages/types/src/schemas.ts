@@ -90,24 +90,22 @@ export const AnalysisMetaSchema = z.object({
 	tokenCost: z.number().optional(),
 });
 
+export const QuickPathSchema = z.object({
+	path: z.string(),
+	description: z.string(),
+});
+
+export const SearchPatternSchema = z.object({
+	find: z.string(),
+	pattern: z.string(),
+	path: z.string(),
+});
+
 export const SkillSchema = z.object({
 	name: z.string(),
 	description: z.string(),
-	allowedTools: z.array(z.string()),
-	repositoryStructure: z.array(
-		z.object({
-			path: z.string(),
-			purpose: z.string(),
-		}),
-	),
-	keyFiles: z.array(
-		z.object({
-			path: z.string(),
-			description: z.string(),
-		}),
-	),
-	searchStrategies: z.array(z.string()),
-	whenToUse: z.array(z.string()),
+	quickPaths: z.array(QuickPathSchema),
+	searchPatterns: z.array(SearchPatternSchema),
 });
 
 export const RepoIndexEntrySchema = z.object({

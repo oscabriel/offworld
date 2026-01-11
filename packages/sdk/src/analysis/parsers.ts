@@ -278,19 +278,116 @@ export function parseSkillMarkdown(text: string): Skill {
 	}
 
 	const contentToParse = body || text;
-	const allowedTools = parseListSection(contentToParse, "Allowed Tools");
-	const repositoryStructure = parsePathPurposeSection(contentToParse, "Repository Structure");
-	const keyFiles = parsePathDescSection(contentToParse, "Key Files");
-	const searchStrategies = parseListSection(contentToParse, "Search Strategies");
-	const whenToUse = parseListSection(contentToParse, "When to Use");
+	const quickPaths = parseQuickPathsSection(contentToParse);
+	const searchPatterns = parseSearchPatternsTable(contentToParse);
 
 	return {
 		name,
 		description,
-		allowedTools: allowedTools.length > 0 ? allowedTools : ["Read", "Glob", "Grep"],
-		repositoryStructure,
-		keyFiles,
-		searchStrategies,
-		whenToUse,
+		quickPaths,
+		searchPatterns,
 	};
+}
+
+/**
+ * Parse Quick Paths section from skill markdown.
+ * Expects format: - `/path/to/file.ts` - description
+ */
+function parseQuickPathsSection(text: string): Array<{ path: string; description: string }> {
+	const section = extractSection(text, "Quick Paths");
+	if (!section) return [];
+
+	const results: Array<{ path: string; description: string }> = [];
+
+	// Match: - `/path/to/file.ts` - description
+	// Or:    - `path/to/file.ts` - description
+	const lines = section.split("\n");
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (!trimmed.startsWith("-")) continue;
+
+		// Pattern: - `path` - description
+		const match = /^-\s*`([^`]+)`\s*-\s*(.+)$/.exec(trimmed);
+		if (match?.[1] && match[2]) {
+			results.push({
+				path: match[1].trim(),
+				description: match[2].trim(),
+			});
+		}
+	}
+
+	return results;
+}
+
+/**
+ * Parse Search Patterns table from skill markdown.
+ * Expects markdown table with columns: Find | Pattern | Path
+ */
+function parseSearchPatternsTable(
+	text: string,
+): Array<{ find: string; pattern: string; path: string }> {
+	const section = extractSection(text, "Search Patterns");
+	if (!section) return [];
+
+	const results: Array<{ find: string; pattern: string; path: string }> = [];
+	const lines = section.split("\n");
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+
+		// Skip header row and separator
+		if (!trimmed.includes("|")) continue;
+		if (trimmed.includes("---")) continue;
+		if (/\|\s*Find\s*\|/i.test(trimmed)) continue;
+
+		// Parse table row respecting backtick-escaped content
+		const cells = parseTableRow(trimmed);
+
+		if (cells.length >= 3 && cells[0] && cells[1] && cells[2]) {
+			results.push({
+				find: cells[0],
+				pattern: cells[1].replace(/`/g, ""),
+				path: cells[2].replace(/`/g, ""),
+			});
+		}
+	}
+
+	return results;
+}
+
+/**
+ * Parse a markdown table row, respecting backtick-escaped content.
+ * Pipes inside backticks are not treated as delimiters.
+ */
+function parseTableRow(row: string): string[] {
+	const cells: string[] = [];
+	let current = "";
+	let inBacktick = false;
+
+	for (let i = 0; i < row.length; i++) {
+		const char = row[i];
+
+		if (char === "`") {
+			inBacktick = !inBacktick;
+			current += char;
+		} else if (char === "|" && !inBacktick) {
+			// End of cell
+			const trimmed = current.trim();
+			if (trimmed) {
+				cells.push(trimmed);
+			}
+			current = "";
+		} else {
+			current += char;
+		}
+	}
+
+	// Don't forget the last cell
+	const trimmed = current.trim();
+	if (trimmed) {
+		cells.push(trimmed);
+	}
+
+	return cells;
 }

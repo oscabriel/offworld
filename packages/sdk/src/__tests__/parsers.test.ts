@@ -220,40 +220,38 @@ library`;
 });
 
 describe("parseSkillMarkdown", () => {
-	const validSkill = `## Skill Info
-- **Name**: my-skill
-- **Description**: A useful skill for testing
+	const validSkill = `---
+name: my-skill
+description: A useful skill for testing
+---
 
-## Allowed Tools
-- Read
-- Glob
-- Grep
+# my-skill
 
-## Repository Structure
-- \`src/\`: Source code
-- \`tests/\`: Test files
+A useful skill for testing
 
-## Key Files
-- \`src/index.ts\`: Main entry
-- \`README.md\`: Documentation
+## Quick Paths
 
-## Search Strategies
-- Use Grep for 'export function'
-- Use Glob for '**/*.test.ts'
+- \`/path/to/src/index.ts\` - Main entry
+- \`/path/to/README.md\` - Documentation
 
-## When to Use
-- When working with this codebase
-- When debugging issues`;
+## Search Patterns
+
+| Find | Pattern | Path |
+|------|---------|------|
+| Exports | \`export function\` | \`/path/to/src/\` |
+| Tests | \`describe\\(\` | \`/path/to/tests/\` |
+
+## Deep Context
+
+- Architecture: Read analysis/architecture.md
+- Summary: Read analysis/summary.md`;
 
 	it("parses valid skill markdown", () => {
 		const result = parseSkillMarkdown(validSkill);
 		expect(result.name).toBe("my-skill");
 		expect(result.description).toBe("A useful skill for testing");
-		expect(result.allowedTools).toContain("Read");
-		expect(result.repositoryStructure).toHaveLength(2);
-		expect(result.keyFiles).toHaveLength(2);
-		expect(result.searchStrategies).toHaveLength(2);
-		expect(result.whenToUse).toHaveLength(2);
+		expect(result.quickPaths).toHaveLength(2);
+		expect(result.searchPatterns).toHaveLength(2);
 	});
 
 	it("throws on missing name", () => {
@@ -263,22 +261,16 @@ describe("parseSkillMarkdown", () => {
 		expect(() => parseSkillMarkdown(noName)).toThrow("name");
 	});
 
-	it("provides default allowed tools when missing", () => {
-		const minimal = `## Skill Info
-- **Name**: minimal-skill`;
-		const result = parseSkillMarkdown(minimal);
-		expect(result.allowedTools).toEqual(["Read", "Glob", "Grep"]);
-	});
-
 	it("handles empty optional sections", () => {
-		const minimal = `## Skill Info
-- **Name**: minimal-skill
-- **Description**: Minimal`;
+		const minimal = `---
+name: minimal-skill
+description: Minimal
+---
+
+# minimal-skill`;
 		const result = parseSkillMarkdown(minimal);
-		expect(result.repositoryStructure).toEqual([]);
-		expect(result.keyFiles).toEqual([]);
-		expect(result.searchStrategies).toEqual([]);
-		expect(result.whenToUse).toEqual([]);
+		expect(result.quickPaths).toEqual([]);
+		expect(result.searchPatterns).toEqual([]);
 	});
 
 	it("extracts name from different formats", () => {
@@ -299,23 +291,21 @@ description: TypeScript-first schema validation
 
 # colinhacks/zod
 
-## Repository Structure
-- \`packages/zod/src/\`: Core source code
+## Quick Paths
 
-## Key Files
-- \`packages/zod/src/index.ts\`: Main entry point
+- \`/path/to/packages/zod/src/index.ts\` - Main entry point
 
-## Search Strategies
-- Use Grep for schema definitions
+## Search Patterns
 
-## When to Use
-- When validating data schemas`;
+| Find | Pattern | Path |
+|------|---------|------|
+| Schemas | \`z\\.object\` | \`/path/to/packages/zod/src/\` |`;
 
 		const result = parseSkillMarkdown(frontmatterSkill);
 		expect(result.name).toBe("zod");
 		expect(result.description).toBe("TypeScript-first schema validation");
-		expect(result.repositoryStructure).toHaveLength(1);
-		expect(result.keyFiles).toHaveLength(1);
+		expect(result.quickPaths).toHaveLength(1);
+		expect(result.searchPatterns).toHaveLength(1);
 	});
 
 	it("parses frontmatter with quoted values", () => {
@@ -345,5 +335,44 @@ description: frontmatter-desc
 		const result = parseSkillMarkdown(mixedSkill);
 		expect(result.name).toBe("frontmatter-name");
 		expect(result.description).toBe("frontmatter-desc");
+	});
+
+	it("parses search patterns with pipe characters in regex", () => {
+		const skillWithPipes = `---
+name: query-skill
+description: Query skill with pipe patterns
+---
+
+# query-skill
+
+## Quick Paths
+
+- \`/path/to/src/index.ts\` - Main entry
+
+## Search Patterns
+
+| Find | Pattern | Path |
+|------|---------|------|
+| Query state | \`QueryState|MutationState\` | \`/packages/query-core/src/\` |
+| Hooks | \`use(Query|Mutation)\` | \`/packages/react-query/src/\` |
+| Simple | \`export\` | \`/src/\` |`;
+
+		const result = parseSkillMarkdown(skillWithPipes);
+		expect(result.searchPatterns).toHaveLength(3);
+		expect(result.searchPatterns[0]).toEqual({
+			find: "Query state",
+			pattern: "QueryState|MutationState",
+			path: "/packages/query-core/src/",
+		});
+		expect(result.searchPatterns[1]).toEqual({
+			find: "Hooks",
+			pattern: "use(Query|Mutation)",
+			path: "/packages/react-query/src/",
+		});
+		expect(result.searchPatterns[2]).toEqual({
+			find: "Simple",
+			pattern: "export",
+			path: "/src/",
+		});
 	});
 });

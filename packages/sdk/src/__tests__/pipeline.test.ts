@@ -54,11 +54,8 @@ let mockArchitecture: Architecture = {
 let mockSkill: Skill = {
 	name: "test-skill",
 	description: "Test skill",
-	allowedTools: ["Read", "Glob"],
-	repositoryStructure: [{ path: "src", purpose: "Source code" }],
-	keyFiles: [{ path: "src/index.ts", description: "Entry point" }],
-	searchStrategies: ["grep for exports"],
-	whenToUse: ["When working with test-repo"],
+	quickPaths: [{ path: "/test/repo/src/index.ts", description: "Entry point" }],
+	searchPatterns: [{ find: "Exports", pattern: "export", path: "/test/repo/src/" }],
 };
 
 // Mock summary

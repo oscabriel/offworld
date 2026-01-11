@@ -17,19 +17,15 @@ describe("validateSkillPaths", () => {
 	const mockSkill: Skill = {
 		name: "test-skill",
 		description: "Test skill",
-		allowedTools: [],
-		repositoryStructure: [
-			{ path: "src", purpose: "Source code" },
-			{ path: "lib", purpose: "Library code" },
-			{ path: "missing", purpose: "Does not exist" },
-		],
-		keyFiles: [
+		quickPaths: [
 			{ path: "src/index.ts", description: "Entry point" },
 			{ path: "config.json", description: "Config" },
 			{ path: "nonexistent.ts", description: "Missing file" },
 		],
-		searchStrategies: [],
-		whenToUse: [],
+		searchPatterns: [
+			{ find: "Exports", pattern: "export", path: "/test/repo/src/" },
+			{ find: "Tests", pattern: "describe", path: "/test/repo/tests/" },
+		],
 	};
 
 	beforeEach(() => {
@@ -38,59 +34,84 @@ describe("validateSkillPaths", () => {
 
 	it("should keep valid paths and remove invalid ones", () => {
 		mockExistsSync.mockImplementation((path: string) => {
-			const validPaths = [
-				"/test/repo/src",
-				"/test/repo/lib",
-				"/test/repo/src/index.ts",
-				"/test/repo/config.json",
-			];
+			const validPaths = ["/test/repo/src/index.ts", "/test/repo/config.json", "/test/repo/src/"];
 			return validPaths.includes(path);
 		});
 
-		const { validatedSkill, removedPaths } = validateSkillPaths(mockSkill, { basePath });
+		const { validatedSkill, removedPaths, removedSearchPaths } = validateSkillPaths(mockSkill, {
+			basePath,
+		});
 
-		expect(validatedSkill.repositoryStructure).toHaveLength(2);
-		expect(validatedSkill.repositoryStructure.map((e) => e.path)).toEqual(["src", "lib"]);
+		expect(validatedSkill.quickPaths).toHaveLength(2);
+		expect(validatedSkill.quickPaths.map((e) => e.path)).toEqual(["src/index.ts", "config.json"]);
+		expect(removedPaths).toEqual(["nonexistent.ts"]);
 
-		expect(validatedSkill.keyFiles).toHaveLength(2);
-		expect(validatedSkill.keyFiles.map((e) => e.path)).toEqual(["src/index.ts", "config.json"]);
-
-		expect(removedPaths).toEqual(["missing", "nonexistent.ts"]);
+		expect(validatedSkill.searchPatterns).toHaveLength(1);
+		expect(validatedSkill.searchPatterns[0]?.path).toBe("/test/repo/src/");
+		expect(removedSearchPaths).toEqual(["/test/repo/tests/"]);
 	});
 
-	it("should call onWarning for each removed path", () => {
+	it("should call onWarning for each removed path with type", () => {
 		mockExistsSync.mockReturnValue(false);
-		const warnings: string[] = [];
+		const warnings: Array<{ path: string; type: string }> = [];
 
 		validateSkillPaths(mockSkill, {
 			basePath,
-			onWarning: (path) => warnings.push(path),
+			onWarning: (path, type) => warnings.push({ path, type }),
 		});
 
-		expect(warnings).toHaveLength(6);
+		expect(warnings).toHaveLength(5);
+		expect(warnings.filter((w) => w.type === "quickPath")).toHaveLength(3);
+		expect(warnings.filter((w) => w.type === "searchPattern")).toHaveLength(2);
 	});
 
 	it("should handle absolute paths without joining", () => {
 		const absoluteSkill: Skill = {
 			...mockSkill,
-			repositoryStructure: [{ path: "/absolute/path", purpose: "Absolute" }],
-			keyFiles: [],
+			quickPaths: [{ path: "/absolute/path", description: "Absolute" }],
+			searchPatterns: [{ find: "Search", pattern: "test", path: "/absolute/dir/" }],
 		};
 
-		mockExistsSync.mockImplementation((path: string) => path === "/absolute/path");
+		mockExistsSync.mockImplementation(
+			(path: string) => path === "/absolute/path" || path === "/absolute/dir/",
+		);
 
 		const { validatedSkill } = validateSkillPaths(absoluteSkill, { basePath });
-		expect(validatedSkill.repositoryStructure).toHaveLength(1);
+		expect(validatedSkill.quickPaths).toHaveLength(1);
+		expect(validatedSkill.searchPatterns).toHaveLength(1);
 	});
 
 	it("should return original skill if all paths exist", () => {
 		mockExistsSync.mockReturnValue(true);
 
-		const { validatedSkill, removedPaths } = validateSkillPaths(mockSkill, { basePath });
+		const { validatedSkill, removedPaths, removedSearchPaths } = validateSkillPaths(mockSkill, {
+			basePath,
+		});
 
-		expect(validatedSkill.repositoryStructure).toHaveLength(3);
-		expect(validatedSkill.keyFiles).toHaveLength(3);
+		expect(validatedSkill.quickPaths).toHaveLength(3);
+		expect(validatedSkill.searchPatterns).toHaveLength(2);
 		expect(removedPaths).toHaveLength(0);
+		expect(removedSearchPaths).toHaveLength(0);
+	});
+
+	it("should validate searchPatterns directory paths", () => {
+		const skillWithDirs: Skill = {
+			name: "test",
+			description: "Test",
+			quickPaths: [],
+			searchPatterns: [
+				{ find: "Valid", pattern: "test", path: "/test/repo/src/" },
+				{ find: "Invalid", pattern: "test", path: "/test/repo/missing/" },
+			],
+		};
+
+		mockExistsSync.mockImplementation((path: string) => path === "/test/repo/src/");
+
+		const { validatedSkill, removedSearchPaths } = validateSkillPaths(skillWithDirs, { basePath });
+
+		expect(validatedSkill.searchPatterns).toHaveLength(1);
+		expect(validatedSkill.searchPatterns[0]?.find).toBe("Valid");
+		expect(removedSearchPaths).toEqual(["/test/repo/missing/"]);
 	});
 });
 

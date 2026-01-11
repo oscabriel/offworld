@@ -52,11 +52,8 @@ const mockArchitecture: Architecture = {
 const mockSkill: Skill = {
 	name: "test-skill",
 	description: "Test skill description",
-	allowedTools: ["Read", "Glob"],
-	repositoryStructure: [{ path: "src", purpose: "Source code" }],
-	keyFiles: [{ path: "src/index.ts", description: "Entry point" }],
-	searchStrategies: ["grep for exports"],
-	whenToUse: ["When working with test-repo"],
+	quickPaths: [{ path: "/test/repo/src/index.ts", description: "Entry point" }],
+	searchPatterns: [{ find: "Exports", pattern: "export", path: "/test/repo/src/" }],
 };
 
 const mockSummary = "# Test Summary\n\nThis is a test repository.";
@@ -104,7 +101,11 @@ vi.mock("../analysis/generate.js", () => ({
 }));
 
 vi.mock("../validation/paths.js", () => ({
-	validateSkillPaths: vi.fn((skill) => ({ validatedSkill: skill, removedPaths: [] })),
+	validateSkillPaths: vi.fn((skill) => ({
+		validatedSkill: skill,
+		removedPaths: [],
+		removedSearchPaths: [],
+	})),
 }));
 
 // Import after mocking

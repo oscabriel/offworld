@@ -256,15 +256,19 @@ export async function runAnalysisPipeline(
 	);
 
 	onProgress("validate", "Validating paths...");
-	const { validatedSkill: skill, removedPaths } = timeStep("validate", () =>
+	const {
+		validatedSkill: skill,
+		removedPaths,
+		removedSearchPaths,
+	} = timeStep("validate", () =>
 		validateSkillPaths(rawSkill, {
 			basePath: repoPath,
-			onWarning: (path) => options.onDebug?.(`Removed non-existent path: ${path}`),
+			onWarning: (path, type) => options.onDebug?.(`Removed non-existent ${type}: ${path}`),
 		}),
 	);
 
-	const skillMd =
-		removedPaths.length > 0 ? formatSkillMd(skill, { commitSha, generated }) : rawSkillMd;
+	const pathsWereRemoved = removedPaths.length > 0 || removedSearchPaths.length > 0;
+	const skillMd = pathsWereRemoved ? formatSkillMd(skill, { commitSha, generated }) : rawSkillMd;
 
 	const meta: AnalysisMeta = {
 		analyzedAt: new Date().toISOString(),

@@ -14,6 +14,8 @@ import type {
 	FileIndexEntrySchema,
 	FileIndexSchema,
 	AnalysisMetaSchema,
+	QuickPathSchema,
+	SearchPatternSchema,
 	SkillSchema,
 	RepoIndexEntrySchema,
 	RepoIndexSchema,
@@ -37,6 +39,8 @@ export type FileIndexEntry = z.infer<typeof FileIndexEntrySchema>;
 export type FileIndex = z.infer<typeof FileIndexSchema>;
 export type AnalysisMeta = z.infer<typeof AnalysisMetaSchema>;
 
+export type QuickPath = z.infer<typeof QuickPathSchema>;
+export type SearchPattern = z.infer<typeof SearchPatternSchema>;
 export type Skill = z.infer<typeof SkillSchema>;
 
 export type RepoIndexEntry = z.infer<typeof RepoIndexEntrySchema>;

@@ -1,12 +1,15 @@
 /**
  * Prompt Templates for Skill Generation
  *
- * Key principles:
- * 1. Full absolute paths throughout (agent can immediately Read them)
- * 2. Quick Paths (15-20 files) - most important files
- * 3. Search Patterns table - grep patterns for common searches
- * 4. Deep Context references to analysis files
- * 5. Target ~100 lines - dense, no prose
+ * Structured following Anthropic's prompt engineering best practices:
+ * 1. Task context - what you are and what you're doing
+ * 2. Tone context - how to communicate
+ * 3. Background data - XML-tagged repository context
+ * 4. Detailed rules - specific requirements
+ * 5. Examples - concrete well-formed skill example
+ * 6. Immediate task - what to do now
+ * 7. Output formatting - how to structure response
+ * 8. Prefill simulation - start of expected output
  */
 
 export function createSkillPrompt(params: {
@@ -37,77 +40,100 @@ export function createSkillPrompt(params: {
 	const displayName = fullName || repoName;
 	const skillName = repoName.toLowerCase().replace(/[^a-z0-9]/g, "-");
 
-	return `Generate a SLIM skill (~100 lines) for "${displayName}".
+	return `You are a technical writer creating navigation skills for AI coding assistants.
 
-## Repository Context
+Your task is to generate a SKILL.md file that helps AI agents quickly navigate and understand a codebase. Skills are reference documents that provide quick paths to important files and search patterns for finding code.
 
-Path: ${repoPath}
-Name: ${repoName}
-${fullName ? `Full: ${fullName}` : ""}
+Be concise and technical. No prose, explanations, or commentary outside the skill format.
 
-README:
+<repository>
+<path>${repoPath}</path>
+<name>${repoName}</name>
+${fullName ? `<fullName>${fullName}</fullName>` : ""}
+</repository>
+
+<readme>
 ${readme || "(none)"}
+</readme>
 
-Package:
+<package_config>
 ${packageConfig || "(none)"}
+</package_config>
 
-File Tree:
+<file_tree>
 ${fileTree}
+</file_tree>
 
-Summary:
+<top_files>
+${topFiles.map((f) => `<file path="${f.path}" role="${f.role}"/>`).join("\n")}
+</top_files>
+
+<summary>
 ${summary}
-${architectureJson ? `\nArchitecture:\n${architectureJson}` : ""}
+</summary>
 
-Top Files:
-${topFiles.map((f) => `- ${f.path} (${f.role})`).join("\n")}
+${architectureJson ? `<architecture>\n${architectureJson}\n</architecture>` : ""}
 
+<rules>
+1. Output EXACTLY ~100 lines (80-120 acceptable)
+2. Use full absolute paths starting with ${repoPath}
+3. Include 15-20 Quick Paths - the most important files only
+4. Search Patterns must be a markdown table with 4-6 rows
+5. NO commentary before or after the skill content
+6. NO verbose prose, NO "Best Practices", NO "When to Use" sections
+7. Start immediately with completing the YAML frontmatter
+</rules>
+
+<example>
+---
+name: express
+description: Express.js web framework - fast, unopinionated, minimalist web framework for Node.js.
 ---
 
-## Output Format (EXACTLY ~100 lines)
+# express
 
-\`\`\`markdown
----
-name: ${skillName}
-description: [1 sentence: what it is + when to use this skill]
----
+Minimalist web framework for Node.js providing routing, middleware, and HTTP utilities.
 
-# ${displayName}
-
-[1-2 sentences: what this is and its purpose]
-
-Cloned to: ${repoPath}
-${analysisPath ? `Analysis: ${analysisPath}/` : ""}
+Cloned to: /Users/dev/clones/expressjs/express
+Analysis: /Users/dev/.ow/analyses/github--expressjs--express/
 
 ## Quick Paths
 
-[15-20 most important files with full absolute paths]
-- \`${repoPath}/path/to/file.ts\` - description
-- \`${repoPath}/path/to/other.ts\` - description
+- \`/Users/dev/clones/expressjs/express/lib/express.js\` - Main entry point, creates application
+- \`/Users/dev/clones/expressjs/express/lib/router/index.js\` - Core router implementation
+- \`/Users/dev/clones/expressjs/express/lib/application.js\` - Application prototype methods
+- \`/Users/dev/clones/expressjs/express/lib/request.js\` - Request object extensions
+- \`/Users/dev/clones/expressjs/express/lib/response.js\` - Response object extensions
+- \`/Users/dev/clones/expressjs/express/lib/middleware/init.js\` - Default middleware initialization
+- \`/Users/dev/clones/expressjs/express/lib/view.js\` - View rendering engine
+- \`/Users/dev/clones/expressjs/express/lib/utils.js\` - Internal utilities
 
 ## Search Patterns
 
 | Find | Pattern | Path |
 |------|---------|------|
-| Hooks | \`export function use\` | \`${repoPath}/src/\` |
-| Types | \`export (type|interface)\` | \`${repoPath}/src/\` |
-| Components | \`export const.*=\` | \`${repoPath}/src/\` |
-[4-6 rows with actual grep patterns]
+| Middleware | \`exports\\.\\w+\\s*=\` | \`/Users/dev/clones/expressjs/express/lib/middleware/\` |
+| Route methods | \`methods\\.forEach\` | \`/Users/dev/clones/expressjs/express/lib/router/\` |
+| Request helpers | \`defineGetter\` | \`/Users/dev/clones/expressjs/express/lib/request.js\` |
+| Response methods | \`res\\.\\w+\\s*=\` | \`/Users/dev/clones/expressjs/express/lib/response.js\` |
 
 ## Deep Context
 
-- Architecture: Read \`${analysisPath || "~/.ow/analyses/<repo>"}/architecture.md\`
-- Summary: Read \`${analysisPath || "~/.ow/analyses/<repo>"}/summary.md\`
-\`\`\`
+- Architecture: Read \`/Users/dev/.ow/analyses/github--expressjs--express/architecture.md\`
+- Summary: Read \`/Users/dev/.ow/analyses/github--expressjs--express/summary.md\`
+</example>
+
+Now generate a skill for "${displayName}".
+
+Use these paths in your output:
+- Cloned to: ${repoPath}
+- Analysis: ${analysisPath || `~/.ow/analyses/${skillName}`}/
+
+Output ONLY the skill markdown. Complete the YAML frontmatter that follows.
 
 ---
-
-RULES:
-1. EXACTLY ~100 lines (80-120 acceptable)
-2. Full absolute paths starting with ${repoPath}
-3. 15-20 Quick Paths - most important files only
-4. Search Patterns as markdown table (4-6 rows)
-5. NO verbose prose, NO "Best Practices", NO "When to Use" sections
-6. Dense, actionable, grep-ready`;
+name: ${skillName}
+description:`;
 }
 
 // ============================================================================

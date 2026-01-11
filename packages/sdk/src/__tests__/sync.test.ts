@@ -39,11 +39,8 @@ describe("sync.ts", () => {
 		skill: {
 			name: "tanstack-router",
 			description: "TanStack Router expert",
-			allowedTools: ["Read", "Glob", "Grep"],
-			repositoryStructure: [],
-			keyFiles: [],
-			searchStrategies: [],
-			whenToUse: [],
+			quickPaths: [],
+			searchPatterns: [],
 		},
 		fileIndex: [],
 		commitSha: "abc123",

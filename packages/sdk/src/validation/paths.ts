@@ -5,11 +5,12 @@ import type { Skill } from "@offworld/types";
 export interface PathValidationResult {
 	validatedSkill: Skill;
 	removedPaths: string[];
+	removedSearchPaths: string[];
 }
 
 export interface ValidatePathsOptions {
 	basePath: string;
-	onWarning?: (path: string) => void;
+	onWarning?: (path: string, type: "quickPath" | "searchPattern") => void;
 }
 
 export function validateSkillPaths(
@@ -18,36 +19,38 @@ export function validateSkillPaths(
 ): PathValidationResult {
 	const { basePath, onWarning } = options;
 	const removedPaths: string[] = [];
+	const removedSearchPaths: string[] = [];
 
-	const validRepositoryStructure = skill.repositoryStructure.filter((entry) => {
+	const validQuickPaths = skill.quickPaths.filter((entry) => {
 		const fullPath = resolvePath(entry.path, basePath);
 		if (existsSync(fullPath)) {
 			return true;
 		}
 		removedPaths.push(entry.path);
-		onWarning?.(entry.path);
+		onWarning?.(entry.path, "quickPath");
 		return false;
 	});
 
-	const validKeyFiles = skill.keyFiles.filter((entry) => {
+	const validSearchPatterns = skill.searchPatterns.filter((entry) => {
 		const fullPath = resolvePath(entry.path, basePath);
 		if (existsSync(fullPath)) {
 			return true;
 		}
-		removedPaths.push(entry.path);
-		onWarning?.(entry.path);
+		removedSearchPaths.push(entry.path);
+		onWarning?.(entry.path, "searchPattern");
 		return false;
 	});
 
 	const validatedSkill: Skill = {
 		...skill,
-		repositoryStructure: validRepositoryStructure,
-		keyFiles: validKeyFiles,
+		quickPaths: validQuickPaths,
+		searchPatterns: validSearchPatterns,
 	};
 
 	return {
 		validatedSkill,
 		removedPaths,
+		removedSearchPaths,
 	};
 }
 

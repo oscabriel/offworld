@@ -17,8 +17,12 @@ export {
 	generateSummary,
 	extractArchitecture,
 	generateSkill,
+	generateRichSkill,
 	formatArchitectureMd,
 	formatSkillMd,
+	type GenerateOptions,
+	type SkillGenerateOptions,
+	type RichSkillResult,
 } from "./generate.js";
 
 // Pipeline (PRD 5.1-5.6)

@@ -135,6 +135,7 @@ export {
 	generateSummary,
 	extractArchitecture,
 	generateSkill,
+	generateRichSkill,
 	formatArchitectureMd,
 	formatSkillMd,
 	runAnalysisPipeline,
@@ -142,6 +143,9 @@ export {
 	type AnalysisPipelineResult,
 	type AnalysisMeta,
 	type AnalysisPipelineOptions,
+	type GenerateOptions,
+	type SkillGenerateOptions,
+	type RichSkillResult,
 } from "./analysis/index.js";
 
 export {

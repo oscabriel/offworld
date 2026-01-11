@@ -3,95 +3,21 @@ import type { Architecture, Skill } from "@offworld/types";
 import type { GatheredContext } from "./context.js";
 import { formatContextForPrompt } from "./context.js";
 import { parseArchitectureMarkdown, parseSkillMarkdown } from "./parsers.js";
+import { createSkillPrompt, SUMMARY_TEMPLATE, ARCHITECTURE_TEMPLATE } from "./prompts.js";
 
 export interface GenerateOptions {
 	onDebug?: (message: string) => void;
 	onStream?: (text: string) => void;
 }
 
-const SUMMARY_TEMPLATE = `Based on the repository context provided, write a markdown summary using this format:
+export interface SkillGenerateOptions extends GenerateOptions {
+	fullName?: string;
+}
 
-## Purpose
-[1-2 sentences about what this project does]
-
-## Key Features
-- [Feature 1]
-- [Feature 2]
-- [Feature 3]
-
-## Technologies
-- [Language/Framework 1]
-- [Language/Framework 2]
-
-## Architecture Overview
-[Brief overview of how the codebase is organized]
-
-Keep the summary under 500 words. Focus on what's most useful for a developer trying to understand this project quickly.`;
-
-const ARCHITECTURE_TEMPLATE = `Analyze the repository and extract structured architecture information using this EXACT format:
-
-## Project Type
-[ONE of: monorepo, library, cli, app, framework]
-
-## Entities
-[For each major module/package, use this subsection format:]
-
-### [Entity Name]
-- **Type**: [ONE of: package, module, feature, util, config]
-- **Path**: [relative path]
-- **Description**: [one sentence]
-- **Responsibilities**:
-  - [responsibility 1]
-  - [responsibility 2]
-
-## Relationships
-- [from] -> [to]: [relationship type]
-- [from] -> [to]: [relationship type]
-
-## Key Files
-- \`[path]\`: [role description]
-- \`[path]\`: [role description]
-
-## Patterns
-- **Framework**: [detected framework or empty]
-- **Build Tool**: [detected build tool or empty]
-- **Test Framework**: [detected test framework or empty]
-- **Language**: [primary language]
-
-Be thorough but concise. Focus on the actual structure visible in the code.`;
-
-const SKILL_TEMPLATE = `Generate a skill definition for an AI coding assistant using this EXACT format:
-
-## Skill Info
-- **Name**: [short-kebab-case-name]
-- **Description**: [one sentence describing what this skill is for]
-
-## Allowed Tools
-- Read
-- Glob
-- Grep
-- Bash
-- Edit
-
-## Repository Structure
-- \`[path]\`: [purpose]
-- \`[path]\`: [purpose]
-
-## Key Files
-- \`[path]\`: [description]
-- \`[path]\`: [description]
-
-## Search Strategies
-- [Strategy 1: how to find X in this codebase]
-- [Strategy 2: grep pattern for Y]
-- [Strategy 3: file pattern for Z]
-
-## When to Use
-- [Trigger condition 1]
-- [Trigger condition 2]
-- [Trigger condition 3]
-
-Make the skill practical and immediately usable without editing.`;
+export interface RichSkillResult {
+	skill: Skill;
+	skillMd: string;
+}
 
 export async function generateSummary(
 	context: GatheredContext,
@@ -144,33 +70,57 @@ export async function generateSkill(
 	context: GatheredContext,
 	summary: string,
 	architecture: Architecture,
-	options: GenerateOptions = {},
+	options: SkillGenerateOptions = {},
 ): Promise<Skill> {
-	const contextPrompt = formatContextForPrompt(context);
+	const result = await generateRichSkill(context, summary, architecture, options);
+	return result.skill;
+}
 
-	const prompt = `You are creating a "skill" file for an AI coding assistant. This skill helps the AI understand and work with a specific codebase.
-
-Repository context:
-${contextPrompt}
-
-Summary:
-${summary}
-
-Architecture:
-${JSON.stringify(architecture, null, 2)}
-
-${SKILL_TEMPLATE}`;
+export async function generateRichSkill(
+	context: GatheredContext,
+	summary: string,
+	architecture: Architecture,
+	options: SkillGenerateOptions = {},
+): Promise<RichSkillResult> {
+	const prompt = createSkillPrompt({
+		repoPath: context.repoPath,
+		repoName: context.repoName,
+		fullName: options.fullName,
+		readme: context.readme,
+		packageConfig: context.packageConfig,
+		fileTree: context.fileTree,
+		topFiles: context.topFiles,
+		summary,
+		architectureJson: JSON.stringify(architecture, null, 2),
+	});
 
 	const result = await streamPrompt({
 		prompt,
 		cwd: context.repoPath,
 		systemPrompt:
-			"You are an expert at creating AI assistant skills. Make them practical and immediately useful.",
+			"You are an expert at creating comprehensive AI assistant skills. Generate detailed, actionable skills with 250-400 lines of high-signal content. Use full absolute paths throughout.",
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	});
 
-	return parseSkillMarkdown(result.text);
+	const skillMd = extractSkillMarkdown(result.text);
+	const skill = parseSkillMarkdown(skillMd);
+
+	return { skill, skillMd };
+}
+
+function extractSkillMarkdown(text: string): string {
+	const codeBlockMatch = text.match(/```markdown\n([\s\S]*?)\n```/);
+	if (codeBlockMatch?.[1]) {
+		return codeBlockMatch[1].trim();
+	}
+
+	const yamlStart = text.indexOf("---");
+	if (yamlStart !== -1) {
+		return text.slice(yamlStart).trim();
+	}
+
+	return text.trim();
 }
 
 export function formatArchitectureMd(architecture: Architecture): string {

@@ -79,6 +79,7 @@ vi.mock("node:fs", () => ({
 	mkdirSync: vi.fn((path: string) => {
 		createdDirs.add(path);
 	}),
+	existsSync: vi.fn(() => true),
 }));
 
 // Mock config.ts to return predictable paths
@@ -133,6 +134,7 @@ vi.mock("../analysis/generate.js", () => ({
 		return { skill: mockSkill, skillMd: "---\nname: test-skill\n---\n# Skill" };
 	}),
 	formatArchitectureMd: vi.fn(() => "# Architecture Markdown"),
+	formatSkillMd: vi.fn(() => "---\nname: test-skill\n---\n# Formatted Skill"),
 }));
 
 // Import after mocking

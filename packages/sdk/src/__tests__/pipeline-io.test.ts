@@ -100,6 +100,11 @@ vi.mock("../analysis/generate.js", () => ({
 	})),
 	generateRichSkill: vi.fn(async () => ({ skill: mockSkill, skillMd: mockSkillMd })),
 	formatArchitectureMd: vi.fn(() => mockArchitectureMd),
+	formatSkillMd: vi.fn(() => mockSkillMd),
+}));
+
+vi.mock("../validation/paths.js", () => ({
+	validateSkillPaths: vi.fn((skill) => ({ validatedSkill: skill, removedPaths: [] })),
 }));
 
 // Import after mocking

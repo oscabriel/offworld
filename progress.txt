@@ -133,3 +133,24 @@
 - TypeScript: SDK pass
 - Tests: 392 passed
 - Lint: 0 errors
+
+---
+
+## 2026-01-10: PRD-014 - Shallow clones by default
+
+### Completed
+- PRD-014: Default shallow clones with --full-history option
+
+### Changes
+- `apps/cli/src/index.ts`:
+  - Added `negativeAlias: "full-history"` to shallow flag
+  - Users can use `--full-history` (or `--no-shallow`) for full clone
+
+### Notes
+- Shallow was already default (true)
+- Just needed explicit --full-history alias per PRD
+
+### Verification
+- TypeScript: pass
+- Tests: 392 passed
+- Lint: 0 errors

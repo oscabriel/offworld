@@ -28,7 +28,11 @@ export const router = os.router({
 		.input(
 			z.object({
 				repo: z.string().describe("Repository (owner/repo, URL, or local path)"),
-				shallow: z.boolean().default(true).describe("Use shallow clone (--depth 1)"),
+				shallow: z
+					.boolean()
+					.default(true)
+					.describe("Use shallow clone (--depth 1)")
+					.meta({ negativeAlias: "full-history" }),
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-analysis"),
 				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),

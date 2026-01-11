@@ -96,9 +96,9 @@ vi.mock("../clone.js", () => ({
 	getCommitSha: vi.fn(() => mockCommitSha),
 }));
 
-// Mock ranker.js for rankFileImportance
-vi.mock("../importance/ranker.js", () => ({
-	rankFileImportance: vi.fn(async () => {
+// Mock heuristics.js for rankFilesByHeuristics
+vi.mock("../analysis/heuristics.js", () => ({
+	rankFilesByHeuristics: vi.fn(async () => {
 		if (shouldRankFail) {
 			throw new Error("Ranking failed");
 		}
@@ -116,7 +116,6 @@ vi.mock("../analysis/context.js", () => ({
 	}),
 }));
 
-// Mock generate.js for generateSummary, extractArchitecture, generateSkill
 vi.mock("../analysis/generate.js", () => ({
 	generateSummary: vi.fn(async () => {
 		if (shouldSummaryFail) {
@@ -130,27 +129,25 @@ vi.mock("../analysis/generate.js", () => ({
 		}
 		return mockArchitecture;
 	}),
-	generateSkill: vi.fn(async () => {
+	generateRichSkill: vi.fn(async () => {
 		if (shouldSkillFail) {
 			throw new Error("Skill generation failed");
 		}
-		return mockSkill;
+		return { skill: mockSkill, skillMd: "---\nname: test-skill\n---\n# Skill" };
 	}),
 	formatArchitectureMd: vi.fn(() => "# Architecture Markdown"),
-	formatSkillMd: vi.fn(() => "---\nname: test-skill\n---\n# Skill"),
 }));
 
 // Import after mocking
 import { installSkill, runAnalysisPipeline } from "../analysis/pipeline.js";
 import { getCommitSha } from "../clone.js";
-import { rankFileImportance } from "../importance/ranker.js";
+import { rankFilesByHeuristics } from "../analysis/heuristics.js";
 import { gatherContext } from "../analysis/context.js";
 import {
 	generateSummary,
 	extractArchitecture,
-	generateSkill,
+	generateRichSkill,
 	formatArchitectureMd,
-	formatSkillMd,
 } from "../analysis/generate.js";
 
 // ============================================================================
@@ -302,13 +299,12 @@ describe("runAnalysisPipeline", () => {
 
 			// Verify all mocked functions were called
 			expect(getCommitSha).toHaveBeenCalledWith("/path/to/repo");
-			expect(rankFileImportance).toHaveBeenCalledWith("/path/to/repo");
+			expect(rankFilesByHeuristics).toHaveBeenCalledWith("/path/to/repo");
 			expect(gatherContext).toHaveBeenCalledWith("/path/to/repo", { rankedFiles: mockFileIndex });
 			expect(generateSummary).toHaveBeenCalled();
 			expect(extractArchitecture).toHaveBeenCalled();
-			expect(generateSkill).toHaveBeenCalled();
+			expect(generateRichSkill).toHaveBeenCalled();
 			expect(formatArchitectureMd).toHaveBeenCalledWith(mockArchitecture);
-			expect(formatSkillMd).toHaveBeenCalledWith(mockSkill);
 		});
 
 		it("returns complete analysis result", async () => {

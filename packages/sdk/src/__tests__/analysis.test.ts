@@ -13,9 +13,9 @@ vi.mock("node:fs", () => ({
 	statSync: vi.fn(),
 }));
 
-// Mock rankFileImportance to avoid Tree-sitter dependencies
-vi.mock("../importance/ranker.js", () => ({
-	rankFileImportance: vi.fn(),
+// Mock rankFilesByHeuristics
+vi.mock("../analysis/heuristics.js", () => ({
+	rankFilesByHeuristics: vi.fn(),
 }));
 
 // Mock util
@@ -24,7 +24,7 @@ vi.mock("../util.js", () => ({
 }));
 
 import { existsSync, readFileSync } from "node:fs";
-import { rankFileImportance } from "../importance/ranker.js";
+import { rankFilesByHeuristics } from "../analysis/heuristics.js";
 import { isBinaryBuffer } from "../util.js";
 import {
 	gatherContext,
@@ -37,7 +37,7 @@ import type { FileIndexEntry } from "@offworld/types";
 describe("analysis/context.ts", () => {
 	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
 	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
-	const mockRankFileImportance = rankFileImportance as ReturnType<typeof vi.fn>;
+	const mockRankFilesByHeuristics = rankFilesByHeuristics as ReturnType<typeof vi.fn>;
 	const mockIsBinaryBuffer = isBinaryBuffer as ReturnType<typeof vi.fn>;
 
 	const mockRankedFiles: FileIndexEntry[] = [
@@ -82,7 +82,7 @@ npm install
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockRankFileImportance.mockResolvedValue(mockRankedFiles);
+		mockRankFilesByHeuristics.mockResolvedValue(mockRankedFiles);
 		mockIsBinaryBuffer.mockReturnValue(false);
 	});
 
@@ -264,8 +264,8 @@ npm install
 
 			const context = await gatherContext("/test/repo", { rankedFiles: customFiles });
 
-			// Should not call rankFileImportance when rankedFiles provided
-			expect(mockRankFileImportance).not.toHaveBeenCalled();
+			// Should not call rankFilesByHeuristics when rankedFiles provided
+			expect(mockRankFilesByHeuristics).not.toHaveBeenCalled();
 			expect(context.topFiles).toHaveLength(1);
 			expect(context.topFiles[0]!.path).toBe("custom.ts");
 		});

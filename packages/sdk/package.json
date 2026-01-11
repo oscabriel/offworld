@@ -22,8 +22,7 @@
 	"dependencies": {
 		"@anthropic-ai/claude-agent-sdk": "^0.2.3",
 		"@offworld/types": "workspace:*",
-		"@opencode-ai/sdk": "^1.1.10",
-		"web-tree-sitter": "^0.26.3"
+		"@opencode-ai/sdk": "^1.1.10"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.3",

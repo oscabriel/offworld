@@ -1,9 +1,5 @@
-/**
- * Analysis Pipeline exports
- * PRD 5.1-5.6: Complete analysis from context gathering to skill installation
- */
+export { rankFilesByHeuristics, type HeuristicsOptions } from "./heuristics.js";
 
-// Context gathering (PRD 5.1)
 export {
 	gatherContext,
 	formatContextForPrompt,

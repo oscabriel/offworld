@@ -1,0 +1,241 @@
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { basename, dirname, extname, join, relative } from "node:path";
+import type { FileIndexEntry, FileRole } from "@offworld/types";
+import { DEFAULT_IGNORE_PATTERNS, SUPPORTED_EXTENSIONS } from "../constants.js";
+import { loadGitignorePatternsSimple } from "../util.js";
+
+export interface HeuristicsOptions {
+	additionalIgnorePatterns?: string[];
+	maxFiles?: number;
+	maxFileSize?: number;
+}
+
+function matchesPattern(filePath: string, pattern: string): boolean {
+	const normalizedPath = filePath.replace(/\\/g, "/");
+	const normalizedPattern = pattern.replace(/\\/g, "/");
+
+	let regexStr = normalizedPattern
+		.replace(/[.+^${}()|[\]\\]/g, "\\$&")
+		.replace(/\*\*/g, "{{GLOBSTAR}}")
+		.replace(/\*/g, "[^/]*")
+		.replace(/\?/g, "[^/]")
+		.replace(/\{\{GLOBSTAR\}\}/g, ".*");
+
+	if (!pattern.startsWith("/")) {
+		regexStr = `(^|/)${regexStr}($|/)`;
+	} else {
+		regexStr = `^${regexStr.slice(1)}($|/)`;
+	}
+
+	const regex = new RegExp(regexStr);
+	return regex.test(normalizedPath);
+}
+
+function shouldIgnore(filePath: string, ignorePatterns: string[]): boolean {
+	return ignorePatterns.some((pattern) => matchesPattern(filePath, pattern));
+}
+
+function discoverFiles(
+	dir: string,
+	repoRoot: string,
+	ignorePatterns: string[],
+	options: HeuristicsOptions,
+	files: string[] = [],
+): string[] {
+	const maxFiles = options.maxFiles ?? 500;
+	const maxFileSize = options.maxFileSize ?? 100 * 1024;
+
+	if (files.length >= maxFiles) {
+		return files;
+	}
+
+	let entries: string[];
+	try {
+		entries = readdirSync(dir);
+	} catch {
+		return files;
+	}
+
+	for (const entry of entries) {
+		if (files.length >= maxFiles) {
+			break;
+		}
+
+		const fullPath = join(dir, entry);
+		const relativePath = relative(repoRoot, fullPath);
+
+		if (shouldIgnore(relativePath, ignorePatterns)) {
+			continue;
+		}
+
+		let stat;
+		try {
+			stat = statSync(fullPath);
+		} catch {
+			continue;
+		}
+
+		if (stat.isDirectory()) {
+			discoverFiles(fullPath, repoRoot, ignorePatterns, options, files);
+		} else if (stat.isFile()) {
+			if (stat.size > maxFileSize) {
+				continue;
+			}
+
+			const ext = extname(entry);
+			if (SUPPORTED_EXTENSIONS.includes(ext as (typeof SUPPORTED_EXTENSIONS)[number])) {
+				files.push(relativePath);
+			}
+		}
+	}
+
+	return files;
+}
+
+function determineFileRole(filePath: string): FileRole {
+	const fileName = basename(filePath).toLowerCase();
+	const dirName = dirname(filePath).toLowerCase();
+
+	if (
+		fileName === "index.ts" ||
+		fileName === "index.tsx" ||
+		fileName === "index.js" ||
+		fileName === "main.ts" ||
+		fileName === "main.py" ||
+		fileName === "main.go" ||
+		fileName === "lib.rs" ||
+		fileName === "mod.rs"
+	) {
+		return "entry";
+	}
+
+	if (
+		fileName.includes("config") ||
+		fileName.includes(".config.") ||
+		fileName === "tsconfig.json" ||
+		fileName === "package.json"
+	) {
+		return "config";
+	}
+
+	if (
+		fileName.endsWith(".d.ts") ||
+		fileName === "types.ts" ||
+		fileName === "types.tsx" ||
+		dirName.includes("types") ||
+		dirName.includes("interfaces")
+	) {
+		return "types";
+	}
+
+	if (
+		fileName.includes(".test.") ||
+		fileName.includes(".spec.") ||
+		fileName.includes("_test.") ||
+		dirName.includes("__tests__") ||
+		dirName.includes("test") ||
+		dirName.includes("tests")
+	) {
+		return "test";
+	}
+
+	if (
+		fileName === "util.ts" ||
+		fileName === "utils.ts" ||
+		fileName === "helpers.ts" ||
+		dirName.includes("util") ||
+		dirName.includes("helper")
+	) {
+		return "util";
+	}
+
+	if (fileName.endsWith(".md") || dirName.includes("docs")) {
+		return "doc";
+	}
+
+	return "core";
+}
+
+/**
+ * PRD-002 scoring rules:
+ * - Entry points (index.*, main.*, lib.rs): 0.9
+ * - Config files (package.json, *.config.*): 0.8
+ * - Source directories (src/**, lib/**): 0.6-0.7
+ * - Test files: 0.3
+ */
+function scoreFile(filePath: string): number {
+	const dirPath = dirname(filePath).toLowerCase();
+	const role = determineFileRole(filePath);
+
+	if (role === "entry") {
+		if (!filePath.includes("/") || dirPath === "src" || dirPath === "lib") {
+			return 0.9;
+		}
+		return 0.85;
+	}
+
+	if (role === "config") {
+		return 0.8;
+	}
+
+	if (role === "types") {
+		return 0.75;
+	}
+
+	if (role === "test") {
+		return 0.3;
+	}
+
+	if (role === "util") {
+		return 0.5;
+	}
+
+	const depth = filePath.split("/").length;
+
+	if (
+		dirPath.startsWith("src") ||
+		dirPath.startsWith("lib") ||
+		/packages\/[^/]+\/src/.test(dirPath)
+	) {
+		if (depth <= 2) return 0.7;
+		if (depth <= 4) return 0.65;
+		return 0.6;
+	}
+
+	if (dirPath.includes("example") || dirPath.includes("sample")) {
+		return 0.45;
+	}
+
+	return 0.55;
+}
+
+export async function rankFilesByHeuristics(
+	repoPath: string,
+	options: HeuristicsOptions = {},
+): Promise<FileIndexEntry[]> {
+	if (!existsSync(repoPath)) {
+		throw new Error(`Repository path does not exist: ${repoPath}`);
+	}
+
+	const ignorePatterns: string[] = [
+		...DEFAULT_IGNORE_PATTERNS,
+		...loadGitignorePatternsSimple(repoPath),
+		...(options.additionalIgnorePatterns ?? []),
+	];
+
+	const files = discoverFiles(repoPath, repoPath, ignorePatterns, options);
+
+	if (files.length === 0) {
+		return [];
+	}
+
+	const entries: FileIndexEntry[] = files.map((path) => ({
+		path,
+		importance: Math.round(scoreFile(path) * 1000) / 1000,
+		type: determineFileRole(path),
+	}));
+
+	entries.sort((a, b) => b.importance - a.importance);
+
+	return entries;
+}

@@ -40,10 +40,6 @@ export const router = os.router({
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-analysis"),
 				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),
-				skipArchitecture: z
-					.boolean()
-					.default(false)
-					.describe("Skip architecture generation (faster, summary only)"),
 			}),
 		)
 		.meta({
@@ -59,7 +55,6 @@ export const router = os.router({
 				branch: input.branch,
 				force: input.force,
 				verbose: input.verbose,
-				skipArchitecture: input.skipArchitecture,
 			});
 		}),
 
@@ -89,10 +84,6 @@ export const router = os.router({
 			z.object({
 				repo: z.string().describe("Repository (owner/repo, URL, or local path)"),
 				force: z.boolean().default(false).describe("Force even if remote exists"),
-				skipArchitecture: z
-					.boolean()
-					.default(false)
-					.describe("Skip architecture generation (faster, summary only)"),
 			}),
 		)
 		.meta({
@@ -103,7 +94,6 @@ export const router = os.router({
 			return generateHandler({
 				repo: input.repo,
 				force: input.force,
-				skipArchitecture: input.skipArchitecture,
 			});
 		}),
 

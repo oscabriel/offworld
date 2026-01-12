@@ -1,4 +1,4 @@
-import { basename, dirname } from "node:path";
+import { dirname } from "node:path";
 import type { ParsedFile } from "../ast/parser.js";
 import type { ASTEnhancedFileEntry } from "./heuristics.js";
 
@@ -31,7 +31,6 @@ export interface SkeletonEntity {
  * Detected patterns about the repository
  */
 export interface DetectedPatterns {
-	framework: string | null;
 	language: string;
 	hasTests: boolean;
 	hasDocs: boolean;
@@ -240,19 +239,17 @@ export function buildEntities(topFiles: ASTEnhancedFileEntry[]): SkeletonEntity[
 }
 
 /**
- * Detect patterns about the repository: framework, language, tests, docs
+ * Detect patterns about the repository: language, tests, docs
  */
 export function detectPatterns(
 	parsedFiles: Map<string, ParsedFile>,
 	topFiles: ASTEnhancedFileEntry[],
 ): DetectedPatterns {
-	const framework = detectFramework(parsedFiles);
-	const language = detectPrimaryLanguage(parsedFiles);
+	const language = detectLanguage(parsedFiles);
 	const hasTests = topFiles.some((f) => f.type === "test" || f.hasTests);
 	const hasDocs = topFiles.some((f) => f.type === "doc" || f.path.toLowerCase().includes("readme"));
 
 	return {
-		framework,
 		language,
 		hasTests,
 		hasDocs,
@@ -260,147 +257,9 @@ export function detectPatterns(
 }
 
 /**
- * Detect the primary framework used in the repository
- */
-export function detectFramework(parsedFiles: Map<string, ParsedFile>): string | null {
-	const indicators = {
-		react: 0,
-		nextjs: 0,
-		vue: 0,
-		angular: 0,
-		express: 0,
-		fastapi: 0,
-		django: 0,
-		flask: 0,
-		nestjs: 0,
-		svelte: 0,
-		solidjs: 0,
-		astro: 0,
-	};
-
-	for (const [path, parsed] of parsedFiles) {
-		const fileName = basename(path).toLowerCase();
-		const imports = parsed.imports.join(" ").toLowerCase();
-
-		// Next.js indicators
-		if (fileName === "next.config.js" || fileName === "next.config.ts") {
-			indicators.nextjs += 5;
-		}
-		if (path.includes("app/") && (fileName === "page.tsx" || fileName === "layout.tsx")) {
-			indicators.nextjs += 2;
-		}
-		if (path.includes("pages/") && fileName.endsWith(".tsx")) {
-			indicators.nextjs += 1;
-		}
-		if (imports.includes("next/")) {
-			indicators.nextjs += 2;
-		}
-
-		// React indicators (not Next.js)
-		if (imports.includes("from 'react'") || imports.includes('from "react"')) {
-			indicators.react += 1;
-		}
-		if (imports.includes("react-dom")) {
-			indicators.react += 1;
-		}
-
-		// Vue indicators
-		if (fileName.endsWith(".vue") || imports.includes("from 'vue'")) {
-			indicators.vue += 2;
-		}
-		if (fileName === "vite.config.ts" && imports.includes("@vitejs/plugin-vue")) {
-			indicators.vue += 3;
-		}
-
-		// Angular indicators
-		if (fileName === "angular.json" || imports.includes("@angular/")) {
-			indicators.angular += 3;
-		}
-
-		// Express indicators
-		if (imports.includes("from 'express'") || imports.includes('from "express"')) {
-			indicators.express += 2;
-		}
-
-		// FastAPI indicators
-		if (imports.includes("fastapi") || imports.includes("from fastapi")) {
-			indicators.fastapi += 3;
-		}
-
-		// Django indicators
-		if (imports.includes("from django") || fileName === "manage.py") {
-			indicators.django += 3;
-		}
-
-		// Flask indicators
-		if (imports.includes("from flask") || imports.includes("import flask")) {
-			indicators.flask += 3;
-		}
-
-		// NestJS indicators
-		if (imports.includes("@nestjs/")) {
-			indicators.nestjs += 3;
-		}
-
-		// Svelte indicators
-		if (fileName.endsWith(".svelte") || imports.includes("from 'svelte'")) {
-			indicators.svelte += 2;
-		}
-
-		// SolidJS indicators
-		if (imports.includes("from 'solid-js'") || imports.includes('from "solid-js"')) {
-			indicators.solidjs += 2;
-		}
-
-		// Astro indicators
-		if (fileName.endsWith(".astro") || fileName === "astro.config.mjs") {
-			indicators.astro += 3;
-		}
-	}
-
-	// Find the framework with highest score
-	const sorted = Object.entries(indicators)
-		.filter(([_, score]) => score > 0)
-		.sort((a, b) => b[1] - a[1]);
-
-	if (sorted.length === 0) {
-		return null;
-	}
-
-	// Return the top framework (or Next.js if it has React + Next.js indicators)
-	const top = sorted[0];
-	if (!top) {
-		return null;
-	}
-
-	const [topName] = top;
-	if (topName === "react" && indicators.nextjs > 0) {
-		return "Next.js";
-	}
-
-	// Capitalize framework name
-	const frameworkNames: Record<string, string> = {
-		react: "React",
-		nextjs: "Next.js",
-		vue: "Vue",
-		angular: "Angular",
-		express: "Express",
-		fastapi: "FastAPI",
-		django: "Django",
-		flask: "Flask",
-		nestjs: "NestJS",
-		svelte: "Svelte",
-		solidjs: "SolidJS",
-		astro: "Astro",
-	};
-
-	return frameworkNames[topName] ?? null;
-}
-
-/**
  * Detect the primary programming language
  */
-function detectPrimaryLanguage(parsedFiles: Map<string, ParsedFile>): string {
+export function detectLanguage(parsedFiles: Map<string, ParsedFile>): string {
 	const langCounts: Record<string, number> = {};
 
 	for (const parsed of parsedFiles.values()) {

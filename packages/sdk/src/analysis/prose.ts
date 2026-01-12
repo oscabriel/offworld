@@ -87,7 +87,6 @@ function buildProsePrompt(skeleton: SkillSkeleton, entityNames: string[]): strin
 	return `Analyze this repository and generate prose content.
 
 Repository: ${name}
-Framework: ${detectedPatterns.framework ?? "None detected"}
 Language: ${detectedPatterns.language}
 Has Tests: ${detectedPatterns.hasTests}
 Has Docs: ${detectedPatterns.hasDocs}

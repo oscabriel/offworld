@@ -181,6 +181,16 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 	};
 
 	debug("Starting embedded OpenCode server...");
+
+	// Workaround: OpenCode SDK merges user plugins from ~/.config/opencode/ even when
+	// config.plugin=[] is passed. We isolate by pointing XDG_CONFIG_HOME to empty dir.
+	const savedEnv = {
+		OPENCODE_DISABLE_DEFAULT_PLUGINS: process.env.OPENCODE_DISABLE_DEFAULT_PLUGINS,
+		XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME,
+	};
+	process.env.OPENCODE_DISABLE_DEFAULT_PLUGINS = "true";
+	process.env.XDG_CONFIG_HOME = `/tmp/ow-opencode-isolated-${Date.now()}`;
+
 	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		port = Math.floor(Math.random() * 3000) + 3000;
 		try {
@@ -310,5 +320,15 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 	} finally {
 		debug("Closing server...");
 		server.close();
+		restoreEnvVar("OPENCODE_DISABLE_DEFAULT_PLUGINS", savedEnv.OPENCODE_DISABLE_DEFAULT_PLUGINS);
+		restoreEnvVar("XDG_CONFIG_HOME", savedEnv.XDG_CONFIG_HOME);
+	}
+}
+
+function restoreEnvVar(key: string, originalValue: string | undefined): void {
+	if (originalValue !== undefined) {
+		process.env[key] = originalValue;
+	} else {
+		delete process.env[key];
 	}
 }

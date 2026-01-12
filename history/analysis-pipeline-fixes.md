@@ -5,13 +5,13 @@
 
 ## Issues Identified
 
-| Issue | Severity | Root Cause |
-|-------|----------|------------|
-| AI prompt leakage (`[search-mode]`, `[SUPERMEMORY]`) | Critical | User plugins loaded in embedded server |
-| Skill name uses full local path | Critical | Arguments swapped in `buildSkeleton()` call |
-| Analysis path malformed (`--Users--oscargabriel--...`) | High | Path encoding applied to full path |
-| Search patterns too generic | Medium | No separation of library vs example code |
-| Framework detection unnecessary | Low | CLI targets libraries, not user apps |
+| Issue                                                  | Severity | Root Cause                                  |
+| ------------------------------------------------------ | -------- | ------------------------------------------- |
+| AI prompt leakage (`[search-mode]`, `[SUPERMEMORY]`)   | Critical | User plugins loaded in embedded server      |
+| Skill name uses full local path                        | Critical | Arguments swapped in `buildSkeleton()` call |
+| Analysis path malformed (`--Users--oscargabriel--...`) | High     | Path encoding applied to full path          |
+| Search patterns too generic                            | Medium   | No separation of library vs example code    |
+| Framework detection unnecessary                        | Low      | CLI targets libraries, not user apps        |
 
 ## Task Breakdown
 
@@ -37,13 +37,13 @@ Add these fields to prevent loading user-level config:
 
 ```typescript
 const config: Config = {
-  plugin: [],        // Don't load any plugins
-  mcp: {},           // Don't load any MCPs
-  instructions: [],  // Don't load instruction files
-  
-  agent: {
-    // ... existing agent config ...
-  },
+	plugin: [], // Don't load any plugins
+	mcp: {}, // Don't load any MCPs
+	instructions: [], // Don't load instruction files
+
+	agent: {
+		// ... existing agent config ...
+	},
 };
 ```
 
@@ -77,9 +77,9 @@ Use `qualifiedName` parameter for analysis path key instead of deriving from `sk
 
 ```typescript
 export interface DetectedPatterns {
-  language: string;
-  hasTests: boolean;
-  hasDocs: boolean;
+	language: string;
+	hasTests: boolean;
+	hasDocs: boolean;
 }
 ```
 
@@ -113,20 +113,21 @@ Test clean JSON output, proper naming, language detection.
 
 ## Implementation Order
 
-| # | Task | Notes |
-|---|------|-------|
-| 1 | Fix argument swap | Critical bug |
-| 2 | Disable plugins/MCPs | 3 lines added |
-| 3 | Pass qualified name | Threading through |
-| 4 | Fix path encoding | Depends on #3 |
-| 5 | Remove framework detection | Simplification |
-| 6 | Update prose prompt | Depends on #5 |
-| 7 | Search patterns | Polish |
-| 8 | Integration tests | Quality |
+| #   | Task                       | Notes             |
+| --- | -------------------------- | ----------------- |
+| 1   | Fix argument swap          | Critical bug      |
+| 2   | Disable plugins/MCPs       | 3 lines added     |
+| 3   | Pass qualified name        | Threading through |
+| 4   | Fix path encoding          | Depends on #3     |
+| 5   | Remove framework detection | Simplification    |
+| 6   | Update prose prompt        | Depends on #5     |
+| 7   | Search patterns            | Polish            |
+| 8   | Integration tests          | Quality           |
 
 ## Evidence from Test Run
 
 **Verbose output showed:**
+
 - 913 files parsed, 1750 symbols extracted
 - Framework detection produced misleading "Angular" result
 - First AI attempt failed due to prompt leakage
@@ -134,5 +135,6 @@ Test clean JSON output, proper naming, language detection.
 - Dependency hubs correctly showed react-query as most imported (29 imports)
 
 **Generated files location:**
+
 - `~/.ow/analyses/github--tanstack--query/`
 - `~/.config/opencode/skill/tanstack/query/SKILL.md`

@@ -459,7 +459,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					}
 				: undefined;
 
-			const pipelineOptions = { onProgress, onDebug, onStream };
+			// Use fullName for remote repos (e.g. 'tanstack/query'), name for local repos
+			const qualifiedName = source.type === "remote" ? source.fullName : source.name;
+			const pipelineOptions = { onProgress, onDebug, onStream, qualifiedName };
 			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 
 			const { skill: mergedSkill, graph } = result;

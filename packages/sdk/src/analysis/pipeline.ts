@@ -393,7 +393,7 @@ export async function runAnalysisPipeline(
 
 	// Step 5: Build deterministic skeleton
 	onProgress("skeleton", "Building skill skeleton...");
-	const skeleton = buildSkeleton(basename(repoPath), repoPath, rankedFiles, parsedFiles);
+	const skeleton = buildSkeleton(repoPath, basename(repoPath), rankedFiles, parsedFiles);
 
 	// Step 6: Generate prose with AI (with retry)
 	onProgress("prose", "Generating prose with AI...");

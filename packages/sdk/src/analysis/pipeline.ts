@@ -415,7 +415,9 @@ export async function runAnalysisPipeline(
 
 	// Step 8: Merge skeleton + prose
 	onProgress("merge", "Merging skeleton and prose...");
-	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose);
+	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose, {
+		qualifiedName: options.qualifiedName,
+	});
 
 	// Step 9: Build dependency graph
 	onProgress("graph", "Building dependency graph...");

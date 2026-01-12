@@ -182,7 +182,7 @@ async function cloneAndAnalyze(
 
 		const { skill: mergedSkill, graph } = result;
 		const skill = mergedSkill.skill;
-		const { entities, relationships, keyFiles } = mergedSkill;
+		const { entities, relationships, prose } = mergedSkill;
 
 		const commitSha = getCommitSha(repoPath);
 		const analyzedAt = new Date().toISOString();
@@ -191,9 +191,7 @@ async function cloneAndAnalyze(
 		const analysisPath = getAnalysisPath(source.fullName, source.provider);
 		mkdirSync(analysisPath, { recursive: true });
 
-		const summaryMd = formatSummaryMd(skill.description, entities, keyFiles, {
-			repoName: source.fullName,
-		});
+		const summaryMd = formatSummaryMd(prose, { repoName: source.fullName });
 		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
 
 		const architectureMd = formatArchitectureMd(entities, relationships, graph);

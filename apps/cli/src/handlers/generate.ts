@@ -98,7 +98,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 
 		const { skill: mergedSkill, graph } = result;
 		const skill = mergedSkill.skill;
-		const { entities, relationships, keyFiles } = mergedSkill;
+		const { entities, relationships, prose } = mergedSkill;
 
 		const commitSha = getCommitSha(repoPath);
 		const analyzedAt = new Date().toISOString();
@@ -112,7 +112,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 
 		mkdirSync(analysisPath, { recursive: true });
 
-		const summaryMd = formatSummaryMd(skill.description, entities, keyFiles, { repoName });
+		const summaryMd = formatSummaryMd(prose, { repoName });
 		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
 
 		const architectureMd = formatArchitectureMd(entities, relationships, graph);

@@ -1,4 +1,9 @@
-export { rankFilesByHeuristics, type HeuristicsOptions } from "./heuristics.js";
+export {
+	rankFilesByHeuristics,
+	rankFilesWithAST,
+	type HeuristicsOptions,
+	type ASTEnhancedFileEntry,
+} from "./heuristics.js";
 
 export {
 	gatherContext,
@@ -9,36 +14,20 @@ export {
 } from "./context.js";
 
 export {
-	generateSummary,
-	extractArchitecture,
-	generateSummaryAndArchitecture,
-	generateSkill,
-	generateRichSkill,
-	formatArchitectureMd,
-	formatSkillMd,
-	type GenerateOptions,
-	type SkillGenerateOptions,
-	type RichSkillResult,
-	type SummaryAndArchitectureResult,
-} from "./generate.js";
-
-// Pipeline (PRD 5.1-5.6)
-export {
 	runAnalysisPipeline,
 	installSkill,
+	formatSkillMd,
+	formatSummaryMd,
+	formatArchitectureMd,
 	type AnalysisPipelineResult,
-	type AnalysisMeta,
 	type AnalysisPipelineOptions,
-	type PipelineTiming,
+	type AnalysisPipelineStats,
+	type FormatSkillOptions,
+	type FormatSummaryOptions,
 } from "./pipeline.js";
 
-// Markdown parsers (M2.x)
-export {
-	extractField,
-	parseListSection,
-	parsePathDescSection,
-	parsePathPurposeSection,
-	parseArchitectureMarkdown,
-	parseSkillMarkdown,
-	ParseError,
-} from "./parsers.js";
+export { type MergedSkillResult, type MergedEntity, type MergedKeyFile } from "./merge.js";
+
+export { type EntityRelationship } from "./prose.js";
+
+export { parseArchitectureMarkdown, parseSkillMarkdown, ParseError } from "./parsers.js";

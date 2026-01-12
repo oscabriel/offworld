@@ -1,96 +1,61 @@
 /**
  * Analysis Pipeline
- * PRD 5.1-5.6: Complete analysis pipeline from repo to skill installation
+ * AST-based analysis with AI prose generation
  */
 
-import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { homedir } from "node:os";
-import type { Architecture, Config, FileIndex, Skill } from "@offworld/types";
-import { getAnalysisPath, getMetaRoot, loadConfig } from "../config.js";
+import type { Skill } from "@offworld/types";
+import { loadConfig } from "../config.js";
 import { getCommitSha } from "../clone.js";
-import { rankFilesByHeuristics, rankFilesWithAST } from "./heuristics.js";
-import { VERSION } from "../constants.js";
-import { gatherContext } from "./context.js";
-import {
-	generateSummaryAndArchitecture,
-	generateSummary,
-	generateRichSkill,
-	formatArchitectureMd,
-	formatSkillMd,
-} from "./generate.js";
-import { validateSkillPaths } from "../validation/paths.js";
+import { rankFilesWithAST } from "./heuristics.js";
 import { initLanguages, isSupportedExtension } from "../ast/index.js";
 import { parseFile, type ParsedFile } from "../ast/parser.js";
 import { buildSkeleton } from "./skeleton.js";
 import { generateProseWithRetry } from "./prose.js";
 import { validateConsistency } from "../validation/consistency.js";
-import { mergeProseIntoSkeleton, type MergedSkillResult } from "./merge.js";
+import {
+	mergeProseIntoSkeleton,
+	type MergedSkillResult,
+	type MergedEntity,
+	type MergedKeyFile,
+} from "./merge.js";
 import { buildDependencyGraph, type DependencyGraph } from "./imports.js";
 import { buildIncrementalState, type IncrementalState } from "./incremental.js";
+import type { EntityRelationship } from "./prose.js";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-/** Analysis result with all generated artifacts */
+/** Statistics from AST-enhanced analysis */
+export interface AnalysisPipelineStats {
+	filesParsed: number;
+	symbolsExtracted: number;
+	entitiesCreated: number;
+}
+
+/** Result from the analysis pipeline */
 export interface AnalysisPipelineResult {
-	/** Markdown summary */
-	summary: string;
-	/** Architecture data (null if includeArchitecture=false) */
-	architecture: Architecture | null;
-	/** Architecture markdown with Mermaid (null if includeArchitecture=false) */
-	architectureMd: string | null;
-	/** File index with importance ranking */
-	fileIndex: FileIndex;
-	/** Generated skill */
-	skill: Skill;
-	/** Skill markdown content */
-	skillMd: string;
-	/** Analysis metadata */
-	meta: AnalysisMeta;
-	/** Path where analysis was saved */
-	analysisPath: string;
-}
-
-/** Metadata about the analysis */
-export interface AnalysisMeta {
-	analyzedAt: string;
-	commitSha: string;
-	version: string;
-	estimatedTokens?: number;
-	costUsd?: number;
-}
-
-/** Timing breakdown for performance analysis */
-export interface PipelineTiming {
-	total: number;
-	steps: Record<string, number>;
+	skill: MergedSkillResult;
+	graph: DependencyGraph;
+	incrementalState: IncrementalState;
+	stats: AnalysisPipelineStats;
 }
 
 /** Options for the analysis pipeline */
 export interface AnalysisPipelineOptions {
-	/** Custom config */
-	config?: Config;
-	/** Provider to use for AI (github provider from repo source) */
-	provider?: "github" | "gitlab" | "bitbucket";
-	/** Full name of the repo (owner/repo) - for remote repos */
-	fullName?: string;
-	/** Skip architecture generation (summary-only mode) */
-	includeArchitecture?: boolean;
 	/** Progress callback for status updates */
 	onProgress?: (step: string, message: string) => void;
 	/** Debug callback for detailed logging */
 	onDebug?: (message: string) => void;
 	/** Stream callback for real-time AI output */
 	onStream?: (text: string) => void;
-	/** Timing callback for performance breakdown */
-	onTiming?: (timing: PipelineTiming) => void;
 }
 
 // ============================================================================
-// Skill Installation (PRD 5.6)
+// Skill Installation
 // ============================================================================
 
 /**
@@ -123,239 +88,203 @@ export function installSkill(repoName: string, skillContent: string): void {
 }
 
 // ============================================================================
-// Analysis Saving
+// Skill Formatting
 // ============================================================================
 
-/**
- * Clean architecture data for output by stripping empty responsibilities arrays.
- * This reduces file size and noise in the JSON output.
- */
-function cleanArchitectureForOutput(arch: Architecture): object {
-	return {
-		...arch,
-		entities: arch.entities.map((entity) => {
-			const { responsibilities, ...rest } = entity;
-			return responsibilities?.length ? { ...rest, responsibilities } : rest;
-		}),
-	};
-}
-
-function saveAnalysis(
-	analysisPath: string,
-	result: Omit<AnalysisPipelineResult, "analysisPath">,
-): void {
-	mkdirSync(analysisPath, { recursive: true });
-
-	writeFileSync(join(analysisPath, "summary.md"), result.summary, "utf-8");
-
-	if (result.architecture) {
-		// Compress JSON (no pretty-printing) and clean empty responsibilities
-		const cleanedArch = cleanArchitectureForOutput(result.architecture);
-		writeFileSync(join(analysisPath, "architecture.json"), JSON.stringify(cleanedArch), "utf-8");
-	}
-
-	if (result.architectureMd) {
-		writeFileSync(join(analysisPath, "architecture.md"), result.architectureMd, "utf-8");
-	}
-
-	// Compress JSON (no pretty-printing) for file-index and skill
-	writeFileSync(join(analysisPath, "file-index.json"), JSON.stringify(result.fileIndex), "utf-8");
-
-	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(result.skill), "utf-8");
-
-	writeFileSync(join(analysisPath, "SKILL.md"), result.skillMd, "utf-8");
-
-	// Keep meta.json pretty-printed for human readability
-	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(result.meta, null, 2), "utf-8");
-}
-
-// ============================================================================
-// Main Pipeline
-// ============================================================================
-
-/**
- * Run the complete analysis pipeline on a repository.
- *
- * Steps:
- * 1. Rank files by importance (PRD 3.9)
- * 2. Gather context (PRD 5.1)
- * 3. Generate summary (PRD 5.2)
- * 4. Extract architecture (PRD 5.3)
- * 5. Format architecture.md (PRD 5.4)
- * 6. Generate skill (PRD 5.5)
- * 7. Save all artifacts
- * 8. Install skill (PRD 5.6)
- *
- * @param repoPath - Absolute path to the repository
- * @param options - Pipeline options
- * @returns Complete analysis result
- */
-export async function runAnalysisPipeline(
-	repoPath: string,
-	options: AnalysisPipelineOptions = {},
-): Promise<AnalysisPipelineResult> {
-	const onProgress = options.onProgress ?? (() => {});
-	const includeArchitecture = options.includeArchitecture ?? true;
-	const generateOptions = {
-		onDebug: options.onDebug,
-		onStream: options.onStream,
-	};
-
-	const timing: PipelineTiming = { total: 0, steps: {} };
-	const pipelineStart = Date.now();
-
-	function timeStep<T>(step: string, fn: () => T): T {
-		const start = Date.now();
-		const result = fn();
-		timing.steps[step] = Date.now() - start;
-		return result;
-	}
-
-	async function timeStepAsync<T>(step: string, fn: () => Promise<T>): Promise<T> {
-		const start = Date.now();
-		const result = await fn();
-		timing.steps[step] = Date.now() - start;
-		return result;
-	}
-
-	let analysisPath: string;
-	let repoName: string;
-
-	if (options.fullName && options.provider) {
-		analysisPath = getAnalysisPath(options.fullName, options.provider);
-		repoName = options.fullName;
-	} else {
-		const pathHash = createHash("sha256").update(repoPath).digest("hex").slice(0, 12);
-		analysisPath = join(getMetaRoot(), "analyses", `local--${pathHash}`);
-		repoName = basename(repoPath);
-	}
-
-	onProgress("commit", "Getting current commit...");
-	const commitSha = timeStep("commit", () => getCommitSha(repoPath));
-
-	onProgress("rank", "Ranking files by importance...");
-	const fileIndex = await timeStepAsync("rank", () => rankFilesByHeuristics(repoPath));
-
-	onProgress("context", "Gathering repository context...");
-	const context = await timeStepAsync("context", () =>
-		gatherContext(repoPath, { rankedFiles: fileIndex }),
-	);
-
-	let summary: string;
-	let architecture: Architecture | null = null;
-	let architectureMd: string | null = null;
-
-	if (includeArchitecture) {
-		onProgress("analyze", "Generating summary and architecture...");
-		const result = await timeStepAsync("analyze", () =>
-			generateSummaryAndArchitecture(context, generateOptions),
-		);
-		summary = result.summary;
-		architecture = result.architecture;
-
-		onProgress("format", "Formatting architecture diagram...");
-		architectureMd = timeStep("format", () => formatArchitectureMd(architecture!));
-	} else {
-		onProgress("analyze", "Generating summary...");
-		summary = await timeStepAsync("analyze", () => generateSummary(context, generateOptions));
-	}
-
-	onProgress("skill", "Generating skill...");
-	const generated = new Date().toISOString().split("T")[0];
-	const skillOptions = {
-		...generateOptions,
-		fullName: options.fullName,
-		commitSha,
-		generated,
-		analysisPath,
-	};
-	const { skill: rawSkill, skillMd: rawSkillMd } = await timeStepAsync("skill", () =>
-		generateRichSkill(context, summary, architecture, skillOptions),
-	);
-
-	onProgress("validate", "Validating paths...");
-	const {
-		validatedSkill: skill,
-		removedPaths,
-		removedSearchPaths,
-	} = timeStep("validate", () =>
-		validateSkillPaths(rawSkill, {
-			basePath: repoPath,
-			analysisPath,
-			onWarning: (path, type) => options.onDebug?.(`Removed non-existent ${type}: ${path}`),
-		}),
-	);
-
-	const pathsWereRemoved = removedPaths.length > 0 || removedSearchPaths.length > 0;
-	const skillMd = pathsWereRemoved ? formatSkillMd(skill, { commitSha, generated }) : rawSkillMd;
-
-	const meta: AnalysisMeta = {
-		analyzedAt: new Date().toISOString(),
-		commitSha,
-		version: VERSION,
-		estimatedTokens: context.estimatedTokens,
-	};
-
-	const result: AnalysisPipelineResult = {
-		summary,
-		architecture,
-		architectureMd,
-		fileIndex,
-		skill,
-		skillMd,
-		meta,
-		analysisPath,
-	};
-
-	onProgress("save", "Saving analysis...");
-	timeStep("save", () => saveAnalysis(analysisPath, result));
-
-	onProgress("install", "Installing skill...");
-	timeStep("install", () => installSkill(repoName, skillMd));
-
-	timing.total = Date.now() - pipelineStart;
-
-	if (options.onTiming) {
-		options.onTiming(timing);
-	}
-
-	onProgress("done", "Analysis complete!");
-
-	return result;
-}
-
-// ============================================================================
-// Enhanced Pipeline with AST Analysis
-// ============================================================================
-
-/** Statistics from AST-enhanced analysis */
-export interface EnhancedPipelineStats {
-	filesParsed: number;
-	symbolsExtracted: number;
-	entitiesCreated: number;
-}
-
-/** Result from the enhanced analysis pipeline */
-export interface EnhancedPipelineResult {
-	skill: MergedSkillResult;
-	graph: DependencyGraph;
-	incrementalState: IncrementalState;
-	stats: EnhancedPipelineStats;
-}
-
-/** Options for the enhanced pipeline */
-export interface EnhancedPipelineOptions {
-	/** Progress callback for status updates */
-	onProgress?: (step: string, message: string) => void;
-	/** Debug callback for detailed logging */
-	onDebug?: (message: string) => void;
-	/** Stream callback for real-time AI output */
-	onStream?: (text: string) => void;
+export interface FormatSkillOptions {
+	commitSha?: string;
+	generated?: string;
 }
 
 /**
- * Recursively discover all files in a directory, respecting common ignore patterns.
+ * Format a Skill object into SKILL.md markdown content
  */
+export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
+	const lines = [
+		"---",
+		`name: ${skill.name}`,
+		`description: ${skill.description}`,
+		"allowed-tools: [Read, Grep, Glob, Task]",
+	];
+
+	if (options.commitSha) {
+		lines.push(`commit: ${options.commitSha.slice(0, 7)}`);
+	}
+	if (options.generated) {
+		lines.push(`generated: ${options.generated}`);
+	}
+
+	lines.push("---", "", `# ${skill.name}`, "", skill.description, "");
+
+	// Base paths
+	if (skill.basePaths) {
+		lines.push(`REPO: ${skill.basePaths.repo}`);
+		lines.push(`ANALYSIS: ${skill.basePaths.analysis}`);
+		lines.push("");
+	}
+
+	// Quick Paths
+	lines.push("## Quick Paths", "");
+	for (const qp of skill.quickPaths) {
+		lines.push(`- \`${qp.path}\` - ${qp.description}`);
+	}
+	lines.push("");
+
+	// Search Patterns
+	lines.push("## Search Patterns", "");
+	lines.push("| Find | Pattern | Path |");
+	lines.push("|------|---------|------|");
+	for (const sp of skill.searchPatterns) {
+		lines.push(`| ${sp.find} | \`${sp.pattern}\` | \`${sp.path}\` |`);
+	}
+	lines.push("");
+
+	// When to Use (if provided)
+	if (skill.whenToUse?.length) {
+		lines.push("## When to Use This Skill", "");
+		for (const trigger of skill.whenToUse) {
+			lines.push(`- ${trigger}`);
+		}
+		lines.push("");
+	}
+
+	// Best Practices (if provided)
+	if (skill.bestPractices?.length) {
+		lines.push("## Best Practices", "");
+		skill.bestPractices.forEach((practice: string, i: number) => {
+			lines.push(`${i + 1}. ${practice}`);
+		});
+		lines.push("");
+	}
+
+	// Common Patterns (if provided)
+	if (skill.commonPatterns?.length) {
+		lines.push("## Common Patterns", "");
+		for (const pattern of skill.commonPatterns) {
+			lines.push(`**${pattern.name}:**`);
+			pattern.steps.forEach((step: string, i: number) => {
+				lines.push(`${i + 1}. ${step}`);
+			});
+			lines.push("");
+		}
+	}
+
+	lines.push("## Deep Context", "");
+	lines.push("- Summary: `${ANALYSIS}/summary.md`");
+	lines.push("- Architecture: `${ANALYSIS}/architecture.md`");
+
+	return lines.join("\n");
+}
+
+// ============================================================================
+// Summary & Architecture Formatting
+// ============================================================================
+
+export interface FormatSummaryOptions {
+	repoName: string;
+}
+
+export function formatSummaryMd(
+	description: string,
+	entities: MergedEntity[],
+	keyFiles: MergedKeyFile[],
+	options: FormatSummaryOptions,
+): string {
+	const lines = [`# ${options.repoName}`, "", description, ""];
+
+	if (entities.length > 0) {
+		lines.push("## Structure", "");
+		for (const entity of entities) {
+			lines.push(`### ${entity.name}`);
+			lines.push(`- **Path**: \`${entity.path}\``);
+			lines.push(`- ${entity.description}`);
+			lines.push("");
+		}
+	}
+
+	if (keyFiles.length > 0) {
+		lines.push("## Key Files", "");
+		for (const file of keyFiles) {
+			lines.push(`- \`${file.path}\``);
+		}
+		lines.push("");
+	}
+
+	return lines.join("\n");
+}
+
+export function formatArchitectureMd(
+	entities: MergedEntity[],
+	relationships: EntityRelationship[],
+	graph: DependencyGraph,
+): string {
+	const lines = ["# Architecture", ""];
+
+	lines.push("## Entity Diagram", "");
+	lines.push("```mermaid");
+	lines.push("flowchart TB");
+
+	for (const entity of entities) {
+		const id = sanitizeMermaidId(entity.name);
+		const label = entity.name.replace(/"/g, "'");
+		lines.push(`    ${id}["${label}"]`);
+	}
+
+	for (const rel of relationships) {
+		const fromId = sanitizeMermaidId(rel.from);
+		const toId = sanitizeMermaidId(rel.to);
+		const label = rel.type.replace(/"/g, "'");
+		lines.push(`    ${fromId} -->|${label}| ${toId}`);
+	}
+
+	lines.push("```", "");
+
+	if (graph.hubs.length > 0) {
+		lines.push("## Dependency Hubs", "");
+		lines.push("Files with high connectivity (imported by many others):", "");
+		for (const hub of graph.hubs.slice(0, 10)) {
+			lines.push(`- \`${hub.path}\` (${hub.inDegree} imports)`);
+		}
+		lines.push("");
+	}
+
+	if (entities.length > 0) {
+		lines.push("## Entities", "");
+		lines.push("| Name | Path | Description |");
+		lines.push("|------|------|-------------|");
+		for (const entity of entities) {
+			const desc = entity.description.replace(/\|/g, "\\|").slice(0, 80);
+			lines.push(`| ${entity.name} | \`${entity.path}\` | ${desc} |`);
+		}
+		lines.push("");
+	}
+
+	if (relationships.length > 0) {
+		lines.push("## Relationships", "");
+		lines.push("| From | To | Type |");
+		lines.push("|------|-----|------|");
+		for (const rel of relationships) {
+			lines.push(`| ${rel.from} | ${rel.to} | ${rel.type} |`);
+		}
+		lines.push("");
+	}
+
+	return lines.join("\n");
+}
+
+function sanitizeMermaidId(name: string): string {
+	return (
+		name
+			.replace(/[^a-zA-Z0-9]/g, "_")
+			.replace(/^_+|_+$/g, "")
+			.toLowerCase() || "node"
+	);
+}
+
+// ============================================================================
+// File Discovery
+// ============================================================================
+
 function discoverFiles(repoPath: string, subPath = ""): string[] {
 	const fullPath = subPath ? join(repoPath, subPath) : repoPath;
 	const files: string[] = [];
@@ -403,8 +332,12 @@ function discoverFiles(repoPath: string, subPath = ""): string[] {
 	return files;
 }
 
+// ============================================================================
+// Main Pipeline
+// ============================================================================
+
 /**
- * Run the enhanced analysis pipeline with AST-based processing.
+ * Run the analysis pipeline with AST-based processing.
  *
  * This pipeline integrates:
  * 1. AST parsing with multi-language support
@@ -415,10 +348,10 @@ function discoverFiles(repoPath: string, subPath = ""): string[] {
  * 6. Dependency graph construction
  * 7. Incremental state tracking
  */
-export async function runEnhancedPipeline(
+export async function runAnalysisPipeline(
 	repoPath: string,
-	options: EnhancedPipelineOptions = {},
-): Promise<EnhancedPipelineResult> {
+	options: AnalysisPipelineOptions = {},
+): Promise<AnalysisPipelineResult> {
 	const onProgress = options.onProgress ?? (() => {});
 	const onDebug = options.onDebug;
 
@@ -492,13 +425,13 @@ export async function runEnhancedPipeline(
 	const incrementalState = buildIncrementalState(parsedFiles, fileContents, commitSha);
 
 	// Compute stats
-	const stats: EnhancedPipelineStats = {
+	const stats: AnalysisPipelineStats = {
 		filesParsed: parsedFiles.size,
 		symbolsExtracted,
 		entitiesCreated: skeleton.entities.length,
 	};
 
-	onProgress("done", "Enhanced analysis complete!");
+	onProgress("done", "Analysis complete!");
 
 	return {
 		skill,

@@ -1,5 +1,5 @@
-import { parse } from "@ast-grep/napi"
-import { detectLanguage, isBuiltinLang } from "./index"
+import { parse } from "@ast-grep/napi";
+import { detectLanguage, isBuiltinLang } from "./index";
 import {
 	CLASS_PATTERNS,
 	EXPORT_PATTERNS,
@@ -7,31 +7,31 @@ import {
 	IMPORT_PATTERNS,
 	type PatternLanguage,
 	getPatternLanguage,
-} from "./patterns"
+} from "./patterns";
 
 /**
  * Represents an extracted symbol from source code
  */
 export interface ExtractedSymbol {
-	name: string
-	kind: "function" | "class" | "method" | "struct" | "enum" | "trait" | "interface"
-	line: number
-	signature?: string
-	isAsync?: boolean
-	isExported?: boolean
+	name: string;
+	kind: "function" | "class" | "method" | "struct" | "enum" | "trait" | "interface";
+	line: number;
+	signature?: string;
+	isAsync?: boolean;
+	isExported?: boolean;
 }
 
 /**
  * Represents a parsed file with extracted information
  */
 export interface ParsedFile {
-	path: string
-	language: string
-	functions: ExtractedSymbol[]
-	classes: ExtractedSymbol[]
-	imports: string[]
-	exports: string[]
-	hasTests: boolean
+	path: string;
+	language: string;
+	functions: ExtractedSymbol[];
+	classes: ExtractedSymbol[];
+	imports: string[];
+	exports: string[];
+	hasTests: boolean;
 }
 
 /**
@@ -41,24 +41,24 @@ export interface ParsedFile {
  * @returns ParsedFile or null if parsing fails
  */
 export function parseFile(filePath: string, content: string): ParsedFile | null {
-	const lang = detectLanguage(filePath)
+	const lang = detectLanguage(filePath);
 	if (!lang) {
-		return null
+		return null;
 	}
 
 	try {
-		const root = parse(isBuiltinLang(lang) ? lang : lang, content)
-		const patternLang = getPatternLanguage(lang.toString())
+		const root = parse(isBuiltinLang(lang) ? lang : lang, content);
+		const patternLang = getPatternLanguage(lang.toString());
 
 		if (!patternLang) {
-			return null
+			return null;
 		}
 
-		const functions = extractSymbols(root, patternLang, "function")
-		const classes = extractSymbols(root, patternLang, "class")
-		const imports = extractImports(root, patternLang, content)
-		const exports = extractExports(root, patternLang, content)
-		const hasTests = detectTests(filePath, content)
+		const functions = extractSymbols(root, patternLang, "function");
+		const classes = extractSymbols(root, patternLang, "class");
+		const imports = extractImports(root, patternLang, content);
+		const exports = extractExports(root, patternLang, content);
+		const hasTests = detectTests(filePath, content);
 
 		return {
 			path: filePath,
@@ -68,10 +68,10 @@ export function parseFile(filePath: string, content: string): ParsedFile | null 
 			imports,
 			exports,
 			hasTests,
-		}
+		};
 	} catch {
 		// Syntax error or parsing failure
-		return null
+		return null;
 	}
 }
 
@@ -83,38 +83,38 @@ export function extractSymbols(
 	lang: PatternLanguage,
 	kind: "function" | "class",
 ): ExtractedSymbol[] {
-	const patterns = kind === "function" ? FUNCTION_PATTERNS[lang] : CLASS_PATTERNS[lang]
-	const symbols: ExtractedSymbol[] = []
-	const seen = new Set<string>()
+	const patterns = kind === "function" ? FUNCTION_PATTERNS[lang] : CLASS_PATTERNS[lang];
+	const symbols: ExtractedSymbol[] = [];
+	const seen = new Set<string>();
 
 	for (const pattern of patterns) {
 		try {
-			const matches = root.root().findAll(pattern)
+			const matches = root.root().findAll(pattern);
 			for (const match of matches) {
-				const nameNode = match.getMatch("NAME")
-				if (!nameNode) continue
+				const nameNode = match.getMatch("NAME");
+				if (!nameNode) continue;
 
-				const name = nameNode.text()
-				const line = nameNode.range().start.line + 1 // 1-indexed
-				const key = `${name}:${line}`
+				const name = nameNode.text();
+				const line = nameNode.range().start.line + 1; // 1-indexed
+				const key = `${name}:${line}`;
 
-				if (seen.has(key)) continue
-				seen.add(key)
+				if (seen.has(key)) continue;
+				seen.add(key);
 
-				const text = match.text()
-				const isAsync = text.includes("async ")
+				const text = match.text();
+				const isAsync = text.includes("async ");
 				const isExported =
 					text.startsWith("export ") ||
 					text.startsWith("pub ") ||
-					(lang === "java" && text.includes("public "))
+					(lang === "java" && text.includes("public "));
 
-				let symbolKind: ExtractedSymbol["kind"] = kind
+				let symbolKind: ExtractedSymbol["kind"] = kind;
 				if (kind === "class") {
 					// Detect specific class-like kinds
-					if (text.includes("struct ")) symbolKind = "struct"
-					else if (text.includes("enum ")) symbolKind = "enum"
-					else if (text.includes("trait ")) symbolKind = "trait"
-					else if (text.includes("interface ")) symbolKind = "interface"
+					if (text.includes("struct ")) symbolKind = "struct";
+					else if (text.includes("enum ")) symbolKind = "enum";
+					else if (text.includes("trait ")) symbolKind = "trait";
+					else if (text.includes("interface ")) symbolKind = "interface";
 				}
 
 				symbols.push({
@@ -124,14 +124,14 @@ export function extractSymbols(
 					signature: extractSignature(text, name, kind),
 					isAsync,
 					isExported,
-				})
+				});
 			}
 		} catch {
 			// Pattern matching failed for this pattern, continue with others
 		}
 	}
 
-	return symbols
+	return symbols;
 }
 
 /**
@@ -142,32 +142,32 @@ export function extractImports(
 	lang: PatternLanguage,
 	content: string,
 ): string[] {
-	const patterns = IMPORT_PATTERNS[lang]
-	const imports: string[] = []
-	const seen = new Set<string>()
+	const patterns = IMPORT_PATTERNS[lang];
+	const imports: string[] = [];
+	const seen = new Set<string>();
 
 	for (const pattern of patterns) {
 		try {
-			const matches = root.root().findAll(pattern)
+			const matches = root.root().findAll(pattern);
 			for (const match of matches) {
 				// Try to get PATH metavariable first
-				const pathNode = match.getMatch("PATH")
+				const pathNode = match.getMatch("PATH");
 				if (pathNode) {
-					const path = pathNode.text().replace(/['"]/g, "")
+					const path = pathNode.text().replace(/['"]/g, "");
 					if (!seen.has(path)) {
-						seen.add(path)
-						imports.push(path)
+						seen.add(path);
+						imports.push(path);
 					}
-					continue
+					continue;
 				}
 
 				// For patterns without PATH (like Python's "import NAME")
-				const nameNode = match.getMatch("NAME")
+				const nameNode = match.getMatch("NAME");
 				if (nameNode) {
-					const path = nameNode.text()
+					const path = nameNode.text();
 					if (!seen.has(path)) {
-						seen.add(path)
-						imports.push(path)
+						seen.add(path);
+						imports.push(path);
 					}
 				}
 			}
@@ -178,16 +178,16 @@ export function extractImports(
 
 	// Fallback: regex extraction for edge cases
 	if (imports.length === 0) {
-		const regexImports = extractImportsWithRegex(content, lang)
+		const regexImports = extractImportsWithRegex(content, lang);
 		for (const imp of regexImports) {
 			if (!seen.has(imp)) {
-				seen.add(imp)
-				imports.push(imp)
+				seen.add(imp);
+				imports.push(imp);
 			}
 		}
 	}
 
-	return imports
+	return imports;
 }
 
 /**
@@ -198,32 +198,32 @@ export function extractExports(
 	lang: PatternLanguage,
 	content: string,
 ): string[] {
-	const patterns = EXPORT_PATTERNS[lang]
-	const exports: string[] = []
-	const seen = new Set<string>()
+	const patterns = EXPORT_PATTERNS[lang];
+	const exports: string[] = [];
+	const seen = new Set<string>();
 
 	for (const pattern of patterns) {
 		try {
-			const matches = root.root().findAll(pattern)
+			const matches = root.root().findAll(pattern);
 			for (const match of matches) {
 				// Get exported names
-				const nameNode = match.getMatch("NAME")
+				const nameNode = match.getMatch("NAME");
 				if (nameNode) {
-					const name = nameNode.text()
+					const name = nameNode.text();
 					if (!seen.has(name)) {
-						seen.add(name)
-						exports.push(name)
+						seen.add(name);
+						exports.push(name);
 					}
 				}
 
 				// For re-exports with PATH
-				const pathNode = match.getMatch("PATH")
+				const pathNode = match.getMatch("PATH");
 				if (pathNode) {
-					const path = pathNode.text().replace(/['"]/g, "")
-					const reexport = `* from ${path}`
+					const path = pathNode.text().replace(/['"]/g, "");
+					const reexport = `* from ${path}`;
 					if (!seen.has(reexport)) {
-						seen.add(reexport)
-						exports.push(reexport)
+						seen.add(reexport);
+						exports.push(reexport);
 					}
 				}
 			}
@@ -235,16 +235,16 @@ export function extractExports(
 	// For languages with implicit exports (Go, Java, Python)
 	// Extract exported symbols from function/class patterns
 	if (exports.length === 0 && (lang === "go" || lang === "java" || lang === "python")) {
-		const implicitExports = extractImplicitExports(content, lang)
+		const implicitExports = extractImplicitExports(content, lang);
 		for (const exp of implicitExports) {
 			if (!seen.has(exp)) {
-				seen.add(exp)
-				exports.push(exp)
+				seen.add(exp);
+				exports.push(exp);
 			}
 		}
 	}
 
-	return exports
+	return exports;
 }
 
 /**
@@ -252,7 +252,7 @@ export function extractExports(
  */
 export function detectTests(filePath: string, content: string): boolean {
 	// Path-based detection
-	const pathLower = filePath.toLowerCase()
+	const pathLower = filePath.toLowerCase();
 	const testPathPatterns = [
 		"test",
 		"tests",
@@ -263,11 +263,11 @@ export function detectTests(filePath: string, content: string): boolean {
 		".test.",
 		".spec.",
 		"_spec.",
-	]
+	];
 
 	for (const pattern of testPathPatterns) {
 		if (pathLower.includes(pattern)) {
-			return true
+			return true;
 		}
 	}
 
@@ -292,168 +292,169 @@ export function detectTests(filePath: string, content: string): boolean {
 		/@Test\b/,
 		/@TestCase\b/,
 		/\bimport\s+.*junit/,
-	]
+	];
 
 	for (const pattern of testContentPatterns) {
 		if (pattern.test(content)) {
-			return true
+			return true;
 		}
 	}
 
-	return false
+	return false;
 }
 
 /**
  * Extract a function/class signature from the full declaration
  */
 function extractSignature(text: string, _name: string, kind: "function" | "class"): string {
-	const lines = text.split("\n")
-	const firstLine = lines[0]?.trim() ?? ""
+	const lines = text.split("\n");
+	const firstLine = lines[0]?.trim() ?? "";
 
 	if (kind === "function") {
 		// Get up to the opening brace or first line
-		const braceIndex = firstLine.indexOf("{")
-		const arrowIndex = firstLine.indexOf("=>")
-		const colonIndex = firstLine.indexOf(":")
+		const braceIndex = firstLine.indexOf("{");
+		const arrowIndex = firstLine.indexOf("=>");
+		const colonIndex = firstLine.indexOf(":");
 
 		if (braceIndex > 0) {
-			return firstLine.slice(0, braceIndex).trim()
+			return firstLine.slice(0, braceIndex).trim();
 		}
 		if (arrowIndex > 0) {
-			return firstLine.slice(0, arrowIndex).trim()
+			return firstLine.slice(0, arrowIndex).trim();
 		}
 		if (colonIndex > 0 && colonIndex < 100) {
 			// Python-style
-			return firstLine.slice(0, colonIndex).trim()
+			return firstLine.slice(0, colonIndex).trim();
 		}
-		return firstLine.slice(0, 100)
+		return firstLine.slice(0, 100);
 	}
 
 	// Class signature: just the declaration line
-	const braceIndex = firstLine.indexOf("{")
+	const braceIndex = firstLine.indexOf("{");
 	if (braceIndex > 0) {
-		return firstLine.slice(0, braceIndex).trim()
+		return firstLine.slice(0, braceIndex).trim();
 	}
-	return firstLine.slice(0, 100)
+	return firstLine.slice(0, 100);
 }
 
 /**
  * Regex fallback for import extraction
  */
 function extractImportsWithRegex(content: string, lang: PatternLanguage): string[] {
-	const imports: string[] = []
+	const imports: string[] = [];
 
 	switch (lang) {
 		case "typescript":
 		case "javascript": {
 			// ES imports
-			const esImportRegex = /import\s+(?:(?:\{[^}]*\}|[\w*]+)\s+from\s+)?['"]([^'"]+)['"]/g
-			let match: RegExpExecArray | null
+			const esImportRegex = /import\s+(?:(?:\{[^}]*\}|[\w*]+)\s+from\s+)?['"]([^'"]+)['"]/g;
+			let match: RegExpExecArray | null;
 			while ((match = esImportRegex.exec(content)) !== null) {
-				if (match[1]) imports.push(match[1])
+				if (match[1]) imports.push(match[1]);
 			}
 			// CommonJS require
-			const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+			const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 			while ((match = requireRegex.exec(content)) !== null) {
-				if (match[1]) imports.push(match[1])
+				if (match[1]) imports.push(match[1]);
 			}
-			break
+			break;
 		}
 		case "python": {
 			// Python imports
-			const importRegex = /(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))/g
-			let match: RegExpExecArray | null
+			const importRegex = /(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))/g;
+			let match: RegExpExecArray | null;
 			while ((match = importRegex.exec(content)) !== null) {
-				const imp = match[1] ?? match[2]
-				if (imp) imports.push(imp)
+				const imp = match[1] ?? match[2];
+				if (imp) imports.push(imp);
 			}
-			break
+			break;
 		}
 		case "rust": {
 			// Rust use statements
-			const useRegex = /use\s+([\w:]+)/g
-			let match: RegExpExecArray | null
+			const useRegex = /use\s+([\w:]+)/g;
+			let match: RegExpExecArray | null;
 			while ((match = useRegex.exec(content)) !== null) {
-				if (match[1]) imports.push(match[1])
+				if (match[1]) imports.push(match[1]);
 			}
-			break
+			break;
 		}
 		case "go": {
 			// Go imports
-			const importRegex = /import\s+(?:\w+\s+)?["']([^"']+)["']/g
-			let match: RegExpExecArray | null
+			const importRegex = /import\s+(?:\w+\s+)?["']([^"']+)["']/g;
+			let match: RegExpExecArray | null;
 			while ((match = importRegex.exec(content)) !== null) {
-				if (match[1]) imports.push(match[1])
+				if (match[1]) imports.push(match[1]);
 			}
-			break
+			break;
 		}
 		case "java": {
 			// Java imports
-			const importRegex = /import\s+(?:static\s+)?([\w.]+);/g
-			let match: RegExpExecArray | null
+			const importRegex = /import\s+(?:static\s+)?([\w.]+);/g;
+			let match: RegExpExecArray | null;
 			while ((match = importRegex.exec(content)) !== null) {
-				if (match[1]) imports.push(match[1])
+				if (match[1]) imports.push(match[1]);
 			}
-			break
+			break;
 		}
 	}
 
-	return imports
+	return imports;
 }
 
 /**
  * Extract implicit exports for languages without explicit export syntax
  */
 function extractImplicitExports(content: string, lang: PatternLanguage): string[] {
-	const exports: string[] = []
+	const exports: string[] = [];
 
 	switch (lang) {
 		case "go": {
 			// Go: Capitalized function/type names are public
-			const funcRegex = /func\s+(?:\([^)]+\)\s+)?([A-Z][a-zA-Z0-9]*)/g
-			const typeRegex = /type\s+([A-Z][a-zA-Z0-9]*)/g
-			let match: RegExpExecArray | null
+			const funcRegex = /func\s+(?:\([^)]+\)\s+)?([A-Z][a-zA-Z0-9]*)/g;
+			const typeRegex = /type\s+([A-Z][a-zA-Z0-9]*)/g;
+			let match: RegExpExecArray | null;
 			while ((match = funcRegex.exec(content)) !== null) {
-				if (match[1]) exports.push(match[1])
+				if (match[1]) exports.push(match[1]);
 			}
 			while ((match = typeRegex.exec(content)) !== null) {
-				if (match[1]) exports.push(match[1])
+				if (match[1]) exports.push(match[1]);
 			}
-			break
+			break;
 		}
 		case "java": {
 			// Java: public classes/methods are exports
-			const publicRegex = /public\s+(?:(?:static|final|abstract)\s+)*(?:class|interface|enum)\s+(\w+)/g
-			let match: RegExpExecArray | null
+			const publicRegex =
+				/public\s+(?:(?:static|final|abstract)\s+)*(?:class|interface|enum)\s+(\w+)/g;
+			let match: RegExpExecArray | null;
 			while ((match = publicRegex.exec(content)) !== null) {
-				if (match[1]) exports.push(match[1])
+				if (match[1]) exports.push(match[1]);
 			}
-			break
+			break;
 		}
 		case "python": {
 			// Python: __all__ or top-level class/function names not starting with _
-			const allMatch = content.match(/__all__\s*=\s*\[([^\]]+)\]/)
+			const allMatch = content.match(/__all__\s*=\s*\[([^\]]+)\]/);
 			if (allMatch?.[1]) {
-				const items = allMatch[1].match(/['"]([^'"]+)['"]/g)
+				const items = allMatch[1].match(/['"]([^'"]+)['"]/g);
 				if (items) {
 					for (const item of items) {
-						exports.push(item.replace(/['"]/g, ""))
+						exports.push(item.replace(/['"]/g, ""));
 					}
 				}
 			} else {
 				// Top-level definitions not starting with _
-				const defRegex = /^(?:def|class)\s+([a-zA-Z][a-zA-Z0-9_]*)/gm
-				let match: RegExpExecArray | null
+				const defRegex = /^(?:def|class)\s+([a-zA-Z][a-zA-Z0-9_]*)/gm;
+				let match: RegExpExecArray | null;
 				while ((match = defRegex.exec(content)) !== null) {
-					const name = match[1]
+					const name = match[1];
 					if (name && !name.startsWith("_")) {
-						exports.push(name)
+						exports.push(name);
 					}
 				}
 			}
-			break
+			break;
 		}
 	}
 
-	return exports
+	return exports;
 }

@@ -28,7 +28,7 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 						Recently Indexed
 					</h2>
 					<Link
-						to="/browse"
+						to="/explore"
 						className="font-mono text-primary text-xs uppercase tracking-wider hover:underline"
 					>
 						View All →

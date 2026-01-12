@@ -1,17 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { useQuery } from "@tanstack/react-query";
-import { LogOutIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { authClient } from "@/lib/auth-client";
+import { Link } from "@tanstack/react-router";
 
 const getFirstName = (user: { name?: string | null; email?: string | null } | null | undefined) => {
 	if (!user) {
@@ -23,52 +13,27 @@ const getFirstName = (user: { name?: string | null; email?: string | null } | nu
 export default function UserMenu() {
 	const { data: user } = useQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
 
-	const handleSignOut = async () => {
-		await authClient.signOut({
-			fetchOptions: {
-				onSuccess: () => {
-					location.reload();
-				},
-			},
-		});
-	};
-
 	const displayFirstName = user ? (getFirstName(user) ?? "User") : null;
 
 	if (!user) {
 		return (
-			<Button
-				variant="outline"
-				className="bg-background text-primary"
-				onClick={() => {
-					window.location.href = "/sign-in";
-				}}
+			<Link
+				to="/sign-in"
+				className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs ring-offset-background transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 			>
 				<span className="font-semibold font-serif text-base">Sign In</span>
-			</Button>
+			</Link>
 		);
 	}
 
 	const firstName = displayFirstName ?? "User";
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant="outline" size="sm" className="h-9 px-3" />}>
-				<span className="font-semibold font-serif text-base">{firstName}</span>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent className="w-56" align="end">
-				<DropdownMenuLabel className="font-normal">
-					<div className="flex flex-col space-y-1">
-						<p className="font-medium font-serif text-base leading-none">{user.name || "User"}</p>
-						<p className="font-mono text-muted-foreground text-xs leading-none">{user.email}</p>
-					</div>
-				</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={handleSignOut}>
-					<LogOutIcon className="size-4" />
-					<span className="font-mono text-sm">Sign Out</span>
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<a
+			href="/profile"
+			className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs ring-offset-background transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+		>
+			<span className="font-semibold font-serif text-base">{firstName}</span>
+		</a>
 	);
 }

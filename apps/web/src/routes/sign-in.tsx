@@ -23,7 +23,7 @@ function SignInComponent() {
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center p-8">
+		<div className="flex flex-1 items-center justify-center p-8">
 			<div className="w-full max-w-md">
 				<h1 className="mb-8 text-center font-normal font-serif text-5xl">Welcome to Offworld</h1>
 

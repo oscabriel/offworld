@@ -6,8 +6,6 @@ import { HeroSection } from "@/components/home/hero-section";
 import { HowItWorks } from "@/components/home/how-it-works";
 import { InfoSection } from "@/components/home/info-section";
 import { RecentlyIndexedCarousel } from "@/components/home/recently-indexed-carousel";
-import { BackgroundImage } from "@/components/layout/background-image";
-import { Footer } from "@/components/layout/footer";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
@@ -20,11 +18,7 @@ function HomeComponent() {
 	const { data: analyses } = useSuspenseQuery(convexQuery(api.analyses.list, { limit: 10 }));
 
 	return (
-		<div className="relative min-h-screen overflow-x-hidden bg-background">
-			<BackgroundImage />
-
-			<div className="pointer-events-none fixed inset-0 bg-linear-to-b from-transparent via-transparent to-background/60" />
-
+		<div className="relative flex-1 overflow-x-hidden">
 			<HeroSection />
 
 			<RecentlyIndexedCarousel analyses={analyses ?? []} />
@@ -37,7 +31,6 @@ function HomeComponent() {
 					</div>
 				</div>
 			</div>
-			<Footer />
 		</div>
 	);
 }

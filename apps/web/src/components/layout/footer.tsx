@@ -22,17 +22,17 @@ export function Footer() {
 						</h3>
 						<div className="flex flex-col gap-1">
 							<Link
-								to="/browse"
+								to="/explore"
 								className="font-mono text-foreground text-sm transition-colors hover:text-primary"
 							>
 								Explore
 							</Link>
-							<a
-								href="/sign-in"
+							<Link
+								to="/sign-in"
 								className="font-mono text-foreground text-sm transition-colors hover:text-primary"
 							>
 								Login
-							</a>
+							</Link>
 						</div>
 					</div>
 
@@ -50,7 +50,7 @@ export function Footer() {
 								Docs
 							</a>
 							<Link
-								to="/repo/$owner/$repo"
+								to="/$owner/$repo"
 								params={{ owner: "oscabriel", repo: "offworld" }}
 								className="font-mono text-foreground text-sm transition-colors hover:text-primary"
 							>

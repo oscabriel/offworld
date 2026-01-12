@@ -20,7 +20,7 @@ export function RepoCard({ fullName, pullCount }: RepoCardProps) {
 	const [owner, repo] = fullName.split("/");
 
 	return (
-		<Link to="/repo/$owner/$repo" params={{ owner, repo }} className="block h-full">
+		<Link to="/$owner/$repo" params={{ owner, repo }} className="block h-full">
 			<Card className="group flex h-full min-h-48 w-full flex-col gap-4 border border-primary/10 bg-card py-4 shadow-none transition-colors hover:border-primary/30">
 				<CardHeader className="gap-0 px-4 py-0 pt-4">
 					<div className="flex items-start justify-between gap-2">

@@ -170,7 +170,7 @@ function RootDocument() {
 						<BackgroundImage />
 						<div className="relative z-10 flex-1 flex flex-col">
 							<Header />
-							<main className="flex-1">
+							<main className="flex flex-1 flex-col">
 								<Outlet />
 							</main>
 							<Footer />

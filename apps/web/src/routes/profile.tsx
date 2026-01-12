@@ -1,13 +1,18 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { LogOutIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/profile")({
 	component: ProfileComponent,
+	beforeLoad: ({ context }) => {
+		if (!context.isAuthenticated) {
+			throw redirect({ to: "/sign-in", search: { redirect: "/profile" } });
+		}
+	},
 });
 
 function ProfileComponent() {
@@ -24,7 +29,6 @@ function ProfileComponent() {
 	};
 
 	if (!user) {
-		window.location.href = "/sign-in";
 		return null;
 	}
 

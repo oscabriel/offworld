@@ -12,11 +12,7 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	buildSkeleton,
-	buildSearchPatterns,
-	detectLanguage,
-} from "../analysis/skeleton.js";
+import { buildSkeleton, buildSearchPatterns, detectLanguage } from "../analysis/skeleton.js";
 import { mergeProseIntoSkeleton } from "../analysis/merge.js";
 import { parseFile } from "../ast/parser.js";
 import { initLanguages } from "../ast/index.js";
@@ -153,11 +149,11 @@ describe("pipeline.integration", () => {
 	describe("analysis path encoding", () => {
 		it("encodes tanstack/query as tanstack--query", () => {
 			const repoPath = createTestRepo("query", {
-				"src/index.ts": 'export function useQuery() {}',
+				"src/index.ts": "export function useQuery() {}",
 			});
 
 			const parsedFiles = new Map();
-			const parsed = parseFile("src/index.ts", 'export function useQuery() {}');
+			const parsed = parseFile("src/index.ts", "export function useQuery() {}");
 			if (parsed) {
 				parsedFiles.set("src/index.ts", parsed);
 			}
@@ -178,11 +174,11 @@ describe("pipeline.integration", () => {
 
 		it("handles deeply nested org/repo names", () => {
 			const repoPath = createTestRepo("router", {
-				"src/index.ts": 'export function createRouter() {}',
+				"src/index.ts": "export function createRouter() {}",
 			});
 
 			const parsedFiles = new Map();
-			const parsed = parseFile("src/index.ts", 'export function createRouter() {}');
+			const parsed = parseFile("src/index.ts", "export function createRouter() {}");
 			if (parsed) {
 				parsedFiles.set("src/index.ts", parsed);
 			}
@@ -203,7 +199,7 @@ describe("pipeline.integration", () => {
 		it("detects TypeScript as primary language", () => {
 			const parsedFiles = new Map();
 			const files = [
-				{ path: "src/index.ts", content: 'export const x: number = 1;' },
+				{ path: "src/index.ts", content: "export const x: number = 1;" },
 				{ path: "src/utils.ts", content: 'export function helper(): string { return ""; }' },
 			];
 
@@ -221,7 +217,7 @@ describe("pipeline.integration", () => {
 		it("detects JavaScript as primary language", () => {
 			const parsedFiles = new Map();
 			const files = [
-				{ path: "src/index.js", content: 'export const x = 1;' },
+				{ path: "src/index.js", content: "export const x = 1;" },
 				{ path: "src/utils.js", content: 'export function helper() { return ""; }' },
 			];
 
@@ -287,7 +283,8 @@ export function TestFixture() {}
 
 			// Library patterns should include core functions
 			const hasLibraryPattern = patternNames.some(
-				(p) => p === "useQuery" || p === "useMutation" || p === "QueryClient" || p === "CacheManager",
+				(p) =>
+					p === "useQuery" || p === "useMutation" || p === "QueryClient" || p === "CacheManager",
 			);
 			expect(hasLibraryPattern).toBe(true);
 		});

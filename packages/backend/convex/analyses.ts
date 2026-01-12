@@ -27,7 +27,7 @@ export const get = query({
 
 /**
  * List all analyses sorted by pull count (public)
- * PRD 7.8: Repo directory/browse page
+ * PRD 7.8: Repo directory/explore page
  */
 export const list = query({
 	args: {

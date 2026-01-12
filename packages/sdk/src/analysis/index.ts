@@ -16,6 +16,7 @@ export {
 export {
 	runAnalysisPipeline,
 	installSkill,
+	updateSkillPaths,
 	formatSkillMd,
 	formatSummaryMd,
 	formatArchitectureMd,
@@ -24,6 +25,8 @@ export {
 	type AnalysisPipelineStats,
 	type FormatSkillOptions,
 	type FormatSummaryOptions,
+	type SummaryProse,
+	type UpdateSkillPathsResult,
 } from "./pipeline.js";
 
 export { type MergedSkillResult, type MergedEntity, type MergedKeyFile } from "./merge.js";

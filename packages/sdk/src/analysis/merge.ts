@@ -1,6 +1,21 @@
+import { homedir } from "node:os";
+import { relative } from "node:path";
 import type { QuickPath, SearchPattern, Skill } from "@offworld/types";
 import type { ProseEnhancements, EntityRelationship } from "./prose.js";
 import type { SkillSkeleton } from "./skeleton.js";
+
+function expandTilde(path: string): string {
+	if (path.startsWith("~/")) {
+		return homedir() + path.slice(1);
+	}
+	return path;
+}
+
+function computeRepoRelativePath(repoPath: string, repoRoot?: string): string {
+	const root = expandTilde(repoRoot ?? "~/ow");
+	const rel = relative(root, repoPath);
+	return rel.startsWith("..") ? repoPath : rel;
+}
 
 /**
  * Entity with description from prose merge
@@ -20,21 +35,19 @@ export interface MergedKeyFile {
 	role: "implementation";
 }
 
-/**
- * Extended skill result that includes entities, relationships, and keyFiles
- * which are not part of the base Skill type but useful for analysis
- */
 export interface MergedSkillResult {
 	skill: Skill;
 	entities: MergedEntity[];
 	relationships: EntityRelationship[];
 	keyFiles: MergedKeyFile[];
+	prose: ProseEnhancements;
 }
 
 /** Options for merging prose into skeleton */
 export interface MergeOptions {
-	/** Qualified name for the repo (e.g. 'tanstack/query' for remote, 'myrepo' for local) */
 	qualifiedName?: string;
+	repoRoot?: string;
+	metaRoot?: string;
 }
 
 /**
@@ -81,15 +94,16 @@ export function mergeProseIntoSkeleton(
 		role: "implementation" as const,
 	}));
 
-	// Use qualifiedName for analysis path encoding, fallback to skeleton.name
 	const analysisKey = options.qualifiedName ?? skeleton.name;
+	const repoRelative = computeRepoRelativePath(skeleton.repoPath, options.repoRoot);
+	const analysisRelative = `analyses/${analysisKey.replace(/\//g, "--")}`;
 
 	const skill: Skill = {
 		name: skeleton.name,
 		description: prose.summary,
 		basePaths: {
-			repo: skeleton.repoPath,
-			analysis: `\${HOME}/.ow/analyses/${analysisKey.replace(/\//g, "--")}`,
+			repo: `\${OW_REPOS}/${repoRelative}`,
+			analysis: `\${OW_META}/${analysisRelative}`,
 		},
 		quickPaths,
 		searchPatterns,
@@ -103,5 +117,6 @@ export function mergeProseIntoSkeleton(
 		entities,
 		relationships,
 		keyFiles,
+		prose,
 	};
 }

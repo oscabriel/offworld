@@ -50,52 +50,58 @@ const TEMPLATE_PHRASES = [
 	"<real",
 	"<describe",
 	"min 50 chars",
+	"string -",
+	"string-",
+	"write 2-3 sentences",
+	"first real use case",
+	"second real use case",
+	"third real use case",
+	"describe what",
+	"entity_name",
 ];
 
-/**
- * Validate the quality of AI-generated prose.
- * Checks:
- * 1. Summary is at least 50 characters
- * 2. Summary doesn't use generic phrasing
- * 3. whenToUse has at least 3 items
- * 4. Use cases are at least 20 characters
- * 5. Entity descriptions are at least 20 characters
- * 6. Entity descriptions don't use generic phrasing
- */
 export function validateProseQuality(prose: ProseEnhancements): QualityReport {
 	const issues: QualityIssue[] = [];
 
-	// Check summary length
-	if (prose.summary.length < 50) {
-		issues.push({
-			severity: "error",
-			field: "summary",
-			message: `Summary is only ${prose.summary.length} characters, needs at least 50`,
-		});
-	}
+	const proseFields: Array<{ name: string; value: string; minLength: number }> = [
+		{ name: "overview", value: prose.overview, minLength: 100 },
+		{ name: "problemsSolved", value: prose.problemsSolved, minLength: 50 },
+		{ name: "features", value: prose.features, minLength: 50 },
+		{ name: "patterns", value: prose.patterns, minLength: 50 },
+		{ name: "targetUseCases", value: prose.targetUseCases, minLength: 50 },
+		{ name: "summary", value: prose.summary, minLength: 50 },
+	];
 
-	// Check summary for template text (AI copied the example)
-	const summaryLower = prose.summary.toLowerCase();
-	for (const phrase of TEMPLATE_PHRASES) {
-		if (summaryLower.includes(phrase)) {
+	for (const field of proseFields) {
+		if (field.value.length < field.minLength) {
 			issues.push({
 				severity: "error",
-				field: "summary",
-				message: `Summary contains template text "${phrase}" - AI copied the example instead of generating`,
+				field: field.name,
+				message: `${field.name} is ${field.value.length} chars, needs ${field.minLength}`,
 			});
-			break;
 		}
-	}
 
-	// Check summary for generic phrasing
-	for (const phrase of GENERIC_PHRASES) {
-		if (summaryLower.includes(phrase)) {
-			issues.push({
-				severity: "warning",
-				field: "summary",
-				message: `Summary contains generic phrase "${phrase}"`,
-			});
-			break;
+		const lower = field.value.toLowerCase();
+		for (const phrase of TEMPLATE_PHRASES) {
+			if (lower.includes(phrase)) {
+				issues.push({
+					severity: "error",
+					field: field.name,
+					message: `${field.name} contains template text "${phrase}"`,
+				});
+				break;
+			}
+		}
+
+		for (const phrase of GENERIC_PHRASES) {
+			if (lower.includes(phrase)) {
+				issues.push({
+					severity: "warning",
+					field: field.name,
+					message: `${field.name} contains generic phrase "${phrase}"`,
+				});
+				break;
+			}
 		}
 	}
 

@@ -139,57 +139,47 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 	let client: OpenCodeClient | null = null;
 	let port = 0;
 
+	// Minimal config - just disable plugins and MCP to prevent injection
 	const config: OpenCodeConfig = {
 		plugin: [],
 		mcp: {},
 		instructions: [],
-		agent: {
-			build: { disable: true },
-			explore: { disable: true },
-			general: { disable: true },
-			plan: { disable: true },
-			docs: {
-				description: "Analyze codebase and extract structured information",
-				permission: {
-					webfetch: "deny",
-					edit: "deny",
-					bash: "deny",
-					external_directory: "deny",
-					doom_loop: "deny",
-				},
-				mode: "primary",
-				tools: {
-					write: false,
-					bash: false,
-					delete: false,
-					read: true,
-					grep: true,
-					glob: true,
-					list: true,
-					path: false,
-					todowrite: false,
-					todoread: false,
-					websearch: false,
-					webfetch: false,
-					skill: false,
-					task: false,
-					mcp: false,
-					edit: false,
-				},
-			},
-		},
 	};
 
 	debug("Starting embedded OpenCode server...");
 
-	// Workaround: OpenCode SDK merges user plugins from ~/.config/opencode/ even when
-	// config.plugin=[] is passed. We isolate by pointing XDG_CONFIG_HOME to empty dir.
+	const isolatedConfigDir = `/tmp/ow-opencode-isolated-${Date.now()}`;
 	const savedEnv = {
-		OPENCODE_DISABLE_DEFAULT_PLUGINS: process.env.OPENCODE_DISABLE_DEFAULT_PLUGINS,
 		XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME,
+		XDG_DATA_HOME: process.env.XDG_DATA_HOME,
 	};
-	process.env.OPENCODE_DISABLE_DEFAULT_PLUGINS = "true";
-	process.env.XDG_CONFIG_HOME = `/tmp/ow-opencode-isolated-${Date.now()}`;
+
+	try {
+		const { mkdirSync, writeFileSync, existsSync, cpSync } = await import("node:fs");
+		const { join } = await import("node:path");
+
+		mkdirSync(join(isolatedConfigDir, "opencode"), { recursive: true });
+		const isolatedConfig = { $schema: "https://opencode.ai/config.json", plugin: [], mcp: {} };
+		writeFileSync(
+			join(isolatedConfigDir, "opencode", "opencode.json"),
+			JSON.stringify(isolatedConfig),
+		);
+
+		const realDataDir =
+			process.env.XDG_DATA_HOME || join(process.env.HOME || "", ".local", "share");
+		const realAuthFile = join(realDataDir, "opencode", "auth.json");
+
+		const isolatedDataDir = join(isolatedConfigDir, ".local", "share", "opencode");
+		mkdirSync(isolatedDataDir, { recursive: true, mode: 0o700 });
+		if (existsSync(realAuthFile)) {
+			cpSync(realAuthFile, join(isolatedDataDir, "auth.json"));
+		}
+
+		process.env.XDG_CONFIG_HOME = isolatedConfigDir;
+		process.env.XDG_DATA_HOME = join(isolatedConfigDir, ".local", "share");
+	} catch (fsErr) {
+		debug(`Warning: Could not create isolated config: ${fsErr}`);
+	}
 
 	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		port = Math.floor(Math.random() * 3000) + 3000;
@@ -234,7 +224,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		const promptPromise = client.session.prompt({
 			path: { id: sessionId },
 			body: {
-				agent: "docs",
+				agent: "build",
 				parts: [{ type: "text", text: fullPrompt }],
 				model: { providerID: "anthropic", modelID: "claude-sonnet-4-20250514" },
 			},
@@ -320,15 +310,24 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 	} finally {
 		debug("Closing server...");
 		server.close();
-		restoreEnvVar("OPENCODE_DISABLE_DEFAULT_PLUGINS", savedEnv.OPENCODE_DISABLE_DEFAULT_PLUGINS);
-		restoreEnvVar("XDG_CONFIG_HOME", savedEnv.XDG_CONFIG_HOME);
-	}
-}
 
-function restoreEnvVar(key: string, originalValue: string | undefined): void {
-	if (originalValue !== undefined) {
-		process.env[key] = originalValue;
-	} else {
-		delete process.env[key];
+		// Clean up isolated config dir containing auth.json
+		try {
+			const { rmSync } = await import("node:fs");
+			rmSync(isolatedConfigDir, { recursive: true, force: true });
+		} catch {
+			/* ignore cleanup errors */
+		}
+
+		if (savedEnv.XDG_CONFIG_HOME !== undefined) {
+			process.env.XDG_CONFIG_HOME = savedEnv.XDG_CONFIG_HOME;
+		} else {
+			delete process.env.XDG_CONFIG_HOME;
+		}
+		if (savedEnv.XDG_DATA_HOME !== undefined) {
+			process.env.XDG_DATA_HOME = savedEnv.XDG_DATA_HOME;
+		} else {
+			delete process.env.XDG_DATA_HOME;
+		}
 	}
 }

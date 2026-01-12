@@ -143,42 +143,23 @@ export function buildSkeleton(
 	};
 }
 
-/**
- * Build quick paths from top 20 files, enhanced with export/function counts
- */
 export function buildQuickPaths(
 	topFiles: ASTEnhancedFileEntry[],
 	_parsedFiles: Map<string, ParsedFile>,
 ): QuickPath[] {
-	const top20 = topFiles.slice(0, 20);
+	const top10 = topFiles.slice(0, 10);
 
-	return top20.map((file) => {
-		const reasons: string[] = [];
+	return top10.map((file) => {
+		let reason: string;
 
-		// Add role-based reason
-		if (file.type === "entry") reasons.push("entry point");
-		else if (file.type === "config") reasons.push("configuration");
-		else if (file.type === "types") reasons.push("type definitions");
-		else if (file.type === "test") reasons.push("test file");
-		else if (file.type === "core") reasons.push("core implementation");
+		if (file.type === "entry") reason = "entry";
+		else if (file.type === "config") reason = "config";
+		else if (file.type === "types") reason = "types";
+		else if (file.type === "test") reason = "test";
+		else if (file.type === "core") reason = "core";
+		else reason = "source";
 
-		// Add AST-derived reasons
-		if (file.exportCount && file.exportCount > 0) {
-			reasons.push(`${file.exportCount} exports`);
-		}
-		if (file.functionCount && file.functionCount > 0) {
-			reasons.push(`${file.functionCount} functions`);
-		}
-
-		// Fallback if no reasons
-		if (reasons.length === 0) {
-			reasons.push("source file");
-		}
-
-		return {
-			path: file.path,
-			reason: reasons.join(", "),
-		};
+		return { path: file.path, reason };
 	});
 }
 
@@ -254,32 +235,66 @@ export function buildSearchPatterns(parsedFiles: Map<string, ParsedFile>): Searc
 	});
 }
 
+// Directories that indicate nested entities should be used (e.g., packages/foo, apps/bar)
+const MONOREPO_PARENT_DIRS = new Set([
+	"packages",
+	"apps",
+	"libs",
+	"modules",
+	"services",
+	"plugins",
+	"crates", // Rust workspaces
+	"internal", // Go internal packages
+]);
+
 /**
- * Build entities by grouping files by top-level directory.
+ * Determine the entity path for a file. For monorepo patterns, uses nested paths.
+ * Returns the directory path that should be used as the entity identifier.
+ */
+function getEntityPath(filePath: string): string | null {
+	const parts = filePath.split("/");
+	if (parts.length < 2) return "root";
+
+	const firstPart = parts[0];
+	if (!firstPart) return "root";
+
+	// Skip excluded directories
+	if (EXCLUDED_DIRS.has(firstPart)) return null;
+
+	// Check if this is a monorepo parent directory with nested packages
+	if (MONOREPO_PARENT_DIRS.has(firstPart) && parts.length >= 2) {
+		const secondPart = parts[1];
+		// If there's a second level, use that as the entity
+		if (secondPart && !EXCLUDED_DIRS.has(secondPart)) {
+			return `${firstPart}/${secondPart}`;
+		}
+	}
+
+	// Default: use first-level directory
+	return firstPart;
+}
+
+/**
+ * Build entities by grouping files by directory.
+ * For monorepo patterns (packages/*, apps/*), uses nested entities.
  * Excludes node_modules, .git, dist, etc.
  */
 export function buildEntities(topFiles: ASTEnhancedFileEntry[]): SkeletonEntity[] {
 	const entityMap = new Map<string, string[]>();
 
 	for (const file of topFiles) {
-		const parts = file.path.split("/");
-		const firstPart = parts[0];
-		const topDir = parts.length > 1 && firstPart ? firstPart : "root";
+		const entityPath = getEntityPath(file.path);
+		if (!entityPath) continue;
 
-		// Skip excluded directories
-		if (EXCLUDED_DIRS.has(topDir)) {
-			continue;
-		}
-
-		const existing = entityMap.get(topDir) ?? [];
+		const existing = entityMap.get(entityPath) ?? [];
 		existing.push(file.path);
-		entityMap.set(topDir, existing);
+		entityMap.set(entityPath, existing);
 	}
 
 	return [...entityMap.entries()]
-		.map(([name, files]) => ({
-			name,
-			path: name === "root" ? "" : name,
+		.map(([path, files]) => ({
+			name: path === "root" ? "root" : (path.split("/").pop() ?? path), // Use last segment as name
+			path: path === "root" ? "" : path,
 			files,
 		}))
 		.sort((a, b) => b.files.length - a.files.length); // Sort by file count descending

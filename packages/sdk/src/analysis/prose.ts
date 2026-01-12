@@ -16,6 +16,11 @@ export interface EntityRelationship {
  * Schema for AI-generated prose enhancements
  */
 export const ProseEnhancementsSchema = z.object({
+	overview: z.string().min(100, "Overview must be at least 100 characters"),
+	problemsSolved: z.string().min(50, "Problems solved must be at least 50 characters"),
+	features: z.string().min(50, "Features must be at least 50 characters"),
+	patterns: z.string().min(50, "Patterns must be at least 50 characters"),
+	targetUseCases: z.string().min(50, "Target use cases must be at least 50 characters"),
 	summary: z.string().min(50, "Summary must be at least 50 characters"),
 	whenToUse: z.array(z.string()).min(3, "Must have at least 3 use cases"),
 	entityDescriptions: z.record(z.string(), z.string()),
@@ -54,11 +59,6 @@ export async function generateProseEnhancements(
 	const result = await streamPrompt({
 		prompt,
 		cwd: skeleton.repoPath,
-		systemPrompt: `You are a technical documentation expert.
-Generate ONLY valid JSON output that matches the EXACT schema specified.
-Do not include any text before or after the JSON.
-Do not include markdown code fences.
-Output raw JSON only.`,
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	});
@@ -69,9 +69,6 @@ Output raw JSON only.`,
 	return parsed;
 }
 
-/**
- * Build the prompt for prose generation
- */
 function buildProsePrompt(skeleton: SkillSkeleton, entityNames: string[]): string {
 	const { name, detectedPatterns, quickPaths, entities } = skeleton;
 
@@ -84,103 +81,94 @@ function buildProsePrompt(skeleton: SkillSkeleton, entityNames: string[]): strin
 		.map((e) => `- ${e.name}: ${e.files.length} files in ${e.path || "root"}`)
 		.join("\n");
 
-	return `Analyze this repository and generate prose content.
+	return `Analyze this ${detectedPatterns.language} repository and generate documentation.
 
 Repository: ${name}
-Language: ${detectedPatterns.language}
-Has Tests: ${detectedPatterns.hasTests}
-Has Docs: ${detectedPatterns.hasDocs}
 
 Key Files:
 ${fileList}
 
-Directory Structure:
+Directories:
 ${entityPaths}
 
-Generate a JSON object with this schema (DO NOT copy the example values - generate REAL content):
-{
-  "summary": "<YOUR 2-3 SENTENCE SUMMARY HERE - describe what this specific repo does>",
-  "whenToUse": [
-    "<REAL USE CASE 1 - when would someone use this repo?>",
-    "<REAL USE CASE 2 - another scenario>",
-    "<REAL USE CASE 3 - third scenario>"
-  ],
-  "entityDescriptions": {
-    ${entityNames.map((n) => `"${n}": "<DESCRIBE what ${n}/ contains>"`).join(",\n    ")}
-  },
-  "relationships": [
-    {"from": "<entity>", "to": "<entity>", "type": "imports|depends on|extends|uses"}
-  ]
+Output a JSON object with these fields:
+
+PROSE SECTIONS (use bullet point format - each point on new line starting with "- "):
+- "overview": 3-5 bullet points covering: what is this project, why it exists, what makes it unique
+- "problemsSolved": 3-5 bullet points on specific pain points this addresses
+- "features": 3-5 bullet points on key capabilities and what you can do with it
+- "patterns": 3-5 bullet points on common usage patterns and best practices
+- "targetUseCases": 3-5 bullet points describing specific use cases this is designed for
+
+METADATA:
+- "summary": One sentence (50+ chars) for the skill description
+- "whenToUse": Array of 3 trigger phrases like "User asks about X", "Questions about Y"
+- "entityDescriptions": Object mapping directory names to descriptions: ${entityList}
+- "relationships": Array of {"from":"dir1","to":"dir2","type":"relationship"}
+
+Output ONLY valid JSON.`;
 }
 
-CRITICAL REQUIREMENTS:
-1. Output ONLY the JSON object, no other text
-2. summary must be at least 50 characters
-3. whenToUse must have at least 3 items
-4. entityDescriptions must include ALL of these entities: ${entityList}
-5. relationships should only reference entities from: ${entityList}
-6. Each relationship "type" should be: imports, depends on, extends, uses, configures, or tests`;
-}
-
-/**
- * Extract JSON from AI response, handling various formats:
- * - Direct JSON
- * - ```json code blocks
- * - Object boundary extraction
- */
 export function extractJSON(text: string): unknown {
 	const trimmed = text.trim();
 
-	// Try direct JSON parse first
 	try {
 		return JSON.parse(trimmed);
 	} catch {
-		// Continue to other extraction methods
+		// continue
 	}
 
-	// Try extracting from ```json code block
-	const codeBlockMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/);
-	if (codeBlockMatch?.[1]) {
-		try {
-			return JSON.parse(codeBlockMatch[1].trim());
-		} catch {
-			// Continue
+	const jsonBlocks = [...trimmed.matchAll(/```json\s*([\s\S]*?)\s*```/g)];
+	for (let i = jsonBlocks.length - 1; i >= 0; i--) {
+		const match = jsonBlocks[i];
+		const content = match?.[1]?.trim();
+		if (content) {
+			try {
+				return JSON.parse(content);
+			} catch {
+				// continue
+			}
 		}
 	}
 
-	// Try extracting from ``` code block (no json specifier)
-	const genericBlockMatch = trimmed.match(/```\s*([\s\S]*?)\s*```/);
-	if (genericBlockMatch?.[1]) {
-		try {
-			return JSON.parse(genericBlockMatch[1].trim());
-		} catch {
-			// Continue
+	const codeBlocks = [...trimmed.matchAll(/```\s*([\s\S]*?)\s*```/g)];
+	for (let i = codeBlocks.length - 1; i >= 0; i--) {
+		const match = codeBlocks[i];
+		const content = match?.[1]?.trim();
+		if (content?.startsWith("{")) {
+			try {
+				return JSON.parse(content);
+			} catch {
+				// continue
+			}
 		}
 	}
 
-	// Try object boundary extraction (find { ... })
-	const firstBrace = trimmed.indexOf("{");
 	const lastBrace = trimmed.lastIndexOf("}");
-
-	if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-		const extracted = trimmed.slice(firstBrace, lastBrace + 1);
-		try {
-			return JSON.parse(extracted);
-		} catch {
-			// Continue
+	if (lastBrace !== -1) {
+		let depth = 0;
+		let startBrace = -1;
+		for (let i = lastBrace; i >= 0; i--) {
+			if (trimmed[i] === "}") depth++;
+			if (trimmed[i] === "{") {
+				depth--;
+				if (depth === 0) {
+					startBrace = i;
+					break;
+				}
+			}
+		}
+		if (startBrace !== -1) {
+			const extracted = trimmed.slice(startBrace, lastBrace + 1);
+			try {
+				return JSON.parse(extracted);
+			} catch {
+				// continue
+			}
 		}
 	}
 
-	// Final attempt: try parsing the whole thing with lenient cleanup
-	const cleaned = trimmed
-		.replace(/^[^{]*/, "") // Remove leading non-JSON
-		.replace(/[^}]*$/, ""); // Remove trailing non-JSON
-
-	try {
-		return JSON.parse(cleaned);
-	} catch {
-		throw new Error(`Failed to extract JSON from AI response: ${trimmed.slice(0, 200)}...`);
-	}
+	throw new Error(`Failed to extract JSON from AI response: ${trimmed.slice(-500)}`);
 }
 
 /**
@@ -270,9 +258,6 @@ IMPORTANT: Your previous response had quality issues. Address them carefully.`,
 	}
 }
 
-/**
- * Build a retry prompt with feedback about quality issues
- */
 function buildRetryPrompt(
 	skeleton: SkillSkeleton,
 	entityNames: string[],
@@ -287,8 +272,9 @@ function buildRetryPrompt(
 IMPORTANT: Your previous response had these quality issues:
 ${issues}
 
-Please fix these issues in your response:
-- Ensure summary is specific and detailed (avoid generic phrases like "this is a", "provides functionality", etc.)
-- Ensure all use cases are descriptive (at least 20 characters each)
-- Ensure entity descriptions are specific and detailed (at least 20 characters each)`;
+Fix these issues:
+- Write specific, detailed prose (avoid "this is a", "provides functionality", etc.)
+- Each prose section should be substantive (100+ chars for overview, 50+ for others)
+- Use cases must be descriptive (20+ chars each)
+- Entity descriptions must be specific (20+ chars each)`;
 }

@@ -3,7 +3,7 @@
  * AST-based analysis with AI prose generation
  */
 
-import { mkdirSync, readFileSync, readdirSync, writeFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { homedir } from "node:os";
 import type { Skill } from "@offworld/types";
@@ -15,12 +15,7 @@ import { parseFile, type ParsedFile } from "../ast/parser.js";
 import { buildSkeleton } from "./skeleton.js";
 import { generateProseWithRetry } from "./prose.js";
 import { validateConsistency } from "../validation/consistency.js";
-import {
-	mergeProseIntoSkeleton,
-	type MergedSkillResult,
-	type MergedEntity,
-	type MergedKeyFile,
-} from "./merge.js";
+import { mergeProseIntoSkeleton, type MergedSkillResult, type MergedEntity } from "./merge.js";
 import { buildDependencyGraph, type DependencyGraph } from "./imports.js";
 import { buildIncrementalState, type IncrementalState } from "./incremental.js";
 import type { EntityRelationship } from "./prose.js";
@@ -89,6 +84,70 @@ export function installSkill(repoName: string, skillContent: string): void {
 	}
 }
 
+export interface UpdateSkillPathsResult {
+	updated: string[];
+	failed: string[];
+}
+
+export function updateSkillPaths(newRepoRoot: string, newMetaRoot: string): UpdateSkillPathsResult {
+	const config = loadConfig();
+	const result: UpdateSkillPathsResult = { updated: [], failed: [] };
+
+	const skillDirs = [
+		expandTilde(config.skillDir),
+		join(homedir(), ".claude", "skills"),
+		join(expandTilde(config.metaRoot), "analyses"),
+	];
+
+	for (const baseDir of skillDirs) {
+		if (!existsSync(baseDir)) continue;
+
+		const skillFiles = findSkillFiles(baseDir);
+		for (const filePath of skillFiles) {
+			try {
+				const content = readFileSync(filePath, "utf-8");
+				const updated = updatePathVariables(content, newRepoRoot, newMetaRoot);
+				if (updated !== content) {
+					writeFileSync(filePath, updated, "utf-8");
+					result.updated.push(filePath);
+				}
+			} catch {
+				result.failed.push(filePath);
+			}
+		}
+	}
+
+	return result;
+}
+
+function findSkillFiles(dir: string, depth = 0): string[] {
+	if (depth > 3) return [];
+	const files: string[] = [];
+
+	try {
+		const entries = readdirSync(dir);
+		for (const entry of entries) {
+			const fullPath = join(dir, entry);
+			try {
+				const stat = statSync(fullPath);
+				if (stat.isFile() && entry === "SKILL.md") {
+					files.push(fullPath);
+				} else if (stat.isDirectory() && !entry.startsWith(".")) {
+					files.push(...findSkillFiles(fullPath, depth + 1));
+				}
+			} catch {}
+		}
+	} catch {}
+
+	return files;
+}
+
+function updatePathVariables(content: string, newRepoRoot: string, newMetaRoot: string): string {
+	return content
+		.replace(/^OW_REPOS:\s*.+$/m, `OW_REPOS: ${newRepoRoot}`)
+		.replace(/^OW_META:\s*.+$/m, `OW_META: ${newMetaRoot}`);
+}
+
 // ============================================================================
 // Skill Formatting
 // ============================================================================
@@ -96,17 +155,16 @@ export function installSkill(repoName: string, skillContent: string): void {
 export interface FormatSkillOptions {
 	commitSha?: string;
 	generated?: string;
+	repoRoot?: string;
+	metaRoot?: string;
 }
 
-/**
- * Format a Skill object into SKILL.md markdown content
- */
 export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
 	const lines = [
 		"---",
 		`name: ${skill.name}`,
 		`description: ${skill.description}`,
-		"allowed-tools: [Read, Grep, Glob, Task]",
+		"allowed-tools: [Read, Grep, Glob]",
 	];
 
 	if (options.commitSha) {
@@ -118,39 +176,77 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 
 	lines.push("---", "", `# ${skill.name}`, "", skill.description, "");
 
-	// Base paths
+	const repoRoot = options.repoRoot ?? "~/ow";
+	const metaRoot = options.metaRoot ?? "~/.ow";
+	lines.push(`OW_REPOS: ${repoRoot}`);
+	lines.push(`OW_META: ${metaRoot}`);
 	if (skill.basePaths) {
 		lines.push(`REPO: ${skill.basePaths.repo}`);
 		lines.push(`ANALYSIS: ${skill.basePaths.analysis}`);
-		lines.push("");
-	}
-
-	// Quick Paths
-	lines.push("## Quick Paths", "");
-	for (const qp of skill.quickPaths) {
-		lines.push(`- \`${qp.path}\` - ${qp.description}`);
 	}
 	lines.push("");
 
-	// Search Patterns
-	lines.push("## Search Patterns", "");
-	lines.push("| Find | Pattern | Path |");
-	lines.push("|------|---------|------|");
-	for (const sp of skill.searchPatterns) {
-		lines.push(`| ${sp.find} | \`${sp.pattern}\` | \`${sp.path}\` |`);
-	}
-	lines.push("");
+	lines.push(
+		"**Further Reading:** `${ANALYSIS}/summary.md` (overview) | `${ANALYSIS}/architecture.md` (structure)",
+		"",
+	);
 
-	// When to Use (if provided)
 	if (skill.whenToUse?.length) {
-		lines.push("## When to Use This Skill", "");
+		lines.push("## When to Use", "");
 		for (const trigger of skill.whenToUse) {
 			lines.push(`- ${trigger}`);
 		}
 		lines.push("");
 	}
 
-	// Best Practices (if provided)
+	lines.push("## Entry Points", "");
+	const topPaths = skill.quickPaths.slice(0, 8);
+	for (const qp of topPaths) {
+		lines.push(`- \`${qp.path}\``);
+	}
+	lines.push("");
+
+	lines.push(
+		"## How to Fetch Analysis Data",
+		"",
+		"Use these patterns to query the analyzed codebase:",
+		"",
+		"**Find implementations:**",
+		"```",
+		`Grep(pattern="function|class|interface", path="\${REPO}/src")`,
+		"```",
+		"",
+		"**Find dependencies:**",
+		"```",
+		`Read("\${ANALYSIS}/architecture.md")  # Entity relationships and dependency hubs`,
+		"```",
+		"",
+		"**Find usage patterns:**",
+		"```",
+		`Grep(pattern="import.*from", path="\${REPO}")  # All imports`,
+		`Glob(pattern="**/*.test.ts", path="\${REPO}")  # All tests`,
+		"```",
+		"",
+		"**Read key files:**",
+		"```",
+		`Read("\${ANALYSIS}/summary.md")  # High-level overview`,
+		"```",
+		"",
+	);
+
+	lines.push(
+		"## Integration Guide",
+		"",
+		"When using this library in a project:",
+		"",
+		"1. **Study the entry points** listed above to understand the public API",
+		"2. **Check architecture.md** for entity relationships before modifying",
+		"3. **Read summary.md** for project context and design decisions",
+		"4. **Follow existing patterns** - grep for similar code before adding new features",
+		"5. **Verify imports** - use the dependency hubs to understand coupling",
+		"",
+	);
+
 	if (skill.bestPractices?.length) {
 		lines.push("## Best Practices", "");
 		skill.bestPractices.forEach((practice: string, i: number) => {
@@ -159,7 +255,6 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 		lines.push("");
 	}
 
-	// Common Patterns (if provided)
 	if (skill.commonPatterns?.length) {
 		lines.push("## Common Patterns", "");
 		for (const pattern of skill.commonPatterns) {
@@ -170,10 +265,6 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 			lines.push("");
 		}
 	}
-
-	lines.push("## Deep Context", "");
-	lines.push("- Summary: `${ANALYSIS}/summary.md`");
-	lines.push("- Architecture: `${ANALYSIS}/architecture.md`");
 
 	return lines.join("\n");
 }
@@ -186,31 +277,37 @@ export interface FormatSummaryOptions {
 	repoName: string;
 }
 
-export function formatSummaryMd(
-	description: string,
-	entities: MergedEntity[],
-	keyFiles: MergedKeyFile[],
-	options: FormatSummaryOptions,
-): string {
-	const lines = [`# ${options.repoName}`, "", description, ""];
+export interface SummaryProse {
+	overview: string;
+	problemsSolved: string;
+	features: string;
+	patterns: string;
+	targetUseCases: string;
+}
 
-	if (entities.length > 0) {
-		lines.push("## Structure", "");
-		for (const entity of entities) {
-			lines.push(`### ${entity.name}`);
-			lines.push(`- **Path**: \`${entity.path}\``);
-			lines.push(`- ${entity.description}`);
-			lines.push("");
-		}
-	}
-
-	if (keyFiles.length > 0) {
-		lines.push("## Key Files", "");
-		for (const file of keyFiles) {
-			lines.push(`- \`${file.path}\``);
-		}
-		lines.push("");
-	}
+export function formatSummaryMd(prose: SummaryProse, options: FormatSummaryOptions): string {
+	const lines = [
+		`# ${options.repoName}`,
+		"",
+		prose.overview,
+		"",
+		"## Problems Solved",
+		"",
+		prose.problemsSolved,
+		"",
+		"## Features",
+		"",
+		prose.features,
+		"",
+		"## Patterns & Best Practices",
+		"",
+		prose.patterns,
+		"",
+		"## Target Use Cases",
+		"",
+		prose.targetUseCases,
+		"",
+	];
 
 	return lines.join("\n");
 }
@@ -356,6 +453,7 @@ export async function runAnalysisPipeline(
 ): Promise<AnalysisPipelineResult> {
 	const onProgress = options.onProgress ?? (() => {});
 	const onDebug = options.onDebug;
+	const config = loadConfig();
 
 	// Step 1: Initialize language parsers
 	onProgress("init", "Initializing language parsers...");
@@ -417,6 +515,8 @@ export async function runAnalysisPipeline(
 	onProgress("merge", "Merging skeleton and prose...");
 	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose, {
 		qualifiedName: options.qualifiedName,
+		repoRoot: config.repoRoot,
+		metaRoot: config.metaRoot,
 	});
 
 	// Step 9: Build dependency graph

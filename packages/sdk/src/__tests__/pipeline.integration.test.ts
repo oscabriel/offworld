@@ -64,6 +64,16 @@ function createTestRepo(name: string, files: Record<string, string>): string {
 
 function createMockProse(): ProseEnhancements {
 	return {
+		overview:
+			"This is a test repository created for integration testing purposes. It contains multiple modules designed to verify the analysis pipeline functionality.",
+		problemsSolved:
+			"Enables automated testing of the analysis pipeline, verifying correct handling of repository structures.",
+		features:
+			"Supports qualifiedName handling, language detection, and entity relationship mapping.",
+		patterns:
+			"Follow standard testing patterns: create isolated repos, run pipeline, verify outputs.",
+		targetUseCases:
+			"Developers working on the offworld SDK who need to verify pipeline correctness.",
 		summary: "A test repository for integration testing purposes with multiple modules.",
 		whenToUse: [
 			"When you need to test pipeline functionality",
@@ -166,10 +176,8 @@ describe("pipeline.integration", () => {
 			const prose = createMockProse();
 			const result = mergeProseIntoSkeleton(skeleton, prose, { qualifiedName: "tanstack/query" });
 
-			// Verify analysis path uses correct encoding
-			expect(result.skill.basePaths?.analysis).toBe("${HOME}/.ow/analyses/tanstack--query");
+			expect(result.skill.basePaths?.analysis).toBe("${OW_META}/analyses/tanstack--query");
 			expect(result.skill.basePaths?.analysis).not.toContain("/Users");
-			expect(result.skill.basePaths?.analysis).not.toContain("--Users--");
 		});
 
 		it("handles deeply nested org/repo names", () => {
@@ -191,7 +199,7 @@ describe("pipeline.integration", () => {
 			const prose = createMockProse();
 			const result = mergeProseIntoSkeleton(skeleton, prose, { qualifiedName: "tanstack/router" });
 
-			expect(result.skill.basePaths?.analysis).toBe("${HOME}/.ow/analyses/tanstack--router");
+			expect(result.skill.basePaths?.analysis).toBe("${OW_META}/analyses/tanstack--router");
 		});
 	});
 

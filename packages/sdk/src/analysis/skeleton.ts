@@ -91,6 +91,31 @@ const GENERIC_SYMBOLS = new Set([
 	"Component",
 	"Provider",
 	"Context",
+	// Deprioritize example/demo patterns common in library codebases
+	"Page",
+	"Loading",
+	"Example",
+	"Demo",
+	"Sample",
+	"Test",
+	"Spec",
+]);
+
+// Directories that typically contain example/demo code rather than library code
+const EXAMPLE_DIRS = new Set([
+	"examples",
+	"example",
+	"demo",
+	"demos",
+	"playground",
+	"playgrounds",
+	"samples",
+	"sample",
+	"e2e",
+	"test",
+	"tests",
+	"__tests__",
+	"fixtures",
 ]);
 
 /**
@@ -158,14 +183,27 @@ export function buildQuickPaths(
 }
 
 /**
+ * Check if a file path is within an example/demo directory
+ */
+function isExamplePath(path: string): boolean {
+	const parts = path.toLowerCase().split("/");
+	return parts.some((part) => EXAMPLE_DIRS.has(part));
+}
+
+/**
  * Build search patterns from top symbol names in parsed files.
- * Filters out short/generic names.
+ * Separates library code from example directories, prioritizing library patterns.
+ * Returns max 10 patterns: up to 7 from library code, up to 3 from examples.
  */
 export function buildSearchPatterns(parsedFiles: Map<string, ParsedFile>): SearchPattern[] {
-	const symbolCounts = new Map<string, { count: number; paths: string[] }>();
+	const librarySymbols = new Map<string, { count: number; paths: string[] }>();
+	const exampleSymbols = new Map<string, { count: number; paths: string[] }>();
 
-	// Count symbol occurrences
+	// Count symbol occurrences, separating library from example code
 	for (const [path, parsed] of parsedFiles) {
+		const isExample = isExamplePath(path);
+		const targetMap = isExample ? exampleSymbols : librarySymbols;
+
 		const symbols = [...parsed.functions, ...parsed.classes];
 		for (const symbol of symbols) {
 			const name = symbol.name;
@@ -180,22 +218,31 @@ export function buildSearchPatterns(parsedFiles: Map<string, ParsedFile>): Searc
 				continue;
 			}
 
-			const existing = symbolCounts.get(name) ?? { count: 0, paths: [] };
+			const existing = targetMap.get(name) ?? { count: 0, paths: [] };
 			existing.count++;
 			if (!existing.paths.includes(path)) {
 				existing.paths.push(path);
 			}
-			symbolCounts.set(name, existing);
+			targetMap.set(name, existing);
 		}
 	}
 
-	// Sort by count and take top 10
-	const sorted = [...symbolCounts.entries()]
-		.filter(([_, data]) => data.count >= 1) // At least 1 occurrence
+	// Sort library patterns by count and take top 7
+	const sortedLibrary = [...librarySymbols.entries()]
+		.filter(([_, data]) => data.count >= 1)
 		.sort((a, b) => b[1].count - a[1].count)
-		.slice(0, 10);
+		.slice(0, 7);
 
-	return sorted.map(([pattern, data]) => {
+	// Sort example patterns by count and take top 3
+	const sortedExamples = [...exampleSymbols.entries()]
+		.filter(([_, data]) => data.count >= 1)
+		.sort((a, b) => b[1].count - a[1].count)
+		.slice(0, 3);
+
+	// Combine patterns, library first
+	const allPatterns = [...sortedLibrary, ...sortedExamples];
+
+	return allPatterns.map(([pattern, data]) => {
 		// If symbol appears in only one file, scope to that directory
 		const firstPath = data.paths[0];
 		const scope = data.paths.length === 1 && firstPath ? dirname(firstPath) : undefined;

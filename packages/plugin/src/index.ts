@@ -8,13 +8,18 @@ import { tool } from "@opencode-ai/plugin";
 import {
 	listIndexedRepos,
 	getAnalysisPath,
+	getCommitSha,
 	cloneRepo,
 	parseRepoInput,
 	runAnalysisPipeline,
+	installSkill,
+	formatSkillMd,
+	formatSummaryMd,
+	formatArchitectureMd,
 	loadConfig,
 } from "@offworld/sdk";
 import type { Architecture } from "@offworld/types";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const version = "0.1.0";
@@ -153,9 +158,6 @@ function listRepos(): RepoInfo[] {
 	});
 }
 
-/**
- * Clone and analyze a repository
- */
 async function cloneAndAnalyze(
 	repoInput: string,
 ): Promise<{ success: boolean; message: string; path?: string }> {
@@ -171,18 +173,41 @@ async function cloneAndAnalyze(
 
 		const config = loadConfig();
 
-		// Clone the repository
 		const repoPath = await cloneRepo(source, {
 			shallow: true,
 			config,
 		});
 
-		// Run analysis pipeline
-		await runAnalysisPipeline(repoPath, {
-			config,
-			provider: source.provider,
-			fullName: source.fullName,
+		const result = await runAnalysisPipeline(repoPath, {});
+
+		const { skill: mergedSkill, graph } = result;
+		const skill = mergedSkill.skill;
+		const { entities, relationships, keyFiles } = mergedSkill;
+
+		const commitSha = getCommitSha(repoPath);
+		const analyzedAt = new Date().toISOString();
+		const generated = analyzedAt.split("T")[0];
+
+		const analysisPath = getAnalysisPath(source.fullName, source.provider);
+		mkdirSync(analysisPath, { recursive: true });
+
+		const summaryMd = formatSummaryMd(skill.description, entities, keyFiles, {
+			repoName: source.fullName,
 		});
+		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
+
+		const architectureMd = formatArchitectureMd(entities, relationships, graph);
+		writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
+
+		writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
+
+		const skillMd = formatSkillMd(skill, { commitSha, generated });
+		writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
+
+		const meta = { analyzedAt, commitSha, version: "0.1.0" };
+		writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+
+		installSkill(source.fullName, skillMd);
 
 		return {
 			success: true,

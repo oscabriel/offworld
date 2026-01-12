@@ -31,6 +31,12 @@ export interface MergedSkillResult {
 	keyFiles: MergedKeyFile[];
 }
 
+/** Options for merging prose into skeleton */
+export interface MergeOptions {
+	/** Qualified name for the repo (e.g. 'tanstack/query' for remote, 'myrepo' for local) */
+	qualifiedName?: string;
+}
+
 /**
  * Merge AI-generated prose enhancements into the deterministic skeleton
  * to produce the final Skill type plus additional analysis data.
@@ -38,6 +44,7 @@ export interface MergedSkillResult {
 export function mergeProseIntoSkeleton(
 	skeleton: SkillSkeleton,
 	prose: ProseEnhancements,
+	options: MergeOptions = {},
 ): MergedSkillResult {
 	const entityNames = new Set(skeleton.entities.map((e) => e.name));
 
@@ -74,12 +81,15 @@ export function mergeProseIntoSkeleton(
 		role: "implementation" as const,
 	}));
 
+	// Use qualifiedName for analysis path encoding, fallback to skeleton.name
+	const analysisKey = options.qualifiedName ?? skeleton.name;
+
 	const skill: Skill = {
 		name: skeleton.name,
 		description: prose.summary,
 		basePaths: {
 			repo: skeleton.repoPath,
-			analysis: `\${HOME}/.ow/analyses/${skeleton.name.replace(/\//g, "--")}`,
+			analysis: `\${HOME}/.ow/analyses/${analysisKey.replace(/\//g, "--")}`,
 		},
 		quickPaths,
 		searchPatterns,

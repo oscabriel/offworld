@@ -52,6 +52,8 @@ export interface AnalysisPipelineOptions {
 	onDebug?: (message: string) => void;
 	/** Stream callback for real-time AI output */
 	onStream?: (text: string) => void;
+	/** Qualified name for the repo (e.g. 'tanstack/query' for remote, 'myrepo' for local) */
+	qualifiedName?: string;
 }
 
 // ============================================================================
@@ -393,7 +395,8 @@ export async function runAnalysisPipeline(
 
 	// Step 5: Build deterministic skeleton
 	onProgress("skeleton", "Building skill skeleton...");
-	const skeleton = buildSkeleton(basename(repoPath), repoPath, rankedFiles, parsedFiles);
+	const repoName = options.qualifiedName ?? basename(repoPath);
+	const skeleton = buildSkeleton(repoPath, repoName, rankedFiles, parsedFiles);
 
 	// Step 6: Generate prose with AI (with retry)
 	onProgress("prose", "Generating prose with AI...");
@@ -412,7 +415,9 @@ export async function runAnalysisPipeline(
 
 	// Step 8: Merge skeleton + prose
 	onProgress("merge", "Merging skeleton and prose...");
-	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose);
+	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose, {
+		qualifiedName: options.qualifiedName,
+	});
 
 	// Step 9: Build dependency graph
 	onProgress("graph", "Building dependency graph...");

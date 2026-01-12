@@ -67,6 +67,9 @@ interface OpenCodeClient {
 }
 
 interface OpenCodeConfig {
+	plugin?: unknown[];
+	mcp?: Record<string, unknown>;
+	instructions?: unknown[];
 	agent?: {
 		build?: { disable: boolean };
 		explore?: { disable: boolean };
@@ -137,6 +140,9 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 	let port = 0;
 
 	const config: OpenCodeConfig = {
+		plugin: [],
+		mcp: {},
+		instructions: [],
 		agent: {
 			build: { disable: true },
 			explore: { disable: true },

@@ -1,6 +1,10 @@
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@offworld/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 export function Footer() {
+	const { data: user } = useQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
 	return (
 		<div className="relative border-primary/10 border-y bg-background/30 py-16 backdrop-blur-sm">
 			<div className="container relative mx-auto flex max-w-7xl flex-col items-center justify-between gap-16 px-4 lg:max-w-5xl lg:flex-row lg:items-end xl:max-w-6xl 2xl:max-w-7xl">
@@ -28,10 +32,10 @@ export function Footer() {
 								Explore
 							</Link>
 							<Link
-								to="/sign-in"
+								to={user ? "/profile" : "/sign-in"}
 								className="font-mono text-foreground text-sm transition-colors hover:text-primary"
 							>
-								Login
+								{user ? "Profile" : "Login"}
 							</Link>
 						</div>
 					</div>

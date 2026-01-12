@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -10,6 +10,11 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/sign-in")({
 	component: SignInComponent,
 	validateSearch: searchSchema,
+	beforeLoad: ({ context, search }) => {
+		if (context.isAuthenticated) {
+			throw redirect({ to: search.redirect || "/" });
+		}
+	},
 });
 
 function SignInComponent() {
@@ -23,7 +28,7 @@ function SignInComponent() {
 	};
 
 	return (
-		<div className="flex flex-1 items-center justify-center p-8">
+		<div className="flex min-h-full flex-1 items-center justify-center p-8">
 			<div className="w-full max-w-md">
 				<h1 className="mb-8 text-center font-normal font-serif text-5xl">Welcome to Offworld</h1>
 

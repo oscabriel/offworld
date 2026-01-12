@@ -1,6 +1,7 @@
-import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { convexQuery, type ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
+import { api } from "@offworld/backend/convex/_generated/api";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -18,6 +19,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { authClient } from "@/lib/auth-client";
 import { getToken } from "@/lib/auth-server";
 
+import { Footer } from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import appCss from "../index.css?url";
 
@@ -141,6 +143,9 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		if (token) {
 			ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
 		}
+
+		await ctx.context.queryClient.ensureQueryData(convexQuery(api.auth.getCurrentUserSafe, {}));
+
 		return {
 			isAuthenticated: !!token,
 			token,
@@ -161,11 +166,14 @@ function RootDocument() {
 					<head>
 						<HeadContent />
 					</head>
-					<body className="relative min-h-screen">
+					<body className="relative min-h-screen flex flex-col">
 						<BackgroundImage />
-						<div className="relative z-10">
+						<div className="relative z-10 flex-1 flex flex-col">
 							<Header />
-							<Outlet />
+							<main className="flex-1">
+								<Outlet />
+							</main>
+							<Footer />
 						</div>
 						<Toaster richColors />
 						<TanStackRouterDevtools position="bottom-left" />

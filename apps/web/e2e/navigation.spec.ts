@@ -10,7 +10,7 @@ test.describe("Navigation E2E Tests", () => {
 	});
 
 	test("T3.2: browse page loads", async ({ page }) => {
-		await page.goto("/browse");
+		await page.goto("/explore");
 		await page.waitForLoadState("domcontentloaded");
 		const h1 = page.locator("h1");
 		await expect(h1).toBeVisible();

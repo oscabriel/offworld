@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Analysis E2E Tests", () => {
 	test("T5.1: browse page shows analysis list or empty state", async ({ page }) => {
-		await page.goto("/browse");
+		await page.goto("/explore");
 		await page.waitForLoadState("networkidle");
 
 		const analysisList = page.locator('[class*="Card"], [data-testid="analysis-list"]');

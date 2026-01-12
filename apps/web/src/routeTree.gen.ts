@@ -10,19 +10,37 @@
 
 import { Route as rootRouteImport } from "./routes/__root";
 import { Route as SignInRouteImport } from "./routes/sign-in";
-import { Route as BrowseRouteImport } from "./routes/browse";
+import { Route as ProfileRouteImport } from "./routes/profile";
+import { Route as ExploreRouteImport } from "./routes/explore";
+import { Route as AdminRouteImport } from "./routes/admin";
+import { Route as RepoRouteRouteImport } from "./routes/_repo/route";
 import { Route as IndexRouteImport } from "./routes/index";
-import { Route as RepoOwnerRepoRouteImport } from "./routes/repo/$owner/$repo";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
+import { Route as RepoOwnerRepoRouteRouteImport } from "./routes/_repo/$owner_.$repo/route";
+import { Route as RepoOwnerRepoIndexRouteImport } from "./routes/_repo/$owner_.$repo/index";
 
 const SignInRoute = SignInRouteImport.update({
 	id: "/sign-in",
 	path: "/sign-in",
 	getParentRoute: () => rootRouteImport,
 } as any);
-const BrowseRoute = BrowseRouteImport.update({
-	id: "/browse",
-	path: "/browse",
+const ProfileRoute = ProfileRouteImport.update({
+	id: "/profile",
+	path: "/profile",
+	getParentRoute: () => rootRouteImport,
+} as any);
+const ExploreRoute = ExploreRouteImport.update({
+	id: "/explore",
+	path: "/explore",
+	getParentRoute: () => rootRouteImport,
+} as any);
+const AdminRoute = AdminRouteImport.update({
+	id: "/admin",
+	path: "/admin",
+	getParentRoute: () => rootRouteImport,
+} as any);
+const RepoRouteRoute = RepoRouteRouteImport.update({
+	id: "/_repo",
 	getParentRoute: () => rootRouteImport,
 } as any);
 const IndexRoute = IndexRouteImport.update({
@@ -30,53 +48,87 @@ const IndexRoute = IndexRouteImport.update({
 	path: "/",
 	getParentRoute: () => rootRouteImport,
 } as any);
-const RepoOwnerRepoRoute = RepoOwnerRepoRouteImport.update({
-	id: "/repo/$owner/$repo",
-	path: "/repo/$owner/$repo",
-	getParentRoute: () => rootRouteImport,
-} as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 	id: "/api/auth/$",
 	path: "/api/auth/$",
 	getParentRoute: () => rootRouteImport,
 } as any);
+const RepoOwnerRepoRouteRoute = RepoOwnerRepoRouteRouteImport.update({
+	id: "/$owner_/$repo",
+	path: "/$owner/$repo",
+	getParentRoute: () => RepoRouteRoute,
+} as any);
+const RepoOwnerRepoIndexRoute = RepoOwnerRepoIndexRouteImport.update({
+	id: "/",
+	path: "/",
+	getParentRoute: () => RepoOwnerRepoRouteRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
 	"/": typeof IndexRoute;
-	"/browse": typeof BrowseRoute;
+	"/admin": typeof AdminRoute;
+	"/explore": typeof ExploreRoute;
+	"/profile": typeof ProfileRoute;
 	"/sign-in": typeof SignInRoute;
+	"/$owner/$repo": typeof RepoOwnerRepoRouteRouteWithChildren;
 	"/api/auth/$": typeof ApiAuthSplatRoute;
-	"/repo/$owner/$repo": typeof RepoOwnerRepoRoute;
+	"/$owner/$repo/": typeof RepoOwnerRepoIndexRoute;
 }
 export interface FileRoutesByTo {
 	"/": typeof IndexRoute;
-	"/browse": typeof BrowseRoute;
+	"/admin": typeof AdminRoute;
+	"/explore": typeof ExploreRoute;
+	"/profile": typeof ProfileRoute;
 	"/sign-in": typeof SignInRoute;
 	"/api/auth/$": typeof ApiAuthSplatRoute;
-	"/repo/$owner/$repo": typeof RepoOwnerRepoRoute;
+	"/$owner/$repo": typeof RepoOwnerRepoIndexRoute;
 }
 export interface FileRoutesById {
 	__root__: typeof rootRouteImport;
 	"/": typeof IndexRoute;
-	"/browse": typeof BrowseRoute;
+	"/_repo": typeof RepoRouteRouteWithChildren;
+	"/admin": typeof AdminRoute;
+	"/explore": typeof ExploreRoute;
+	"/profile": typeof ProfileRoute;
 	"/sign-in": typeof SignInRoute;
+	"/_repo/$owner_/$repo": typeof RepoOwnerRepoRouteRouteWithChildren;
 	"/api/auth/$": typeof ApiAuthSplatRoute;
-	"/repo/$owner/$repo": typeof RepoOwnerRepoRoute;
+	"/_repo/$owner_/$repo/": typeof RepoOwnerRepoIndexRoute;
 }
 export interface FileRouteTypes {
 	fileRoutesByFullPath: FileRoutesByFullPath;
-	fullPaths: "/" | "/browse" | "/sign-in" | "/api/auth/$" | "/repo/$owner/$repo";
+	fullPaths:
+		| "/"
+		| "/admin"
+		| "/explore"
+		| "/profile"
+		| "/sign-in"
+		| "/$owner/$repo"
+		| "/api/auth/$"
+		| "/$owner/$repo/";
 	fileRoutesByTo: FileRoutesByTo;
-	to: "/" | "/browse" | "/sign-in" | "/api/auth/$" | "/repo/$owner/$repo";
-	id: "__root__" | "/" | "/browse" | "/sign-in" | "/api/auth/$" | "/repo/$owner/$repo";
+	to: "/" | "/admin" | "/explore" | "/profile" | "/sign-in" | "/api/auth/$" | "/$owner/$repo";
+	id:
+		| "__root__"
+		| "/"
+		| "/_repo"
+		| "/admin"
+		| "/explore"
+		| "/profile"
+		| "/sign-in"
+		| "/_repo/$owner_/$repo"
+		| "/api/auth/$"
+		| "/_repo/$owner_/$repo/";
 	fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
 	IndexRoute: typeof IndexRoute;
-	BrowseRoute: typeof BrowseRoute;
+	RepoRouteRoute: typeof RepoRouteRouteWithChildren;
+	AdminRoute: typeof AdminRoute;
+	ExploreRoute: typeof ExploreRoute;
+	ProfileRoute: typeof ProfileRoute;
 	SignInRoute: typeof SignInRoute;
 	ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
-	RepoOwnerRepoRoute: typeof RepoOwnerRepoRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -88,11 +140,32 @@ declare module "@tanstack/react-router" {
 			preLoaderRoute: typeof SignInRouteImport;
 			parentRoute: typeof rootRouteImport;
 		};
-		"/browse": {
-			id: "/browse";
-			path: "/browse";
-			fullPath: "/browse";
-			preLoaderRoute: typeof BrowseRouteImport;
+		"/profile": {
+			id: "/profile";
+			path: "/profile";
+			fullPath: "/profile";
+			preLoaderRoute: typeof ProfileRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/explore": {
+			id: "/explore";
+			path: "/explore";
+			fullPath: "/explore";
+			preLoaderRoute: typeof ExploreRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/admin": {
+			id: "/admin";
+			path: "/admin";
+			fullPath: "/admin";
+			preLoaderRoute: typeof AdminRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/_repo": {
+			id: "/_repo";
+			path: "";
+			fullPath: "";
+			preLoaderRoute: typeof RepoRouteRouteImport;
 			parentRoute: typeof rootRouteImport;
 		};
 		"/": {
@@ -102,13 +175,6 @@ declare module "@tanstack/react-router" {
 			preLoaderRoute: typeof IndexRouteImport;
 			parentRoute: typeof rootRouteImport;
 		};
-		"/repo/$owner/$repo": {
-			id: "/repo/$owner/$repo";
-			path: "/repo/$owner/$repo";
-			fullPath: "/repo/$owner/$repo";
-			preLoaderRoute: typeof RepoOwnerRepoRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
 		"/api/auth/$": {
 			id: "/api/auth/$";
 			path: "/api/auth/$";
@@ -116,15 +182,53 @@ declare module "@tanstack/react-router" {
 			preLoaderRoute: typeof ApiAuthSplatRouteImport;
 			parentRoute: typeof rootRouteImport;
 		};
+		"/_repo/$owner_/$repo": {
+			id: "/_repo/$owner_/$repo";
+			path: "/$owner/$repo";
+			fullPath: "/$owner/$repo";
+			preLoaderRoute: typeof RepoOwnerRepoRouteRouteImport;
+			parentRoute: typeof RepoRouteRoute;
+		};
+		"/_repo/$owner_/$repo/": {
+			id: "/_repo/$owner_/$repo/";
+			path: "/";
+			fullPath: "/$owner/$repo/";
+			preLoaderRoute: typeof RepoOwnerRepoIndexRouteImport;
+			parentRoute: typeof RepoOwnerRepoRouteRoute;
+		};
 	}
 }
 
+interface RepoOwnerRepoRouteRouteChildren {
+	RepoOwnerRepoIndexRoute: typeof RepoOwnerRepoIndexRoute;
+}
+
+const RepoOwnerRepoRouteRouteChildren: RepoOwnerRepoRouteRouteChildren = {
+	RepoOwnerRepoIndexRoute: RepoOwnerRepoIndexRoute,
+};
+
+const RepoOwnerRepoRouteRouteWithChildren = RepoOwnerRepoRouteRoute._addFileChildren(
+	RepoOwnerRepoRouteRouteChildren,
+);
+
+interface RepoRouteRouteChildren {
+	RepoOwnerRepoRouteRoute: typeof RepoOwnerRepoRouteRouteWithChildren;
+}
+
+const RepoRouteRouteChildren: RepoRouteRouteChildren = {
+	RepoOwnerRepoRouteRoute: RepoOwnerRepoRouteRouteWithChildren,
+};
+
+const RepoRouteRouteWithChildren = RepoRouteRoute._addFileChildren(RepoRouteRouteChildren);
+
 const rootRouteChildren: RootRouteChildren = {
 	IndexRoute: IndexRoute,
-	BrowseRoute: BrowseRoute,
+	RepoRouteRoute: RepoRouteRouteWithChildren,
+	AdminRoute: AdminRoute,
+	ExploreRoute: ExploreRoute,
+	ProfileRoute: ProfileRoute,
 	SignInRoute: SignInRoute,
 	ApiAuthSplatRoute: ApiAuthSplatRoute,
-	RepoOwnerRepoRoute: RepoOwnerRepoRoute,
 };
 export const routeTree = rootRouteImport
 	._addFileChildren(rootRouteChildren)

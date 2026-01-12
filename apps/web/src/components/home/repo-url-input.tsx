@@ -50,7 +50,7 @@ export function RepoUrlInput({
 		}
 
 		// Navigate directly to repo page - route handles "not found" state
-		navigate({ to: "/repo/$owner/$repo", params: { owner, repo: name } });
+		navigate({ to: "/$owner/$repo", params: { owner, repo: name } });
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

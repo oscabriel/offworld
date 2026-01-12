@@ -22,9 +22,6 @@ export interface QualityReport {
 	issues: QualityIssue[];
 }
 
-/**
- * Generic phrases that indicate low-quality AI prose
- */
 const GENERIC_PHRASES = [
 	"this is a",
 	"this repository",
@@ -39,6 +36,20 @@ const GENERIC_PHRASES = [
 	"used for",
 	"allows users to",
 	"enables you to",
+];
+
+const TEMPLATE_PHRASES = [
+	"a detailed 2-3 sentence summary",
+	"use case 1",
+	"use case 2",
+	"use case 3",
+	"when you would consult this repository",
+	"another scenario",
+	"third scenario",
+	"<your",
+	"<real",
+	"<describe",
+	"min 50 chars",
 ];
 
 /**
@@ -63,8 +74,20 @@ export function validateProseQuality(prose: ProseEnhancements): QualityReport {
 		});
 	}
 
-	// Check summary for generic phrasing
+	// Check summary for template text (AI copied the example)
 	const summaryLower = prose.summary.toLowerCase();
+	for (const phrase of TEMPLATE_PHRASES) {
+		if (summaryLower.includes(phrase)) {
+			issues.push({
+				severity: "error",
+				field: "summary",
+				message: `Summary contains template text "${phrase}" - AI copied the example instead of generating`,
+			});
+			break;
+		}
+	}
+
+	// Check summary for generic phrasing
 	for (const phrase of GENERIC_PHRASES) {
 		if (summaryLower.includes(phrase)) {
 			issues.push({
@@ -72,7 +95,7 @@ export function validateProseQuality(prose: ProseEnhancements): QualityReport {
 				field: "summary",
 				message: `Summary contains generic phrase "${phrase}"`,
 			});
-			break; // Only flag one generic phrase per field
+			break;
 		}
 	}
 
@@ -85,10 +108,24 @@ export function validateProseQuality(prose: ProseEnhancements): QualityReport {
 		});
 	}
 
-	// Check whenToUse item lengths
+	// Check whenToUse item lengths and template text
 	for (let i = 0; i < prose.whenToUse.length; i++) {
 		const useCase = prose.whenToUse[i];
-		if (useCase && useCase.length < 20) {
+		if (!useCase) continue;
+
+		const useCaseLower = useCase.toLowerCase();
+		for (const phrase of TEMPLATE_PHRASES) {
+			if (useCaseLower.includes(phrase)) {
+				issues.push({
+					severity: "error",
+					field: `whenToUse[${i}]`,
+					message: `Use case contains template text "${phrase}"`,
+				});
+				break;
+			}
+		}
+
+		if (useCase.length < 20) {
 			issues.push({
 				severity: "warning",
 				field: `whenToUse[${i}]`,

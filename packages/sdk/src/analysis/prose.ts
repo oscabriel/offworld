@@ -97,19 +97,19 @@ ${fileList}
 Directory Structure:
 ${entityPaths}
 
-Generate a JSON object with EXACTLY this schema:
+Generate a JSON object with this schema (DO NOT copy the example values - generate REAL content):
 {
-  "summary": "A detailed 2-3 sentence summary of what this repository does and its main purpose (min 50 chars)",
+  "summary": "<YOUR 2-3 SENTENCE SUMMARY HERE - describe what this specific repo does>",
   "whenToUse": [
-    "Use case 1 - when you would consult this repository",
-    "Use case 2 - another scenario",
-    "Use case 3 - third scenario"
+    "<REAL USE CASE 1 - when would someone use this repo?>",
+    "<REAL USE CASE 2 - another scenario>",
+    "<REAL USE CASE 3 - third scenario>"
   ],
   "entityDescriptions": {
-    ${entityNames.map((n) => `"${n}": "Description of what the ${n} directory contains and its purpose"`).join(",\n    ")}
+    ${entityNames.map((n) => `"${n}": "<DESCRIBE what ${n}/ contains>"`).join(",\n    ")}
   },
   "relationships": [
-    {"from": "entity1", "to": "entity2", "type": "imports|depends on|extends|uses"}
+    {"from": "<entity>", "to": "<entity>", "type": "imports|depends on|extends|uses"}
   ]
 }
 

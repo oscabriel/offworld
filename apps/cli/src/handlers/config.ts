@@ -4,7 +4,7 @@
  */
 
 import * as p from "@clack/prompts";
-import { loadConfig, saveConfig, getConfigPath } from "@offworld/sdk";
+import { loadConfig, saveConfig, getConfigPath, updateSkillPaths } from "@offworld/sdk";
 import { ConfigSchema } from "@offworld/types/schemas";
 
 // Valid config keys
@@ -94,11 +94,20 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 		parsedValue = value;
 	}
 
-	// Save config
 	try {
 		const updates = { [key]: parsedValue };
-		saveConfig(updates);
+		const newConfig = saveConfig(updates);
 		p.log.success(`Set ${key} = ${JSON.stringify(parsedValue)}`);
+
+		if (key === "repoRoot" || key === "metaRoot") {
+			const result = updateSkillPaths(newConfig.repoRoot, newConfig.metaRoot);
+			if (result.updated.length > 0) {
+				p.log.info(`Updated ${result.updated.length} skill file(s) with new paths`);
+			}
+			if (result.failed.length > 0) {
+				p.log.warn(`Failed to update ${result.failed.length} skill file(s)`);
+			}
+		}
 
 		return {
 			success: true,

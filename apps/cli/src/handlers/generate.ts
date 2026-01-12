@@ -1,17 +1,21 @@
-/**
- * Generate command handler
- * PRD 4.4: Run full analysis pipeline locally
- */
-
 import * as p from "@clack/prompts";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import {
 	parseRepoInput,
 	cloneRepo,
 	isRepoCloned,
 	getClonedRepoPath,
+	getCommitSha,
 	checkRemote,
 	runAnalysisPipeline,
+	installSkill,
+	formatSkillMd,
+	formatSummaryMd,
+	formatArchitectureMd,
 	loadConfig,
+	getAnalysisPath,
+	getMetaRoot,
 	updateIndex,
 	getIndexEntry,
 } from "@offworld/sdk";
@@ -19,7 +23,6 @@ import {
 export interface GenerateOptions {
 	repo: string;
 	force?: boolean;
-	skipArchitecture?: boolean;
 }
 
 export interface GenerateResult {
@@ -28,24 +31,19 @@ export interface GenerateResult {
 	message?: string;
 }
 
-/**
- * Generate command handler - runs full local analysis
- */
 export async function generateHandler(options: GenerateOptions): Promise<GenerateResult> {
-	const { repo, force = false, skipArchitecture = false } = options;
+	const { repo, force = false } = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
 
 	try {
-		// Parse repo input
 		s.start("Parsing repository input...");
 		const source = parseRepoInput(repo);
 		s.stop("Repository parsed");
 
 		let repoPath: string;
 
-		// For remote repos, check if analysis exists on remote
 		if (source.type === "remote" && !force) {
 			s.start("Checking for existing remote analysis...");
 			const remoteCheck = await checkRemote(source.fullName);
@@ -66,7 +64,6 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			s.stop("No remote analysis found");
 		}
 
-		// Clone repo if not already cloned (remote only)
 		if (source.type === "remote") {
 			const qualifiedName = source.qualifiedName;
 
@@ -82,57 +79,71 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 				s.stop("Repository cloned");
 			}
 		} else {
-			// Local repo - use the path directly
 			repoPath = source.path;
 		}
 
-		// Run the analysis pipeline
 		s.start("Running analysis pipeline...");
 
-		const pipelineOptions =
-			source.type === "remote"
-				? {
-						config,
-						provider: source.provider,
-						fullName: source.fullName,
-						includeArchitecture: !skipArchitecture,
-						onProgress: (_step: string, message: string) => {
-							s.message(message);
-						},
-					}
-				: {
-						config,
-						includeArchitecture: !skipArchitecture,
-						onProgress: (_step: string, message: string) => {
-							s.message(message);
-						},
-					};
+		const pipelineOptions = {
+			onProgress: (_step: string, message: string) => {
+				s.message(message);
+			},
+		};
 
 		const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 		s.stop("Analysis complete");
 
-		// Update index
+		const { skill: mergedSkill, graph } = result;
+		const skill = mergedSkill.skill;
+		const { entities, relationships, keyFiles } = mergedSkill;
+
+		const commitSha = getCommitSha(repoPath);
+		const analyzedAt = new Date().toISOString();
+		const generated = analyzedAt.split("T")[0];
+		const repoName = source.type === "remote" ? source.fullName : source.name;
+
+		const analysisPath =
+			source.type === "remote"
+				? getAnalysisPath(source.fullName, source.provider)
+				: join(getMetaRoot(), "analyses", `local--${source.qualifiedName.replace("local:", "")}`);
+
+		mkdirSync(analysisPath, { recursive: true });
+
+		const summaryMd = formatSummaryMd(skill.description, entities, keyFiles, { repoName });
+		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
+
+		const architectureMd = formatArchitectureMd(entities, relationships, graph);
+		writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
+
+		writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
+
+		const skillMd = formatSkillMd(skill, { commitSha, generated });
+		writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
+
+		const meta = { analyzedAt, commitSha, version: "0.1.0" };
+		writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+
+		installSkill(repoName, skillMd);
+
 		const entry = getIndexEntry(source.qualifiedName);
 		if (entry) {
 			updateIndex({
 				...entry,
-				analyzedAt: result.meta.analyzedAt,
-				commitSha: result.meta.commitSha,
+				analyzedAt,
+				commitSha,
 				hasSkill: true,
 			});
 		}
 
-		// Show results
-		p.log.success(`Analysis saved to: ${result.analysisPath}`);
-		p.log.info(`Skill installed for: ${source.type === "remote" ? source.fullName : source.name}`);
-
-		if (result.meta.estimatedTokens) {
-			p.log.info(`Estimated tokens used: ${result.meta.estimatedTokens}`);
-		}
+		p.log.success(`Analysis saved to: ${analysisPath}`);
+		p.log.info(`Skill installed for: ${repoName}`);
+		p.log.info(
+			`Files parsed: ${result.stats.filesParsed}, Symbols: ${result.stats.symbolsExtracted}`,
+		);
 
 		return {
 			success: true,
-			analysisPath: result.analysisPath,
+			analysisPath,
 		};
 	} catch (error) {
 		s.stop("Failed");

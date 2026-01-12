@@ -23,8 +23,11 @@ import {
 	getIndexEntry,
 	RepoExistsError,
 	runAnalysisPipeline,
+	installSkill as sdkInstallSkill,
 	isAnalysisStale,
 	formatSkillMd,
+	formatSummaryMd,
+	formatArchitectureMd,
 	type PullResponse,
 	type AnalysisData,
 } from "@offworld/sdk";
@@ -40,7 +43,6 @@ export interface PullOptions {
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
-	skipArchitecture?: boolean;
 }
 
 export interface PullResult {
@@ -258,15 +260,7 @@ async function tryUploadAnalysis(
 }
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const {
-		repo,
-		shallow = true,
-		sparse = false,
-		branch,
-		force = false,
-		verbose = false,
-		skipArchitecture = false,
-	} = options;
+	const { repo, shallow = true, sparse = false, branch, force = false, verbose = false } = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
@@ -440,7 +434,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		// No remote analysis - generate locally using analysis pipeline
 		verboseLog(`Starting local analysis pipeline for: ${repoPath}`, verbose);
 
-		// Don't use spinner when verbose - the streaming output conflicts with spinner animation
 		if (!verbose) {
 			s.start("Generating local analysis...");
 		}
@@ -466,45 +459,46 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					}
 				: undefined;
 
-			const onTiming = verbose
-				? (timing: { total: number; steps: Record<string, number> }) => {
-						p.log.info(`\n[timing] Total: ${(timing.total / 1000).toFixed(2)}s`);
-						for (const [step, ms] of Object.entries(timing.steps)) {
-							p.log.info(`[timing]   ${step}: ${(ms / 1000).toFixed(2)}s`);
-						}
-					}
-				: undefined;
+			const pipelineOptions = { onProgress, onDebug, onStream };
+			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 
-			const pipelineOptions =
+			const { skill: mergedSkill, graph } = result;
+			const skill = mergedSkill.skill;
+			const { entities, relationships, keyFiles } = mergedSkill;
+
+			const analysisCommitSha = getCommitSha(repoPath);
+			const analyzedAt = new Date().toISOString();
+			const generated = analyzedAt.split("T")[0];
+			const repoName = source.type === "remote" ? source.fullName : source.name;
+
+			const analysisPath =
 				source.type === "remote"
-					? {
-							config,
-							provider: source.provider,
-							fullName: source.fullName,
-							includeArchitecture: !skipArchitecture,
-							onProgress,
-							onDebug,
-							onStream,
-							onTiming,
-						}
-					: {
-							config,
-							includeArchitecture: !skipArchitecture,
-							onProgress,
-							onDebug,
-							onStream,
-							onTiming,
-						};
+					? getAnalysisPath(source.fullName, source.provider)
+					: join(getMetaRoot(), "analyses", `local--${source.qualifiedName.replace("local:", "")}`);
 
-			await runAnalysisPipeline(repoPath, pipelineOptions);
+			mkdirSync(analysisPath, { recursive: true });
+
+			const summaryMd = formatSummaryMd(skill.description, entities, keyFiles, { repoName });
+			writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
+
+			const architectureMd = formatArchitectureMd(entities, relationships, graph);
+			writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
+
+			writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
+
+			const skillMd = formatSkillMd(skill, { commitSha: analysisCommitSha, generated });
+			writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
+
+			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
+			writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+
+			sdkInstallSkill(repoName, skillMd);
+
 			if (!verbose) {
 				s.stop("Analysis complete");
 			} else {
 				p.log.success("Analysis complete");
 			}
-
-			const analysisCommitSha = getCommitSha(repoPath);
-			const analyzedAt = new Date().toISOString();
 
 			const entry = getIndexEntry(source.qualifiedName);
 			if (entry) {
@@ -516,7 +510,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				});
 			}
 
-			// PRD-013: Upload to offworld.sh after local generation
 			if (source.type === "remote") {
 				await tryUploadAnalysis(source, analysisCommitSha, analyzedAt, verbose, s);
 			}

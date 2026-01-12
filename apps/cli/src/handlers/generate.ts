@@ -84,10 +84,13 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 
 		s.start("Running analysis pipeline...");
 
+		// Use fullName for remote repos (e.g. 'tanstack/query'), name for local repos
+		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
 		const pipelineOptions = {
 			onProgress: (_step: string, message: string) => {
 				s.message(message);
 			},
+			qualifiedName,
 		};
 
 		const result = await runAnalysisPipeline(repoPath, pipelineOptions);

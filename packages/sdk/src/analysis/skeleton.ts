@@ -1,4 +1,4 @@
-import { basename, dirname } from "node:path";
+import { dirname } from "node:path";
 import type { ParsedFile } from "../ast/parser.js";
 import type { ASTEnhancedFileEntry } from "./heuristics.js";
 
@@ -31,7 +31,6 @@ export interface SkeletonEntity {
  * Detected patterns about the repository
  */
 export interface DetectedPatterns {
-	framework: string | null;
 	language: string;
 	hasTests: boolean;
 	hasDocs: boolean;
@@ -92,6 +91,31 @@ const GENERIC_SYMBOLS = new Set([
 	"Component",
 	"Provider",
 	"Context",
+	// Deprioritize example/demo patterns common in library codebases
+	"Page",
+	"Loading",
+	"Example",
+	"Demo",
+	"Sample",
+	"Test",
+	"Spec",
+]);
+
+// Directories that typically contain example/demo code rather than library code
+const EXAMPLE_DIRS = new Set([
+	"examples",
+	"example",
+	"demo",
+	"demos",
+	"playground",
+	"playgrounds",
+	"samples",
+	"sample",
+	"e2e",
+	"test",
+	"tests",
+	"__tests__",
+	"fixtures",
 ]);
 
 /**
@@ -159,14 +183,27 @@ export function buildQuickPaths(
 }
 
 /**
+ * Check if a file path is within an example/demo directory
+ */
+function isExamplePath(path: string): boolean {
+	const parts = path.toLowerCase().split("/");
+	return parts.some((part) => EXAMPLE_DIRS.has(part));
+}
+
+/**
  * Build search patterns from top symbol names in parsed files.
- * Filters out short/generic names.
+ * Separates library code from example directories, prioritizing library patterns.
+ * Returns max 10 patterns: up to 7 from library code, up to 3 from examples.
  */
 export function buildSearchPatterns(parsedFiles: Map<string, ParsedFile>): SearchPattern[] {
-	const symbolCounts = new Map<string, { count: number; paths: string[] }>();
+	const librarySymbols = new Map<string, { count: number; paths: string[] }>();
+	const exampleSymbols = new Map<string, { count: number; paths: string[] }>();
 
-	// Count symbol occurrences
+	// Count symbol occurrences, separating library from example code
 	for (const [path, parsed] of parsedFiles) {
+		const isExample = isExamplePath(path);
+		const targetMap = isExample ? exampleSymbols : librarySymbols;
+
 		const symbols = [...parsed.functions, ...parsed.classes];
 		for (const symbol of symbols) {
 			const name = symbol.name;
@@ -181,22 +218,31 @@ export function buildSearchPatterns(parsedFiles: Map<string, ParsedFile>): Searc
 				continue;
 			}
 
-			const existing = symbolCounts.get(name) ?? { count: 0, paths: [] };
+			const existing = targetMap.get(name) ?? { count: 0, paths: [] };
 			existing.count++;
 			if (!existing.paths.includes(path)) {
 				existing.paths.push(path);
 			}
-			symbolCounts.set(name, existing);
+			targetMap.set(name, existing);
 		}
 	}
 
-	// Sort by count and take top 10
-	const sorted = [...symbolCounts.entries()]
-		.filter(([_, data]) => data.count >= 1) // At least 1 occurrence
+	// Sort library patterns by count and take top 7
+	const sortedLibrary = [...librarySymbols.entries()]
+		.filter(([_, data]) => data.count >= 1)
 		.sort((a, b) => b[1].count - a[1].count)
-		.slice(0, 10);
+		.slice(0, 7);
 
-	return sorted.map(([pattern, data]) => {
+	// Sort example patterns by count and take top 3
+	const sortedExamples = [...exampleSymbols.entries()]
+		.filter(([_, data]) => data.count >= 1)
+		.sort((a, b) => b[1].count - a[1].count)
+		.slice(0, 3);
+
+	// Combine patterns, library first
+	const allPatterns = [...sortedLibrary, ...sortedExamples];
+
+	return allPatterns.map(([pattern, data]) => {
 		// If symbol appears in only one file, scope to that directory
 		const firstPath = data.paths[0];
 		const scope = data.paths.length === 1 && firstPath ? dirname(firstPath) : undefined;
@@ -240,19 +286,17 @@ export function buildEntities(topFiles: ASTEnhancedFileEntry[]): SkeletonEntity[
 }
 
 /**
- * Detect patterns about the repository: framework, language, tests, docs
+ * Detect patterns about the repository: language, tests, docs
  */
 export function detectPatterns(
 	parsedFiles: Map<string, ParsedFile>,
 	topFiles: ASTEnhancedFileEntry[],
 ): DetectedPatterns {
-	const framework = detectFramework(parsedFiles);
-	const language = detectPrimaryLanguage(parsedFiles);
+	const language = detectLanguage(parsedFiles);
 	const hasTests = topFiles.some((f) => f.type === "test" || f.hasTests);
 	const hasDocs = topFiles.some((f) => f.type === "doc" || f.path.toLowerCase().includes("readme"));
 
 	return {
-		framework,
 		language,
 		hasTests,
 		hasDocs,
@@ -260,147 +304,9 @@ export function detectPatterns(
 }
 
 /**
- * Detect the primary framework used in the repository
- */
-export function detectFramework(parsedFiles: Map<string, ParsedFile>): string | null {
-	const indicators = {
-		react: 0,
-		nextjs: 0,
-		vue: 0,
-		angular: 0,
-		express: 0,
-		fastapi: 0,
-		django: 0,
-		flask: 0,
-		nestjs: 0,
-		svelte: 0,
-		solidjs: 0,
-		astro: 0,
-	};
-
-	for (const [path, parsed] of parsedFiles) {
-		const fileName = basename(path).toLowerCase();
-		const imports = parsed.imports.join(" ").toLowerCase();
-
-		// Next.js indicators
-		if (fileName === "next.config.js" || fileName === "next.config.ts") {
-			indicators.nextjs += 5;
-		}
-		if (path.includes("app/") && (fileName === "page.tsx" || fileName === "layout.tsx")) {
-			indicators.nextjs += 2;
-		}
-		if (path.includes("pages/") && fileName.endsWith(".tsx")) {
-			indicators.nextjs += 1;
-		}
-		if (imports.includes("next/")) {
-			indicators.nextjs += 2;
-		}
-
-		// React indicators (not Next.js)
-		if (imports.includes("from 'react'") || imports.includes('from "react"')) {
-			indicators.react += 1;
-		}
-		if (imports.includes("react-dom")) {
-			indicators.react += 1;
-		}
-
-		// Vue indicators
-		if (fileName.endsWith(".vue") || imports.includes("from 'vue'")) {
-			indicators.vue += 2;
-		}
-		if (fileName === "vite.config.ts" && imports.includes("@vitejs/plugin-vue")) {
-			indicators.vue += 3;
-		}
-
-		// Angular indicators
-		if (fileName === "angular.json" || imports.includes("@angular/")) {
-			indicators.angular += 3;
-		}
-
-		// Express indicators
-		if (imports.includes("from 'express'") || imports.includes('from "express"')) {
-			indicators.express += 2;
-		}
-
-		// FastAPI indicators
-		if (imports.includes("fastapi") || imports.includes("from fastapi")) {
-			indicators.fastapi += 3;
-		}
-
-		// Django indicators
-		if (imports.includes("from django") || fileName === "manage.py") {
-			indicators.django += 3;
-		}
-
-		// Flask indicators
-		if (imports.includes("from flask") || imports.includes("import flask")) {
-			indicators.flask += 3;
-		}
-
-		// NestJS indicators
-		if (imports.includes("@nestjs/")) {
-			indicators.nestjs += 3;
-		}
-
-		// Svelte indicators
-		if (fileName.endsWith(".svelte") || imports.includes("from 'svelte'")) {
-			indicators.svelte += 2;
-		}
-
-		// SolidJS indicators
-		if (imports.includes("from 'solid-js'") || imports.includes('from "solid-js"')) {
-			indicators.solidjs += 2;
-		}
-
-		// Astro indicators
-		if (fileName.endsWith(".astro") || fileName === "astro.config.mjs") {
-			indicators.astro += 3;
-		}
-	}
-
-	// Find the framework with highest score
-	const sorted = Object.entries(indicators)
-		.filter(([_, score]) => score > 0)
-		.sort((a, b) => b[1] - a[1]);
-
-	if (sorted.length === 0) {
-		return null;
-	}
-
-	// Return the top framework (or Next.js if it has React + Next.js indicators)
-	const top = sorted[0];
-	if (!top) {
-		return null;
-	}
-
-	const [topName] = top;
-	if (topName === "react" && indicators.nextjs > 0) {
-		return "Next.js";
-	}
-
-	// Capitalize framework name
-	const frameworkNames: Record<string, string> = {
-		react: "React",
-		nextjs: "Next.js",
-		vue: "Vue",
-		angular: "Angular",
-		express: "Express",
-		fastapi: "FastAPI",
-		django: "Django",
-		flask: "Flask",
-		nestjs: "NestJS",
-		svelte: "Svelte",
-		solidjs: "SolidJS",
-		astro: "Astro",
-	};
-
-	return frameworkNames[topName] ?? null;
-}
-
-/**
  * Detect the primary programming language
  */
-function detectPrimaryLanguage(parsedFiles: Map<string, ParsedFile>): string {
+export function detectLanguage(parsedFiles: Map<string, ParsedFile>): string {
 	const langCounts: Record<string, number> = {};
 
 	for (const parsed of parsedFiles.values()) {

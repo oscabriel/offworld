@@ -52,6 +52,9 @@ vi.mock("@offworld/sdk", () => ({
 	runAnalysisPipeline: vi.fn(),
 	isAnalysisStale: vi.fn(),
 	formatSkillMd: vi.fn(() => "---\nname: test\n---\n# Skill"),
+	formatSummaryMd: vi.fn(() => "# Summary"),
+	formatArchitectureMd: vi.fn(() => "# Architecture"),
+	installSkill: vi.fn(),
 	RepoExistsError: class RepoExistsError extends Error {},
 }));
 
@@ -241,8 +244,15 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
 			mockRunAnalysisPipeline.mockResolvedValue({
-				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
-				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "abc123" },
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+				},
+				graph: { nodes: [], edges: [], hubs: [] },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
 			});
 			mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 
@@ -263,8 +273,15 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "xyz9999" });
 			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
 			mockRunAnalysisPipeline.mockResolvedValue({
-				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
-				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "abc123" },
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+				},
+				graph: { nodes: [], edges: [], hubs: [] },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
 			});
 			mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 
@@ -313,11 +330,19 @@ describe("CLI handlers", () => {
 		it("handles local repos without cloning", async () => {
 			mockParseRepoInput.mockReturnValue(mockLocalSource);
 			mockPullAnalysis.mockResolvedValue(null);
-			mockRunAnalysisPipeline.mockResolvedValue({
-				analysisPath: "/home/user/.ow/analyses/local--abc123def456",
-				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "xyz789" },
-			});
+			mockGetMetaRoot.mockReturnValue("/home/user/.ow");
 			mockGetCommitSha.mockReturnValue("xyz789");
+			mockRunAnalysisPipeline.mockResolvedValue({
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+				},
+				graph: { nodes: [], edges: [], hubs: [] },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			});
 
 			const result = await pullHandler({ repo: "/home/user/projects/myrepo" });
 
@@ -352,9 +377,18 @@ describe("CLI handlers", () => {
 			mockIsRepoCloned.mockReturnValue(true);
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
+			mockGetCommitSha.mockReturnValue("def456");
 			mockRunAnalysisPipeline.mockResolvedValue({
-				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
-				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "def456" },
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+				},
+				graph: { nodes: [], edges: [], hubs: [] },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
 			});
 
 			const result = await generateHandler({ repo: "tanstack/router", force: true });
@@ -370,9 +404,18 @@ describe("CLI handlers", () => {
 			mockIsRepoCloned.mockReturnValue(true);
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
+			mockGetCommitSha.mockReturnValue("abc123");
 			mockRunAnalysisPipeline.mockResolvedValue({
-				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
-				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "abc123", estimatedTokens: 5000 },
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+				},
+				graph: { nodes: [], edges: [], hubs: [] },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
 			});
 
 			const result = await generateHandler({ repo: "tanstack/router" });
@@ -380,8 +423,7 @@ describe("CLI handlers", () => {
 			expect(mockRunAnalysisPipeline).toHaveBeenCalledWith(
 				"/home/user/ow/github/tanstack/router",
 				expect.objectContaining({
-					provider: "github",
-					fullName: "tanstack/router",
+					qualifiedName: "tanstack/router",
 				}),
 			);
 			expect(result.success).toBe(true);
@@ -394,9 +436,18 @@ describe("CLI handlers", () => {
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockGetAnalysisPath.mockReturnValue("/home/user/.ow/analyses/github--tanstack--router");
+			mockGetCommitSha.mockReturnValue("abc123");
 			mockRunAnalysisPipeline.mockResolvedValue({
-				analysisPath: "/home/user/.ow/analyses/github--tanstack--router",
-				meta: { analyzedAt: "2026-01-09T12:00:00Z", commitSha: "abc123" },
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+				},
+				graph: { nodes: [], edges: [], hubs: [] },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
 			});
 
 			const result = await generateHandler({ repo: "tanstack/router" });

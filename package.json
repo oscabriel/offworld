@@ -31,7 +31,8 @@
 		"dev:server": "turbo -F @offworld/backend dev",
 		"dev:setup": "turbo -F @offworld/backend dev:setup",
 		"check": "oxlint && oxfmt --write",
-		"link:cli": "turbo -F offworld build && bun link --cwd apps/cli"
+		"build:cli": "turbo -F offworld build && bun link --cwd apps/cli",
+		"clean:vite": "turbo -F web clean:vite"
 	},
 	"dependencies": {
 		"@offworld/env": "workspace:*",

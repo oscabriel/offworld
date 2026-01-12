@@ -31,6 +31,9 @@
 		},
 		"destroy": {
 			"cache": false
+		},
+		"clean:vite": {
+			"cache": false
 		}
 	}
 }

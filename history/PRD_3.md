@@ -131,7 +131,7 @@ Add critical missing test coverage to the offworld codebase: AI provider smoke t
 		"category": "Navigation E2E Tests",
 		"description": "Test browse page loads",
 		"steps_to_verify": [
-			"Test navigates to '/browse'",
+			"Test navigates to '/explore'",
 			"Test waits for page to load",
 			"Test asserts main content area is visible"
 		],
@@ -220,7 +220,7 @@ Add critical missing test coverage to the offworld codebase: AI provider smoke t
 		"category": "Analysis E2E Tests",
 		"description": "Test browse page shows analysis list or empty state",
 		"steps_to_verify": [
-			"Test navigates to '/browse'",
+			"Test navigates to '/explore'",
 			"Test waits for Convex query to resolve (network idle or specific element)",
 			"Test asserts either analysis list items are visible OR empty state message is visible"
 		],

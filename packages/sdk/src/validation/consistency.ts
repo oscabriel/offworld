@@ -1,5 +1,5 @@
-import type { ProseEnhancements } from "../analysis/prose.js"
-import type { SkillSkeleton } from "../analysis/skeleton.js"
+import type { ProseEnhancements } from "../analysis/prose.js";
+import type { SkillSkeleton } from "../analysis/skeleton.js";
 
 /**
  * Type of consistency issue
@@ -7,28 +7,28 @@ import type { SkillSkeleton } from "../analysis/skeleton.js"
 export type ConsistencyIssueType =
 	| "orphaned_reference"
 	| "missing_description"
-	| "invalid_relationship"
+	| "invalid_relationship";
 
 /**
  * Severity of the issue
  */
-export type ConsistencySeverity = "error" | "warning"
+export type ConsistencySeverity = "error" | "warning";
 
 /**
  * A consistency issue found during validation
  */
 export interface ConsistencyIssue {
-	type: ConsistencyIssueType
-	severity: ConsistencySeverity
-	message: string
+	type: ConsistencyIssueType;
+	severity: ConsistencySeverity;
+	message: string;
 }
 
 /**
  * Report from consistency validation
  */
 export interface ConsistencyReport {
-	passed: boolean
-	issues: ConsistencyIssue[]
+	passed: boolean;
+	issues: ConsistencyIssue[];
 }
 
 /**
@@ -42,8 +42,8 @@ export function validateConsistency(
 	skeleton: SkillSkeleton,
 	prose: ProseEnhancements,
 ): ConsistencyReport {
-	const issues: ConsistencyIssue[] = []
-	const entityNames = new Set(skeleton.entities.map((e) => e.name))
+	const issues: ConsistencyIssue[] = [];
+	const entityNames = new Set(skeleton.entities.map((e) => e.name));
 
 	// Check all skeleton entities have descriptions
 	for (const entity of skeleton.entities) {
@@ -52,7 +52,7 @@ export function validateConsistency(
 				type: "missing_description",
 				severity: "warning",
 				message: `Entity "${entity.name}" is missing a description`,
-			})
+			});
 		}
 	}
 
@@ -63,7 +63,7 @@ export function validateConsistency(
 				type: "orphaned_reference",
 				severity: "error",
 				message: `Description provided for non-existent entity "${entityName}"`,
-			})
+			});
 		}
 	}
 
@@ -74,19 +74,19 @@ export function validateConsistency(
 				type: "invalid_relationship",
 				severity: "error",
 				message: `Relationship "from" references non-existent entity "${rel.from}"`,
-			})
+			});
 		}
 		if (!entityNames.has(rel.to)) {
 			issues.push({
 				type: "invalid_relationship",
 				severity: "error",
 				message: `Relationship "to" references non-existent entity "${rel.to}"`,
-			})
+			});
 		}
 	}
 
 	// passed is false if any error-severity issues exist
-	const passed = !issues.some((issue) => issue.severity === "error")
+	const passed = !issues.some((issue) => issue.severity === "error");
 
-	return { passed, issues }
+	return { passed, issues };
 }

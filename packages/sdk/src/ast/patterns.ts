@@ -6,13 +6,7 @@
  * - $PATH: import path
  */
 
-export type PatternLanguage =
-	| "typescript"
-	| "javascript"
-	| "python"
-	| "rust"
-	| "go"
-	| "java"
+export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java";
 
 /**
  * Patterns for matching function declarations
@@ -90,7 +84,7 @@ export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
 		"private static $TYPE $NAME($$$) { $$$ }",
 		"$TYPE $NAME($$$) { $$$ }",
 	],
-}
+};
 
 /**
  * Patterns for matching class declarations
@@ -116,10 +110,7 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"export class $NAME { $$$ }",
 		"export class $NAME extends $PARENT { $$$ }",
 	],
-	python: [
-		"class µNAME: µµµ",
-		"class µNAME(µPARENT): µµµ",
-	],
+	python: ["class µNAME: µµµ", "class µNAME(µPARENT): µµµ"],
 	rust: [
 		// Struct (Rust's class equivalent)
 		"struct $NAME { $$$ }",
@@ -153,7 +144,7 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"interface $NAME { $$$ }",
 		"public interface $NAME { $$$ }",
 	],
-}
+};
 
 /**
  * Patterns for matching import statements
@@ -218,18 +209,9 @@ export const IMPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 		"pub use $PATH;",
 		"pub use $PATH::{ $$$ };",
 	],
-	go: [
-		'import "$PATH"',
-		'import $NAME "$PATH"',
-		"import ( $$$ )",
-	],
-	java: [
-		"import $PATH;",
-		"import $PATH.*;",
-		"import static $PATH;",
-		"import static $PATH.*;",
-	],
-}
+	go: ['import "$PATH"', 'import $NAME "$PATH"', "import ( $$$ )"],
+	java: ["import $PATH;", "import $PATH.*;", "import static $PATH;", "import static $PATH.*;"],
+};
 
 /**
  * Patterns for matching export statements (for languages with explicit exports)
@@ -285,28 +267,28 @@ export const EXPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	java: [
 		// Java exports via public modifier - handled by class/function patterns
 	],
-}
+};
 
 /**
  * Get the pattern language string for a given Lang value or language string
  */
 export function getPatternLanguage(lang: string): PatternLanguage | null {
-	const langLower = lang.toLowerCase()
+	const langLower = lang.toLowerCase();
 	switch (langLower) {
 		case "typescript":
 		case "tsx":
-			return "typescript"
+			return "typescript";
 		case "javascript":
-			return "javascript"
+			return "javascript";
 		case "python":
-			return "python"
+			return "python";
 		case "rust":
-			return "rust"
+			return "rust";
 		case "go":
-			return "go"
+			return "go";
 		case "java":
-			return "java"
+			return "java";
 		default:
-			return null
+			return null;
 	}
 }

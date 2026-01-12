@@ -1,10 +1,10 @@
-import { Lang, registerDynamicLanguage } from "@ast-grep/napi"
+import { Lang, registerDynamicLanguage } from "@ast-grep/napi";
 
 // Re-export Lang enum for external use
-export { Lang }
+export { Lang };
 
 // Language type that includes both built-in and dynamic languages
-export type SupportedLang = Lang | "python" | "rust" | "go" | "java"
+export type SupportedLang = Lang | "python" | "rust" | "go" | "java";
 
 // Extension to language mapping
 export const LANG_MAP: Record<string, Lang | string> = {
@@ -23,10 +23,10 @@ export const LANG_MAP: Record<string, Lang | string> = {
 	".rs": "rust",
 	".go": "go",
 	".java": "java",
-}
+};
 
 // Track initialization state
-let initialized = false
+let initialized = false;
 
 /**
  * Initialize dynamic language support for AST parsing.
@@ -35,7 +35,7 @@ let initialized = false
  */
 export async function initLanguages(): Promise<void> {
 	if (initialized) {
-		return
+		return;
 	}
 
 	// Dynamic imports for language packages
@@ -44,7 +44,7 @@ export async function initLanguages(): Promise<void> {
 		import("@ast-grep/lang-rust"),
 		import("@ast-grep/lang-go"),
 		import("@ast-grep/lang-java"),
-	])
+	]);
 
 	registerDynamicLanguage({
 		python: {
@@ -71,9 +71,9 @@ export async function initLanguages(): Promise<void> {
 			languageSymbol: javaLang.default.languageSymbol,
 			expandoChar: javaLang.default.expandoChar,
 		},
-	})
+	});
 
-	initialized = true
+	initialized = true;
 }
 
 /**
@@ -82,39 +82,39 @@ export async function initLanguages(): Promise<void> {
  * @returns The Lang enum value, dynamic language string, or null if unsupported
  */
 export function detectLanguage(filePath: string): Lang | string | null {
-	const ext = getExtension(filePath)
+	const ext = getExtension(filePath);
 	if (!ext) {
-		return null
+		return null;
 	}
-	return LANG_MAP[ext] ?? null
+	return LANG_MAP[ext] ?? null;
 }
 
 /**
  * Extract the file extension from a path (including the dot).
  */
 function getExtension(filePath: string): string | null {
-	const lastDot = filePath.lastIndexOf(".")
+	const lastDot = filePath.lastIndexOf(".");
 	if (lastDot === -1 || lastDot === filePath.length - 1) {
-		return null
+		return null;
 	}
 	// Handle paths like .gitignore (hidden files with no extension)
-	const afterDot = filePath.slice(lastDot)
+	const afterDot = filePath.slice(lastDot);
 	if (afterDot.includes("/") || afterDot.includes("\\")) {
-		return null
+		return null;
 	}
-	return afterDot.toLowerCase()
+	return afterDot.toLowerCase();
 }
 
 /**
  * Check if a language is a built-in Lang enum value
  */
 export function isBuiltinLang(lang: Lang | string): lang is Lang {
-	return Object.values(Lang).includes(lang as Lang)
+	return Object.values(Lang).includes(lang as Lang);
 }
 
 /**
  * Check if a file extension is supported for AST parsing
  */
 export function isSupportedExtension(filePath: string): boolean {
-	return detectLanguage(filePath) !== null
+	return detectLanguage(filePath) !== null;
 }

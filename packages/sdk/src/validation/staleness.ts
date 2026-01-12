@@ -1,6 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AnalysisMeta } from "../analysis/pipeline.js";
+
+interface MetaJson {
+	commitSha?: string;
+	analyzedAt?: string;
+}
 
 export interface StalenessCheckResult {
 	isStale: boolean;
@@ -22,7 +26,7 @@ export function isAnalysisStale(analysisPath: string, currentSha: string): Stale
 
 	try {
 		const metaContent = readFileSync(metaPath, "utf-8");
-		const meta = JSON.parse(metaContent) as Partial<AnalysisMeta>;
+		const meta = JSON.parse(metaContent) as MetaJson;
 
 		if (!meta.commitSha) {
 			return {
@@ -68,7 +72,7 @@ export function getCachedCommitSha(analysisPath: string): string | null {
 
 	try {
 		const metaContent = readFileSync(metaPath, "utf-8");
-		const meta = JSON.parse(metaContent) as Partial<AnalysisMeta>;
+		const meta = JSON.parse(metaContent) as MetaJson;
 		return meta.commitSha ?? null;
 	} catch {
 		return null;

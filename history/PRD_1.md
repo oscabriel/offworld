@@ -667,9 +667,9 @@
 		{
 			"id": "7.8",
 			"category": "Phase 7: Web App",
-			"description": "Add repo directory/browse page",
+			"description": "Add repo directory/explore page",
 			"steps_to_verify": [
-				"Route / or /browse shows list of analyzed repos",
+				"Route / or /explore shows list of analyzed repos",
 				"Repos sorted by pull count (popularity)",
 				"Each repo shows name, stars, analysis date",
 				"Search/filter functionality works",

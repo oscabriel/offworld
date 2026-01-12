@@ -179,7 +179,7 @@
 "Uses Carousel components from @/components/ui/carousel",
 "Accepts analyses array prop (not repositories)",
 "Renders RepoCard for each analysis",
-"Has 'View All' link to /browse",
+"Has 'View All' link to /explore",
 "Returns null if analyses array is empty",
 "Has responsive basis classes for different screen sizes"
 ],
@@ -263,7 +263,7 @@
 },
 {
 "id": "PRD-3.2",
-"title": "Update routes/browse.tsx with V1's explore page design",
+"title": "Update routes/explore.tsx with V1's explore page design",
 "acceptanceCriteria": [
 "Has large serif heading 'Explore Repositories' or similar",
 "Contains RepoUrlInput for searching",

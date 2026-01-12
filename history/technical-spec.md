@@ -1032,7 +1032,7 @@ export async function checkRemote(fullName: string): Promise<{
 
 | Approach    | `ConvexHttpClient`          | HTTP Actions                    |
 | ----------- | --------------------------- | ------------------------------- |
-| CLI deps    | `convex/browser` package    | just `fetch`                    |
+| CLI deps    | `convex/explorer` package   | just `fetch`                    |
 | Type safety | `as any` casts (no codegen) | none (same)                     |
 | Auth        | `client.setAuth()`          | standard `Authorization` header |
 | Pattern     | Convex-specific             | standard REST                   |

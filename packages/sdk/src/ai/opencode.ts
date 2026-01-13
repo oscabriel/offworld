@@ -10,6 +10,7 @@ import {
 	SessionError,
 	TimeoutError,
 } from "./errors.js";
+import { TextAccumulator, parseStreamEvent, isEventForSession } from "./stream/index.js";
 
 // Re-export error types for backwards compatibility
 export {
@@ -317,53 +318,58 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			},
 		});
 
-		const textParts = new Map<string, string>();
-		let firstTextReceived = false;
+		const textAccumulator = new TextAccumulator();
 		debug("Waiting for response...");
 
 		let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
 		const processEvents = async (): Promise<string> => {
 			for await (const event of eventStream) {
-				const props = event.properties;
-
-				if ("sessionID" in props && props.sessionID !== sessionId) {
+				// Skip events not for this session
+				if (!isEventForSession(event, sessionId)) {
 					continue;
 				}
 
-				if (event.type === "message.part.updated") {
-					const part = props.part as { id?: string; type: string; text?: string } | undefined;
-					const partId = part?.id ?? "";
-					if (part?.type === "text" && part.text && partId) {
-						const prevText = textParts.get(partId) ?? "";
-						textParts.set(partId, part.text);
-						if (!firstTextReceived) {
-							debug("Receiving response...");
-							firstTextReceived = true;
+				// Parse event using typed schemas
+				const parsed = parseStreamEvent(event);
+
+				switch (parsed.type) {
+					case "message.part.updated": {
+						if (parsed.textPart) {
+							const delta = textAccumulator.accumulatePart(parsed.textPart);
+							if (!textAccumulator.hasReceivedText) {
+								debug("Receiving response...");
+							}
+							if (delta) {
+								stream(delta);
+							}
 						}
-						if (part.text.length > prevText.length) {
-							stream(part.text.slice(prevText.length));
-						}
+						break;
 					}
-				}
 
-				if (event.type === "session.idle" && props.sessionID === sessionId) {
-					debug("Response complete");
-					break;
-				}
+					case "session.idle": {
+						if (parsed.props.sessionID === sessionId) {
+							debug("Response complete");
+							return textAccumulator.getFullText();
+						}
+						break;
+					}
 
-				if (event.type === "session.error" && props.sessionID === sessionId) {
-					const errorProps = props.error as { name?: string } | undefined;
-					debug(`Session error: ${JSON.stringify(props.error)}`);
-					throw new SessionError(
-						errorProps?.name ?? "Unknown session error",
-						sessionId,
-						"error",
-						props.error,
-					);
+					case "session.error": {
+						if (parsed.props.sessionID === sessionId) {
+							const errorName = parsed.error?.name ?? "Unknown session error";
+							debug(`Session error: ${JSON.stringify(parsed.props.error)}`);
+							throw new SessionError(errorName, sessionId, "error", parsed.props.error);
+						}
+						break;
+					}
+
+					case "unknown":
+						// Silently ignore unknown event types
+						break;
 				}
 			}
-			return Array.from(textParts.values()).join("");
+			return textAccumulator.getFullText();
 		};
 
 		let responseText: string;

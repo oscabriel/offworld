@@ -93,6 +93,29 @@ const providerID = optProvider ?? DEFAULT_AI_PROVIDER;
 const modelID = optModel ?? DEFAULT_AI_MODEL;
 ```
 
+### Typed Stream Events (US-004)
+
+**Stream Module** (`src/ai/stream/`):
+- `types.ts` - Zod schemas for all stream event types
+- `accumulator.ts` - TextAccumulator class for managing text deltas
+- `transformer.ts` - parseStreamEvent() for typed event parsing
+
+**Key Components**:
+```typescript
+// Accumulator handles text part tracking
+const textAccumulator = new TextAccumulator();
+const delta = textAccumulator.accumulatePart(textPart);  // Returns only new text
+
+// Transformer provides typed parsing with discriminated union
+const parsed = parseStreamEvent(event);
+switch (parsed.type) {
+  case "message.part.updated": { /* parsed.textPart is TextPart | null */ }
+  case "session.idle": { /* parsed.props.sessionID is string */ }
+  case "session.error": { /* parsed.error is SessionErrorPayload | null */ }
+  case "unknown": { /* passthrough for unrecognized events */ }
+}
+```
+
 ### Gotchas
 
 1. **Base class _tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
@@ -100,3 +123,5 @@ const modelID = optModel ?? DEFAULT_AI_MODEL;
 3. **Pre-existing test failures**: CLI handler tests (`apps/cli`) have unrelated mock issues - don't block on these
 4. **Zod nested default**: When using `.default({})` on nested object schemas, must provide full default: `AIConfigSchema.default({ provider: "...", model: "..." })`
 5. **Test fixture updates**: When adding new required fields to schemas, update all test fixtures that use `Config` type
+6. **z.record() requires two args**: Use `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`
+7. **Avoid type name conflicts**: Name stream payload types distinctly (e.g., `SessionErrorPayload` vs `SessionError` class)

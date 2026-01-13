@@ -34,7 +34,7 @@ export function RepoHeader({
 	const hasAnalysis = analysisData !== null && analysisData !== undefined;
 
 	return (
-		<header className="border-b border-primary/10">
+		<header className="border-primary/10 border-b">
 			<div className="container mx-auto max-w-7xl px-4 py-6 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-2">
 					<h1 className="group font-serif text-3xl tracking-tight sm:text-5xl">
@@ -42,13 +42,13 @@ export function RepoHeader({
 							href={`https://github.com/${owner}/${repo}`}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center gap-2 transition-colors hover:text-muted-foreground"
+							className="hover:text-muted-foreground inline-flex items-center gap-2 transition-colors"
 						>
 							{owner}/{repo}
-							<ExternalLink className="h-6 w-6 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:h-8 sm:w-8" />
+							<ExternalLink className="text-muted-foreground h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100 sm:h-8 sm:w-8" />
 						</a>
 					</h1>
-					<div className="flex flex-wrap items-center gap-4 font-mono text-muted-foreground text-sm">
+					<div className="text-muted-foreground flex flex-wrap items-center gap-4 font-mono text-sm">
 						{hasAnalysis && (
 							<>
 								<span className="rounded bg-green-500/10 px-2 py-0.5 text-green-500">Analyzed</span>
@@ -66,15 +66,15 @@ export function RepoHeader({
 								Not Analyzed
 							</span>
 						)}
-						{loading && <span className="h-4 w-16 animate-pulse rounded bg-muted" />}
+						{loading && <span className="bg-muted h-4 w-16 animate-pulse rounded" />}
 						{!loading && githubMetadata?.stars !== undefined && (
 							<span>⭐ {formatStars(githubMetadata.stars)} stars</span>
 						)}
 						{!loading && githubMetadata?.language && <span>{githubMetadata.language}</span>}
 					</div>
-					{loading && <div className="h-5 w-64 animate-pulse rounded bg-muted" />}
+					{loading && <div className="bg-muted h-5 w-64 animate-pulse rounded" />}
 					{!loading && githubMetadata?.description && (
-						<p className="font-mono text-base text-muted-foreground">
+						<p className="text-muted-foreground font-mono text-base">
 							{githubMetadata.description}
 						</p>
 					)}

@@ -17,14 +17,14 @@ export function UserTable() {
 	if (!users) return null;
 
 	return (
-		<Card className="border border-primary/10 p-0 shadow-none">
+		<Card className="border-primary/10 border p-0 shadow-none">
 			<div className="overflow-x-auto">
 				<table className="w-full">
 					<thead>
 						<tr className="border-primary/10 border-b">
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">User</th>
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">Email</th>
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">User</th>
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">Email</th>
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
 								Joined
 							</th>
 						</tr>
@@ -44,8 +44,8 @@ export function UserTable() {
 										<span className="font-serif">{user.name ?? "—"}</span>
 									</div>
 								</td>
-								<td className="px-4 py-3 font-mono text-muted-foreground text-sm">{user.email}</td>
-								<td className="px-4 py-3 font-mono text-muted-foreground text-sm">
+								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">{user.email}</td>
+								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">
 									{formatDate(user.createdAt)}
 								</td>
 							</tr>

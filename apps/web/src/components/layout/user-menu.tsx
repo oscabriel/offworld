@@ -19,9 +19,9 @@ export default function UserMenu() {
 		return (
 			<Link
 				to="/sign-in"
-				className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-xs ring-offset-background transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+				className="border-input bg-background ring-offset-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap shadow-xs transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
 			>
-				<span className="font-semibold font-serif text-base">Sign In</span>
+				<span className="font-serif text-base font-semibold">Sign In</span>
 			</Link>
 		);
 	}
@@ -31,9 +31,9 @@ export default function UserMenu() {
 	return (
 		<a
 			href="/profile"
-			className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs ring-offset-background transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			className="border-input bg-background ring-offset-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium whitespace-nowrap shadow-xs transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
 		>
-			<span className="font-semibold font-serif text-base">{firstName}</span>
+			<span className="font-serif text-base font-semibold">{firstName}</span>
 		</a>
 	);
 }

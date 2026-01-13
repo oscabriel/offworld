@@ -21,15 +21,15 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 	if (analyses.length === 0) return null;
 
 	return (
-		<div className="relative border-primary/10 border-y bg-background/30 py-16 backdrop-blur-sm">
+		<div className="border-primary/10 bg-background/30 relative border-y py-16 backdrop-blur-sm">
 			<div className="container mx-auto px-4 md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="mb-8 flex items-baseline justify-between">
-					<h2 className="font-mono text-muted-foreground text-sm uppercase tracking-[0.3em]">
+					<h2 className="text-muted-foreground font-mono text-sm tracking-[0.3em] uppercase">
 						Recently Indexed
 					</h2>
 					<Link
 						to="/explore"
-						className="font-mono text-primary text-xs uppercase tracking-wider hover:underline"
+						className="text-primary font-mono text-xs tracking-wider uppercase hover:underline"
 					>
 						View All →
 					</Link>
@@ -53,8 +53,8 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 								</CarouselItem>
 							))}
 						</CarouselContent>
-						<CarouselPrevious className="-left-12 bg-background/80 backdrop-blur-sm md:bg-background/90 lg:bg-background" />
-						<CarouselNext className="-right-12 bg-background/80 backdrop-blur-sm md:bg-background/90 lg:bg-background" />
+						<CarouselPrevious className="bg-background/80 md:bg-background/90 lg:bg-background -left-12 backdrop-blur-sm" />
+						<CarouselNext className="bg-background/80 md:bg-background/90 lg:bg-background -right-12 backdrop-blur-sm" />
 					</Carousel>
 				</div>
 			</div>

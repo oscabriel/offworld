@@ -116,6 +116,30 @@ switch (parsed.type) {
 }
 ```
 
+### Debug Logging in Silent Catch Blocks (US-005)
+
+**Pattern**: Pass `onDebug` callback through functions that may fail silently
+
+```typescript
+// Function accepts optional debug callback
+function discoverFiles(repoPath: string, subPath = "", onDebug?: (message: string) => void): string[] {
+  try {
+    // ...file operations
+  } catch (err) {
+    onDebug?.(`Failed to read directory ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+// Caller passes through from options
+const filePaths = discoverFiles(repoPath, "", onDebug);
+```
+
+**Functions with debug logging**:
+- `discoverFiles()` - logs stat and read failures
+- `findSkillFiles()` - logs stat and directory read failures
+- `updateSkillPaths()` - accepts `UpdateSkillPathsOptions` with `onDebug`
+- File parsing loop in `runAnalysisPipeline()` - logs read/parse failures
+
 ### Gotchas
 
 1. **Base class _tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
@@ -125,3 +149,4 @@ switch (parsed.type) {
 5. **Test fixture updates**: When adding new required fields to schemas, update all test fixtures that use `Config` type
 6. **z.record() requires two args**: Use `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`
 7. **Avoid type name conflicts**: Name stream payload types distinctly (e.g., `SessionErrorPayload` vs `SessionError` class)
+8. **Silent catch debugging**: When adding debug logging to silent catches, ensure the callback is passed through all recursive calls

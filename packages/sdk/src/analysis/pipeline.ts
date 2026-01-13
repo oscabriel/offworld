@@ -182,7 +182,16 @@ export interface UpdateSkillPathsResult {
 	failed: string[];
 }
 
-export function updateSkillPaths(newRepoRoot: string, newMetaRoot: string): UpdateSkillPathsResult {
+export interface UpdateSkillPathsOptions {
+	onDebug?: (message: string) => void;
+}
+
+export function updateSkillPaths(
+	newRepoRoot: string,
+	newMetaRoot: string,
+	options: UpdateSkillPathsOptions = {},
+): UpdateSkillPathsResult {
+	const { onDebug } = options;
 	const config = loadConfig();
 	const result: UpdateSkillPathsResult = { updated: [], failed: [] };
 
@@ -195,7 +204,7 @@ export function updateSkillPaths(newRepoRoot: string, newMetaRoot: string): Upda
 	for (const baseDir of skillDirs) {
 		if (!existsSync(baseDir)) continue;
 
-		const skillFiles = findSkillFiles(baseDir);
+		const skillFiles = findSkillFiles(baseDir, 0, onDebug);
 		for (const filePath of skillFiles) {
 			try {
 				const content = readFileSync(filePath, "utf-8");
@@ -204,7 +213,8 @@ export function updateSkillPaths(newRepoRoot: string, newMetaRoot: string): Upda
 					writeFileSync(filePath, updated, "utf-8");
 					result.updated.push(filePath);
 				}
-			} catch {
+			} catch (err) {
+				onDebug?.(`Failed to update skill file ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
 				result.failed.push(filePath);
 			}
 		}
@@ -213,7 +223,11 @@ export function updateSkillPaths(newRepoRoot: string, newMetaRoot: string): Upda
 	return result;
 }
 
-function findSkillFiles(dir: string, depth = 0): string[] {
+function findSkillFiles(
+	dir: string,
+	depth = 0,
+	onDebug?: (message: string) => void,
+): string[] {
 	if (depth > 3) return [];
 	const files: string[] = [];
 
@@ -226,11 +240,15 @@ function findSkillFiles(dir: string, depth = 0): string[] {
 				if (stat.isFile() && entry === "SKILL.md") {
 					files.push(fullPath);
 				} else if (stat.isDirectory() && !entry.startsWith(".")) {
-					files.push(...findSkillFiles(fullPath, depth + 1));
+					files.push(...findSkillFiles(fullPath, depth + 1, onDebug));
 				}
-			} catch {}
+			} catch (err) {
+				onDebug?.(`Failed to stat ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
+			}
 		}
-	} catch {}
+	} catch (err) {
+		onDebug?.(`Failed to read directory ${dir}: ${err instanceof Error ? err.message : String(err)}`);
+	}
 
 	return files;
 }
@@ -399,7 +417,11 @@ export function formatArchitectureMd(
 // File Discovery
 // ============================================================================
 
-function discoverFiles(repoPath: string, subPath = ""): string[] {
+function discoverFiles(
+	repoPath: string,
+	subPath = "",
+	onDebug?: (message: string) => void,
+): string[] {
 	const fullPath = subPath ? join(repoPath, subPath) : repoPath;
 	const files: string[] = [];
 
@@ -431,16 +453,16 @@ function discoverFiles(repoPath: string, subPath = ""): string[] {
 				const stat = statSync(fullEntryPath);
 
 				if (stat.isDirectory()) {
-					files.push(...discoverFiles(repoPath, entryPath));
+					files.push(...discoverFiles(repoPath, entryPath, onDebug));
 				} else if (stat.isFile() && isSupportedExtension(entry)) {
 					files.push(entryPath);
 				}
-			} catch {
-				// Skip files we can't stat
+			} catch (err) {
+				onDebug?.(`Failed to stat ${fullEntryPath}: ${err instanceof Error ? err.message : String(err)}`);
 			}
 		}
-	} catch {
-		// Skip directories we can't read
+	} catch (err) {
+		onDebug?.(`Failed to read directory ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
 	}
 
 	return files;
@@ -476,7 +498,7 @@ export async function runAnalysisPipeline(
 
 	// Step 2: Discover all source files
 	onProgress("discover", "Discovering source files...");
-	const filePaths = discoverFiles(repoPath);
+	const filePaths = discoverFiles(repoPath, "", onDebug);
 	onDebug?.(`Discovered ${filePaths.length} source files`);
 
 	// Step 3: Parse all files
@@ -496,8 +518,8 @@ export async function runAnalysisPipeline(
 				parsedFiles.set(filePath, parsed);
 				symbolsExtracted += parsed.functions.length + parsed.classes.length;
 			}
-		} catch {
-			// Skip files we can't read or parse
+		} catch (err) {
+			onDebug?.(`Failed to read or parse ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
 		}
 	}
 	onDebug?.(`Parsed ${parsedFiles.size} files, extracted ${symbolsExtracted} symbols`);

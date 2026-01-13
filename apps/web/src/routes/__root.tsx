@@ -166,9 +166,9 @@ function RootDocument() {
 					<head>
 						<HeadContent />
 					</head>
-					<body className="relative min-h-screen flex flex-col">
+					<body className="relative flex min-h-screen flex-col">
 						<BackgroundImage />
-						<div className="relative z-10 flex-1 flex flex-col">
+						<div className="relative z-10 flex flex-1 flex-col">
 							<Header />
 							<main className="flex flex-1 flex-col">
 								<Outlet />

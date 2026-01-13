@@ -1,6 +1,5 @@
 /**
  * Config command handlers
- * PRD 4.9: Manage CLI configuration
  */
 
 import * as p from "@clack/prompts";

@@ -1,6 +1,5 @@
 /**
  * Unit tests for util.ts helper functions
- * PRD T3.3
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

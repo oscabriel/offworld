@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 /**
  * Offworld Backend Schema
- * PRD 7.1: Convex schema for analyses storage
+ * Convex schema for analyses storage
  */
 
 // Entity schema for architecture entities
@@ -88,7 +88,7 @@ export default defineSchema({
 		completed: v.boolean(),
 	}),
 
-	// PRD 7.1: Analyses table
+	// Analyses table
 	analyses: defineTable({
 		// Repository identification
 		fullName: v.string(), // owner/repo format
@@ -117,7 +117,7 @@ export default defineSchema({
 		.index("by_provider", ["provider"])
 		.index("by_analyzedAt", ["analyzedAt"]),
 
-	// PRD 7.1: Push logs for rate limiting
+	// Push logs for rate limiting
 	pushLogs: defineTable({
 		fullName: v.string(),
 		userId: v.id("users"),

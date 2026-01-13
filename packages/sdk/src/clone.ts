@@ -1,6 +1,5 @@
 /**
  * Git clone and repository management utilities
- * PRD 3.3: Git operations for cloning, updating, and removing repos
  */
 
 import { existsSync, rmSync } from "node:fs";

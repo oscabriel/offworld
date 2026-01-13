@@ -1,6 +1,5 @@
 /**
  * Claude Code SDK wrapper for analysis operations
- * PRD 3.11: Claude Code SDK wrapper
  */
 
 import { query } from "@anthropic-ai/claude-agent-sdk";

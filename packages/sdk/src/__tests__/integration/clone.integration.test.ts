@@ -1,6 +1,5 @@
 /**
  * Integration tests for clone.ts
- * PRD T6.3: Tests with real network operations
  *
  * These tests perform actual git clone operations to verify:
  * - Real repository cloning works

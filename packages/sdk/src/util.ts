@@ -1,6 +1,5 @@
 /**
  * Utility functions for SDK operations
- * PRD 3.5: Helper functions for binary detection, hashing, and gitignore parsing
  */
 
 import { createHash } from "node:crypto";

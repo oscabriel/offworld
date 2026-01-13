@@ -1,6 +1,5 @@
 /**
  * Repository source parsing utilities
- * PRD 3.2: Input parsing for various repo input formats
  */
 
 import { createHash } from "node:crypto";

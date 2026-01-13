@@ -158,7 +158,7 @@ function determineFileRole(filePath: string): FileRole {
 }
 
 /**
- * PRD-002 scoring rules:
+ * Scoring rules:
  * - Entry points (index.*, main.*, lib.rs): 0.9
  * - Config files (package.json, *.config.*): 0.8
  * - Source directories (src/**, lib/**): 0.6-0.7

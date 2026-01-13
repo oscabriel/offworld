@@ -9,7 +9,7 @@ const modules = import.meta.glob("../**/*.ts");
 const t = () => convexTest(schema, modules);
 
 /**
- * PRD T7.1: Unit tests for Convex functions
+ * Unit tests for Convex functions
  */
 
 // Sample analysis data for testing

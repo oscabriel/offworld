@@ -1,6 +1,5 @@
 /**
  * Context Gathering for AI Analysis
- * PRD 5.1: Gather repository context for AI prompts
  */
 
 import { existsSync, readFileSync } from "node:fs";

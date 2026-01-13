@@ -1,6 +1,5 @@
 /**
  * Index manager for global repo index
- * PRD 3.6: Global repo index management
  *
  * Manages ~/.ow/index.json which tracks all cloned repositories
  * and their analysis status.

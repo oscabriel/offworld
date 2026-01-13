@@ -1,6 +1,5 @@
 /**
  * Authentication utilities for offworld CLI
- * PRD 4.8: Token storage and session management
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";

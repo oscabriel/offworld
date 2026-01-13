@@ -1,6 +1,5 @@
 /**
  * Unit tests for auth.ts pure/near-pure functions
- * PRD T1.2: Tests for getAuthPath, getTokenOrNull, isLoggedIn, getAuthStatus
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

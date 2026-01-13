@@ -1,6 +1,5 @@
 /**
  * Sync utilities for CLI-Convex communication
- * PRD 3.14: Implements pull/push/check for remote analysis storage
  */
 
 import type { Architecture, FileIndex, RepoSource, Skill } from "@offworld/types";

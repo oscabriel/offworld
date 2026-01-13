@@ -3,8 +3,8 @@ import { internalMutation, internalQuery, query } from "./_generated/server";
 
 /**
  * Analyses Convex Functions
- * PRD 7.5: Internal functions for analysis management
- * PRD 7.6-7.8: Public queries for web app
+ * Internal functions for analysis management
+ * Public queries for web app
  */
 
 // ============================================================================
@@ -13,7 +13,7 @@ import { internalMutation, internalQuery, query } from "./_generated/server";
 
 /**
  * Get analysis by repository fullName (public)
- * PRD 7.6: Display analysis on web
+ * Display analysis on web
  */
 export const get = query({
 	args: { fullName: v.string() },
@@ -27,7 +27,7 @@ export const get = query({
 
 /**
  * List all analyses sorted by pull count (public)
- * PRD 7.8: Repo directory/explore page
+ * Repo directory/explore page
  */
 export const list = query({
 	args: {

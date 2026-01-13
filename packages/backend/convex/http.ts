@@ -9,7 +9,7 @@ const http = httpRouter();
 authComponent.registerRoutes(http, createAuth);
 
 // ============================================================================
-// PRD 7.2: /api/analyses/pull endpoint
+// /api/analyses/pull endpoint
 // ============================================================================
 
 http.route({
@@ -73,7 +73,7 @@ http.route({
 });
 
 // ============================================================================
-// PRD 7.3: /api/analyses/push endpoint
+// /api/analyses/push endpoint
 // ============================================================================
 
 http.route({
@@ -184,7 +184,7 @@ http.route({
 });
 
 // ============================================================================
-// PRD 7.4: /api/analyses/check endpoint
+// /api/analyses/check endpoint
 // ============================================================================
 
 http.route({

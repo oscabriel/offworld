@@ -63,10 +63,24 @@ export async function generateProseEnhancements(
 		onStream: options.onStream,
 	});
 
-	const json = extractJSON(result.text);
-	const parsed = ProseEnhancementsSchema.parse(json);
+	options.onDebug?.(`Raw AI response (${result.text.length} chars):`);
+	options.onDebug?.(result.text.slice(0, 500));
 
-	return parsed;
+	let json: unknown;
+	try {
+		json = extractJSON(result.text);
+	} catch (error) {
+		options.onDebug?.(`JSON extraction failed: ${error}`);
+		throw error;
+	}
+
+	try {
+		const parsed = ProseEnhancementsSchema.parse(json);
+		return parsed;
+	} catch (error) {
+		options.onDebug?.(`Schema validation failed. Extracted JSON: ${JSON.stringify(json, null, 2)}`);
+		throw error;
+	}
 }
 
 function buildProsePrompt(skeleton: SkillSkeleton, entityNames: string[]): string {
@@ -81,9 +95,11 @@ function buildProsePrompt(skeleton: SkillSkeleton, entityNames: string[]): strin
 		.map((e) => `- ${e.name}: ${e.files.length} files in ${e.path || "root"}`)
 		.join("\n");
 
-	return `Analyze this ${detectedPatterns.language} repository and generate documentation.
+	return `You are analyzing a codebase. Output ONLY valid JSON matching this exact schema.
+Do not use markdown. Do not use code blocks. Do not explain.
+Just output the raw JSON object.
 
-Repository: ${name}
+Repository: ${name} (${detectedPatterns.language})
 
 Key Files:
 ${fileList}
@@ -91,22 +107,20 @@ ${fileList}
 Directories:
 ${entityPaths}
 
-Output a JSON object with these fields:
+Required schema:
+{
+  "overview": "string (100+ chars, 3-5 bullet points)",
+  "problemsSolved": "string (50+ chars, 3-5 bullet points)",
+  "features": "string (50+ chars, 3-5 bullet points)",
+  "patterns": "string (50+ chars, 3-5 bullet points)",
+  "targetUseCases": "string (50+ chars, 3-5 bullet points)",
+  "summary": "string (50+ chars, one sentence description)",
+  "whenToUse": ["string (trigger phrase)", ...at least 3],
+  "entityDescriptions": { ${entityList.split(", ").map((e) => `${e}: "description"`).join(", ")} },
+  "relationships": [{"from": "string", "to": "string", "type": "string"}, ...]
+}
 
-PROSE SECTIONS (use bullet point format - each point on new line starting with "- "):
-- "overview": 3-5 bullet points covering: what is this project, why it exists, what makes it unique
-- "problemsSolved": 3-5 bullet points on specific pain points this addresses
-- "features": 3-5 bullet points on key capabilities and what you can do with it
-- "patterns": 3-5 bullet points on common usage patterns and best practices
-- "targetUseCases": 3-5 bullet points describing specific use cases this is designed for
-
-METADATA:
-- "summary": One sentence (50+ chars) for the skill description
-- "whenToUse": Array of 3 trigger phrases like "User asks about X", "Questions about Y"
-- "entityDescriptions": Object mapping directory names to descriptions: ${entityList}
-- "relationships": Array of {"from":"dir1","to":"dir2","type":"relationship"}
-
-Output ONLY valid JSON.`;
+Output raw JSON only.`;
 }
 
 export function extractJSON(text: string): unknown {

@@ -16,6 +16,7 @@ export {
 export {
 	runAnalysisPipeline,
 	installSkill,
+	installSkillWithReferences,
 	updateSkillPaths,
 	formatSkillMd,
 	formatSummaryMd,
@@ -27,10 +28,22 @@ export {
 	type FormatSummaryOptions,
 	type SummaryProse,
 	type UpdateSkillPathsResult,
+	type InstallSkillOptions,
 } from "./pipeline.js";
 
 export { type MergedSkillResult, type MergedEntity, type MergedKeyFile } from "./merge.js";
 
 export { type EntityRelationship } from "./prose.js";
+
+export {
+	buildArchitectureGraph,
+	generateMermaidDiagram,
+	buildSymbolTable,
+	type ArchitectureGraph,
+	type ArchitectureEdge,
+	type ArchitectureNode,
+	type SymbolEntry,
+	type RelationshipType,
+} from "./architecture.js";
 
 export { parseArchitectureMarkdown, parseSkillMarkdown, ParseError } from "./parsers.js";

@@ -1,6 +1,5 @@
 /**
  * Unit tests for clone.ts git operations
- * PRD T2.1: Upgraded to use sophisticated git mock infrastructure
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

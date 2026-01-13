@@ -1,6 +1,5 @@
 /**
  * Unit tests for repo-source.ts input parsing
- * PRD T3.2
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

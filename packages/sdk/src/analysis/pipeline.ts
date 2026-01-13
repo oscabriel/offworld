@@ -214,7 +214,9 @@ export function updateSkillPaths(
 					result.updated.push(filePath);
 				}
 			} catch (err) {
-				onDebug?.(`Failed to update skill file ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+				onDebug?.(
+					`Failed to update skill file ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 				result.failed.push(filePath);
 			}
 		}
@@ -223,11 +225,7 @@ export function updateSkillPaths(
 	return result;
 }
 
-function findSkillFiles(
-	dir: string,
-	depth = 0,
-	onDebug?: (message: string) => void,
-): string[] {
+function findSkillFiles(dir: string, depth = 0, onDebug?: (message: string) => void): string[] {
 	if (depth > 3) return [];
 	const files: string[] = [];
 
@@ -243,11 +241,15 @@ function findSkillFiles(
 					files.push(...findSkillFiles(fullPath, depth + 1, onDebug));
 				}
 			} catch (err) {
-				onDebug?.(`Failed to stat ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
+				onDebug?.(
+					`Failed to stat ${fullPath}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 			}
 		}
 	} catch (err) {
-		onDebug?.(`Failed to read directory ${dir}: ${err instanceof Error ? err.message : String(err)}`);
+		onDebug?.(
+			`Failed to read directory ${dir}: ${err instanceof Error ? err.message : String(err)}`,
+		);
 	}
 
 	return files;
@@ -458,11 +460,15 @@ function discoverFiles(
 					files.push(entryPath);
 				}
 			} catch (err) {
-				onDebug?.(`Failed to stat ${fullEntryPath}: ${err instanceof Error ? err.message : String(err)}`);
+				onDebug?.(
+					`Failed to stat ${fullEntryPath}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 			}
 		}
 	} catch (err) {
-		onDebug?.(`Failed to read directory ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
+		onDebug?.(
+			`Failed to read directory ${fullPath}: ${err instanceof Error ? err.message : String(err)}`,
+		);
 	}
 
 	return files;
@@ -519,7 +525,9 @@ export async function runAnalysisPipeline(
 				symbolsExtracted += parsed.functions.length + parsed.classes.length;
 			}
 		} catch (err) {
-			onDebug?.(`Failed to read or parse ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+			onDebug?.(
+				`Failed to read or parse ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 	}
 	onDebug?.(`Parsed ${parsedFiles.size} files, extracted ${symbolsExtracted} symbols`);

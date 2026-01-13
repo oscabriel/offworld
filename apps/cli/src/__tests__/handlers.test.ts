@@ -1,6 +1,5 @@
 /**
  * Unit tests for CLI command handlers
- * PRD T4.1
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

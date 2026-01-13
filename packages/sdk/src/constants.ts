@@ -1,6 +1,5 @@
 /**
  * SDK Constants
- * PRD 3.4: Ignore patterns and configuration constants
  */
 
 /** SDK version - must match package.json */
@@ -137,7 +136,7 @@ export const SUPPORTED_EXTENSIONS = Object.values(SUPPORTED_LANGUAGES).flat();
 /** Language identifier type */
 export type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES;
 
-/** Context gathering constants (PRD-016) */
+/** Context gathering constants */
 export const CONTEXT_LIMITS = {
 	/** Maximum token budget for context (roughly 4 chars per token) */
 	MAX_CONTEXT_TOKENS: 3000,
@@ -153,7 +152,7 @@ export const CONTEXT_LIMITS = {
 	FILE_TREE_TOKEN_BUDGET: 350,
 } as const;
 
-/** Heuristics constants (PRD-016) */
+/** Heuristics constants */
 export const HEURISTICS_LIMITS = {
 	/** Maximum files to discover */
 	MAX_FILES: 500,

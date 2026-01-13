@@ -1,6 +1,5 @@
 /**
  * Auth command handlers
- * PRD 4.8: 'ow auth' subcommands
  */
 
 import * as p from "@clack/prompts";

@@ -122,7 +122,10 @@ Required schema:
   "targetUseCases": "string (50+ chars, 3-5 bullet points)",
   "summary": "string (50+ chars, one sentence description)",
   "whenToUse": ["string (trigger phrase)", ...at least 3],
-  "entityDescriptions": { ${entityList.split(", ").map((e) => `${e}: "description"`).join(", ")} },
+  "entityDescriptions": { ${entityList
+		.split(", ")
+		.map((e) => `${e}: "description"`)
+		.join(", ")} },
   "relationships": [{"from": "string", "to": "string", "type": "string"}, ...]
 }
 

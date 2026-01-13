@@ -1,6 +1,5 @@
 /**
  * Push command handler
- * PRD 4.5: Upload local analysis to offworld.sh
  */
 
 import * as p from "@clack/prompts";

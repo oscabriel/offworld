@@ -19,10 +19,6 @@ import {
 
 export const version = "0.1.0";
 
-/**
- * CLI router using @orpc/server
- * Commands: pull (default), push, generate, list, rm, auth, config
- */
 export const router = os.router({
 	pull: os
 		.input(
@@ -40,6 +36,8 @@ export const router = os.router({
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-analysis"),
 				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),
+				provider: z.string().optional().describe("AI provider (e.g., anthropic, openai)"),
+				model: z.string().optional().describe("AI model override"),
 			}),
 		)
 		.meta({
@@ -55,10 +53,11 @@ export const router = os.router({
 				branch: input.branch,
 				force: input.force,
 				verbose: input.verbose,
+				provider: input.provider,
+				model: input.model,
 			});
 		}),
 
-	// List command - show cloned repos
 	list: os
 		.input(
 			z.object({
@@ -84,6 +83,8 @@ export const router = os.router({
 			z.object({
 				repo: z.string().describe("Repository (owner/repo, URL, or local path)"),
 				force: z.boolean().default(false).describe("Force even if remote exists"),
+				provider: z.string().optional().describe("AI provider (e.g., anthropic, openai)"),
+				model: z.string().optional().describe("AI model override"),
 			}),
 		)
 		.meta({
@@ -94,10 +95,11 @@ export const router = os.router({
 			return generateHandler({
 				repo: input.repo,
 				force: input.force,
+				provider: input.provider,
+				model: input.model,
 			});
 		}),
 
-	// Push command - upload analysis to offworld.sh
 	push: os
 		.input(
 			z.object({
@@ -113,7 +115,6 @@ export const router = os.router({
 			});
 		}),
 
-	// Remove command - delete repo and analysis
 	rm: os
 		.input(
 			z.object({
@@ -136,7 +137,6 @@ export const router = os.router({
 			});
 		}),
 
-	// Auth subcommands
 	auth: os.router({
 		login: os
 			.input(z.object({}))
@@ -160,7 +160,6 @@ export const router = os.router({
 			}),
 	}),
 
-	// Config subcommands
 	config: os.router({
 		show: os
 			.input(
@@ -212,12 +211,7 @@ export const router = os.router({
 	}),
 });
 
-/**
- * Create the CLI instance from the router
- */
 export function createOwCli() {
-	// Using type assertion because @orpc/server router type differs from trpc-cli's expected type
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return createCli({
 		router: router as any,
 	} as any);

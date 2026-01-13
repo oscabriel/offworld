@@ -1,6 +1,5 @@
 /**
  * Unit tests for sync.ts API communication
- * PRD T3.8
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

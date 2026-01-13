@@ -1,6 +1,5 @@
 /**
  * Offworld OpenCode Plugin
- * PRD 6.1-6.3: Plugin structure, offworld tool, context injection
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
@@ -84,7 +83,7 @@ interface RepoInfo {
 }
 
 // ============================================================================
-// Tool Implementation (PRD 6.2)
+// Tool Implementation
 // ============================================================================
 
 /**
@@ -310,7 +309,7 @@ const offworldTool = tool({
 });
 
 // ============================================================================
-// Context Injection (PRD 6.3)
+// Context Injection
 // ============================================================================
 
 /**
@@ -340,7 +339,7 @@ Use the 'offworld' tool with mode='summary' or mode='architecture' to retrieve d
 }
 
 // ============================================================================
-// Plugin Export (PRD 6.1)
+// Plugin Export
 // ============================================================================
 
 export const OffworldPlugin = (async () => {

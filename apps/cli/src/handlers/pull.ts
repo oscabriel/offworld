@@ -1,8 +1,3 @@
-/**
- * Pull command handler
- * PRD 4.3: Clone repo, fetch/generate analysis, install skill
- */
-
 import * as p from "@clack/prompts";
 import {
 	cloneRepo,
@@ -323,7 +318,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 		const currentSha = getCommitSha(repoPath);
 
-		// PRD-012: Check remote API FIRST for remote repos (with SHA comparison)
+		// Check remote API first for remote repos (with SHA comparison)
 		if (source.type === "remote" && !force) {
 			verboseLog(`Checking offworld.sh for analysis: ${source.fullName}`, verbose);
 			s.start("Checking offworld.sh for analysis...");

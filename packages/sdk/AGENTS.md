@@ -17,25 +17,24 @@ if (!provider) throw new InvalidProviderError(providerID, allProviderIds);
 
 // 2. Check provider is connected
 if (!connectedProviders.includes(providerID))
-  throw new ProviderNotConnectedError(providerID, connectedProviders);
+	throw new ProviderNotConnectedError(providerID, connectedProviders);
 
 // 3. Check model exists for provider
-if (!provider.models[modelID])
-  throw new InvalidModelError(modelID, providerID, availableModelIds);
+if (!provider.models[modelID]) throw new InvalidModelError(modelID, providerID, availableModelIds);
 ```
 
 ### Error Types with Hints
 
 Located in `src/ai/errors.ts`:
 
-| Error | Tag | Usage |
-|-------|-----|-------|
-| `InvalidProviderError` | `"InvalidProviderError"` | Provider ID not found in provider list |
-| `ProviderNotConnectedError` | `"ProviderNotConnectedError"` | Provider exists but not authenticated |
-| `InvalidModelError` | `"InvalidModelError"` | Model not available for the provider |
-| `ServerStartError` | `"ServerStartError"` | OpenCode server failed to start |
-| `SessionError` | `"SessionError"` | Session create/prompt failed |
-| `TimeoutError` | `"TimeoutError"` | Operation exceeded timeout |
+| Error                       | Tag                           | Usage                                  |
+| --------------------------- | ----------------------------- | -------------------------------------- |
+| `InvalidProviderError`      | `"InvalidProviderError"`      | Provider ID not found in provider list |
+| `ProviderNotConnectedError` | `"ProviderNotConnectedError"` | Provider exists but not authenticated  |
+| `InvalidModelError`         | `"InvalidModelError"`         | Model not available for the provider   |
+| `ServerStartError`          | `"ServerStartError"`          | OpenCode server failed to start        |
+| `SessionError`              | `"SessionError"`              | Session create/prompt failed           |
+| `TimeoutError`              | `"TimeoutError"`              | Operation exceeded timeout             |
 
 ### OpenCode SDK Client Interface
 
@@ -43,23 +42,23 @@ The `@opencode-ai/sdk` client has these key endpoints:
 
 ```typescript
 interface OpenCodeClient {
-  session: {
-    create(): Promise<{ data: { id: string }; error?: unknown }>;
-    prompt(options): Promise<{ data: unknown; error?: unknown }>;
-  };
-  event: {
-    subscribe(): Promise<{ stream: AsyncIterable<OpenCodeEvent> }>;
-  };
-  provider: {
-    list(): Promise<{
-      data: {
-        all: Provider[];      // All available providers
-        connected: string[];  // IDs of authenticated providers
-        default: Record<string, string>;
-      };
-      error?: unknown
-    }>;
-  };
+	session: {
+		create(): Promise<{ data: { id: string }; error?: unknown }>;
+		prompt(options): Promise<{ data: unknown; error?: unknown }>;
+	};
+	event: {
+		subscribe(): Promise<{ stream: AsyncIterable<OpenCodeEvent> }>;
+	};
+	provider: {
+		list(): Promise<{
+			data: {
+				all: Provider[]; // All available providers
+				connected: string[]; // IDs of authenticated providers
+				default: Record<string, string>;
+			};
+			error?: unknown;
+		}>;
+	};
 }
 ```
 
@@ -72,6 +71,7 @@ interface OpenCodeClient {
 ### Configurable AI Model (US-002)
 
 **Config Schema** (in `@offworld/types/schemas.ts`):
+
 ```typescript
 export const AIConfigSchema = z.object({
   provider: z.string().default("anthropic"),
@@ -83,6 +83,7 @@ ai: AIConfigSchema.default({ provider: "anthropic", model: "claude-sonnet-4-2025
 ```
 
 **Cascade Order**: CLI flag → Config file → Defaults
+
 ```typescript
 // In pipeline.ts:
 const aiProvider = options.provider ?? config.ai?.provider;
@@ -96,23 +97,33 @@ const modelID = optModel ?? DEFAULT_AI_MODEL;
 ### Typed Stream Events (US-004)
 
 **Stream Module** (`src/ai/stream/`):
+
 - `types.ts` - Zod schemas for all stream event types
 - `accumulator.ts` - TextAccumulator class for managing text deltas
 - `transformer.ts` - parseStreamEvent() for typed event parsing
 
 **Key Components**:
+
 ```typescript
 // Accumulator handles text part tracking
 const textAccumulator = new TextAccumulator();
-const delta = textAccumulator.accumulatePart(textPart);  // Returns only new text
+const delta = textAccumulator.accumulatePart(textPart); // Returns only new text
 
 // Transformer provides typed parsing with discriminated union
 const parsed = parseStreamEvent(event);
 switch (parsed.type) {
-  case "message.part.updated": { /* parsed.textPart is TextPart | null */ }
-  case "session.idle": { /* parsed.props.sessionID is string */ }
-  case "session.error": { /* parsed.error is SessionErrorPayload | null */ }
-  case "unknown": { /* passthrough for unrecognized events */ }
+	case "message.part.updated": {
+		/* parsed.textPart is TextPart | null */
+	}
+	case "session.idle": {
+		/* parsed.props.sessionID is string */
+	}
+	case "session.error": {
+		/* parsed.error is SessionErrorPayload | null */
+	}
+	case "unknown": {
+		/* passthrough for unrecognized events */
+	}
 }
 ```
 
@@ -122,12 +133,18 @@ switch (parsed.type) {
 
 ```typescript
 // Function accepts optional debug callback
-function discoverFiles(repoPath: string, subPath = "", onDebug?: (message: string) => void): string[] {
-  try {
-    // ...file operations
-  } catch (err) {
-    onDebug?.(`Failed to read directory ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
-  }
+function discoverFiles(
+	repoPath: string,
+	subPath = "",
+	onDebug?: (message: string) => void,
+): string[] {
+	try {
+		// ...file operations
+	} catch (err) {
+		onDebug?.(
+			`Failed to read directory ${fullPath}: ${err instanceof Error ? err.message : String(err)}`,
+		);
+	}
 }
 
 // Caller passes through from options
@@ -135,6 +152,7 @@ const filePaths = discoverFiles(repoPath, "", onDebug);
 ```
 
 **Functions with debug logging**:
+
 - `discoverFiles()` - logs stat and read failures
 - `findSkillFiles()` - logs stat and directory read failures
 - `updateSkillPaths()` - accepts `UpdateSkillPathsOptions` with `onDebug`
@@ -142,7 +160,7 @@ const filePaths = discoverFiles(repoPath, "", onDebug);
 
 ### Gotchas
 
-1. **Base class _tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
+1. **Base class \_tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
 2. **Import extensions**: Use `.js` extension for imports even for TypeScript files (`import from "./errors.js"`)
 3. **Pre-existing test failures**: CLI handler tests (`apps/cli`) have unrelated mock issues - don't block on these
 4. **Zod nested default**: When using `.default({})` on nested object schemas, must provide full default: `AIConfigSchema.default({ provider: "...", model: "..." })`

@@ -1,6 +1,5 @@
 /**
  * List command handler
- * PRD 4.6: List all cloned repositories with analysis status
  */
 
 import * as p from "@clack/prompts";

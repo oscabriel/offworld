@@ -1,6 +1,5 @@
 /**
  * Unit tests for index-manager.ts
- * PRD T2.2: Upgraded to use virtual file system mock
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

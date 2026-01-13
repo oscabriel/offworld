@@ -1,6 +1,5 @@
 /**
  * Remove command handler
- * PRD 4.7: Remove a cloned repository and its analysis
  */
 
 import * as p from "@clack/prompts";

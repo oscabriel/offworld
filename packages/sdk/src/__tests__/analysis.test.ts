@@ -1,6 +1,5 @@
 /**
  * Unit tests for context gathering
- * PRD T5.1
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

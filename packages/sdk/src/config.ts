@@ -1,6 +1,5 @@
 /**
  * Config utilities for path management and configuration loading
- * PRD 3.1: Path utilities and config loading
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

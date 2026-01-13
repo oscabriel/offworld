@@ -1,86 +1,86 @@
 {
-  "branchName": "opencode/pipeline-hardening",
-  "userStories": [
-    {
-      "id": "US-001",
-      "title": "Add provider/model validation before prompt",
-      "priority": 1,
-      "description": "Validate provider and model exist and are connected BEFORE sending prompt. Currently fails mid-stream if invalid.",
-      "stepsToVerify": [
-        "Call client.provider.list() before client.session.prompt()",
-        "Throw InvalidProviderError if provider not found",
-        "Throw ProviderNotConnectedError if provider disconnected",
-        "Throw InvalidModelError if model not in provider's model list",
-        "Error messages include available providers/models as hint",
-        "typecheck passes"
-      ],
-      "passes": false,
-      "notes": "Reference: BTCA agent/service.ts:142-165"
-    },
-    {
-      "id": "US-002",
-      "title": "Make AI model configurable",
-      "priority": 1,
-      "description": "Remove hardcoded claude-sonnet-4-20250514. Accept model from config or CLI parameter.",
-      "stepsToVerify": [
-        "Add ai.provider and ai.model to ow.config.json schema",
-        "opencode.ts reads model from config",
-        "Falls back to default if not provided",
-        "CLI can override config via --model flag",
-        "typecheck passes"
-      ],
-      "passes": false,
-      "notes": "Hardcoded at opencode.ts:239"
-    },
-    {
-      "id": "US-003",
-      "title": "Add structured error types with hints",
-      "priority": 2,
-      "description": "Create tagged error classes with actionable hints. Current: 2 generic error classes.",
-      "stepsToVerify": [
-        "Create packages/sdk/src/ai/errors.ts",
-        "InvalidProviderError with hint listing available providers",
-        "InvalidModelError with hint listing available models",
-        "ProviderNotConnectedError with connection instructions",
-        "ServerStartError with port/config hints",
-        "SessionError with session state context",
-        "All errors have readonly _tag property",
-        "TimeoutError includes hint property",
-        "typecheck passes"
-      ],
-      "passes": false,
-      "notes": "Reference: BTCA agent/service.ts:16-78"
-    },
-    {
-      "id": "US-004",
-      "title": "Add Zod schemas for stream events",
-      "priority": 3,
-      "description": "Replace inline `as` casts with typed stream events. Current: ad-hoc typing at opencode.ts:258.",
-      "stepsToVerify": [
-        "Create packages/sdk/src/ai/stream/types.ts with Zod schemas",
-        "Create packages/sdk/src/ai/stream/accumulator.ts",
-        "Create packages/sdk/src/ai/stream/transformer.ts",
-        "All stream event types validated at runtime",
-        "No inline `as` casts for stream parsing",
-        "typecheck passes"
-      ],
-      "passes": false,
-      "notes": "Reference: BTCA stream/types.ts"
-    },
-    {
-      "id": "US-005",
-      "title": "Add debug logging to silent catch blocks",
-      "priority": 4,
-      "description": "Pipeline catch blocks silently swallow errors. Add onDebug logging.",
-      "stepsToVerify": [
-        "pipeline.ts line 495 catch logs to onDebug",
-        "pipeline.ts line 434 catch logs to onDebug",
-        "pipeline.ts line 227 catch logs to onDebug",
-        "All catch blocks with empty/minimal handling get debug logging",
-        "typecheck passes"
-      ],
-      "passes": false,
-      "notes": ""
-    }
-  ]
+	"branchName": "opencode/pipeline-hardening",
+	"userStories": [
+		{
+			"id": "US-001",
+			"title": "Add provider/model validation before prompt",
+			"priority": 1,
+			"description": "Validate provider and model exist and are connected BEFORE sending prompt. Currently fails mid-stream if invalid.",
+			"stepsToVerify": [
+				"Call client.provider.list() before client.session.prompt()",
+				"Throw InvalidProviderError if provider not found",
+				"Throw ProviderNotConnectedError if provider disconnected",
+				"Throw InvalidModelError if model not in provider's model list",
+				"Error messages include available providers/models as hint",
+				"typecheck passes"
+			],
+			"passes": true,
+			"notes": "Reference: BTCA agent/service.ts:142-165"
+		},
+		{
+			"id": "US-002",
+			"title": "Make AI model configurable",
+			"priority": 1,
+			"description": "Remove hardcoded claude-sonnet-4-20250514. Accept model from config or CLI parameter.",
+			"stepsToVerify": [
+				"Add ai.provider and ai.model to ow.config.json schema",
+				"opencode.ts reads model from config",
+				"Falls back to default if not provided",
+				"CLI can override config via --model flag",
+				"typecheck passes"
+			],
+			"passes": true,
+			"notes": "Hardcoded at opencode.ts:239"
+		},
+		{
+			"id": "US-003",
+			"title": "Add structured error types with hints",
+			"priority": 2,
+			"description": "Create tagged error classes with actionable hints. Current: 2 generic error classes.",
+			"stepsToVerify": [
+				"Create packages/sdk/src/ai/errors.ts",
+				"InvalidProviderError with hint listing available providers",
+				"InvalidModelError with hint listing available models",
+				"ProviderNotConnectedError with connection instructions",
+				"ServerStartError with port/config hints",
+				"SessionError with session state context",
+				"All errors have readonly _tag property",
+				"TimeoutError includes hint property",
+				"typecheck passes"
+			],
+			"passes": true,
+			"notes": "Reference: BTCA agent/service.ts:16-78. Completed as part of US-001."
+		},
+		{
+			"id": "US-004",
+			"title": "Add Zod schemas for stream events",
+			"priority": 3,
+			"description": "Replace inline `as` casts with typed stream events. Current: ad-hoc typing at opencode.ts:258.",
+			"stepsToVerify": [
+				"Create packages/sdk/src/ai/stream/types.ts with Zod schemas",
+				"Create packages/sdk/src/ai/stream/accumulator.ts",
+				"Create packages/sdk/src/ai/stream/transformer.ts",
+				"All stream event types validated at runtime",
+				"No inline `as` casts for stream parsing",
+				"typecheck passes"
+			],
+			"passes": true,
+			"notes": "Reference: BTCA stream/types.ts"
+		},
+		{
+			"id": "US-005",
+			"title": "Add debug logging to silent catch blocks",
+			"priority": 4,
+			"description": "Pipeline catch blocks silently swallow errors. Add onDebug logging.",
+			"stepsToVerify": [
+				"pipeline.ts line 495 catch logs to onDebug",
+				"pipeline.ts line 434 catch logs to onDebug",
+				"pipeline.ts line 227 catch logs to onDebug",
+				"All catch blocks with empty/minimal handling get debug logging",
+				"typecheck passes"
+			],
+			"passes": true,
+			"notes": "Added onDebug parameter to discoverFiles, findSkillFiles, and updateSkillPaths. All silent catches now log with context."
+		}
+	]
 }

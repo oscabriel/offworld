@@ -1,0 +1,95 @@
+# Ralph Agent Progress Log
+
+## 2026-01-13 - US-001
+
+- What was implemented:
+  - Provider and model validation before sending prompts to OpenCode
+  - New error types with actionable hints: InvalidProviderError, ProviderNotConnectedError, InvalidModelError, ServerStartError, SessionError, TimeoutError
+  - Re-exported errors from new errors.ts for backwards compatibility
+
+- Files changed:
+  - `packages/sdk/src/ai/errors.ts` (NEW) - Tagged error types with hints
+  - `packages/sdk/src/ai/opencode.ts` - Added validation logic before prompt
+  - `packages/sdk/src/ai/index.ts` - Export new error types
+  - `packages/sdk/AGENTS.md` (NEW) - Agent learnings documentation
+
+- **Learnings:**
+  - OpenCode SDK client has `provider.list()` endpoint returning `{ all, connected, default }`
+  - `connected` array contains IDs of authenticated providers
+  - Each provider has a `models` Record keyed by model ID
+  - Base class `_tag` property must be typed as `string` (not `as const`) to allow subclass overrides
+  - CLI handler tests have pre-existing failures unrelated to SDK changes
+
+---
+
+## 2026-01-13 - US-002
+
+- What was implemented:
+  - AIConfigSchema with provider/model in @offworld/types
+  - StreamPromptOptions accepts provider/model parameters
+  - AnalysisPipelineOptions accepts provider/model, reads from config
+  - CLI handlers (generate, pull) support --provider and --model flags
+  - Cascade order: CLI flag -> Config file -> Defaults
+
+- Files changed:
+  - `packages/types/src/schemas.ts` - Added AIConfigSchema, updated ConfigSchema
+  - `packages/types/src/types.ts` - Added AIConfig type export
+  - `packages/sdk/src/ai/opencode.ts` - Added DEFAULT_AI_PROVIDER/MODEL, accept params
+  - `packages/sdk/src/ai/index.ts` - Export constants
+  - `packages/sdk/src/analysis/prose.ts` - Accept provider/model in options
+  - `packages/sdk/src/analysis/pipeline.ts` - Read from config, pass to prose
+  - `apps/cli/src/handlers/generate.ts` - Accept provider/model options
+  - `apps/cli/src/handlers/pull.ts` - Accept provider/model options
+  - `packages/sdk/src/__tests__/config.test.ts` - Update fixtures with ai field
+  - `apps/cli/src/__tests__/handlers.test.ts` - Update fixtures with ai field
+  - `packages/sdk/AGENTS.md` - Document config patterns
+
+- **Learnings:**
+  - Zod nested objects with `.default({})` require full default value, not empty object
+  - When adding required fields to schemas, all test fixtures using that type need updating
+  - Config loading in pipeline can use optional chaining: `config.ai?.provider`
+
+---
+
+## 2026-01-13 - US-004
+
+- What was implemented:
+  - Stream event Zod schemas for runtime validation
+  - TextAccumulator class for managing text part accumulation and delta extraction
+  - parseStreamEvent() function with discriminated union return type
+  - Refactored opencode.ts processEvents to use typed utilities instead of inline `as` casts
+
+- Files changed:
+  - `packages/sdk/src/ai/stream/types.ts` (NEW) - Zod schemas for all stream event types
+  - `packages/sdk/src/ai/stream/accumulator.ts` (NEW) - TextAccumulator class
+  - `packages/sdk/src/ai/stream/transformer.ts` (NEW) - parseStreamEvent() function
+  - `packages/sdk/src/ai/stream/index.ts` (NEW) - Module exports
+  - `packages/sdk/src/ai/opencode.ts` - Refactored to use typed stream utilities
+  - `packages/sdk/AGENTS.md` - Document stream patterns
+
+- **Learnings:**
+  - z.record() in Zod v3 requires two arguments: `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`
+  - Avoid type name conflicts: use distinct names like `SessionErrorPayload` vs `SessionError` error class
+  - safeParse() is preferred for stream events - returns success/failure without throwing
+  - Discriminated union return type enables exhaustive switch statements with type narrowing
+
+---
+
+## 2026-01-13 - US-005
+
+- What was implemented:
+  - Added onDebug callback parameter to discoverFiles(), findSkillFiles(), and updateSkillPaths()
+  - All silent catch blocks now log errors with context: file path and error message
+  - Created UpdateSkillPathsOptions interface to accept onDebug callback
+
+- Files changed:
+  - `packages/sdk/src/analysis/pipeline.ts` - Added onDebug to file discovery functions and catch blocks
+  - `packages/sdk/AGENTS.md` - Document debug logging patterns
+
+- **Learnings:**
+  - When adding debug logging to recursive functions, the callback must be passed through all recursive calls
+  - Error messages should include context: `Failed to stat ${path}: ${err.message}`
+  - Use optional chaining for debug calls: `onDebug?.(...)`
+  - When function signature changes (new options parameter), update all callers
+
+---

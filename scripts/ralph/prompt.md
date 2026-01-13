@@ -35,41 +35,36 @@ APPEND to progress.txt:
 
 ```
 apps/cli/src/handlers/pull.ts → pullHandler()
-    │
     ├─ parseRepoInput()           # Parse "owner/repo" or local path
     ├─ cloneRepo() / updateRepo() # Git operations
     ├─ checkRemote()              # Check offworld.sh for existing analysis
-    │
     └─ runAnalysisPipeline()      # packages/sdk/src/analysis/pipeline.ts
-         │
-         ├─ initLanguages()       # tree-sitter parsers
-         ├─ discoverFiles()       # Find source files, skip node_modules etc.
-         ├─ parseFile()           # AST parsing per file
-         ├─ rankFilesWithAST()    # Heuristic file importance
-         ├─ buildSkeleton()       # Deterministic structure (no AI)
-         │     └─ quickPaths, searchPatterns, entities, detectedPatterns
-         │
-         ├─ generateProseWithRetry() # AI prose generation
-         │     ├─ streamPrompt()     # packages/sdk/src/ai/opencode.ts
-         │     ├─ extractJSON()      # Parse AI response
-         │     └─ validateProseQuality()
-         │
-         ├─ validateConsistency()
-         ├─ mergeProseIntoSkeleton()
-         ├─ buildDependencyGraph()
-         ├─ buildArchitectureGraph()
-         └─ buildIncrementalState()
+        ├─ initLanguages()       # tree-sitter parsers
+        ├─ discoverFiles()       # Find source files, skip node_modules etc.
+        ├─ parseFile()           # AST parsing per file
+        ├─ rankFilesWithAST()    # Heuristic file importance
+        ├─ buildSkeleton()       # Deterministic structure (no AI)
+        │     └─ quickPaths, searchPatterns, entities, detectedPatterns
+        ├─ generateProseWithRetry() # AI prose generation
+        │     ├─ streamPrompt()     # packages/sdk/src/ai/opencode.ts
+        │     ├─ extractJSON()      # Parse AI response
+        │     └─ validateProseQuality()
+        ├─ validateConsistency()
+        ├─ mergeProseIntoSkeleton()
+        ├─ buildDependencyGraph()
+        ├─ buildArchitectureGraph()
+        └─ buildIncrementalState()
 ```
 
 ### Key Files to Edit (per plan.md)
 
-| File | Purpose | Changes Needed |
-|------|---------|----------------|
-| `packages/sdk/src/ai/opencode.ts` | OpenCode embedded server wrapper | Add validation, configurable model, typed errors |
-| `packages/sdk/src/ai/errors.ts` | **NEW** | Tagged error types with hints |
-| `packages/sdk/src/ai/stream/types.ts` | **NEW** | Zod schemas for stream events |
-| `packages/sdk/src/config.ts` | Config loading/saving | Add ai.provider, ai.model fields |
-| `packages/sdk/src/analysis/pipeline.ts` | Main orchestrator | Improve error logging |
+| File                                    | Purpose                          | Changes Needed                                   |
+| --------------------------------------- | -------------------------------- | ------------------------------------------------ |
+| `packages/sdk/src/ai/opencode.ts`       | OpenCode embedded server wrapper | Add validation, configurable model, typed errors |
+| `packages/sdk/src/ai/errors.ts`         | **NEW**                          | Tagged error types with hints                    |
+| `packages/sdk/src/ai/stream/types.ts`   | **NEW**                          | Zod schemas for stream events                    |
+| `packages/sdk/src/config.ts`            | Config loading/saving            | Add ai.provider, ai.model fields                 |
+| `packages/sdk/src/analysis/pipeline.ts` | Main orchestrator                | Improve error logging                            |
 
 ### OpenCode Integration Pattern
 
@@ -79,9 +74,9 @@ const { createOpencode, createOpencodeClient } = await getOpenCodeSDK();
 
 // Port retry loop (lines 194-211):
 for (let attempt = 0; attempt < maxAttempts; attempt++) {
-  port = Math.floor(Math.random() * 3000) + 3000;
-  server = (await createOpencode({ port, cwd, config })).server;
-  client = createOpencodeClient({ baseUrl: `http://localhost:${port}`, directory: cwd });
+	port = Math.floor(Math.random() * 3000) + 3000;
+	server = (await createOpencode({ port, cwd, config })).server;
+	client = createOpencodeClient({ baseUrl: `http://localhost:${port}`, directory: cwd });
 }
 
 // Session lifecycle:
@@ -99,11 +94,11 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
 // packages/sdk/src/config.ts (loading logic)
 
 export const ConfigSchema = z.object({
-  repoRoot: z.string().default("~/ow"),
-  metaRoot: z.string().default("~/.ow"),
-  skillDir: z.string().default("~/.opencode/skills"),
-  defaultShallow: z.boolean().default(true),
-  // TODO: Add ai.provider, ai.model
+	repoRoot: z.string().default("~/ow"),
+	metaRoot: z.string().default("~/.ow"),
+	skillDir: z.string().default("~/.opencode/skills"),
+	defaultShallow: z.boolean().default(true),
+	// TODO: Add ai.provider, ai.model
 });
 ```
 
@@ -152,20 +147,20 @@ const part = props.part as { id?: string; type: string; text?: string } | undefi
 // apps/cli/src/handlers/*.ts
 
 export interface PullOptions {
-  repo: string;
-  verbose?: boolean;
-  force?: boolean;
+	repo: string;
+	verbose?: boolean;
+	force?: boolean;
 }
 
 export interface PullResult {
-  success: boolean;
-  repoPath: string;
-  analysisSource: "remote" | "local" | "cached";
+	success: boolean;
+	repoPath: string;
+	analysisSource: "remote" | "local" | "cached";
 }
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-  const s = p.spinner();  // @clack/prompts spinner
-  // ...spinner.start(), spinner.stop(), spinner.message()
+	const s = p.spinner(); // @clack/prompts spinner
+	// ...spinner.start(), spinner.stop(), spinner.message()
 }
 ```
 

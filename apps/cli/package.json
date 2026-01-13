@@ -51,13 +51,13 @@
 		"@clack/prompts": "^0.11.0",
 		"@offworld/sdk": "workspace:*",
 		"@offworld/types": "workspace:*",
-		"@orpc/server": "^1.13.2",
+		"@orpc/server": "^1.13.4",
 		"open": "^11.0.0",
 		"trpc-cli": "^0.12.2",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"@types/node": "^25.0.3",
+		"@types/node": "^25.0.8",
 		"tsdown": "catalog:",
 		"typescript": "catalog:",
 		"vitest": "catalog:"

@@ -1,5 +1,28 @@
 // Streaming OpenCode API - Markdown templates instead of JSON schemas
 
+import {
+	OpenCodeAnalysisError,
+	OpenCodeSDKError,
+	InvalidProviderError,
+	ProviderNotConnectedError,
+	InvalidModelError,
+	ServerStartError,
+	SessionError,
+	TimeoutError,
+} from "./errors.js";
+
+// Re-export error types for backwards compatibility
+export {
+	OpenCodeAnalysisError,
+	OpenCodeSDKError,
+	InvalidProviderError,
+	ProviderNotConnectedError,
+	InvalidModelError,
+	ServerStartError,
+	SessionError,
+	TimeoutError,
+} from "./errors.js";
+
 export interface StreamPromptOptions {
 	prompt: string;
 	cwd: string;
@@ -16,23 +39,6 @@ export interface StreamPromptResult {
 	durationMs: number;
 }
 
-export class OpenCodeAnalysisError extends Error {
-	constructor(
-		message: string,
-		public readonly details?: unknown,
-	) {
-		super(message);
-		this.name = "OpenCodeAnalysisError";
-	}
-}
-
-export class OpenCodeSDKError extends OpenCodeAnalysisError {
-	constructor() {
-		super("Failed to import @opencode-ai/sdk. Install it with: bun add @opencode-ai/sdk");
-		this.name = "OpenCodeSDKError";
-	}
-}
-
 interface OpenCodeServer {
 	close: () => void;
 	url: string;
@@ -45,6 +51,23 @@ interface OpenCodeSession {
 interface OpenCodeEvent {
 	type: string;
 	properties: Record<string, unknown>;
+}
+
+interface OpenCodeProviderModel {
+	id: string;
+	name: string;
+}
+
+interface OpenCodeProvider {
+	id: string;
+	name: string;
+	models: Record<string, OpenCodeProviderModel>;
+}
+
+interface OpenCodeProviderListResponse {
+	all: OpenCodeProvider[];
+	connected: string[];
+	default: Record<string, string>;
 }
 
 interface OpenCodeClient {
@@ -63,6 +86,9 @@ interface OpenCodeClient {
 		subscribe: () => Promise<{
 			stream: AsyncIterable<OpenCodeEvent>;
 		}>;
+	};
+	provider: {
+		list: () => Promise<{ data: OpenCodeProviderListResponse; error?: unknown }>;
 	};
 }
 
@@ -206,22 +232,55 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			if (err instanceof Error && err.message?.includes("port")) {
 				continue;
 			}
-			throw new OpenCodeAnalysisError("Failed to start OpenCode server", err);
+			throw new ServerStartError("Failed to start OpenCode server", port, err);
 		}
 	}
 
 	if (!server || !client) {
-		throw new OpenCodeAnalysisError("Failed to start OpenCode server after all attempts");
+		throw new ServerStartError("Failed to start OpenCode server after all attempts");
 	}
+
+	// Default model configuration
+	const providerID = "anthropic";
+	const modelID = "claude-sonnet-4-20250514";
 
 	try {
 		debug("Creating session...");
 		const sessionResult = await client.session.create();
 		if (sessionResult.error) {
-			throw new OpenCodeAnalysisError("Failed to create session", sessionResult.error);
+			throw new SessionError("Failed to create session", undefined, undefined, sessionResult.error);
 		}
 		const sessionId = sessionResult.data.id;
 		debug(`Session created: ${sessionId}`);
+
+		// Validate provider and model before sending prompt
+		debug("Validating provider and model...");
+		const providerResult = await client.provider.list();
+		if (providerResult.error) {
+			throw new OpenCodeAnalysisError("Failed to fetch provider list", providerResult.error);
+		}
+
+		const { all: allProviders, connected: connectedProviders } = providerResult.data;
+		const allProviderIds = allProviders.map((p) => p.id);
+
+		// Check if provider exists
+		const provider = allProviders.find((p) => p.id === providerID);
+		if (!provider) {
+			throw new InvalidProviderError(providerID, allProviderIds);
+		}
+
+		// Check if provider is connected
+		if (!connectedProviders.includes(providerID)) {
+			throw new ProviderNotConnectedError(providerID, connectedProviders);
+		}
+
+		// Check if model exists for this provider
+		const availableModelIds = Object.keys(provider.models);
+		if (!provider.models[modelID]) {
+			throw new InvalidModelError(modelID, providerID, availableModelIds);
+		}
+
+		debug(`Provider "${providerID}" and model "${modelID}" validated`);
 
 		debug("Subscribing to events...");
 		const { stream: eventStream } = await client.event.subscribe();
@@ -236,7 +295,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			body: {
 				agent: "explore",
 				parts: [{ type: "text", text: fullPrompt }],
-				model: { providerID: "anthropic", modelID: "claude-sonnet-4-20250514" },
+				model: { providerID, modelID },
 			},
 		});
 
@@ -278,7 +337,12 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 				if (event.type === "session.error" && props.sessionID === sessionId) {
 					const errorProps = props.error as { name?: string } | undefined;
 					debug(`Session error: ${JSON.stringify(props.error)}`);
-					throw new OpenCodeAnalysisError(errorProps?.name ?? "Unknown session error", props.error);
+					throw new SessionError(
+						errorProps?.name ?? "Unknown session error",
+						sessionId,
+						"error",
+						props.error,
+					);
 				}
 			}
 			return Array.from(textParts.values()).join("");
@@ -288,11 +352,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		if (timeoutMs && timeoutMs > 0) {
 			const timeoutPromise = new Promise<never>((_, reject) => {
 				timeoutId = setTimeout(() => {
-					reject(
-						new OpenCodeAnalysisError(
-							`timeout: no session.idle event received within ${timeoutMs}ms`,
-						),
-					);
+					reject(new TimeoutError(timeoutMs, "session response"));
 				}, timeoutMs);
 			});
 			responseText = await Promise.race([processEvents(), timeoutPromise]);

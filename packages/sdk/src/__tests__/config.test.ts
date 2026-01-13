@@ -173,6 +173,7 @@ describe("config.ts", () => {
 				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
 				autoAnalyze: true,
+				ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe("/custom/repos");
@@ -185,6 +186,7 @@ describe("config.ts", () => {
 				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
 				autoAnalyze: true,
+				ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe(join(home, "custom/repos"));
@@ -217,6 +219,7 @@ describe("config.ts", () => {
 				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
 				autoAnalyze: true,
+				ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
 			};
 			const result = getRepoPath("owner/repo", "github", config);
 			expect(result).toBe(join("/data/repos", "github", "owner", "repo"));

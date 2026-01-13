@@ -113,6 +113,7 @@ describe("CLI handlers", () => {
 		skillDir: "~/.config/opencode/skill",
 		defaultShallow: true,
 		autoAnalyze: true,
+		ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
 	};
 
 	const mockGitHubSource: RemoteRepoSource = {

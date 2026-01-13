@@ -64,6 +64,10 @@ export interface AnalysisPipelineOptions {
 	onStream?: (text: string) => void;
 	/** Qualified name for the repo (e.g. 'tanstack/query' for remote, 'myrepo' for local) */
 	qualifiedName?: string;
+	/** AI provider ID (e.g., "anthropic", "openai"). Reads from config if not specified. */
+	provider?: string;
+	/** AI model ID. Reads from config if not specified. */
+	model?: string;
 }
 
 // ============================================================================
@@ -508,8 +512,14 @@ export async function runAnalysisPipeline(
 	const skeleton = buildSkeleton(repoPath, repoName, rankedFiles, parsedFiles);
 
 	// Step 6: Generate prose with AI (with retry)
+	// Use options.provider/model if provided, otherwise fall back to config.ai settings
+	const aiProvider = options.provider ?? config.ai?.provider;
+	const aiModel = options.model ?? config.ai?.model;
 	onProgress("prose", "Generating prose with AI...");
+	onDebug?.(`Using AI: ${aiProvider ?? "default"}/${aiModel ?? "default"}`);
 	const proseResult = await generateProseWithRetry(skeleton, {
+		provider: aiProvider,
+		model: aiModel,
 		onDebug,
 		onStream: options.onStream,
 	});

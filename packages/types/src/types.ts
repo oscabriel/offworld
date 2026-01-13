@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type {
+	AIConfigSchema,
 	ConfigSchema,
 	GitProviderSchema,
 	RemoteRepoSourceSchema,
@@ -22,6 +23,7 @@ import type {
 	RepoIndexSchema,
 } from "./schemas";
 
+export type AIConfig = z.infer<typeof AIConfigSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
 
 export type GitProvider = z.infer<typeof GitProviderSchema>;

@@ -12,7 +12,7 @@ import {
 	cloneRepo,
 	parseRepoInput,
 	runAnalysisPipeline,
-	installSkill,
+	installSkillWithReferences,
 	formatSkillMd,
 	formatSummaryMd,
 	formatArchitectureMd,
@@ -180,9 +180,9 @@ async function cloneAndAnalyze(
 
 		const result = await runAnalysisPipeline(repoPath, {});
 
-		const { skill: mergedSkill, graph } = result;
+		const { skill: mergedSkill, graph, architectureGraph } = result;
 		const skill = mergedSkill.skill;
-		const { entities, relationships, prose } = mergedSkill;
+		const { entities, prose } = mergedSkill;
 
 		const commitSha = getCommitSha(repoPath);
 		const analyzedAt = new Date().toISOString();
@@ -194,7 +194,7 @@ async function cloneAndAnalyze(
 		const summaryMd = formatSummaryMd(prose, { repoName: source.fullName });
 		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
 
-		const architectureMd = formatArchitectureMd(entities, relationships, graph);
+		const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
 		writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
 
 		writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
@@ -205,7 +205,11 @@ async function cloneAndAnalyze(
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 		writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 
-		installSkill(source.fullName, skillMd);
+		installSkillWithReferences(source.fullName, {
+			skillContent: skillMd,
+			summaryContent: summaryMd,
+			architectureContent: architectureMd,
+		});
 
 		return {
 			success: true,

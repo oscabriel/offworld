@@ -20,7 +20,7 @@ export function ContentCard({ title, children, variant = "default" }: ContentCar
 	return (
 		<div className={`space-y-6 border ${borderColor} ${bgColor} p-8`}>
 			{title && (
-				<h2 className="font-mono text-sm uppercase tracking-[0.3em] text-muted-foreground">
+				<h2 className="text-muted-foreground font-mono text-sm tracking-[0.3em] uppercase">
 					{title}
 				</h2>
 			)}

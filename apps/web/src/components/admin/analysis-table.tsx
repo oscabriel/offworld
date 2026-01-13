@@ -53,24 +53,24 @@ export function AnalysisTable() {
 	if (!analyses) return null;
 
 	return (
-		<Card className="border border-primary/10 p-0 shadow-none">
+		<Card className="border-primary/10 border p-0 shadow-none">
 			<div className="overflow-x-auto">
 				<table className="w-full">
 					<thead>
 						<tr className="border-primary/10 border-b">
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
 								Repository
 							</th>
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
 								Pull Count
 							</th>
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
 								Analyzed
 							</th>
-							<th className="px-4 py-3 text-left font-mono text-muted-foreground text-xs">
+							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
 								Version
 							</th>
-							<th className="px-4 py-3 text-right font-mono text-muted-foreground text-xs">
+							<th className="text-muted-foreground px-4 py-3 text-right font-mono text-xs">
 								Actions
 							</th>
 						</tr>
@@ -87,10 +87,10 @@ export function AnalysisTable() {
 								<td className="px-4 py-3 font-mono text-sm">
 									{analysis.pullCount.toLocaleString()}
 								</td>
-								<td className="px-4 py-3 font-mono text-muted-foreground text-sm">
+								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">
 									{formatDate(analysis.analyzedAt)}
 								</td>
-								<td className="px-4 py-3 font-mono text-muted-foreground text-sm">
+								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">
 									{analysis.version}
 								</td>
 								<td className="px-4 py-3 text-right">
@@ -110,7 +110,7 @@ export function AnalysisTable() {
 													<Button
 														variant="outline"
 														size="sm"
-														className="font-mono text-red-600 text-xs hover:bg-red-600/10 hover:text-red-600"
+														className="font-mono text-xs text-red-600 hover:bg-red-600/10 hover:text-red-600"
 														disabled={loadingAnalysis === analysis.fullName}
 													>
 														<Trash2 className="h-3 w-3" />

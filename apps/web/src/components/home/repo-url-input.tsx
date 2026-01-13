@@ -67,8 +67,8 @@ export function RepoUrlInput({
 				htmlFor="repo-url"
 				className={
 					isHero
-						? "mb-4 block text-center font-mono text-base text-muted-foreground uppercase tracking-[0.3em]"
-						: "block font-mono text-muted-foreground text-sm uppercase tracking-wide"
+						? "text-muted-foreground mb-4 block text-center font-mono text-base tracking-[0.3em] uppercase"
+						: "text-muted-foreground block font-mono text-sm tracking-wide uppercase"
 				}
 			>
 				{labelText}
@@ -84,20 +84,20 @@ export function RepoUrlInput({
 					}}
 					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
-					className="h-auto flex-1 rounded-none border-2 border-primary/20 bg-background/50 px-4 py-3 font-mono text-base text-foreground backdrop-blur-sm transition-all duration-300 focus-visible:border-primary focus-visible:bg-background focus-visible:ring-0 sm:px-6 sm:py-4 sm:text-xl"
+					className="border-primary/20 bg-background/50 text-foreground focus-visible:border-primary focus-visible:bg-background h-auto flex-1 rounded-none border-2 px-4 py-3 font-mono text-base backdrop-blur-sm transition-all duration-300 focus-visible:ring-0 sm:px-6 sm:py-4 sm:text-xl"
 				/>
 				<Button
 					onClick={handleAnalyze}
 					disabled={!repoUrl}
 					size="lg"
-					className="h-auto rounded-none border-2 border-primary bg-primary px-6 py-3 font-mono text-base text-primary-foreground transition-all duration-300 hover:bg-background hover:text-primary disabled:cursor-not-allowed sm:px-10 sm:py-4 sm:text-lg"
+					className="border-primary bg-primary text-primary-foreground hover:bg-background hover:text-primary h-auto rounded-none border-2 px-6 py-3 font-mono text-base transition-all duration-300 disabled:cursor-not-allowed sm:px-10 sm:py-4 sm:text-lg"
 				>
 					{buttonText}
 				</Button>
 			</div>
 			{error && (
 				<div className="mt-3 border-2 border-red-500/20 bg-red-500/10 p-3">
-					<p className="font-mono text-red-600 text-sm dark:text-red-400">{error}</p>
+					<p className="font-mono text-sm text-red-600 dark:text-red-400">{error}</p>
 				</div>
 			)}
 		</div>

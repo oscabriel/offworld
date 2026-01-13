@@ -36,8 +36,8 @@ function RepoAnalysisPage() {
 			<div className="flex flex-1 flex-col">
 				<div className="container mx-auto max-w-7xl flex-1 px-4 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 					<ContentCard>
-						<div className="h-12 w-48 animate-pulse rounded bg-muted" />
-						<div className="mt-4 h-6 w-32 animate-pulse rounded bg-muted" />
+						<div className="bg-muted h-12 w-48 animate-pulse rounded" />
+						<div className="bg-muted mt-4 h-6 w-32 animate-pulse rounded" />
 					</ContentCard>
 				</div>
 			</div>
@@ -49,11 +49,11 @@ function RepoAnalysisPage() {
 			<div className="flex flex-1 flex-col">
 				<div className="container mx-auto max-w-7xl flex-1 px-4 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 					<ContentCard title="Repository Not Analyzed">
-						<p className="mb-6 font-serif text-lg text-muted-foreground leading-relaxed">
+						<p className="text-muted-foreground mb-6 font-serif text-lg leading-relaxed">
 							This repository hasn't been analyzed yet. Generate an analysis locally using the
 							offworld CLI:
 						</p>
-						<div className="mb-4 border border-primary/20 bg-background/50 p-4 font-mono text-sm">
+						<div className="border-primary/20 bg-background/50 mb-4 border p-4 font-mono text-sm">
 							bunx offworld pull {fullName}
 						</div>
 						<Button onClick={copyCommand}>
@@ -75,10 +75,10 @@ function RepoAnalysisPage() {
 					</ContentCard>
 
 					<ContentCard title="Install Skill">
-						<p className="mb-4 font-serif text-lg text-muted-foreground leading-relaxed">
+						<p className="text-muted-foreground mb-4 font-serif text-lg leading-relaxed">
 							Use this command to install the skill to your AI coding assistant:
 						</p>
-						<div className="mb-4 border border-primary/20 bg-background/50 p-4 font-mono text-sm">
+						<div className="border-primary/20 bg-background/50 mb-4 border p-4 font-mono text-sm">
 							bunx offworld pull {fullName}
 						</div>
 						<Button onClick={copyCommand}>

@@ -23,7 +23,7 @@ import {
 	getIndexEntry,
 	RepoExistsError,
 	runAnalysisPipeline,
-	installSkill as sdkInstallSkill,
+	installSkillWithReferences,
 	isAnalysisStale,
 	formatSkillMd,
 	formatSummaryMd,
@@ -34,7 +34,6 @@ import {
 import type { RepoSource, Skill } from "@offworld/types";
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
 
 export interface PullOptions {
 	repo: string;
@@ -53,33 +52,19 @@ export interface PullResult {
 	message?: string;
 }
 
-/**
- * Expands ~ to user's home directory
- */
-function expandTilde(path: string): string {
-	if (path.startsWith("~/")) {
-		return join(homedir(), path.slice(2));
-	}
-	return path;
+export interface InstallSkillInput {
+	repoName: string;
+	skillContent: string;
+	summaryContent: string;
+	architectureContent: string;
 }
 
-/**
- * Install SKILL.md to both OpenCode and Claude Code skill directories
- */
-export async function installSkill(repoName: string, skillContent: string): Promise<void> {
-	const config = loadConfig();
-
-	// OpenCode skill directory
-	const openCodeSkillDir = expandTilde(join(config.skillDir, repoName));
-	// Claude Code skill directory (~/.claude/skills/{repo})
-	const claudeSkillDir = expandTilde(join("~/.claude/skills", repoName));
-
-	// Ensure directories exist and write SKILL.md
-	for (const skillDir of [openCodeSkillDir, claudeSkillDir]) {
-		const expanded = expandTilde(skillDir);
-		mkdirSync(expanded, { recursive: true });
-		writeFileSync(join(expanded, "SKILL.md"), skillContent, "utf-8");
-	}
+export async function installSkill(input: InstallSkillInput): Promise<void> {
+	installSkillWithReferences(input.repoName, {
+		skillContent: input.skillContent,
+		summaryContent: input.summaryContent,
+		architectureContent: input.architectureContent,
+	});
 }
 
 /**
@@ -367,7 +352,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 								commitSha: remoteAnalysis.commitSha,
 								generated: remoteAnalysis.analyzedAt?.split("T")[0],
 							});
-							await installSkill(source.fullName, skillMd);
+							const architectureMd = `# Architecture\n\n\`\`\`json\n${JSON.stringify(remoteAnalysis.architecture, null, 2)}\n\`\`\``;
+							await installSkill({
+								repoName: source.fullName,
+								skillContent: skillMd,
+								summaryContent: remoteAnalysis.summary,
+								architectureContent: architectureMd,
+							});
 							s.stop("Skill installed");
 
 							// Update index
@@ -408,7 +399,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			}
 		}
 
-		verboseLog(`Checking for cached analysis at: ${repoPath}`, verbose);
+		verboseLog(`Checking for cached analysis at: ${getLocalAnalysisPath(source)}`, verbose);
 		if (!force && hasLocalAnalysis(source, repoPath)) {
 			const skill = loadLocalSkill(source);
 			const meta = loadLocalMeta(source);
@@ -419,7 +410,19 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					commitSha: meta?.commitSha,
 					generated: meta?.analyzedAt?.split("T")[0],
 				});
-				await installSkill(repoName, skillMd);
+				const analysisPath = getLocalAnalysisPath(source);
+				const summaryContent = existsSync(join(analysisPath, "summary.md"))
+					? readFileSync(join(analysisPath, "summary.md"), "utf-8")
+					: "";
+				const architectureContent = existsSync(join(analysisPath, "architecture.md"))
+					? readFileSync(join(analysisPath, "architecture.md"), "utf-8")
+					: "";
+				await installSkill({
+					repoName,
+					skillContent: skillMd,
+					summaryContent,
+					architectureContent,
+				});
 				s.stop("Skill installed from cache");
 
 				return {
@@ -457,9 +460,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const pipelineOptions = { onProgress, onDebug, qualifiedName };
 			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 
-			const { skill: mergedSkill, graph } = result;
+			const { skill: mergedSkill, graph, architectureGraph } = result;
 			const skill = mergedSkill.skill;
-			const { entities, relationships, prose } = mergedSkill;
+			const { entities, prose } = mergedSkill;
 
 			const analysisCommitSha = getCommitSha(repoPath);
 			const analyzedAt = new Date().toISOString();
@@ -476,7 +479,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const summaryMd = formatSummaryMd(prose, { repoName });
 			writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
 
-			const architectureMd = formatArchitectureMd(entities, relationships, graph);
+			const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
 			writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
 
 			writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
@@ -487,7 +490,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
 			writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 
-			sdkInstallSkill(repoName, skillMd);
+			installSkillWithReferences(repoName, {
+				skillContent: skillMd,
+				summaryContent: summaryMd,
+				architectureContent: architectureMd,
+			});
 
 			if (!verbose) {
 				s.stop("Analysis complete");

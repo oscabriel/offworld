@@ -88,6 +88,7 @@ export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
 
 /**
  * Patterns for matching class declarations
+ * Note: $PARENT and $IFACE metavariables are extracted for inheritance tracking
  */
 export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 	typescript: [
@@ -99,9 +100,12 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"export class $NAME { $$$ }",
 		"export class $NAME extends $PARENT { $$$ }",
 		"export class $NAME implements $IFACE { $$$ }",
+		"export class $NAME extends $PARENT implements $IFACE { $$$ }",
 		// Abstract class
 		"abstract class $NAME { $$$ }",
 		"export abstract class $NAME { $$$ }",
+		"abstract class $NAME extends $PARENT { $$$ }",
+		"export abstract class $NAME extends $PARENT { $$$ }",
 	],
 	javascript: [
 		"class $NAME { $$$ }",
@@ -134,16 +138,39 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"class $NAME { $$$ }",
 		"class $NAME extends $PARENT { $$$ }",
 		"class $NAME implements $IFACE { $$$ }",
+		"class $NAME extends $PARENT implements $IFACE { $$$ }",
 		"public class $NAME { $$$ }",
 		"public class $NAME extends $PARENT { $$$ }",
 		"public class $NAME implements $IFACE { $$$ }",
+		"public class $NAME extends $PARENT implements $IFACE { $$$ }",
 		// Abstract
 		"abstract class $NAME { $$$ }",
 		"public abstract class $NAME { $$$ }",
+		"abstract class $NAME extends $PARENT { $$$ }",
+		"public abstract class $NAME extends $PARENT { $$$ }",
 		// Interface
 		"interface $NAME { $$$ }",
 		"public interface $NAME { $$$ }",
+		"interface $NAME extends $IFACE { $$$ }",
+		"public interface $NAME extends $IFACE { $$$ }",
 	],
+};
+
+/**
+ * Patterns for matching interface declarations (TypeScript-specific)
+ */
+export const INTERFACE_PATTERNS: Record<PatternLanguage, string[]> = {
+	typescript: [
+		"interface $NAME { $$$ }",
+		"interface $NAME extends $PARENT { $$$ }",
+		"export interface $NAME { $$$ }",
+		"export interface $NAME extends $PARENT { $$$ }",
+	],
+	javascript: [],
+	python: [],
+	rust: [],
+	go: [],
+	java: [],
 };
 
 /**

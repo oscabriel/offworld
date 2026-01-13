@@ -9,9 +9,6 @@ import {
 	getPatternLanguage,
 } from "./patterns";
 
-/**
- * Represents an extracted symbol from source code
- */
 export interface ExtractedSymbol {
 	name: string;
 	kind: "function" | "class" | "method" | "struct" | "enum" | "trait" | "interface";
@@ -19,6 +16,8 @@ export interface ExtractedSymbol {
 	signature?: string;
 	isAsync?: boolean;
 	isExported?: boolean;
+	extends?: string;
+	implements?: string[];
 }
 
 /**
@@ -75,9 +74,6 @@ export function parseFile(filePath: string, content: string): ParsedFile | null 
 	}
 }
 
-/**
- * Extract function or class symbols from parsed AST
- */
 export function extractSymbols(
 	root: ReturnType<typeof parse>,
 	lang: PatternLanguage,
@@ -95,7 +91,7 @@ export function extractSymbols(
 				if (!nameNode) continue;
 
 				const name = nameNode.text();
-				const line = nameNode.range().start.line + 1; // 1-indexed
+				const line = nameNode.range().start.line + 1;
 				const key = `${name}:${line}`;
 
 				if (seen.has(key)) continue;
@@ -110,11 +106,29 @@ export function extractSymbols(
 
 				let symbolKind: ExtractedSymbol["kind"] = kind;
 				if (kind === "class") {
-					// Detect specific class-like kinds
 					if (text.includes("struct ")) symbolKind = "struct";
 					else if (text.includes("enum ")) symbolKind = "enum";
 					else if (text.includes("trait ")) symbolKind = "trait";
 					else if (text.includes("interface ")) symbolKind = "interface";
+				}
+
+				let extendsName: string | undefined;
+				let implementsNames: string[] | undefined;
+
+				if (kind === "class") {
+					const parentNode = match.getMatch("PARENT");
+					if (parentNode) {
+						extendsName = parentNode.text().trim();
+					}
+
+					const ifaceNode = match.getMatch("IFACE");
+					if (ifaceNode) {
+						const ifaceText = ifaceNode.text().trim();
+						implementsNames = ifaceText
+							.split(",")
+							.map((s) => s.trim())
+							.filter(Boolean);
+					}
 				}
 
 				symbols.push({
@@ -124,6 +138,8 @@ export function extractSymbols(
 					signature: extractSignature(text, name, kind),
 					isAsync,
 					isExported,
+					extends: extendsName,
+					implements: implementsNames,
 				});
 			}
 		} catch {

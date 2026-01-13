@@ -23,10 +23,19 @@ export {
 	TimeoutError,
 } from "./errors.js";
 
+/** Default AI provider */
+export const DEFAULT_AI_PROVIDER = "anthropic";
+/** Default AI model */
+export const DEFAULT_AI_MODEL = "claude-sonnet-4-20250514";
+
 export interface StreamPromptOptions {
 	prompt: string;
 	cwd: string;
 	systemPrompt?: string;
+	/** AI provider ID (e.g., "anthropic", "openai"). Defaults to anthropic. */
+	provider?: string;
+	/** AI model ID. Defaults to claude-sonnet-4-20250514. */
+	model?: string;
 	/** Timeout in milliseconds. Set to 0 or undefined for no timeout. */
 	timeoutMs?: number;
 	onDebug?: (message: string) => void;
@@ -151,7 +160,16 @@ async function getOpenCodeSDK(): Promise<{
  * No JSON parsing - just returns whatever the AI produces.
  */
 export async function streamPrompt(options: StreamPromptOptions): Promise<StreamPromptResult> {
-	const { prompt, cwd, systemPrompt, timeoutMs, onDebug, onStream } = options;
+	const {
+		prompt,
+		cwd,
+		systemPrompt,
+		provider: optProvider,
+		model: optModel,
+		timeoutMs,
+		onDebug,
+		onStream,
+	} = options;
 
 	const debug = onDebug ?? (() => {});
 	const stream = onStream ?? (() => {});
@@ -240,9 +258,9 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		throw new ServerStartError("Failed to start OpenCode server after all attempts");
 	}
 
-	// Default model configuration
-	const providerID = "anthropic";
-	const modelID = "claude-sonnet-4-20250514";
+	// Model configuration with fallback to defaults
+	const providerID = optProvider ?? DEFAULT_AI_PROVIDER;
+	const modelID = optModel ?? DEFAULT_AI_MODEL;
 
 	try {
 		debug("Creating session...");

@@ -23,6 +23,10 @@ import {
 export interface GenerateOptions {
 	repo: string;
 	force?: boolean;
+	/** AI provider ID (e.g., "anthropic", "openai"). Overrides config. */
+	provider?: string;
+	/** AI model ID. Overrides config. */
+	model?: string;
 }
 
 export interface GenerateResult {
@@ -32,7 +36,7 @@ export interface GenerateResult {
 }
 
 export async function generateHandler(options: GenerateOptions): Promise<GenerateResult> {
-	const { repo, force = false } = options;
+	const { repo, force = false, provider, model } = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
@@ -91,6 +95,8 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 				s.message(message);
 			},
 			qualifiedName,
+			provider,
+			model,
 		};
 
 		const result = await runAnalysisPipeline(repoPath, pipelineOptions);

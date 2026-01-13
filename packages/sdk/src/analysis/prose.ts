@@ -39,6 +39,10 @@ export type ProseEnhancements = z.infer<typeof ProseEnhancementsSchema>;
  * Options for prose generation
  */
 export interface ProseGenerateOptions {
+	/** AI provider ID (e.g., "anthropic", "openai") */
+	provider?: string;
+	/** AI model ID */
+	model?: string;
 	onDebug?: (message: string) => void;
 	onStream?: (text: string) => void;
 }
@@ -59,6 +63,8 @@ export async function generateProseEnhancements(
 	const result = await streamPrompt({
 		prompt,
 		cwd: skeleton.repoPath,
+		provider: options.provider,
+		model: options.model,
 		onDebug: options.onDebug,
 		onStream: options.onStream,
 	});
@@ -230,6 +236,8 @@ export async function generateProseWithRetry(
 		const retryResult = await streamPrompt({
 			prompt: feedbackPrompt,
 			cwd: skeleton.repoPath,
+			provider: options.provider,
+			model: options.model,
 			systemPrompt: `You are a technical documentation expert.
 Generate ONLY valid JSON output that matches the EXACT schema specified.
 Do not include any text before or after the JSON.

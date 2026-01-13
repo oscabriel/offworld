@@ -69,8 +69,34 @@ interface OpenCodeClient {
 - `src/ai/errors.ts` - Tagged error types with hints
 - `src/ai/index.ts` - Exports
 
+### Configurable AI Model (US-002)
+
+**Config Schema** (in `@offworld/types/schemas.ts`):
+```typescript
+export const AIConfigSchema = z.object({
+  provider: z.string().default("anthropic"),
+  model: z.string().default("claude-sonnet-4-20250514"),
+});
+
+// In ConfigSchema:
+ai: AIConfigSchema.default({ provider: "anthropic", model: "claude-sonnet-4-20250514" }),
+```
+
+**Cascade Order**: CLI flag → Config file → Defaults
+```typescript
+// In pipeline.ts:
+const aiProvider = options.provider ?? config.ai?.provider;
+const aiModel = options.model ?? config.ai?.model;
+
+// In opencode.ts streamPrompt:
+const providerID = optProvider ?? DEFAULT_AI_PROVIDER;
+const modelID = optModel ?? DEFAULT_AI_MODEL;
+```
+
 ### Gotchas
 
 1. **Base class _tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
 2. **Import extensions**: Use `.js` extension for imports even for TypeScript files (`import from "./errors.js"`)
 3. **Pre-existing test failures**: CLI handler tests (`apps/cli`) have unrelated mock issues - don't block on these
+4. **Zod nested default**: When using `.default({})` on nested object schemas, must provide full default: `AIConfigSchema.default({ provider: "...", model: "..." })`
+5. **Test fixture updates**: When adding new required fields to schemas, update all test fixtures that use `Config` type

@@ -1,5 +1,7 @@
 export {
 	streamPrompt,
+	DEFAULT_AI_PROVIDER,
+	DEFAULT_AI_MODEL,
 	OpenCodeAnalysisError,
 	OpenCodeSDKError,
 	InvalidProviderError,

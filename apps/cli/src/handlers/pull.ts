@@ -42,6 +42,10 @@ export interface PullOptions {
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
+	/** AI provider ID (e.g., "anthropic", "openai"). Overrides config. */
+	provider?: string;
+	/** AI model ID. Overrides config. */
+	model?: string;
 }
 
 export interface PullResult {
@@ -245,7 +249,16 @@ async function tryUploadAnalysis(
 }
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const { repo, shallow = true, sparse = false, branch, force = false, verbose = false } = options;
+	const {
+		repo,
+		shallow = true,
+		sparse = false,
+		branch,
+		force = false,
+		verbose = false,
+		provider,
+		model,
+	} = options;
 	const config = loadConfig();
 
 	const s = p.spinner();
@@ -457,7 +470,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				: undefined;
 
 			const qualifiedName = source.type === "remote" ? source.fullName : source.name;
-			const pipelineOptions = { onProgress, onDebug, qualifiedName };
+			const pipelineOptions = { onProgress, onDebug, qualifiedName, provider, model };
 			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 
 			const { skill: mergedSkill, graph, architectureGraph } = result;

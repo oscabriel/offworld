@@ -35,9 +35,9 @@ function ProfileComponent() {
 	return (
 		<div className="flex flex-1 items-center justify-center p-8">
 			<div className="w-full max-w-md space-y-8">
-				<h1 className="text-center font-normal font-serif text-5xl">Profile</h1>
+				<h1 className="text-center font-serif text-5xl font-normal">Profile</h1>
 
-				<div className="space-y-4 rounded-lg border border-border bg-card p-6">
+				<div className="border-border bg-card space-y-4 rounded-lg border p-6">
 					<div className="space-y-1">
 						<p className="text-muted-foreground text-sm">Name</p>
 						<p className="font-serif text-lg">{user.name || "Not set"}</p>

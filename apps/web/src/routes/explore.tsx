@@ -33,13 +33,13 @@ function ExploreComponent() {
 							buttonText="Search"
 							onError={setError}
 						/>
-						{error && <p className="mt-2 font-mono text-red-500 text-sm">{error}</p>}
+						{error && <p className="mt-2 font-mono text-sm text-red-500">{error}</p>}
 					</div>
 
 					<div className="space-y-8">
 						{!analyses || analyses.length === 0 ? (
-							<Card className="rounded-none border-primary/10 p-12 text-center shadow-none">
-								<p className="font-serif text-lg text-muted-foreground">
+							<Card className="border-primary/10 rounded-none p-12 text-center shadow-none">
+								<p className="text-muted-foreground font-serif text-lg">
 									No repositories have been analyzed yet. Be the first!
 								</p>
 							</Card>

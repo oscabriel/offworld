@@ -30,7 +30,7 @@ function SignInComponent() {
 	return (
 		<div className="flex min-h-full flex-1 items-center justify-center p-8">
 			<div className="w-full max-w-md">
-				<h1 className="mb-8 text-center font-normal font-serif text-5xl">Welcome to Offworld</h1>
+				<h1 className="mb-8 text-center font-serif text-5xl font-normal">Welcome to Offworld</h1>
 
 				<div className="flex justify-center">
 					<Button onClick={handleGitHubSignIn} className="w-xs" size="lg">
@@ -46,7 +46,7 @@ function SignInComponent() {
 								clipRule="evenodd"
 							/>
 						</svg>
-						<span className="font-mono text-background text-base">Sign in with GitHub</span>
+						<span className="text-background font-mono text-base">Sign in with GitHub</span>
 					</Button>
 				</div>
 			</div>

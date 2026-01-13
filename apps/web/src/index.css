@@ -251,15 +251,15 @@
 }
 
 .prose :where(h1):not(:where([class~="not-prose"] *)) {
-	@apply mb-4 mt-6 text-2xl font-bold tracking-tight;
+	@apply mt-6 mb-4 text-2xl font-bold tracking-tight;
 }
 
 .prose :where(h2):not(:where([class~="not-prose"] *)) {
-	@apply mb-3 mt-5 text-xl font-semibold tracking-tight;
+	@apply mt-5 mb-3 text-xl font-semibold tracking-tight;
 }
 
 .prose :where(h3):not(:where([class~="not-prose"] *)) {
-	@apply mb-2 mt-4 text-lg font-semibold;
+	@apply mt-4 mb-2 text-lg font-semibold;
 }
 
 .prose :where(ul, ol):not(:where([class~="not-prose"] *)) {
@@ -287,11 +287,11 @@
 }
 
 .prose :where(code):not(:where([class~="not-prose"] *)) {
-	@apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
+	@apply bg-muted rounded px-1.5 py-0.5 font-mono text-sm;
 }
 
 .prose :where(pre):not(:where([class~="not-prose"] *)) {
-	@apply my-4 overflow-x-auto rounded-lg bg-muted p-4;
+	@apply bg-muted my-4 overflow-x-auto rounded-lg p-4;
 }
 
 .prose :where(pre code):not(:where([class~="not-prose"] *)) {
@@ -299,9 +299,9 @@
 }
 
 .prose :where(blockquote):not(:where([class~="not-prose"] *)) {
-	@apply my-4 border-l-4 border-primary/30 pl-4 italic text-muted-foreground;
+	@apply border-primary/30 text-muted-foreground my-4 border-l-4 pl-4 italic;
 }
 
 .prose :where(a):not(:where([class~="not-prose"] *)) {
-	@apply text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary;
+	@apply text-primary decoration-primary/30 hover:decoration-primary underline underline-offset-2;
 }

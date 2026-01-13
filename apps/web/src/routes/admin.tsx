@@ -30,13 +30,13 @@ function AdminPage() {
 				<div className="space-y-8">
 					<h1 className="font-serif text-5xl tracking-tight">Admin</h1>
 
-					<div className="flex gap-4 border-primary/10 border-b">
+					<div className="border-primary/10 flex gap-4 border-b">
 						<button
 							type="button"
 							onClick={() => setActiveTab("analyses")}
 							className={`px-4 py-2 font-mono text-sm ${
 								activeTab === "analyses"
-									? "border-primary border-b-2 text-primary"
+									? "border-primary text-primary border-b-2"
 									: "text-muted-foreground hover:text-foreground"
 							}`}
 						>
@@ -47,7 +47,7 @@ function AdminPage() {
 							onClick={() => setActiveTab("users")}
 							className={`px-4 py-2 font-mono text-sm ${
 								activeTab === "users"
-									? "border-primary border-b-2 text-primary"
+									? "border-primary text-primary border-b-2"
 									: "text-muted-foreground hover:text-foreground"
 							}`}
 						>

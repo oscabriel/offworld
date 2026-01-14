@@ -74,12 +74,12 @@ interface OpenCodeClient {
 
 ```typescript
 export const AIConfigSchema = z.object({
-  provider: z.string().default("anthropic"),
-  model: z.string().default("claude-sonnet-4-20250514"),
+  provider: z.string().default("opencode"),
+  model: z.string().default("claude-opus-4-5"),
 });
 
 // In ConfigSchema:
-ai: AIConfigSchema.default({ provider: "anthropic", model: "claude-sonnet-4-20250514" }),
+ai: AIConfigSchema.default({ provider: "opencode", model: "claude-opus-4-5" }),
 ```
 
 **Cascade Order**: CLI flag → Config file → Defaults

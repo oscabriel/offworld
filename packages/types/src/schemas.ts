@@ -1,17 +1,17 @@
 import { z } from "zod";
 
 export const AIConfigSchema = z.object({
-	provider: z.string().default("anthropic"),
-	model: z.string().default("claude-sonnet-4-20250514"),
+	provider: z.string().default("opencode"),
+	model: z.string().default("claude-opus-4-5"),
 });
 
 export const ConfigSchema = z.object({
 	repoRoot: z.string().default("~/ow"),
-	metaRoot: z.string().default("~/.ow"),
+	metaRoot: z.string().default("~/.config/offworld"),
 	skillDir: z.string().default("~/.config/opencode/skill"),
 	defaultShallow: z.boolean().default(true),
 	autoAnalyze: z.boolean().default(true),
-	ai: AIConfigSchema.default({ provider: "anthropic", model: "claude-sonnet-4-20250514" }),
+	ai: AIConfigSchema.default({ provider: "opencode", model: "claude-opus-4-5" }),
 });
 
 export const GitProviderSchema = z.enum(["github", "gitlab", "bitbucket"]);

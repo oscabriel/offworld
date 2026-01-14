@@ -18,11 +18,8 @@ function expandTilde(path: string): string {
 	return path;
 }
 
-/**
- * Returns the metadata root directory (~/.ow)
- */
 export function getMetaRoot(): string {
-	return expandTilde("~/.ow");
+	return expandTilde("~/.config/offworld");
 }
 
 /**
@@ -55,30 +52,40 @@ export function getRepoPath(
 	return join(root, provider, owner, repo);
 }
 
-/**
- * Returns the analysis directory path for a repository.
- * Format: ~/.ow/analyses/{provider}--{owner}--{repo}
- *
- * @param fullName - The repo identifier in "owner/repo" format
- * @param provider - Git provider (defaults to "github")
- */
-export function getAnalysisPath(
-	fullName: string,
-	provider: "github" | "gitlab" | "bitbucket" = "github",
-): string {
+function toSkillDirName(fullName: string): string {
 	const [owner, repo] = fullName.split("/");
 	if (!owner || !repo) {
 		throw new Error(`Invalid fullName format: ${fullName}. Expected "owner/repo"`);
 	}
-	const sanitized = `${provider}--${owner}--${repo}`;
-	return join(getMetaRoot(), "analyses", sanitized);
+	return `${owner}-${repo}-reference`;
 }
 
-/**
- * Returns the config file path (~/.ow/config.json)
- */
+function toMetaDirName(fullName: string): string {
+	const [owner, repo] = fullName.split("/");
+	if (!owner || !repo) {
+		throw new Error(`Invalid fullName format: ${fullName}. Expected "owner/repo"`);
+	}
+	return `${owner}-${repo}`;
+}
+
+export function getSkillPath(fullName: string): string {
+	return join(getMetaRoot(), "skills", toSkillDirName(fullName));
+}
+
+export function getMetaPath(fullName: string): string {
+	return join(getMetaRoot(), "meta", toMetaDirName(fullName));
+}
+
+/** @deprecated Use getSkillPath instead */
+export function getAnalysisPath(
+	fullName: string,
+	_provider: "github" | "gitlab" | "bitbucket" = "github",
+): string {
+	return getSkillPath(fullName);
+}
+
 export function getConfigPath(): string {
-	return join(getMetaRoot(), "config.json");
+	return join(homedir(), ".config", "offworld", "offworld.json");
 }
 
 /**

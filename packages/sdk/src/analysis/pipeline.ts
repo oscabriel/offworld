@@ -88,19 +88,29 @@ function expandTilde(path: string): string {
  * Convert owner/repo format to skill directory name: {owner}-{repo}-reference
  */
 function toSkillDirName(repoName: string): string {
-	// Handle owner/repo format
 	if (repoName.includes("/")) {
 		const [owner, repo] = repoName.split("/");
 		return `${owner}-${repo}-reference`;
 	}
-	// Local repo or already formatted
 	return `${repoName}-reference`;
+}
+
+function toMetaDirName(repoName: string): string {
+	if (repoName.includes("/")) {
+		const [owner, repo] = repoName.split("/");
+		return `${owner}-${repo}`;
+	}
+	return repoName;
 }
 
 export interface InstallSkillOptions {
 	skillContent: string;
 	summaryContent: string;
 	architectureContent: string;
+	skillJson?: string;
+	metaJson?: string;
+	architectureJson?: string;
+	fileIndexJson?: string;
 }
 
 function ensureSymlink(target: string, linkPath: string): void {
@@ -123,58 +133,54 @@ function ensureSymlink(target: string, linkPath: string): void {
 }
 
 /**
- * Install skill with references. Primary location is ~/.ow/skills/, with symlinks
- * from OpenCode and Claude Code skill directories.
- *
- * Structure per agentskills.io spec:
- * {owner}-{repo}-reference/
+ * Skill directory (agent-facing):
+ * ~/.config/offworld/skills/{owner}-{repo}-reference/
  * ├── SKILL.md
  * └── references/
  *     ├── summary.md
  *     └── architecture.md
+ *
+ * Meta directory (internal/API):
+ * ~/.config/offworld/meta/{owner}-{repo}/
+ * ├── skill.json
+ * ├── meta.json
+ * ├── architecture.json
+ * └── file-index.json
  */
 export function installSkillWithReferences(repoName: string, options: InstallSkillOptions): void {
 	const config = loadConfig();
 	const skillDirName = toSkillDirName(repoName);
+	const metaDirName = toMetaDirName(repoName);
 
-	// Primary location: ~/.ow/skills/{owner}-{repo}-reference
-	const primaryDir = expandTilde(join(config.metaRoot, "skills", skillDirName));
+	const skillDir = expandTilde(join(config.metaRoot, "skills", skillDirName));
+	const refsDir = join(skillDir, "references");
+	const metaDir = expandTilde(join(config.metaRoot, "meta", metaDirName));
 
-	mkdirSync(primaryDir, { recursive: true });
-	mkdirSync(join(primaryDir, "references"), { recursive: true });
+	mkdirSync(refsDir, { recursive: true });
+	mkdirSync(metaDir, { recursive: true });
 
-	writeFileSync(join(primaryDir, "SKILL.md"), options.skillContent, "utf-8");
-	writeFileSync(join(primaryDir, "references", "summary.md"), options.summaryContent, "utf-8");
-	writeFileSync(
-		join(primaryDir, "references", "architecture.md"),
-		options.architectureContent,
-		"utf-8",
-	);
+	writeFileSync(join(skillDir, "SKILL.md"), options.skillContent, "utf-8");
+	writeFileSync(join(refsDir, "summary.md"), options.summaryContent, "utf-8");
+	writeFileSync(join(refsDir, "architecture.md"), options.architectureContent, "utf-8");
 
-	// Symlink from OpenCode and Claude Code skill directories
-	const openCodeSkillDir = expandTilde(join(config.skillDir, skillDirName));
-	const claudeSkillDir = join(homedir(), ".claude", "skills", skillDirName);
-
-	ensureSymlink(primaryDir, openCodeSkillDir);
-	ensureSymlink(primaryDir, claudeSkillDir);
-}
-
-/**
- * @deprecated Use installSkillWithReferences instead for full skill directory structure
- */
-export function installSkill(repoName: string, skillContent: string): void {
-	const config = loadConfig();
-	const skillDirName = toSkillDirName(repoName);
-
-	const primaryDir = expandTilde(join(config.metaRoot, "skills", skillDirName));
-	mkdirSync(primaryDir, { recursive: true });
-	writeFileSync(join(primaryDir, "SKILL.md"), skillContent, "utf-8");
+	if (options.skillJson) {
+		writeFileSync(join(metaDir, "skill.json"), options.skillJson, "utf-8");
+	}
+	if (options.metaJson) {
+		writeFileSync(join(metaDir, "meta.json"), options.metaJson, "utf-8");
+	}
+	if (options.architectureJson) {
+		writeFileSync(join(metaDir, "architecture.json"), options.architectureJson, "utf-8");
+	}
+	if (options.fileIndexJson) {
+		writeFileSync(join(metaDir, "file-index.json"), options.fileIndexJson, "utf-8");
+	}
 
 	const openCodeSkillDir = expandTilde(join(config.skillDir, skillDirName));
 	const claudeSkillDir = join(homedir(), ".claude", "skills", skillDirName);
 
-	ensureSymlink(primaryDir, openCodeSkillDir);
-	ensureSymlink(primaryDir, claudeSkillDir);
+	ensureSymlink(skillDir, openCodeSkillDir);
+	ensureSymlink(skillDir, claudeSkillDir);
 }
 
 export interface UpdateSkillPathsResult {
@@ -198,7 +204,7 @@ export function updateSkillPaths(
 	const skillDirs = [
 		expandTilde(config.skillDir),
 		join(homedir(), ".claude", "skills"),
-		join(expandTilde(config.metaRoot), "analyses"),
+		join(expandTilde(config.metaRoot), "skills"),
 	];
 
 	for (const baseDir of skillDirs) {
@@ -498,17 +504,14 @@ export async function runAnalysisPipeline(
 	const onDebug = options.onDebug;
 	const config = loadConfig();
 
-	// Step 1: Initialize language parsers
-	onProgress("init", "Initializing language parsers...");
+	onProgress("init", "Initializing language parsers");
 	await initLanguages();
 
-	// Step 2: Discover all source files
-	onProgress("discover", "Discovering source files...");
+	onProgress("discover", "Discovering source files");
 	const filePaths = discoverFiles(repoPath, "", onDebug);
 	onDebug?.(`Discovered ${filePaths.length} source files`);
 
-	// Step 3: Parse all files
-	onProgress("parse", "Parsing source files...");
+	onProgress("parse", "Parsing source files");
 	const parsedFiles = new Map<string, ParsedFile>();
 	const fileContents = new Map<string, string>();
 	let symbolsExtracted = 0;
@@ -532,12 +535,10 @@ export async function runAnalysisPipeline(
 	}
 	onDebug?.(`Parsed ${parsedFiles.size} files, extracted ${symbolsExtracted} symbols`);
 
-	// Step 4: Rank files with AST-enhanced heuristics
-	onProgress("rank", "Ranking files by importance...");
+	onProgress("rank", "Ranking files by importance");
 	const rankedFiles = await rankFilesWithAST(repoPath, parsedFiles);
 
-	// Step 5: Build deterministic skeleton
-	onProgress("skeleton", "Building skill skeleton...");
+	onProgress("skeleton", "Building skill skeleton");
 	const repoName = options.qualifiedName ?? basename(repoPath);
 	const skeleton = buildSkeleton(repoPath, repoName, rankedFiles, parsedFiles);
 
@@ -545,7 +546,7 @@ export async function runAnalysisPipeline(
 	// Use options.provider/model if provided, otherwise fall back to config.ai settings
 	const aiProvider = options.provider ?? config.ai?.provider;
 	const aiModel = options.model ?? config.ai?.model;
-	onProgress("prose", "Generating prose with AI...");
+	onProgress("prose", "Generating prose with AI");
 	onDebug?.(`Using AI: ${aiProvider ?? "default"}/${aiModel ?? "default"}`);
 	const proseResult = await generateProseWithRetry(skeleton, {
 		provider: aiProvider,
@@ -555,32 +556,30 @@ export async function runAnalysisPipeline(
 	});
 	onDebug?.(`Prose generation completed in ${proseResult.attempts} attempt(s)`);
 
-	// Step 7: Validate consistency
-	onProgress("validate", "Validating consistency...");
+	onProgress("validate", "Validating consistency");
 	const consistencyReport = validateConsistency(skeleton, proseResult.prose);
 	if (!consistencyReport.passed) {
 		onDebug?.(`Consistency warnings: ${consistencyReport.issues.map((i) => i.message).join(", ")}`);
 	}
 
-	// Step 8: Merge skeleton + prose
-	onProgress("merge", "Merging skeleton and prose...");
+	onProgress("merge", "Merging skeleton and prose");
 	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose, {
 		qualifiedName: options.qualifiedName,
 		repoRoot: config.repoRoot,
 		metaRoot: config.metaRoot,
 	});
 
-	onProgress("graph", "Building dependency graph...");
+	onProgress("graph", "Building dependency graph");
 	const graph = buildDependencyGraph(parsedFiles, repoPath);
 	onDebug?.(`Graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
 
-	onProgress("architecture", "Building architecture graph...");
+	onProgress("architecture", "Building architecture graph");
 	const architectureGraph = buildArchitectureGraph(parsedFiles, graph);
 	onDebug?.(
 		`Architecture: ${architectureGraph.nodes.length} nodes, ${architectureGraph.edges.length} edges, ${architectureGraph.symbolTable.size} symbols`,
 	);
 
-	onProgress("state", "Building incremental state...");
+	onProgress("state", "Building incremental state");
 	const commitSha = getCommitSha(repoPath);
 	const incrementalState = buildIncrementalState(parsedFiles, fileContents, commitSha);
 

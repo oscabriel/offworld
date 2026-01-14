@@ -6,7 +6,8 @@ import * as p from "@clack/prompts";
 import {
 	parseRepoInput,
 	getToken,
-	getAnalysisPath,
+	getMetaPath,
+	getSkillPath,
 	getCommitSha,
 	getClonedRepoPath,
 	isRepoCloned,
@@ -41,17 +42,13 @@ export interface PushResult {
 // Helper Functions
 // ============================================================================
 
-/**
- * Load local analysis data for a repository
- */
-function loadLocalAnalysis(analysisPath: string): AnalysisData | null {
-	const summaryPath = join(analysisPath, "summary.md");
-	const architecturePath = join(analysisPath, "architecture.json");
-	const fileIndexPath = join(analysisPath, "file-index.json");
-	const skillPath = join(analysisPath, "skill.json");
-	const metaPath = join(analysisPath, "meta.json");
+function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | null {
+	const summaryPath = join(skillDir, "references", "summary.md");
+	const architecturePath = join(metaDir, "architecture.json");
+	const fileIndexPath = join(metaDir, "file-index.json");
+	const skillPath = join(metaDir, "skill.json");
+	const metaPath = join(metaDir, "meta.json");
 
-	// Check all required files exist
 	const requiredFiles = [summaryPath, architecturePath, fileIndexPath, skillPath, metaPath];
 
 	for (const file of requiredFiles) {
@@ -71,7 +68,7 @@ function loadLocalAnalysis(analysisPath: string): AnalysisData | null {
 		};
 
 		return {
-			fullName: "", // Will be set by caller
+			fullName: "",
 			summary,
 			architecture,
 			fileIndex,
@@ -162,9 +159,10 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 
 		// Step 5: Load local analysis
 		s.start("Loading local analysis...");
-		const analysisPath = getAnalysisPath(source.fullName, source.provider);
+		const metaDir = getMetaPath(source.fullName);
+		const skillDir = getSkillPath(source.fullName);
 
-		if (!existsSync(analysisPath)) {
+		if (!existsSync(metaDir)) {
 			s.stop("No analysis found");
 			p.log.error(`No analysis found for ${source.fullName}.`);
 			p.log.info(`Run 'ow generate ${source.fullName}' to generate analysis.`);
@@ -174,7 +172,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			};
 		}
 
-		const localAnalysis = loadLocalAnalysis(analysisPath);
+		const localAnalysis = loadLocalAnalysis(metaDir, skillDir);
 
 		if (!localAnalysis) {
 			s.stop("Invalid analysis");

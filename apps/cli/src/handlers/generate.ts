@@ -1,6 +1,4 @@
 import * as p from "@clack/prompts";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import {
 	parseRepoInput,
 	cloneRepo,
@@ -14,8 +12,7 @@ import {
 	formatSummaryMd,
 	formatArchitectureMd,
 	loadConfig,
-	getAnalysisPath,
-	getMetaRoot,
+	getSkillPath,
 	updateIndex,
 	getIndexEntry,
 } from "@offworld/sdk";
@@ -111,31 +108,19 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const generated = analyzedAt.split("T")[0];
 		const repoName = source.type === "remote" ? source.fullName : source.name;
 
-		const analysisPath =
-			source.type === "remote"
-				? getAnalysisPath(source.fullName, source.provider)
-				: join(getMetaRoot(), "analyses", `local--${source.qualifiedName.replace("local:", "")}`);
-
-		mkdirSync(analysisPath, { recursive: true });
-
 		const summaryMd = formatSummaryMd(prose, { repoName });
-		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
-
 		const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
-		writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
-
-		writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
-
 		const skillMd = formatSkillMd(skill, { commitSha, generated });
-		writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
-
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
-		writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+
+		const skillPath = getSkillPath(repoName);
 
 		installSkillWithReferences(repoName, {
 			skillContent: skillMd,
 			summaryContent: summaryMd,
 			architectureContent: architectureMd,
+			skillJson: JSON.stringify(skill, null, 2),
+			metaJson: JSON.stringify(meta, null, 2),
 		});
 
 		const entry = getIndexEntry(source.qualifiedName);
@@ -148,7 +133,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			});
 		}
 
-		p.log.success(`Analysis saved to: ${analysisPath}`);
+		p.log.success(`Skill saved to: ${skillPath}`);
 		p.log.info(`Skill installed for: ${repoName}`);
 		p.log.info(
 			`Files parsed: ${result.stats.filesParsed}, Symbols: ${result.stats.symbolsExtracted}`,
@@ -156,7 +141,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 
 		return {
 			success: true,
-			analysisPath,
+			analysisPath: skillPath,
 		};
 	} catch (error) {
 		s.stop("Failed");

@@ -277,10 +277,9 @@ export async function removeRepo(
 		rmSync(entry.localPath, { recursive: true, force: true });
 	}
 
-	// Remove analysis directory
 	const analysisPath = join(
 		getMetaRoot(),
-		"analyses",
+		"skills",
 		getAnalysisPathFromQualifiedName(qualifiedName),
 	);
 	if (existsSync(analysisPath)) {
@@ -298,20 +297,15 @@ export async function removeRepo(
 	return true;
 }
 
-/**
- * Derive analysis path suffix from qualified name
- */
 function getAnalysisPathFromQualifiedName(qualifiedName: string): string {
-	// Format: "provider:owner/repo" or "local:hash"
 	if (qualifiedName.startsWith("local:")) {
 		const hash = qualifiedName.replace("local:", "");
-		return `local--${hash}`;
+		return `local-${hash}-reference`;
 	}
 
-	// Remote: "github:owner/repo" -> "github--owner--repo"
-	const [provider, fullName] = qualifiedName.split(":");
+	const [_provider, fullName] = qualifiedName.split(":");
 	const [owner, repo] = fullName?.split("/") ?? [];
-	return `${provider}--${owner}--${repo}`;
+	return `${owner}-${repo}-reference`;
 }
 
 /**

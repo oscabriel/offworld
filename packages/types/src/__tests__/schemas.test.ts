@@ -37,7 +37,7 @@ describe("ConfigSchema", () => {
 	it("rejects invalid config (wrong types)", () => {
 		const invalid = {
 			repoRoot: 123,
-			metaRoot: "~/.ow",
+			metaRoot: "~/.config/offworld",
 			skillDir: "~/.config/opencode/skill",
 			defaultShallow: "yes",
 			autoAnalyze: true,
@@ -52,7 +52,7 @@ describe("ConfigSchema", () => {
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.data.repoRoot).toBe("~/ow");
-			expect(result.data.metaRoot).toBe("~/.ow");
+			expect(result.data.metaRoot).toBe("~/.config/offworld");
 			expect(result.data.skillDir).toBe("~/.config/opencode/skill");
 			expect(result.data.defaultShallow).toBe(true);
 			expect(result.data.autoAnalyze).toBe(true);

@@ -271,28 +271,28 @@ describe("repo-source.ts", () => {
 	// getAnalysisPathForSource tests
 	// =========================================================================
 	describe("getAnalysisPathForSource", () => {
-		it("sanitizes qualifiedName correctly for remote", () => {
+		it("returns owner-repo-reference format for remote", () => {
 			const source = parseRepoInput("tanstack/router");
 			const result = getAnalysisPathForSource(source);
 
-			expect(result).toBe("github--tanstack--router");
+			expect(result).toBe("tanstack-router-reference");
 		});
 
-		it("sanitizes qualifiedName correctly for gitlab", () => {
+		it("returns owner-repo-reference format for gitlab", () => {
 			const source = parseRepoInput("https://gitlab.com/group/project");
 			const result = getAnalysisPathForSource(source);
 
-			expect(result).toBe("gitlab--group--project");
+			expect(result).toBe("group-project-reference");
 		});
 
-		it("sanitizes qualifiedName correctly for local", () => {
+		it("returns name-reference format for local", () => {
 			mockExistsSync.mockReturnValue(true);
 			mockStatSync.mockReturnValue({ isDirectory: () => true });
 
 			const source = parseRepoInput("/some/path");
 			const result = getAnalysisPathForSource(source);
 
-			expect(result).toMatch(/^local--[a-f0-9]{12}$/);
+			expect(result).toMatch(/^path-reference$/);
 		});
 	});
 

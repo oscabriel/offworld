@@ -192,7 +192,7 @@ const mockRepoRoot = join(homedir(), "ow");
 vi.mock("../config.js", () => ({
 	loadConfig: vi.fn(() => ({
 		repoRoot: "~/ow",
-		metaRoot: "~/.ow",
+		metaRoot: "~/.config/offworld",
 		skillDir: "~/.config/opencode/skill",
 		defaultShallow: true,
 		autoAnalyze: true,
@@ -599,11 +599,9 @@ describe("updateRepo", () => {
 
 describe("removeRepo", () => {
 	beforeEach(() => {
-		// Setup: add repo to index and filesystem
 		indexEntries[mockIndexEntry.qualifiedName] = { ...mockIndexEntry };
 		addVirtualPath(mockIndexEntry.localPath, true);
-		// Add analysis directory
-		const analysisPath = join(mockMetaRoot, "analyses", "github--tanstack--router");
+		const analysisPath = join(mockMetaRoot, "skills", "tanstack-router-reference");
 		addVirtualPath(analysisPath, true);
 	});
 
@@ -623,7 +621,7 @@ describe("removeRepo", () => {
 
 		await removeRepo("github:tanstack/router");
 
-		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("analyses"), {
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("skills"), {
 			recursive: true,
 			force: true,
 		});

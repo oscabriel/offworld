@@ -176,7 +176,7 @@ describe("pipeline.integration", () => {
 			const prose = createMockProse();
 			const result = mergeProseIntoSkeleton(skeleton, prose, { qualifiedName: "tanstack/query" });
 
-			expect(result.skill.basePaths?.analysis).toBe("${OW_META}/analyses/tanstack--query");
+			expect(result.skill.basePaths?.analysis).toBe("${OW_META}/skills/tanstack--query");
 			expect(result.skill.basePaths?.analysis).not.toContain("/Users");
 		});
 
@@ -199,7 +199,7 @@ describe("pipeline.integration", () => {
 			const prose = createMockProse();
 			const result = mergeProseIntoSkeleton(skeleton, prose, { qualifiedName: "tanstack/router" });
 
-			expect(result.skill.basePaths?.analysis).toBe("${OW_META}/analyses/tanstack--router");
+			expect(result.skill.basePaths?.analysis).toBe("${OW_META}/skills/tanstack--router");
 		});
 	});
 

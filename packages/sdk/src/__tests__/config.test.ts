@@ -113,6 +113,8 @@ import {
 	getRepoRoot,
 	getRepoPath,
 	getAnalysisPath,
+	getSkillPath,
+	getMetaPath,
 	getConfigPath,
 	loadConfig,
 	saveConfig,
@@ -123,8 +125,8 @@ describe("config.ts", () => {
 	const mockMkdirSync = mkdirSync as ReturnType<typeof vi.fn>;
 
 	const home = homedir();
-	const configDir = join(home, ".ow").replace(/\\/g, "/");
-	const configPath = join(home, ".ow", "config.json").replace(/\\/g, "/");
+	const configDir = join(home, ".config", "offworld").replace(/\\/g, "/");
+	const configPath = join(home, ".config", "offworld", "offworld.json").replace(/\\/g, "/");
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -140,14 +142,14 @@ describe("config.ts", () => {
 	// getMetaRoot tests
 	// =========================================================================
 	describe("getMetaRoot", () => {
-		it("returns path ending in .ow", () => {
+		it("returns path ending in offworld", () => {
 			const result = getMetaRoot();
-			expect(result).toMatch(/\.ow$/);
+			expect(result).toMatch(/offworld$/);
 		});
 
 		it("expands ~ to home directory", () => {
 			const result = getMetaRoot();
-			expect(result).toBe(join(home, ".ow"));
+			expect(result).toBe(join(home, ".config", "offworld"));
 		});
 	});
 
@@ -168,11 +170,11 @@ describe("config.ts", () => {
 		it("returns custom path when configured", () => {
 			const config = {
 				repoRoot: "/custom/repos",
-				metaRoot: "~/.ow",
+				metaRoot: "~/.config/offworld",
 				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
 				autoAnalyze: true,
-				ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
+				ai: { provider: "opencode", model: "claude-opus-4-5" },
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe("/custom/repos");
@@ -181,11 +183,11 @@ describe("config.ts", () => {
 		it("expands tilde in custom path", () => {
 			const config = {
 				repoRoot: "~/custom/repos",
-				metaRoot: "~/.ow",
+				metaRoot: "~/.config/offworld",
 				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
 				autoAnalyze: true,
-				ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
+				ai: { provider: "opencode", model: "claude-opus-4-5" },
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe(join(home, "custom/repos"));
@@ -214,11 +216,11 @@ describe("config.ts", () => {
 		it("uses custom repoRoot from config", () => {
 			const config = {
 				repoRoot: "/data/repos",
-				metaRoot: "~/.ow",
+				metaRoot: "~/.config/offworld",
 				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
 				autoAnalyze: true,
-				ai: { provider: "anthropic", model: "claude-sonnet-4-20250514" },
+				ai: { provider: "opencode", model: "claude-opus-4-5" },
 			};
 			const result = getRepoPath("owner/repo", "github", config);
 			expect(result).toBe(join("/data/repos", "github", "owner", "repo"));
@@ -231,26 +233,40 @@ describe("config.ts", () => {
 	});
 
 	// =========================================================================
-	// getAnalysisPath tests
+	// getSkillPath tests
 	// =========================================================================
-	describe("getAnalysisPath", () => {
-		it("returns {meta}/analyses/github--owner--repo for owner/repo", () => {
-			const result = getAnalysisPath("tanstack/router");
-			expect(result).toBe(join(home, ".ow", "analyses", "github--tanstack--router"));
-		});
-
-		it("returns {meta}/analyses/gitlab--owner--repo for gitlab", () => {
-			const result = getAnalysisPath("group/project", "gitlab");
-			expect(result).toBe(join(home, ".ow", "analyses", "gitlab--group--project"));
-		});
-
-		it("returns {meta}/analyses/bitbucket--owner--repo for bitbucket", () => {
-			const result = getAnalysisPath("team/repo", "bitbucket");
-			expect(result).toBe(join(home, ".ow", "analyses", "bitbucket--team--repo"));
+	describe("getSkillPath", () => {
+		it("returns {meta}/skills/owner-repo-reference for owner/repo", () => {
+			const result = getSkillPath("tanstack/router");
+			expect(result).toBe(join(home, ".config", "offworld", "skills", "tanstack-router-reference"));
 		});
 
 		it("throws error for invalid fullName format", () => {
-			expect(() => getAnalysisPath("invalid")).toThrow("Invalid fullName format");
+			expect(() => getSkillPath("invalid")).toThrow("Invalid fullName format");
+		});
+	});
+
+	// =========================================================================
+	// getMetaPath tests
+	// =========================================================================
+	describe("getMetaPath", () => {
+		it("returns {meta}/meta/owner-repo for owner/repo", () => {
+			const result = getMetaPath("tanstack/router");
+			expect(result).toBe(join(home, ".config", "offworld", "meta", "tanstack-router"));
+		});
+
+		it("throws error for invalid fullName format", () => {
+			expect(() => getMetaPath("invalid")).toThrow("Invalid fullName format");
+		});
+	});
+
+	// =========================================================================
+	// getAnalysisPath tests (deprecated, delegates to getSkillPath)
+	// =========================================================================
+	describe("getAnalysisPath", () => {
+		it("delegates to getSkillPath", () => {
+			const result = getAnalysisPath("tanstack/router");
+			expect(result).toBe(getSkillPath("tanstack/router"));
 		});
 	});
 
@@ -258,9 +274,9 @@ describe("config.ts", () => {
 	// getConfigPath tests
 	// =========================================================================
 	describe("getConfigPath", () => {
-		it("returns ~/.ow/config.json", () => {
+		it("returns ~/.config/offworld/offworld.json", () => {
 			const result = getConfigPath();
-			expect(result).toBe(join(home, ".ow", "config.json"));
+			expect(result).toBe(join(home, ".config", "offworld", "offworld.json"));
 		});
 	});
 
@@ -269,12 +285,10 @@ describe("config.ts", () => {
 	// =========================================================================
 	describe("loadConfig", () => {
 		it("returns defaults when config file missing", () => {
-			// Virtual FS is empty - no config file
-
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("~/ow");
-			expect(result.metaRoot).toBe("~/.ow");
+			expect(result.metaRoot).toBe("~/.config/offworld");
 			expect(result.skillDir).toBe("~/.config/opencode/skill");
 			expect(result.defaultShallow).toBe(true);
 			expect(result.autoAnalyze).toBe(true);
@@ -308,8 +322,8 @@ describe("config.ts", () => {
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("/custom/path");
-			expect(result.metaRoot).toBe("~/.ow"); // default
-			expect(result.defaultShallow).toBe(true); // default
+			expect(result.metaRoot).toBe("~/.config/offworld");
+			expect(result.defaultShallow).toBe(true);
 		});
 
 		// =====================================================================
@@ -414,7 +428,7 @@ describe("config.ts", () => {
 			saveConfig({ repoRoot: "/new/path" });
 
 			// Should create with recursive: true
-			expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringMatching(/\.ow$/), {
+			expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringMatching(/offworld$/), {
 				recursive: true,
 			});
 		});
@@ -454,7 +468,7 @@ describe("config.ts", () => {
 			const result = saveConfig({ repoRoot: "/test/path" });
 
 			expect(result.repoRoot).toBe("/test/path");
-			expect(result.metaRoot).toBe("~/.ow"); // default applied
+			expect(result.metaRoot).toBe("~/.config/offworld");
 		});
 
 		it("writes config with correct encoding", () => {

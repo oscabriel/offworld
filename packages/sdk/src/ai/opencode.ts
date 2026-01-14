@@ -24,18 +24,15 @@ export {
 	TimeoutError,
 } from "./errors.js";
 
-/** Default AI provider */
-export const DEFAULT_AI_PROVIDER = "anthropic";
-/** Default AI model */
-export const DEFAULT_AI_MODEL = "claude-sonnet-4-20250514";
+export const DEFAULT_AI_PROVIDER = "opencode";
+export const DEFAULT_AI_MODEL = "claude-opus-4-5";
 
 export interface StreamPromptOptions {
 	prompt: string;
 	cwd: string;
 	systemPrompt?: string;
-	/** AI provider ID (e.g., "anthropic", "openai"). Defaults to anthropic. */
 	provider?: string;
-	/** AI model ID. Defaults to claude-sonnet-4-20250514. */
+
 	model?: string;
 	/** Timeout in milliseconds. Set to 0 or undefined for no timeout. */
 	timeoutMs?: number;
@@ -102,23 +99,20 @@ interface OpenCodeClient {
 	};
 }
 
+interface AgentConfig {
+	disable?: boolean;
+	prompt?: string;
+	description?: string;
+	mode?: string;
+	permission?: Record<string, string>;
+	tools?: Record<string, boolean>;
+}
+
 interface OpenCodeConfig {
 	plugin?: unknown[];
 	mcp?: Record<string, unknown>;
 	instructions?: unknown[];
-	agent?: {
-		build?: { disable: boolean };
-		general?: { disable: boolean };
-		plan?: { disable: boolean };
-		explore?: {
-			disable?: boolean;
-			prompt?: string;
-			description?: string;
-			mode?: string;
-			permission?: Record<string, string>;
-			tools?: Record<string, boolean>;
-		};
-	};
+	agent?: Record<string, AgentConfig>;
 }
 
 type CreateOpencodeResult = { server: OpenCodeServer };
@@ -192,15 +186,23 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			build: { disable: true },
 			general: { disable: true },
 			plan: { disable: true },
-			explore: {
+			explore: { disable: true },
+			analyze: {
 				prompt: [
-					"You are a codebase documentation expert.",
-					"Analyze the codebase using read, grep, glob tools.",
-					"Output ONLY valid JSON matching the exact schema provided.",
-					"No markdown, no code blocks, no explanations - raw JSON only.",
+					"You are an expert at analyzing open source codebases and producing documentation.",
+					"",
+					"Your job is to read the codebase and produce structured output based on the user's request.",
+					"Use glob to discover files, grep to search for patterns, and read to examine file contents.",
+					"",
+					"Guidelines:",
+					"- Explore the codebase thoroughly before producing output",
+					"- Focus on understanding architecture, key abstractions, and usage patterns",
+					"- When asked for JSON output, respond with ONLY valid JSON - no markdown, no code blocks",
+					"- When asked for prose, write clear and concise documentation",
+					"- Always base your analysis on actual code you've read, never speculate",
 				].join("\n"),
 				mode: "primary",
-				description: "Analyze code and generate structured documentation",
+				description: "Analyze open source codebases and produce summaries and skill files",
 				tools: {
 					read: true,
 					grep: true,
@@ -312,7 +314,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		const promptPromise = client.session.prompt({
 			path: { id: sessionId },
 			body: {
-				agent: "explore",
+				agent: "analyze",
 				parts: [{ type: "text", text: fullPrompt }],
 				model: { providerID, modelID },
 			},
@@ -325,12 +327,10 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 
 		const processEvents = async (): Promise<string> => {
 			for await (const event of eventStream) {
-				// Skip events not for this session
 				if (!isEventForSession(event, sessionId)) {
 					continue;
 				}
 
-				// Parse event using typed schemas
 				const parsed = parseStreamEvent(event);
 
 				switch (parsed.type) {
@@ -365,7 +365,6 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 					}
 
 					case "unknown":
-						// Silently ignore unknown event types
 						break;
 				}
 			}

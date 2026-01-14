@@ -26,3 +26,4 @@ export {
 	type AuthLogoutResult,
 	type AuthStatusResult,
 } from "./auth.js";
+export { initHandler, type InitOptions, type InitResult } from "./init.js";

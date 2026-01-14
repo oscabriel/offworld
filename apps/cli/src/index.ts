@@ -15,6 +15,7 @@ import {
 	authLoginHandler,
 	authLogoutHandler,
 	authStatusHandler,
+	initHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -209,6 +210,19 @@ export const router = os.router({
 				return configPathHandler();
 			}),
 	}),
+
+	init: os
+		.input(
+			z.object({
+				yes: z.boolean().default(false).describe("Skip confirmation prompts").meta({ alias: "y" }),
+			}),
+		)
+		.meta({
+			description: "Initialize configuration with interactive setup",
+		})
+		.handler(async ({ input }) => {
+			return initHandler({ yes: input.yes });
+		}),
 });
 
 export function createOwCli() {

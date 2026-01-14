@@ -6,7 +6,8 @@ import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
 import {
 	listIndexedRepos,
-	getAnalysisPath,
+	getSkillPath,
+	getMetaPath,
 	getCommitSha,
 	cloneRepo,
 	parseRepoInput,
@@ -18,7 +19,7 @@ import {
 	loadConfig,
 } from "@offworld/sdk";
 import type { Architecture } from "@offworld/types";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const version = "0.1.0";
@@ -86,15 +87,9 @@ interface RepoInfo {
 // Tool Implementation
 // ============================================================================
 
-/**
- * Load summary.md content for a repository
- */
-function loadSummary(
-	fullName: string,
-	provider: "github" | "gitlab" | "bitbucket" = "github",
-): string | null {
-	const analysisPath = getAnalysisPath(fullName, provider);
-	const summaryPath = join(analysisPath, "summary.md");
+function loadSummary(fullName: string): string | null {
+	const skillPath = getSkillPath(fullName);
+	const summaryPath = join(skillPath, "references", "summary.md");
 
 	if (!existsSync(summaryPath)) {
 		return null;
@@ -107,15 +102,9 @@ function loadSummary(
 	}
 }
 
-/**
- * Load architecture.json for a repository
- */
-function loadArchitecture(
-	fullName: string,
-	provider: "github" | "gitlab" | "bitbucket" = "github",
-): Architecture | null {
-	const analysisPath = getAnalysisPath(fullName, provider);
-	const archPath = join(analysisPath, "architecture.json");
+function loadArchitecture(fullName: string): Architecture | null {
+	const metaPath = getMetaPath(fullName);
+	const archPath = join(metaPath, "architecture.json");
 
 	if (!existsSync(archPath)) {
 		return null;
@@ -129,22 +118,17 @@ function loadArchitecture(
 	}
 }
 
-/**
- * List all cloned repositories with their status
- */
 function listRepos(): RepoInfo[] {
 	const repos = listIndexedRepos();
 
 	return repos.map((entry) => {
-		// Parse provider from qualifiedName (e.g., "github:owner/repo")
 		const [providerPart, namePart] = entry.qualifiedName.split(":");
-		const provider = providerPart as "github" | "gitlab" | "bitbucket" | "local";
+		const isLocal = providerPart === "local";
 
-		// Check if analysis exists
 		let hasAnalysis = false;
-		if (provider !== "local" && namePart) {
-			const analysisPath = getAnalysisPath(namePart, provider as "github" | "gitlab" | "bitbucket");
-			hasAnalysis = existsSync(join(analysisPath, "meta.json"));
+		if (!isLocal && namePart) {
+			const metaPath = getMetaPath(namePart);
+			hasAnalysis = existsSync(join(metaPath, "meta.json"));
 		}
 
 		return {
@@ -177,7 +161,9 @@ async function cloneAndAnalyze(
 			config,
 		});
 
-		const result = await runAnalysisPipeline(repoPath, {});
+		const result = await runAnalysisPipeline(repoPath, {
+			qualifiedName: source.fullName,
+		});
 
 		const { skill: mergedSkill, graph, architectureGraph } = result;
 		const skill = mergedSkill.skill;
@@ -187,27 +173,18 @@ async function cloneAndAnalyze(
 		const analyzedAt = new Date().toISOString();
 		const generated = analyzedAt.split("T")[0];
 
-		const analysisPath = getAnalysisPath(source.fullName, source.provider);
-		mkdirSync(analysisPath, { recursive: true });
-
 		const summaryMd = formatSummaryMd(prose, { repoName: source.fullName });
-		writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
-
 		const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
-		writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
-
-		writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
-
 		const skillMd = formatSkillMd(skill, { commitSha, generated });
-		writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
-
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
-		writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 
 		installSkillWithReferences(source.fullName, {
 			skillContent: skillMd,
 			summaryContent: summaryMd,
 			architectureContent: architectureMd,
+			skillJson: JSON.stringify(skill, null, 2),
+			metaJson: JSON.stringify(meta, null, 2),
+			architectureJson: JSON.stringify(architectureGraph, null, 2),
 		});
 
 		return {
@@ -260,15 +237,8 @@ const offworldTool = tool({
 				if (!repo) {
 					return "Error: 'repo' parameter required for summary mode. Use format 'owner/repo'.";
 				}
-				// Parse to get provider
-				let provider: "github" | "gitlab" | "bitbucket" = "github";
-				let fullName: string = repo;
-				if (repo.includes(":")) {
-					const [p, name] = repo.split(":");
-					provider = p as "github" | "gitlab" | "bitbucket";
-					fullName = name ?? repo;
-				}
-				const summary = loadSummary(fullName, provider);
+				const fullNameForSummary = repo.includes(":") ? (repo.split(":")[1] ?? repo) : repo;
+				const summary = loadSummary(fullNameForSummary);
 				if (!summary) {
 					return `No summary found for ${repo}. Run 'ow pull ${repo}' to generate analysis.`;
 				}
@@ -279,15 +249,8 @@ const offworldTool = tool({
 				if (!repo) {
 					return "Error: 'repo' parameter required for architecture mode. Use format 'owner/repo'.";
 				}
-				// Parse to get provider
-				let provider: "github" | "gitlab" | "bitbucket" = "github";
-				let fullName: string = repo;
-				if (repo.includes(":")) {
-					const [p, name] = repo.split(":");
-					provider = p as "github" | "gitlab" | "bitbucket";
-					fullName = name ?? repo;
-				}
-				const arch = loadArchitecture(fullName, provider);
+				const fullNameForArch = repo.includes(":") ? (repo.split(":")[1] ?? repo) : repo;
+				const arch = loadArchitecture(fullNameForArch);
 				if (!arch) {
 					return `No architecture found for ${repo}. Run 'ow pull ${repo}' to generate analysis.`;
 				}

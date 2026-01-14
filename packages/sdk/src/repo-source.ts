@@ -220,15 +220,9 @@ export function parseRepoInput(input: string): RepoSource {
 	);
 }
 
-/**
- * Returns the analysis path suffix for a repo source
- * Used by index-manager and other utilities
- */
 export function getAnalysisPathForSource(source: RepoSource): string {
 	if (source.type === "remote") {
-		return `${source.provider}--${source.owner}--${source.repo}`;
+		return `${source.owner}-${source.repo}-reference`;
 	}
-	// For local repos, use the hash from qualifiedName
-	const hash = source.qualifiedName.replace("local:", "");
-	return `local--${hash}`;
+	return `${source.name}-reference`;
 }

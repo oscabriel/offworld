@@ -96,7 +96,7 @@ export function mergeProseIntoSkeleton(
 
 	const analysisKey = options.qualifiedName ?? skeleton.name;
 	const repoRelative = computeRepoRelativePath(skeleton.repoPath, options.repoRoot);
-	const analysisRelative = `analyses/${analysisKey.replace(/\//g, "--")}`;
+	const analysisRelative = `skills/${analysisKey.replace(/\//g, "--")}`;
 
 	const skill: Skill = {
 		name: skeleton.name,

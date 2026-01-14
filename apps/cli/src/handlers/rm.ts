@@ -18,65 +18,57 @@ export interface RmResult {
 	success: boolean;
 	removed?: {
 		repoPath?: string;
-		analysisPath?: string;
-		skillPaths?: string[];
+		skillPath?: string;
+		symlinkPaths?: string[];
 	};
 	message?: string;
 }
 
-/**
- * Get paths that would be affected by removal
- */
+function toSkillDirName(repoName: string): string {
+	if (repoName.includes("/")) {
+		const [owner, repo] = repoName.split("/");
+		return `${owner}-${repo}-reference`;
+	}
+	return `${repoName}-reference`;
+}
+
 function getAffectedPaths(qualifiedName: string): {
 	repoPath?: string;
-	analysisPath?: string;
-	skillPaths: string[];
+	skillPath?: string;
+	symlinkPaths: string[];
 } {
 	const entry = getIndexEntry(qualifiedName);
 	if (!entry) {
-		return { skillPaths: [] };
+		return { symlinkPaths: [] };
 	}
 
 	const repoPath = entry.localPath;
+	const skillDirName = toSkillDirName(entry.fullName);
 
-	// Derive analysis path from qualified name
-	let analysisPath: string;
-	if (qualifiedName.startsWith("local:")) {
-		const hash = qualifiedName.replace("local:", "");
-		analysisPath = join(getMetaRoot(), "analyses", `local--${hash}`);
-	} else {
-		const [provider, fullName] = qualifiedName.split(":");
-		const [owner, repo] = (fullName ?? "").split("/");
-		analysisPath = join(getMetaRoot(), "analyses", `${provider}--${owner}--${repo}`);
-	}
+	const skillPath = join(getMetaRoot(), "skills", skillDirName);
 
-	// Skill paths
-	const skillPaths: string[] = [];
-	const repoName = entry.fullName;
+	const symlinkPaths: string[] = [];
 
-	// OpenCode skill path
 	const openCodeSkillPath = join(
 		process.env.HOME || "",
 		".config",
 		"opencode",
 		"skill",
-		repoName,
-		"SKILL.md",
+		skillDirName,
 	);
 	if (existsSync(openCodeSkillPath)) {
-		skillPaths.push(openCodeSkillPath);
+		symlinkPaths.push(openCodeSkillPath);
 	}
 
-	// Claude Code skill path
-	const claudeSkillPath = join(process.env.HOME || "", ".claude", "skills", repoName, "SKILL.md");
+	const claudeSkillPath = join(process.env.HOME || "", ".claude", "skills", skillDirName);
 	if (existsSync(claudeSkillPath)) {
-		skillPaths.push(claudeSkillPath);
+		symlinkPaths.push(claudeSkillPath);
 	}
 
 	return {
 		repoPath: existsSync(repoPath) ? repoPath : undefined,
-		analysisPath: existsSync(analysisPath) ? analysisPath : undefined,
-		skillPaths,
+		skillPath: existsSync(skillPath) ? skillPath : undefined,
+		symlinkPaths,
 	};
 }
 
@@ -104,19 +96,18 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 		// Get affected paths
 		const affected = getAffectedPaths(qualifiedName);
 
-		// Show what would be deleted
 		if (dryRun || !yes) {
 			p.log.info("The following will be removed:");
 
 			if (affected.repoPath) {
 				console.log(`  Repository: ${affected.repoPath}`);
 			}
-			if (affected.analysisPath) {
-				console.log(`  Analysis: ${affected.analysisPath}`);
+			if (!keepSkill && affected.skillPath) {
+				console.log(`  Skill: ${affected.skillPath}`);
 			}
-			if (!keepSkill && affected.skillPaths.length > 0) {
-				for (const skillPath of affected.skillPaths) {
-					console.log(`  Skill: ${skillPath}`);
+			if (!keepSkill && affected.symlinkPaths.length > 0) {
+				for (const symlinkPath of affected.symlinkPaths) {
+					console.log(`  Symlink: ${symlinkPath}`);
 				}
 			}
 			console.log("");

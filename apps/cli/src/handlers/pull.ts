@@ -12,8 +12,8 @@ import {
 	canPushToWeb,
 	loadConfig,
 	loadAuthData,
-	getAnalysisPath,
-	getMetaRoot,
+	getSkillPath,
+	getMetaPath,
 	updateIndex,
 	getIndexEntry,
 	RepoExistsError,
@@ -27,7 +27,7 @@ import {
 	type AnalysisData,
 } from "@offworld/sdk";
 import type { RepoSource, Skill } from "@offworld/types";
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export interface PullOptions {
@@ -97,41 +97,13 @@ function rewriteSkillPaths(skill: Skill, localRepoPath: string, localAnalysisPat
 	};
 }
 
-/**
- * Save pulled analysis to local analysis directory
- */
 function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
-	let analysisPath: string;
-	if (source.type === "remote") {
-		analysisPath = getAnalysisPath(source.fullName, source.provider);
-	} else {
-		// For local repos, use meta root with hash
-		const hash = source.qualifiedName.replace("local:", "");
-		analysisPath = join(getMetaRoot(), "analyses", `local--${hash}`);
-	}
-
-	// Ensure directory exists
-	mkdirSync(analysisPath, { recursive: true });
-
-	// Write analysis files
-	writeFileSync(join(analysisPath, "summary.md"), analysis.summary, "utf-8");
-	writeFileSync(
-		join(analysisPath, "architecture.json"),
-		JSON.stringify(analysis.architecture, null, 2),
-		"utf-8",
-	);
-	writeFileSync(
-		join(analysisPath, "file-index.json"),
-		JSON.stringify(analysis.fileIndex, null, 2),
-		"utf-8",
-	);
-	writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(analysis.skill, null, 2), "utf-8");
+	const repoName = source.type === "remote" ? source.fullName : source.name;
 
 	const skillMd = formatSkillMd(analysis.skill, {
 		commitSha: analysis.commitSha,
 		generated: analysis.analyzedAt?.split("T")[0],
 	});
-	writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
 
 	const meta = {
 		analyzedAt: analysis.analyzedAt,
@@ -139,27 +111,38 @@ function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
 		version: "0.1.0",
 		pullCount: analysis.pullCount,
 	};
-	writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
+
+	installSkillWithReferences(repoName, {
+		skillContent: skillMd,
+		summaryContent: analysis.summary,
+		architectureContent: `# Architecture\n\n\`\`\`json\n${JSON.stringify(analysis.architecture, null, 2)}\n\`\`\``,
+		skillJson: JSON.stringify(analysis.skill, null, 2),
+		metaJson: JSON.stringify(meta, null, 2),
+		architectureJson: JSON.stringify(analysis.architecture, null, 2),
+		fileIndexJson: JSON.stringify(analysis.fileIndex, null, 2),
+	});
 }
 
 function hasLocalAnalysis(source: RepoSource, repoPath: string): boolean {
-	const analysisPath = getLocalAnalysisPath(source);
+	const metaDir = getLocalMetaDir(source);
 	const currentSha = getCommitSha(repoPath);
-	const stalenessResult = isAnalysisStale(analysisPath, currentSha);
+	const stalenessResult = isAnalysisStale(metaDir, currentSha);
 	return !stalenessResult.isStale;
 }
 
-function getLocalAnalysisPath(source: RepoSource): string {
-	if (source.type === "remote") {
-		return getAnalysisPath(source.fullName, source.provider);
-	}
-	const hash = source.qualifiedName.replace("local:", "");
-	return join(getMetaRoot(), "analyses", `local--${hash}`);
+function getLocalSkillDir(source: RepoSource): string {
+	const name = source.type === "remote" ? source.fullName : source.name;
+	return getSkillPath(name);
+}
+
+function getLocalMetaDir(source: RepoSource): string {
+	const name = source.type === "remote" ? source.fullName : source.name;
+	return getMetaPath(name);
 }
 
 function loadLocalSkill(source: RepoSource): Skill | null {
-	const analysisPath = getLocalAnalysisPath(source);
-	const skillPath = join(analysisPath, "skill.json");
+	const metaDir = getLocalMetaDir(source);
+	const skillPath = join(metaDir, "skill.json");
 	if (!existsSync(skillPath)) {
 		return null;
 	}
@@ -172,8 +155,8 @@ function loadLocalSkill(source: RepoSource): Skill | null {
 }
 
 function loadLocalMeta(source: RepoSource): { commitSha?: string; analyzedAt?: string } | null {
-	const analysisPath = getLocalAnalysisPath(source);
-	const metaPath = join(analysisPath, "meta.json");
+	const metaDir = getLocalMetaDir(source);
+	const metaPath = join(metaDir, "meta.json");
 	if (!existsSync(metaPath)) {
 		return null;
 	}
@@ -216,13 +199,15 @@ async function tryUploadAnalysis(
 		return;
 	}
 
-	const analysisPath = getAnalysisPath(source.fullName, source.provider);
+	const skillDir = getSkillPath(source.fullName);
+	const metaDir = getMetaPath(source.fullName);
+	const refsDir = join(skillDir, "references");
 
 	try {
-		const summary = readFileSync(join(analysisPath, "summary.md"), "utf-8");
-		const architecture = JSON.parse(readFileSync(join(analysisPath, "architecture.json"), "utf-8"));
-		const skill = JSON.parse(readFileSync(join(analysisPath, "skill.json"), "utf-8"));
-		const fileIndex = JSON.parse(readFileSync(join(analysisPath, "file-index.json"), "utf-8"));
+		const summary = readFileSync(join(refsDir, "summary.md"), "utf-8");
+		const architecture = JSON.parse(readFileSync(join(metaDir, "architecture.json"), "utf-8"));
+		const skill = JSON.parse(readFileSync(join(metaDir, "skill.json"), "utf-8"));
+		const fileIndex = JSON.parse(readFileSync(join(metaDir, "file-index.json"), "utf-8"));
 
 		const analysisData: AnalysisData = {
 			fullName: source.fullName,
@@ -340,11 +325,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							s.stop("Downloaded remote analysis");
 
 							// Rewrite skill paths for local environment
-							const localAnalysisPath = getAnalysisPath(source.fullName, source.provider);
+							const localSkillDir = getSkillPath(source.fullName);
 							const rewrittenSkill = rewriteSkillPaths(
 								remoteAnalysis.skill,
 								repoPath,
-								localAnalysisPath,
+								localSkillDir,
 							);
 
 							// Save analysis locally with rewritten skill
@@ -407,7 +392,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			}
 		}
 
-		verboseLog(`Checking for cached analysis at: ${getLocalAnalysisPath(source)}`, verbose);
+		verboseLog(`Checking for cached analysis at: ${getLocalMetaDir(source)}`, verbose);
 		if (!force && hasLocalAnalysis(source, repoPath)) {
 			const skill = loadLocalSkill(source);
 			const meta = loadLocalMeta(source);
@@ -418,12 +403,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					commitSha: meta?.commitSha,
 					generated: meta?.analyzedAt?.split("T")[0],
 				});
-				const analysisPath = getLocalAnalysisPath(source);
-				const summaryContent = existsSync(join(analysisPath, "summary.md"))
-					? readFileSync(join(analysisPath, "summary.md"), "utf-8")
+				const skillDir = getLocalSkillDir(source);
+				const refsDir = join(skillDir, "references");
+				const summaryContent = existsSync(join(refsDir, "summary.md"))
+					? readFileSync(join(refsDir, "summary.md"), "utf-8")
 					: "";
-				const architectureContent = existsSync(join(analysisPath, "architecture.md"))
-					? readFileSync(join(analysisPath, "architecture.md"), "utf-8")
+				const architectureContent = existsSync(join(refsDir, "architecture.md"))
+					? readFileSync(join(refsDir, "architecture.md"), "utf-8")
 					: "";
 				await installSkill({
 					repoName,
@@ -477,31 +463,17 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const generated = analyzedAt.split("T")[0];
 			const repoName = source.type === "remote" ? source.fullName : source.name;
 
-			const analysisPath =
-				source.type === "remote"
-					? getAnalysisPath(source.fullName, source.provider)
-					: join(getMetaRoot(), "analyses", `local--${source.qualifiedName.replace("local:", "")}`);
-
-			mkdirSync(analysisPath, { recursive: true });
-
 			const summaryMd = formatSummaryMd(prose, { repoName });
-			writeFileSync(join(analysisPath, "summary.md"), summaryMd, "utf-8");
-
 			const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
-			writeFileSync(join(analysisPath, "architecture.md"), architectureMd, "utf-8");
-
-			writeFileSync(join(analysisPath, "skill.json"), JSON.stringify(skill), "utf-8");
-
 			const skillMd = formatSkillMd(skill, { commitSha: analysisCommitSha, generated });
-			writeFileSync(join(analysisPath, "SKILL.md"), skillMd, "utf-8");
-
 			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
-			writeFileSync(join(analysisPath, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 
 			installSkillWithReferences(repoName, {
 				skillContent: skillMd,
 				summaryContent: summaryMd,
 				architectureContent: architectureMd,
+				skillJson: JSON.stringify(skill, null, 2),
+				metaJson: JSON.stringify(meta, null, 2),
 			});
 
 			if (!verbose) {

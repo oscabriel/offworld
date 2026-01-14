@@ -9,39 +9,48 @@ import { z } from "zod";
 // Message Part Schemas
 // ============================================================================
 
-/**
- * Text message part from stream event
- */
-export const TextPartSchema = z.object({
+const PartBaseSchema = z.object({
 	id: z.string().optional(),
+	sessionID: z.string().optional(),
+	messageID: z.string().optional(),
+});
+
+export const TextPartSchema = PartBaseSchema.extend({
 	type: z.literal("text"),
 	text: z.string().optional(),
 });
 
-/**
- * Tool use message part
- */
-export const ToolUsePartSchema = z.object({
-	id: z.string().optional(),
+export const ToolPartSchema = PartBaseSchema.extend({
+	type: z.literal("tool"),
+	callID: z.string().optional(),
+	tool: z.string().optional(),
+});
+
+export const StepStartPartSchema = PartBaseSchema.extend({
+	type: z.literal("step-start"),
+});
+
+export const StepFinishPartSchema = PartBaseSchema.extend({
+	type: z.literal("step-finish"),
+	reason: z.string().optional(),
+});
+
+export const ToolUsePartSchema = PartBaseSchema.extend({
 	type: z.literal("tool-use"),
 	toolUseId: z.string().optional(),
 	name: z.string().optional(),
 });
 
-/**
- * Tool result message part
- */
-export const ToolResultPartSchema = z.object({
-	id: z.string().optional(),
+export const ToolResultPartSchema = PartBaseSchema.extend({
 	type: z.literal("tool-result"),
 	toolUseId: z.string().optional(),
 });
 
-/**
- * Union of all message part types
- */
 export const MessagePartSchema = z.discriminatedUnion("type", [
 	TextPartSchema,
+	ToolPartSchema,
+	StepStartPartSchema,
+	StepFinishPartSchema,
 	ToolUsePartSchema,
 	ToolResultPartSchema,
 ]);
@@ -63,13 +72,8 @@ export const SessionErrorSchema = z.object({
 // Event Properties Schemas
 // ============================================================================
 
-/**
- * Properties for message.part.updated event
- */
 export const MessagePartUpdatedPropsSchema = z.object({
-	sessionID: z.string(),
-	messageID: z.string().optional(),
-	part: MessagePartSchema.optional(),
+	part: MessagePartSchema,
 });
 
 /**

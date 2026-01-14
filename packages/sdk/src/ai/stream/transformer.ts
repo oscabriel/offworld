@@ -7,7 +7,6 @@ import {
 	MessagePartUpdatedPropsSchema,
 	SessionIdlePropsSchema,
 	SessionErrorPropsSchema,
-	TextPartSchema,
 	SessionErrorSchema,
 	type TextPart,
 	type SessionErrorPayload,
@@ -45,16 +44,7 @@ export function parseStreamEvent(event: RawStreamEvent): ParsedEventResult {
 				return { type: "unknown", rawType: event.type };
 			}
 			const props = propsResult.data;
-
-			// Extract text part if present
-			let textPart: TextPart | null = null;
-			if (props.part?.type === "text") {
-				const textPartResult = TextPartSchema.safeParse(props.part);
-				if (textPartResult.success) {
-					textPart = textPartResult.data;
-				}
-			}
-
+			const textPart = props.part.type === "text" ? props.part : null;
 			return { type: "message.part.updated", props, textPart };
 		}
 
@@ -90,14 +80,19 @@ export function parseStreamEvent(event: RawStreamEvent): ParsedEventResult {
 	}
 }
 
-/**
- * Check if event belongs to a specific session
- */
 export function isEventForSession(event: RawStreamEvent, sessionId: string): boolean {
 	const props = event.properties;
 	if ("sessionID" in props && typeof props.sessionID === "string") {
 		return props.sessionID === sessionId;
 	}
-	// Events without sessionID are assumed to be for all sessions
+	if (
+		"part" in props &&
+		typeof props.part === "object" &&
+		props.part !== null &&
+		"sessionID" in props.part &&
+		typeof props.part.sessionID === "string"
+	) {
+		return props.part.sessionID === sessionId;
+	}
 	return true;
 }

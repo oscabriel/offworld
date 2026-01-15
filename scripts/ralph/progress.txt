@@ -98,3 +98,22 @@
 - Validation was only used for deterministic analysis caching - not needed for AI-only approach
 
 ---
+
+## 2026-01-15 - US-006
+
+- Removed all @ast-grep dependencies from `packages/sdk/package.json`
+- Ran `bun install` to update lockfile
+- Manually removed stale symlinks in `packages/sdk/node_modules/@ast-grep/`
+- Verified no ast-grep packages remain in node_modules
+
+**Files changed:**
+- `packages/sdk/package.json` (updated - 9 deps removed)
+- `bun.lock` (updated - 47 lines removed)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- Bun preserves symlinks to hoisted deps even after removing from package.json
+- Must `rm -rf` stale symlink directory then re-run `bun install` for clean state
+- 9 ast-grep packages removed: napi + 8 language bindings (python, rust, go, java, c, cpp, ruby, php)
+
+---

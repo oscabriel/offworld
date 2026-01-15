@@ -5,6 +5,19 @@ export const AIConfigSchema = z.object({
 	model: z.string().default("claude-opus-4-5"),
 });
 
+/**
+ * Supported AI coding agents for skill symlinks.
+ * Each agent has a different skill directory location - see packages/sdk/src/agents.ts for registry.
+ */
+export const AgentSchema = z.enum([
+	"opencode",
+	"claude-code",
+	"codex",
+	"amp",
+	"antigravity",
+	"cursor",
+]);
+
 export const ConfigSchema = z.object({
 	repoRoot: z.string().default("~/ow"),
 	metaRoot: z.string().default("~/.config/offworld"),
@@ -12,6 +25,8 @@ export const ConfigSchema = z.object({
 	defaultShallow: z.boolean().default(true),
 	autoAnalyze: z.boolean().default(true),
 	ai: AIConfigSchema.default({ provider: "opencode", model: "claude-opus-4-5" }),
+	/** Agents to create skill symlinks for. Auto-detected if empty. */
+	agents: z.array(AgentSchema).default([]),
 });
 
 export const GitProviderSchema = z.enum(["github", "gitlab", "bitbucket"]);

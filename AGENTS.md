@@ -79,3 +79,20 @@ bun run typecheck        # TypeScript check
 - Web app uses Convex + TanStack Query integration via `@convex-dev/react-query`
 - Auth SSR: token fetched in `__root.tsx` beforeLoad, passed to ConvexBetterAuthProvider
 - Deploy: `cd apps/web && bun run deploy` (uses Alchemy)
+
+## TYPES PACKAGE (`@offworld/types`)
+
+### Schema Design (US-009 - Strip Pipeline)
+
+**SkillSchema Simplification**: For AI-only approach, most SkillSchema fields are now optional. Only required fields:
+- `name: string` - Skill identifier
+- `description: string` - One-line description
+
+All other fields (whenToUse, bestPractices, commonPatterns, quickPaths, searchPatterns, etc.) are optional for backward compatibility with legacy API responses.
+
+**Architecture & FileIndex**: Still used by sync.ts, plugin, push handler, and backend schema. Cannot be removed as they're part of the remote API contract. New AI-only approach creates placeholder objects when needed.
+
+**Gotchas**:
+- Types used by sync/push handlers must remain for API compatibility even if local generation doesn't use them
+- Backend (Convex) has its own schema definitions that mirror types - changes to one don't automatically apply to the other
+- Test fixtures in handlers.test.ts use full skill objects with quickPaths/searchPatterns - these still work since fields are optional

@@ -255,7 +255,7 @@ describe("EntitySchema", () => {
 });
 
 describe("SkillSchema", () => {
-	it("validates skill with all required fields", () => {
+	it("validates skill with all fields", () => {
 		const skill = {
 			name: "tanstack-router",
 			description: "Expert on TanStack Router for type-safe routing",
@@ -279,26 +279,47 @@ describe("SkillSchema", () => {
 				"Want type-safe route params",
 				"Implementing route guards",
 			],
+			bestPractices: ["Use type-safe route params"],
+			commonPatterns: [{ name: "Basic route", steps: ["Define route", "Add component"] }],
 		};
 		const result = SkillSchema.safeParse(skill);
 		expect(result.success).toBe(true);
 	});
 
-	it("rejects skill missing required fields", () => {
+	it("accepts minimal skill with only required fields", () => {
+		const minimal = {
+			name: "minimal",
+			description: "Minimal skill with only required fields",
+		};
+		const result = SkillSchema.safeParse(minimal);
+		expect(result.success).toBe(true);
+	});
+
+	it("rejects skill missing name", () => {
 		const incomplete = {
-			name: "incomplete",
-			description: "Missing fields",
+			description: "Missing name field",
 		};
 		const result = SkillSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
 	});
 
-	it("accepts empty arrays for collection fields (except constrained ones)", () => {
+	it("rejects skill missing description", () => {
+		const incomplete = {
+			name: "no-description",
+		};
+		const result = SkillSchema.safeParse(incomplete);
+		expect(result.success).toBe(false);
+	});
+
+	it("accepts empty arrays for optional collection fields", () => {
 		const skill = {
-			name: "minimal",
-			description: "Minimal skill",
+			name: "with-empty-arrays",
+			description: "Skill with empty optional arrays",
 			quickPaths: [],
 			searchPatterns: [],
+			whenToUse: [],
+			bestPractices: [],
+			commonPatterns: [],
 		};
 		const result = SkillSchema.safeParse(skill);
 		expect(result.success).toBe(true);

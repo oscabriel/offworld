@@ -156,7 +156,7 @@
         "Remaining tests pass: bun test in packages/sdk"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Clean up tests after removing analysis code"
     },
     {

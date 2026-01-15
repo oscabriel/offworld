@@ -175,3 +175,24 @@
 - Test fixtures in CLI handlers.test.ts use full skill objects - work fine since fields are now optional
 
 ---
+
+## 2026-01-15 - US-010
+
+- Deleted `reference-quality.test.ts` (tested removed API surface quality functions)
+- Deleted `__tests__/fixtures/` directory (10 files: sample code files for AST parsing tests)
+- Verified all 227 SDK tests still pass
+- Updated AGENTS.md with test cleanup documentation
+
+**Files changed:**
+- `packages/sdk/src/__tests__/reference-quality.test.ts` (deleted)
+- `packages/sdk/src/__tests__/fixtures/` (deleted - 10 files)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- `reference-quality.test.ts` defined test implementations inline (not importing from SDK) - was dead code after removing API surface functionality
+- Fixtures were only imported by analysis/parser tests deleted in US-003 - no other tests used them
+- `mocks/` directory still needed by remaining tests (fs.ts, git.ts, fetch.ts)
+- Most analysis-related test files (analysis.test.ts, parsers.test.ts, etc.) were already deleted in earlier stories (US-003, US-005)
+- ~770 lines deleted
+
+---

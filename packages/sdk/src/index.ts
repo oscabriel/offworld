@@ -113,6 +113,7 @@ export {
 	formatSkillMd,
 	formatSummaryMd,
 	formatArchitectureMd,
+	formatArchitectureMdLegacy,
 	runAnalysisPipeline,
 	installSkillWithReferences,
 	updateSkillPaths,

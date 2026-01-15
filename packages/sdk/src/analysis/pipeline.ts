@@ -128,6 +128,8 @@ export interface InstallSkillOptions {
 	skillContent: string;
 	summaryContent: string;
 	architectureContent: string;
+	apiReferenceContent?: string;
+	developmentContent?: string;
 	skillJson?: string;
 	metaJson?: string;
 	architectureJson?: string;
@@ -159,7 +161,9 @@ function ensureSymlink(target: string, linkPath: string): void {
  * ├── SKILL.md
  * └── references/
  *     ├── summary.md
- *     └── architecture.md
+ *     ├── architecture.md
+ *     ├── api-reference.md
+ *     └── development.md
  *
  * Meta directory (internal/API):
  * ~/.config/offworld/meta/{owner}-{repo}/
@@ -183,6 +187,12 @@ export function installSkillWithReferences(repoName: string, options: InstallSki
 	writeFileSync(join(skillDir, "SKILL.md"), options.skillContent, "utf-8");
 	writeFileSync(join(refsDir, "summary.md"), options.summaryContent, "utf-8");
 	writeFileSync(join(refsDir, "architecture.md"), options.architectureContent, "utf-8");
+	if (options.apiReferenceContent) {
+		writeFileSync(join(refsDir, "api-reference.md"), options.apiReferenceContent, "utf-8");
+	}
+	if (options.developmentContent) {
+		writeFileSync(join(refsDir, "development.md"), options.developmentContent, "utf-8");
+	}
 
 	if (options.skillJson) {
 		writeFileSync(join(metaDir, "skill.json"), options.skillJson, "utf-8");
@@ -315,7 +325,7 @@ export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): s
 	lines.push("---", "", `# ${skill.name}`, "", skill.description, "");
 
 	lines.push(
-		"**See also:** [summary.md](references/summary.md) (overview) | [architecture.md](references/architecture.md) (structure)",
+		"**See also:** [summary.md](references/summary.md) | [architecture.md](references/architecture.md) | [api-reference.md](references/api-reference.md) | [development.md](references/development.md)",
 		"",
 	);
 

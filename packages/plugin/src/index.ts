@@ -15,7 +15,7 @@ import {
 	installSkillWithReferences,
 	formatSkillMd,
 	formatSummaryMd,
-	formatArchitectureMd,
+	formatArchitectureMdLegacy,
 	loadConfig,
 } from "@offworld/sdk";
 import type { Architecture } from "@offworld/types";
@@ -174,7 +174,7 @@ async function cloneAndAnalyze(
 		const generated = analyzedAt.split("T")[0];
 
 		const summaryMd = formatSummaryMd(prose, { repoName: source.fullName });
-		const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
+		const architectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
 		const skillMd = formatSkillMd(skill, { commitSha, generated });
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 

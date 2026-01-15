@@ -58,3 +58,12 @@ export {
 } from "./architecture.js";
 
 export { parseArchitectureMarkdown, parseSkillMarkdown, ParseError } from "./parsers.js";
+
+export {
+	extractAPISurface,
+	formatAPISurfaceMd,
+	type APISurface,
+	type ImportPattern,
+	type PublicExport,
+	type SubpathExport,
+} from "./api-surface.js";

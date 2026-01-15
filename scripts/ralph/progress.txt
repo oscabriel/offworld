@@ -82,3 +82,34 @@
   - Layer diagram is simplified flowchart showing layer counts, not raw file-level imports
 
 ---
+
+## 2026-01-14 - US-007
+
+- Created api-surface.ts with APISurface, PublicExport, ImportPattern, SubpathExport interfaces
+- Implemented extractAPISurface() reading package.json exports, finding entry points, extracting symbols
+- Implemented formatAPISurfaceMd() generating Import Patterns, Public Exports, Subpath Exports, Type Exports tables
+- Files changed: packages/sdk/src/analysis/api-surface.ts, packages/sdk/src/analysis/index.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - Entry point detection order: package.json exports > main/module > common patterns (src/index.ts)
+  - resolveExportPath handles object exports with priority: import > require > default > types
+  - Description inference uses name patterns (create*, use*, get*, is*) for automatic descriptions
+  - typeExports separate from exports to distinguish runtime values from type-only exports
+
+---
+
+## 2026-01-14 - US-008
+
+- Added ProseGenerationContext interface with apiSurface, architecture, readme, examples, contributing fields
+- Added generateProseWithContext() function that generates all three AI prose outputs
+- Added SkillProse, SummaryContent, DevelopmentProse schemas with Zod validation
+- Created buildSkillPromptWithContext() including API Surface + Architecture sections
+- Created buildSummaryPromptWithContext() including API Surface + README + Examples
+- Created buildDevelopmentPromptWithContext() including Architecture + CONTRIBUTING
+- Files changed: packages/sdk/src/analysis/prose.ts, packages/sdk/src/analysis/index.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - Name conflicts: SummaryProse already existed in pipeline.ts - renamed new type to SummaryContent
+  - Context formatting functions truncate long content (2000 chars for readme/contributing, 1500 for examples)
+  - Import verbatim enforcement: prompts explicitly tell AI to use exact imports from API Surface
+  - Prompt structure: each prompt type gets deterministic context relevant to that file type
+
+---

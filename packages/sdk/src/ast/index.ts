@@ -4,7 +4,7 @@ import { Lang, registerDynamicLanguage } from "@ast-grep/napi";
 export { Lang };
 
 // Language type that includes both built-in and dynamic languages
-export type SupportedLang = Lang | "python" | "rust" | "go" | "java";
+export type SupportedLang = Lang | "python" | "rust" | "go" | "java" | "c";
 
 // Extension to language mapping
 export const LANG_MAP: Record<string, Lang | string> = {
@@ -23,6 +23,8 @@ export const LANG_MAP: Record<string, Lang | string> = {
 	".rs": "rust",
 	".go": "go",
 	".java": "java",
+	".c": "c",
+	".h": "c",
 };
 
 // Track initialization state
@@ -39,11 +41,12 @@ export async function initLanguages(): Promise<void> {
 	}
 
 	// Dynamic imports for language packages
-	const [pythonLang, rustLang, goLang, javaLang] = await Promise.all([
+	const [pythonLang, rustLang, goLang, javaLang, cLang] = await Promise.all([
 		import("@ast-grep/lang-python"),
 		import("@ast-grep/lang-rust"),
 		import("@ast-grep/lang-go"),
 		import("@ast-grep/lang-java"),
+		import("@ast-grep/lang-c"),
 	]);
 
 	registerDynamicLanguage({
@@ -70,6 +73,12 @@ export async function initLanguages(): Promise<void> {
 			extensions: javaLang.default.extensions,
 			languageSymbol: javaLang.default.languageSymbol,
 			expandoChar: javaLang.default.expandoChar,
+		},
+		c: {
+			libraryPath: cLang.default.libraryPath,
+			extensions: cLang.default.extensions,
+			languageSymbol: cLang.default.languageSymbol,
+			expandoChar: cLang.default.expandoChar,
 		},
 	});
 

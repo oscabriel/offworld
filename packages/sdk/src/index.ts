@@ -71,8 +71,6 @@ export {
 	type RemoveOptions,
 } from "./clone.js";
 
-export { rankFilesByHeuristics, type HeuristicsOptions } from "./analysis/heuristics.js";
-
 export {
 	streamPrompt,
 	OpenCodeAnalysisError,
@@ -104,35 +102,7 @@ export {
 	type CanPushResult,
 } from "./sync.js";
 
-export {
-	gatherContext,
-	formatContextForPrompt,
-	estimateTokens,
-	type GatheredContext,
-	type ContextOptions,
-	formatSkillMd,
-	formatSummaryMd,
-	formatDevelopmentMd,
-	formatArchitectureMd,
-	formatArchitectureMdLegacy,
-	runAnalysisPipeline,
-	installSkillWithReferences,
-	updateSkillPaths,
-	type AnalysisPipelineResult,
-	type AnalysisPipelineOptions,
-	type AnalysisPipelineStats,
-	type FormatSkillOptions,
-	type FormatSummaryOptions,
-	type FormatDevelopmentOptions,
-	type SummaryProse,
-	type DevelopmentProse,
-	type UpdateSkillPathsResult,
-	type InstallSkillOptions,
-	type MergedSkillResult,
-	type MergedEntity,
-	type MergedKeyFile,
-	type EntityRelationship,
-} from "./analysis/index.js";
+
 
 export {
 	AuthError,

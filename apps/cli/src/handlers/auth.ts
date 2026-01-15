@@ -7,6 +7,7 @@ import { saveAuthData, clearAuthData, getAuthStatus, getAuthPath } from "@offwor
 import open from "open";
 import http from "node:http";
 import { URL } from "node:url";
+import { createSpinner } from "../utils/spinner";
 
 // ============================================================================
 // Configuration
@@ -47,7 +48,7 @@ export interface AuthStatusResult {
  * Opens browser to offworld.sh/login and waits for OAuth callback
  */
 export async function authLoginHandler(): Promise<AuthLoginResult> {
-	const s = p.spinner();
+	const s = createSpinner();
 
 	// Check if already logged in
 	const currentStatus = getAuthStatus();

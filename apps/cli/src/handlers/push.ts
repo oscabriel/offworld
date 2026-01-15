@@ -24,6 +24,7 @@ import {
 import type { Architecture, FileIndex, Skill } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createSpinner } from "../utils/spinner";
 
 // ============================================================================
 // Types
@@ -91,7 +92,7 @@ function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | nu
  */
 export async function pushHandler(options: PushOptions): Promise<PushResult> {
 	const { repo } = options;
-	const s = p.spinner();
+	const s = createSpinner();
 
 	try {
 		// Step 1: Check authentication

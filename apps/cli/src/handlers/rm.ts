@@ -6,6 +6,7 @@ import * as p from "@clack/prompts";
 import { parseRepoInput, removeRepo, getIndexEntry, getMetaRoot } from "@offworld/sdk";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { createSpinner } from "../utils/spinner";
 
 export interface RmOptions {
 	repo: string;
@@ -138,7 +139,7 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 		}
 
 		// Perform removal
-		const s = p.spinner();
+		const s = createSpinner();
 		s.start("Removing repository...");
 
 		const removed = await removeRepo(qualifiedName, { keepSkill });

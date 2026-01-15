@@ -158,6 +158,32 @@ const filePaths = discoverFiles(repoPath, "", onDebug);
 - `updateSkillPaths()` - accepts `UpdateSkillPathsOptions` with `onDebug`
 - File parsing loop in `runAnalysisPipeline()` - logs read/parse failures
 
+### Architecture Section Generation (US-006)
+
+**New Architecture Types** (`src/analysis/architecture.ts`):
+
+```typescript
+interface ArchitectureSection {
+  entryPoints: EntryPoint[];     // main/cli/server/worker/index/config files
+  coreModules: CoreModule[];     // files with 3+ exported symbols
+  hubs: DependencyHub[];         // files with 3+ importers
+  layers: LayerGroup[];          // ui/api/domain/infra/util/config/test
+  inheritance: InheritanceRelation[];
+  directoryTree: DirectoryNode;  // tree with [HUB: N←] annotations
+  findingTable: FindingEntry[];  // "Where do I find X?" lookup
+  packages?: MonorepoPackage[];  // for packages/*/apps/*/libs/*
+}
+```
+
+**Key Functions**:
+
+- `buildArchitectureSection()` - builds section from parsedFiles + dependencyGraph + architectureGraph
+- `formatArchitectureMd()` - generates markdown with tables, Mermaid diagrams, directory tree
+
+**Monorepo Detection**: Looks for `packages/`, `apps/`, `libs/` prefixes and creates per-package sections.
+
+**Layer Diagram**: Simplified flowchart showing layer counts and connections (not raw import graph).
+
 ### Gotchas
 
 1. **Base class \_tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
@@ -168,3 +194,4 @@ const filePaths = discoverFiles(repoPath, "", onDebug);
 6. **z.record() requires two args**: Use `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`
 7. **Avoid type name conflicts**: Name stream payload types distinctly (e.g., `SessionErrorPayload` vs `SessionError` class)
 8. **Silent catch debugging**: When adding debug logging to silent catches, ensure the callback is passed through all recursive calls
+9. **Export naming conflicts**: When adding new formatters, check if export name exists in index.ts (e.g., `formatArchitectureMd` was in pipeline.ts - renamed to `formatArchitectureMdLegacy`)

@@ -140,7 +140,7 @@
         "typecheck passes across all packages"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Clean up types after removing analysis code"
     },
     {

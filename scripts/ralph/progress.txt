@@ -153,3 +153,25 @@
 - `updateIndex()` only updates if entry exists (preserves existing index behavior)
 
 ---
+
+## 2026-01-15 - US-009
+
+- Simplified SkillSchema in `packages/types/src/schemas.ts`
+- Only `name` and `description` are now required fields
+- All other fields (whenToUse, bestPractices, quickPaths, searchPatterns, etc.) made optional
+- Updated schema tests to reflect new optional field behavior
+- Updated root AGENTS.md with types package learnings
+
+**Files changed:**
+- `packages/types/src/schemas.ts` (updated - SkillSchema simplified)
+- `packages/types/src/__tests__/schemas.test.ts` (updated - 5 tests modified)
+- `AGENTS.md` (updated - added types package section)
+
+**Learnings:**
+- ArchitectureSchema and FileIndexSchema cannot be removed - still used by sync.ts, plugin, push.ts, backend
+- ParsedFile and DependencyGraph types were already removed (no references found)
+- API compatibility requires keeping optional legacy fields (quickPaths, searchPatterns) for remote responses
+- Backend Convex schema has its own definitions that mirror @offworld/types - not auto-synced
+- Test fixtures in CLI handlers.test.ts use full skill objects - work fine since fields are now optional
+
+---

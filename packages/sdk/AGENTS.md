@@ -222,3 +222,21 @@ export {
 **Gotchas**:
 - consistency.ts and quality.ts were already deleted in US-003 (they depended on analysis/ types)
 - Only paths.ts and staleness.ts remained in validation/index.ts exports
+
+### AST-grep Dependencies Removal (US-006 - Strip Pipeline)
+
+**Removed Dependencies**:
+- `@ast-grep/napi` - core parsing engine
+- `@ast-grep/lang-python`, `@ast-grep/lang-rust`, `@ast-grep/lang-go`, `@ast-grep/lang-java`
+- `@ast-grep/lang-c`, `@ast-grep/lang-cpp`, `@ast-grep/lang-ruby`, `@ast-grep/lang-php`
+
+**Cleanup Process**:
+1. Edit package.json to remove dependencies
+2. Run `bun install` to update lockfile
+3. Manually remove `packages/sdk/node_modules/@ast-grep/` directory (stale symlinks remain after dep removal)
+4. Re-run `bun install` to confirm clean state
+
+**Gotchas**:
+- Bun preserves symlinks to hoisted packages even after dependencies are removed from package.json
+- Must manually `rm -rf` the stale @ast-grep directory before `bun install` will have "no changes"
+- Root node_modules doesn't have @ast-grep (was only in packages/sdk scope)

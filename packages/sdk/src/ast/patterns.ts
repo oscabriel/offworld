@@ -6,7 +6,7 @@
  * - $PATH: import path
  */
 
-export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c" | "cpp";
+export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c" | "cpp" | "ruby";
 
 /**
  * Patterns for matching function declarations
@@ -96,6 +96,12 @@ export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
 		"virtual $TYPE $NAME($$$) { $$$ }",
 		"$TYPE $CLASS::$NAME($$$) { $$$ }",
 	],
+	ruby: [
+		"def $NAME($$$) $$$ end",
+		"def $NAME $$$ end",
+		"def self.$NAME($$$) $$$ end",
+		"def self.$NAME $$$ end",
+	],
 };
 
 /**
@@ -184,6 +190,11 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"namespace $NAME { $$$ }",
 		"template<$$$> class $NAME { $$$ }",
 	],
+	ruby: [
+		"class $NAME $$$ end",
+		"class $NAME < $PARENT $$$ end",
+		"module $NAME $$$ end",
+	],
 };
 
 /**
@@ -203,6 +214,7 @@ export const INTERFACE_PATTERNS: Record<PatternLanguage, string[]> = {
 	java: [],
 	c: [],
 	cpp: [],
+	ruby: [],
 };
 
 /**
@@ -272,6 +284,14 @@ export const IMPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	java: ["import $PATH;", "import $PATH.*;", "import static $PATH;", "import static $PATH.*;"],
 	c: ['#include "$PATH"', "#include <$PATH>"],
 	cpp: ['#include "$PATH"', "#include <$PATH>", "using namespace $NAME;", "using $NAME::$$$;"],
+	ruby: [
+		"require '$PATH'",
+		'require "$PATH"',
+		"require_relative '$PATH'",
+		'require_relative "$PATH"',
+		"load '$PATH'",
+		'load "$PATH"',
+	],
 };
 
 /**
@@ -325,6 +345,7 @@ export const EXPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	java: [],
 	c: [],
 	cpp: [],
+	ruby: [],
 };
 
 /**
@@ -350,6 +371,8 @@ export function getPatternLanguage(lang: string): PatternLanguage | null {
 			return "c";
 		case "cpp":
 			return "cpp";
+		case "ruby":
+			return "ruby";
 		default:
 			return null;
 	}

@@ -145,3 +145,59 @@
   - Conditional file writes: use `if (content) { writeFileSync(...) }` to handle optional fields
 
 ---
+
+## 2026-01-14 - US-011
+
+- Updated generate handler to pass all 5 content fields to installSkillWithReferences()
+- Added formatDevelopmentMd() function in pipeline.ts for development.md formatting
+- Exports added: formatDevelopmentMd, FormatDevelopmentOptions, DevelopmentProse from SDK
+- Files changed: apps/cli/src/handlers/generate.ts, packages/sdk/src/analysis/pipeline.ts, packages/sdk/src/analysis/index.ts, packages/sdk/src/index.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - Import DevelopmentProse from prose.ts rather than redefining - same structure already exists
+  - Use fallback pattern `architectureMd || legacyArchitectureMd` when transitioning between new/old implementations
+  - Must rebuild SDK (`bun run build`) before CLI typecheck sees new exports (turbo caching)
+
+---
+
+## 2026-01-14 - US-012
+
+- Updated pull handler to match generate handler's new file structure
+- Added formatDevelopmentMd import
+- Extract architectureMd, apiSurfaceMd, proseResult from pipeline result
+- Pass all 5 content fields: skillContent, summaryContent, architectureContent, apiReferenceContent, developmentContent
+- Files changed: apps/cli/src/handlers/pull.ts
+- **Learnings:**
+  - Mirror pattern from generate.ts when updating pull.ts - same pipeline result structure
+  - Use `architectureMd || legacyArchitectureMd` fallback for backward compatibility
+  - Pull handler has additional complexity (remote, cached, local branches) - only local generation branch needed update
+
+---
+
+## 2026-01-14 - US-013
+
+- Added 5 new Zod schemas: ImportPatternSchema, TroubleshootingEntrySchema, ArchitectureConceptSchema, ExtensionPointSchema, CodebaseMapEntrySchema
+- Extended SkillSchema with 8 new optional fields: importPatterns, whenToUse (min 5), quickStartCode, commonOperations, troubleshooting, architecture, extensionPoints, codebaseMap
+- Updated tests for whenToUse min(5) constraint
+- Files changed: packages/types/src/schemas.ts, packages/types/src/__tests__/schemas.test.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - When adding `.min(N)` constraint to optional array field, empty arrays and arrays < N fail validation
+  - Tests must either omit the constrained field or provide N+ items
+  - All new fields added as optional for backward compatibility
+
+---
+
+## 2026-01-15 - US-014
+
+- Fixed extractExports() in parser.ts to capture named re-exports from `export { a, b } from '...'`
+- Added extractNamedExportsFromText() helper to parse export braces via regex
+- AST patterns capture $$$  but getMatch() only returns single NAME - regex parses match.text() instead
+- Verified: @tanstack/react-query now extracts 42 exports, @tanstack/query-core extracts 31 exports
+- Files changed: packages/sdk/src/ast/parser.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - ast-grep's $$$ (multi-variable) cannot be retrieved via getMatch() - must parse match.text()
+  - `export { foo as bar }` - extract right side (bar) as the exported name
+  - codemap (inspiration) doesn't extract exports at all - they only track imports then invert
+  - Type exports (`export type { X }`) need same regex treatment as value exports
+  - For API surface, the fix enables parsedFile.exports to contain actual symbol names
+
+---

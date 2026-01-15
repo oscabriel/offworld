@@ -184,7 +184,7 @@
         "typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4 - apps/cli/src/handlers/generate.ts"
     },
     {
@@ -199,7 +199,7 @@
         "typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4 - apps/cli/src/handlers/pull.ts"
     },
     {
@@ -215,7 +215,7 @@
         "typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5 - packages/types/src/schemas.ts"
     },
     {
@@ -230,8 +230,8 @@
         "No e2e test content in SKILL.md"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "Integration test"
+      "passes": true,
+      "notes": "Integration test - Fixed: extractExports() now captures named re-exports"
     },
     {
       "id": "US-015",

@@ -134,3 +134,22 @@
 - SDK bundle is ~55kB after stripping analysis code (down from larger size with AST deps)
 
 ---
+
+## 2026-01-15 - US-008
+
+- Verified CLI generate handler already uses simplified SDK functions (verification-only story)
+- Handler correctly imports `generateSkillWithAI` and `installSkill` from `@offworld/sdk`
+- No old analysis imports present (`runAnalysisPipeline`, `formatSkillMd`, etc.)
+- Handler flow: parse input → check remote → clone if needed → generateSkillWithAI → installSkill → updateIndex
+- All tests pass (237 SDK, 23 CLI, 56 types, 14 backend)
+
+**Files changed:**
+- `scripts/ralph/PRD.json` (updated - US-008 passes: true)
+
+**Learnings:**
+- CLI handler was already refactored when US-001 was implemented (generate.ts created the new functions)
+- Handler preserves full flow: remote existence check, clone for remote repos, local path for local repos
+- `getSkillPath()` provides skill path for user feedback before install
+- `updateIndex()` only updates if entry exists (preserves existing index behavior)
+
+---

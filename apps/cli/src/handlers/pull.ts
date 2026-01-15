@@ -17,17 +17,11 @@ import {
 	updateIndex,
 	getIndexEntry,
 	RepoExistsError,
-	runAnalysisPipeline,
-	installSkillWithReferences,
-	isAnalysisStale,
-	formatSkillMd,
-	formatSummaryMd,
-	formatDevelopmentMd,
-	formatArchitectureMdLegacy,
-	type PullResponse,
+	generateSkillWithAI,
+	installSkill as installSkillToFS,
 	type AnalysisData,
 } from "@offworld/sdk";
-import type { RepoSource, Skill } from "@offworld/types";
+import type { RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner, type SpinnerLike } from "../utils/spinner";
@@ -53,107 +47,19 @@ export interface PullResult {
 	message?: string;
 }
 
-export interface InstallSkillInput {
-	repoName: string;
-	skillContent: string;
-	summaryContent: string;
-	architectureContent: string;
+function timestamp(): string {
+	return new Date().toISOString().slice(11, 23);
 }
 
-export async function installSkill(input: InstallSkillInput): Promise<void> {
-	installSkillWithReferences(input.repoName, {
-		skillContent: input.skillContent,
-		summaryContent: input.summaryContent,
-		architectureContent: input.architectureContent,
-	});
-}
-
-/**
- * Rewrite skill paths from remote analysis to use local paths.
- * Replaces ${REPO} and ${ANALYSIS} variables with actual local values.
- */
-function rewriteSkillPaths(skill: Skill, localRepoPath: string, localAnalysisPath: string): Skill {
-	const rewritePath = (path: string): string => {
-		return path.replace(/\$\{REPO\}/g, localRepoPath).replace(/\$\{ANALYSIS\}/g, localAnalysisPath);
-	};
-
-	return {
-		...skill,
-		basePaths: {
-			repo: localRepoPath,
-			analysis: localAnalysisPath,
-		},
-		quickPaths: skill.quickPaths.map((qp) => ({
-			...qp,
-			path: rewritePath(qp.path),
-		})),
-		searchPatterns: skill.searchPatterns.map((sp) => ({
-			...sp,
-			path: rewritePath(sp.path),
-		})),
-		// commonPatterns steps may contain paths too
-		commonPatterns: skill.commonPatterns?.map((cp: { name: string; steps: string[] }) => ({
-			...cp,
-			steps: cp.steps.map(rewritePath),
-		})),
-	};
-}
-
-function saveAnalysisLocally(source: RepoSource, analysis: PullResponse): void {
-	const repoName = source.type === "remote" ? source.fullName : source.name;
-
-	const skillMd = formatSkillMd(analysis.skill, {
-		commitSha: analysis.commitSha,
-		generated: analysis.analyzedAt?.split("T")[0],
-	});
-
-	const meta = {
-		analyzedAt: analysis.analyzedAt,
-		commitSha: analysis.commitSha,
-		version: "0.1.0",
-		pullCount: analysis.pullCount,
-	};
-
-	installSkillWithReferences(repoName, {
-		skillContent: skillMd,
-		summaryContent: analysis.summary,
-		architectureContent: `# Architecture\n\n\`\`\`json\n${JSON.stringify(analysis.architecture, null, 2)}\n\`\`\``,
-		skillJson: JSON.stringify(analysis.skill, null, 2),
-		metaJson: JSON.stringify(meta, null, 2),
-		architectureJson: JSON.stringify(analysis.architecture, null, 2),
-		fileIndexJson: JSON.stringify(analysis.fileIndex, null, 2),
-	});
-}
-
-function hasLocalAnalysis(source: RepoSource, repoPath: string): boolean {
-	const metaDir = getLocalMetaDir(source);
-	const currentSha = getCommitSha(repoPath);
-	const stalenessResult = isAnalysisStale(metaDir, currentSha);
-	return !stalenessResult.isStale;
-}
-
-function getLocalSkillDir(source: RepoSource): string {
-	const name = source.type === "remote" ? source.fullName : source.name;
-	return getSkillPath(name);
+function verboseLog(message: string, verbose: boolean): void {
+	if (verbose) {
+		p.log.info(`[${timestamp()}] ${message}`);
+	}
 }
 
 function getLocalMetaDir(source: RepoSource): string {
 	const name = source.type === "remote" ? source.fullName : source.name;
 	return getMetaPath(name);
-}
-
-function loadLocalSkill(source: RepoSource): Skill | null {
-	const metaDir = getLocalMetaDir(source);
-	const skillPath = join(metaDir, "skill.json");
-	if (!existsSync(skillPath)) {
-		return null;
-	}
-
-	try {
-		return JSON.parse(readFileSync(skillPath, "utf-8"));
-	} catch {
-		return null;
-	}
 }
 
 function loadLocalMeta(source: RepoSource): { commitSha?: string; analyzedAt?: string } | null {
@@ -170,14 +76,9 @@ function loadLocalMeta(source: RepoSource): { commitSha?: string; analyzedAt?: s
 	}
 }
 
-function timestamp(): string {
-	return new Date().toISOString().slice(11, 23);
-}
-
-function verboseLog(message: string, verbose: boolean): void {
-	if (verbose) {
-		p.log.info(`[${timestamp()}] ${message}`);
-	}
+function hasValidCache(source: RepoSource, currentSha: string): boolean {
+	const meta = loadLocalMeta(source);
+	return meta?.commitSha?.slice(0, 7) === currentSha.slice(0, 7);
 }
 
 type RemoteSource = Extract<RepoSource, { type: "remote" }>;
@@ -202,21 +103,17 @@ async function tryUploadAnalysis(
 	}
 
 	const skillDir = getSkillPath(source.fullName);
-	const metaDir = getMetaPath(source.fullName);
-	const refsDir = join(skillDir, "references");
 
 	try {
-		const summary = readFileSync(join(refsDir, "summary.md"), "utf-8");
-		const architecture = JSON.parse(readFileSync(join(metaDir, "architecture.json"), "utf-8"));
-		const skill = JSON.parse(readFileSync(join(metaDir, "skill.json"), "utf-8"));
-		const fileIndex = JSON.parse(readFileSync(join(metaDir, "file-index.json"), "utf-8"));
+		const skillContent = readFileSync(join(skillDir, "SKILL.md"), "utf-8");
 
+		// Simplified analysis data for new format
 		const analysisData: AnalysisData = {
 			fullName: source.fullName,
-			summary,
-			architecture,
-			skill,
-			fileIndex,
+			summary: skillContent,
+			architecture: { projectType: "library", entities: [], relationships: [], keyFiles: [], patterns: {} },
+			skill: { name: source.fullName, description: "", quickPaths: [], searchPatterns: [], whenToUse: [] },
+			fileIndex: [],
 			commitSha,
 			analyzedAt,
 		};
@@ -228,6 +125,20 @@ async function tryUploadAnalysis(
 		verboseLog(`Upload failed: ${err instanceof Error ? err.message : "Unknown"}`, verbose);
 		spinner.stop("Upload failed (continuing)");
 	}
+}
+
+/**
+ * Save remote analysis to local filesystem.
+ * Remote analysis comes with pre-generated skill/summary content.
+ */
+function saveRemoteAnalysis(
+	repoName: string,
+	summary: string,
+	commitSha: string,
+	analyzedAt: string,
+): void {
+	const meta = { analyzedAt, commitSha, version: "0.1.0" };
+	installSkillToFS(repoName, summary, meta);
 }
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
@@ -304,8 +215,22 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 
 		const currentSha = getCommitSha(repoPath);
+		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
 
-		// Check remote API first for remote repos (with SHA comparison)
+		// Check for cached analysis first
+		if (!force && hasValidCache(source, currentSha)) {
+			verboseLog("Using cached analysis", verbose);
+			s.stop("Using cached skill");
+
+			return {
+				success: true,
+				repoPath,
+				analysisSource: "cached",
+				skillInstalled: true,
+			};
+		}
+
+		// Check remote API for remote repos (with SHA comparison)
 		if (source.type === "remote" && !force) {
 			verboseLog(`Checking offworld.sh for analysis: ${source.fullName}`, verbose);
 			s.start("Checking offworld.sh for analysis...");
@@ -326,35 +251,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						if (remoteAnalysis) {
 							s.stop("Downloaded remote analysis");
 
-							// Rewrite skill paths for local environment
-							const localSkillDir = getSkillPath(source.fullName);
-							const rewrittenSkill = rewriteSkillPaths(
-								remoteAnalysis.skill,
-								repoPath,
-								localSkillDir,
+							// Save the remote analysis locally
+							saveRemoteAnalysis(
+								source.fullName,
+								remoteAnalysis.summary,
+								remoteAnalysis.commitSha,
+								remoteAnalysis.analyzedAt ?? new Date().toISOString(),
 							);
-
-							// Save analysis locally with rewritten skill
-							s.start("Saving analysis...");
-							saveAnalysisLocally(source, {
-								...remoteAnalysis,
-								skill: rewrittenSkill,
-							});
-							s.stop("Analysis saved");
-
-							s.start("Installing skill...");
-							const skillMd = formatSkillMd(rewrittenSkill, {
-								commitSha: remoteAnalysis.commitSha,
-								generated: remoteAnalysis.analyzedAt?.split("T")[0],
-							});
-							const architectureMd = `# Architecture\n\n\`\`\`json\n${JSON.stringify(remoteAnalysis.architecture, null, 2)}\n\`\`\``;
-							await installSkill({
-								repoName: source.fullName,
-								skillContent: skillMd,
-								summaryContent: remoteAnalysis.summary,
-								architectureContent: architectureMd,
-							});
-							s.stop("Skill installed");
 
 							// Update index
 							const entry = getIndexEntry(source.qualifiedName);
@@ -366,6 +269,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 									hasSkill: true,
 								});
 							}
+
+							p.log.success(`Skill installed for: ${qualifiedName}`);
 
 							return {
 								success: true,
@@ -394,104 +299,36 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			}
 		}
 
-		verboseLog(`Checking for cached analysis at: ${getLocalMetaDir(source)}`, verbose);
-		if (!force && hasLocalAnalysis(source, repoPath)) {
-			const skill = loadLocalSkill(source);
-			const meta = loadLocalMeta(source);
-			if (skill) {
-				s.start("Installing skill from cache...");
-				const repoName = source.type === "remote" ? source.fullName : source.name;
-				const skillMd = formatSkillMd(skill, {
-					commitSha: meta?.commitSha,
-					generated: meta?.analyzedAt?.split("T")[0],
-				});
-				const skillDir = getLocalSkillDir(source);
-				const refsDir = join(skillDir, "references");
-				const summaryContent = existsSync(join(refsDir, "summary.md"))
-					? readFileSync(join(refsDir, "summary.md"), "utf-8")
-					: "";
-				const architectureContent = existsSync(join(refsDir, "architecture.md"))
-					? readFileSync(join(refsDir, "architecture.md"), "utf-8")
-					: "";
-				await installSkill({
-					repoName,
-					skillContent: skillMd,
-					summaryContent,
-					architectureContent,
-				});
-				s.stop("Skill installed from cache");
-
-				return {
-					success: true,
-					repoPath,
-					analysisSource: "cached",
-					skillInstalled: true,
-				};
-			}
-		}
-
-		// No remote analysis - generate locally using analysis pipeline
-		verboseLog(`Starting local analysis pipeline for: ${repoPath}`, verbose);
+		// Generate locally using AI
+		verboseLog(`Starting AI skill generation for: ${repoPath}`, verbose);
 
 		if (!verbose) {
-			s.start("Generating local analysis...");
+			s.start("Generating skill with AI...");
 		}
 
 		try {
-			const onProgress = (step: string, message: string) => {
-				if (verbose) {
-					p.log.info(`[${timestamp()}] [${step}] ${message}`);
-				} else {
-					s.message(message);
-				}
-			};
-
 			const onDebug = verbose
 				? (message: string) => {
 						p.log.info(`[${timestamp()}] [debug] ${message}`);
 					}
-				: undefined;
+				: (msg: string) => s.message(msg);
 
-			const qualifiedName = source.type === "remote" ? source.fullName : source.name;
-			const pipelineOptions = { onProgress, onDebug, qualifiedName, provider, model };
-			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
-
-			const {
-				skill: mergedSkill,
-				graph,
-				architectureGraph,
-				architectureMd,
-				apiSurfaceMd,
-				proseResult,
-			} = result;
-			const skill = mergedSkill.skill;
-			const { entities, prose } = mergedSkill;
-
-			const analysisCommitSha = getCommitSha(repoPath);
-			const analyzedAt = new Date().toISOString();
-			const generated = analyzedAt.split("T")[0];
-			const repoName = source.type === "remote" ? source.fullName : source.name;
-
-			const summaryMd = formatSummaryMd(prose, { repoName });
-			const legacyArchitectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
-			const developmentMd = formatDevelopmentMd(proseResult.development, { repoName });
-			const skillMd = formatSkillMd(skill, { commitSha: analysisCommitSha, generated });
-			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
-
-			installSkillWithReferences(repoName, {
-				skillContent: skillMd,
-				summaryContent: summaryMd,
-				architectureContent: architectureMd || legacyArchitectureMd,
-				apiReferenceContent: apiSurfaceMd,
-				developmentContent: developmentMd,
-				skillJson: JSON.stringify(skill, null, 2),
-				metaJson: JSON.stringify(meta, null, 2),
+			const result = await generateSkillWithAI(repoPath, qualifiedName, {
+				provider,
+				model,
+				onDebug,
 			});
 
+			const { skillContent, commitSha: analysisCommitSha } = result;
+			const analyzedAt = new Date().toISOString();
+			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
+
+			installSkillToFS(qualifiedName, skillContent, meta);
+
 			if (!verbose) {
-				s.stop("Analysis complete");
+				s.stop("Skill generated");
 			} else {
-				p.log.success("Analysis complete");
+				p.log.success("Skill generated");
 			}
 
 			const entry = getIndexEntry(source.qualifiedName);
@@ -508,6 +345,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				await tryUploadAnalysis(source, analysisCommitSha, analyzedAt, verbose, s);
 			}
 
+			p.log.success(`Skill installed for: ${qualifiedName}`);
+
 			return {
 				success: true,
 				repoPath,
@@ -516,17 +355,17 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			};
 		} catch (err) {
 			if (!verbose) {
-				s.stop("Analysis failed");
+				s.stop("Skill generation failed");
 			}
 			const errMessage = err instanceof Error ? err.message : "Unknown error";
-			p.log.error(`Failed to generate analysis: ${errMessage}`);
+			p.log.error(`Failed to generate skill: ${errMessage}`);
 
 			return {
 				success: true,
 				repoPath,
 				analysisSource: "local",
 				skillInstalled: false,
-				message: `Repository cloned but analysis failed: ${errMessage}`,
+				message: `Repository cloned but skill generation failed: ${errMessage}`,
 			};
 		}
 	} catch (error) {

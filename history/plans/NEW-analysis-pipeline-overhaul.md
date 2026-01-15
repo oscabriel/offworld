@@ -16,21 +16,6 @@ Current skill generation pipeline produces files that are:
 5. **No API surface extraction** — missing import patterns, entry points
 6. **Limited language support** — missing C, C++, Ruby, PHP
 
-### Evidence
-
-Generated TanStack Router SKILL.md:
-
-```yaml
-description: Comprehensive Playwright-based e2e test suite validating TanStack Router/Start features...
-
-## When to Use
-- need to add e2e tests for router features
-```
-
-This is useless. A developer says "add routing to my app" — not "need to add e2e tests."
-
-Generated Zod architecture.md shows `vitest.root.mjs` as the only dependency node. Nobody cares.
-
 ---
 
 ## Design Decisions
@@ -52,7 +37,7 @@ Generated Zod architecture.md shows `vitest.root.mjs` as the only dependency nod
    - development.md: contribution guide summary (AI)
 
 4. **Monorepo handling:** Single architecture.md with nested grouping
-   - Scan for packages/*, apps/*, libs/*, etc.
+   - Scan for packages/_, apps/_, libs/\*, etc.
    - Each package gets its own section
 
 5. **JSDoc extraction:** Try it, remove if too complex
@@ -62,7 +47,7 @@ Generated Zod architecture.md shows `vitest.root.mjs` as the only dependency nod
    - Remove raw import graph (too noisy)
    - Add text-based data flow
 
-7. **Language expansion:** Add C, C++, Ruby, PHP via @ast-grep/lang-* packages
+7. **Language expansion:** Add C, C++, Ruby, PHP via @ast-grep/lang-\* packages
 
 8. **Skill directory naming:** Collapse when owner == repo
    - `tanstack/query` → `tanstack-query-reference`
@@ -97,19 +82,20 @@ New (Dual Pass):
 ```
 
 **Naming examples:**
+
 - `tanstack/query` → `tanstack-query-reference/`
 - `better-auth/better-auth` → `better-auth-reference/` (collapsed)
 - `zod` (local) → `zod-reference/`
 
 ### Content Strategy
 
-| File | Audience | Generation | Triggered By | Content |
-|------|----------|------------|--------------|---------|
-| **SKILL.md** | Users | AI + deterministic | Default activation | Imports, "when to use", quick start, common ops |
-| **architecture.md** | Contributors | Deterministic | "how does X work", "where is Y" | File map, modules, hubs, layers, extension points |
-| **api-reference.md** | Both | Deterministic | "what can I import", API lookups | Import patterns, public exports, signatures |
-| **summary.md** | Users | AI | "explain", "best practices" | Core concepts, patterns, gotchas |
-| **development.md** | Contributors | AI | "contribute", "develop" | Setup, testing, PR guidelines |
+| File                 | Audience     | Generation         | Triggered By                     | Content                                           |
+| -------------------- | ------------ | ------------------ | -------------------------------- | ------------------------------------------------- |
+| **SKILL.md**         | Users        | AI + deterministic | Default activation               | Imports, "when to use", quick start, common ops   |
+| **architecture.md**  | Contributors | Deterministic      | "how does X work", "where is Y"  | File map, modules, hubs, layers, extension points |
+| **api-reference.md** | Both         | Deterministic      | "what can I import", API lookups | Import patterns, public exports, signatures       |
+| **summary.md**       | Users        | AI                 | "explain", "best practices"      | Core concepts, patterns, gotchas                  |
+| **development.md**   | Contributors | AI                 | "contribute", "develop"          | Setup, testing, PR guidelines                     |
 
 ### Source Prioritization
 
@@ -146,14 +132,14 @@ New (Dual Pass):
 
 ```typescript
 function toSkillDirName(repoName: string): string {
-  if (repoName.includes("/")) {
-    const [owner, repo] = repoName.split("/");
-    if (owner === repo) {
-      return `${repo}-reference`;
-    }
-    return `${owner}-${repo}-reference`;
-  }
-  return `${repoName}-reference`;
+	if (repoName.includes("/")) {
+		const [owner, repo] = repoName.split("/");
+		if (owner === repo) {
+			return `${repo}-reference`;
+		}
+		return `${owner}-${repo}-reference`;
+	}
+	return `${repoName}-reference`;
 }
 ```
 
@@ -195,48 +181,47 @@ Add `PatternLanguage` variants: `"c" | "cpp" | "ruby" | "php"`
 Add patterns:
 
 **C:**
+
 ```typescript
-c: [
-  "$TYPE $NAME($$$) { $$$ }",
-  "struct $NAME { $$$ }",
-  "#include <$PATH>",
-  '#include "$PATH"',
-]
+c: ["$TYPE $NAME($$$) { $$$ }", "struct $NAME { $$$ }", "#include <$PATH>", '#include "$PATH"'];
 ```
 
 **C++:**
+
 ```typescript
 cpp: [
-  "class $NAME { $$$ }",
-  "class $NAME : public $PARENT { $$$ }",
-  "namespace $NAME { $$$ }",
-  "$TYPE $NAME($$$) { $$$ }",
-]
+	"class $NAME { $$$ }",
+	"class $NAME : public $PARENT { $$$ }",
+	"namespace $NAME { $$$ }",
+	"$TYPE $NAME($$$) { $$$ }",
+];
 ```
 
 **Ruby:**
+
 ```typescript
 ruby: [
-  "def $NAME($$$) $$$ end",
-  "class $NAME $$$ end",
-  "class $NAME < $PARENT $$$ end",
-  "module $NAME $$$ end",
-  "require '$PATH'",
-  'require "$PATH"',
-]
+	"def $NAME($$$) $$$ end",
+	"class $NAME $$$ end",
+	"class $NAME < $PARENT $$$ end",
+	"module $NAME $$$ end",
+	"require '$PATH'",
+	'require "$PATH"',
+];
 ```
 
 **PHP:**
+
 ```typescript
 php: [
-  "function $NAME($$$) { $$$ }",
-  "class $NAME { $$$ }",
-  "class $NAME extends $PARENT { $$$ }",
-  "interface $NAME { $$$ }",
-  "use $PATH;",
-  "require '$PATH';",
-  'require "$PATH";',
-]
+	"function $NAME($$$) { $$$ }",
+	"class $NAME { $$$ }",
+	"class $NAME extends $PARENT { $$$ }",
+	"interface $NAME { $$$ }",
+	"use $PATH;",
+	"require '$PATH';",
+	'require "$PATH";',
+];
 ```
 
 #### Language Support Matrix
@@ -268,39 +253,39 @@ New interface:
 
 ```typescript
 export interface ArchitectureSection {
-  entryPoints: EntryPoint[];
-  coreModules: CoreModule[];
-  hubs: HubFile[];
-  layers: LayerGroup[];
-  inheritance: InheritanceEdge[];
-  layerDiagram: string;
-  inheritanceDiagram: string;
+	entryPoints: EntryPoint[];
+	coreModules: CoreModule[];
+	hubs: HubFile[];
+	layers: LayerGroup[];
+	inheritance: InheritanceEdge[];
+	layerDiagram: string;
+	inheritanceDiagram: string;
 }
 
 export interface EntryPoint {
-  name: string;
-  path: string;
-  exports: string[];
-  exportCount: number;
+	name: string;
+	path: string;
+	exports: string[];
+	exportCount: number;
 }
 
 export interface CoreModule {
-  path: string;
-  purpose: string;
-  entryPoint: string;
-  keyFiles: string[];
-  hubs: string[];
+	path: string;
+	purpose: string;
+	entryPoint: string;
+	keyFiles: string[];
+	hubs: string[];
 }
 
 export interface HubFile {
-  path: string;
-  importers: number;
-  purpose: string;
+	path: string;
+	importers: number;
+	purpose: string;
 }
 
 export interface LayerGroup {
-  name: string;
-  files: string[];
+	name: string;
+	files: string[];
 }
 ```
 
@@ -308,9 +293,9 @@ New functions:
 
 ```typescript
 export function buildArchitectureSection(
-  parsedFiles: Map<string, ParsedFile>,
-  graph: DependencyGraph,
-  repoPath: string,
+	parsedFiles: Map<string, ParsedFile>,
+	graph: DependencyGraph,
+	repoPath: string,
 ): ArchitectureSection;
 
 export function formatArchitectureMd(section: ArchitectureSection): string;
@@ -318,7 +303,7 @@ export function formatArchitectureMd(section: ArchitectureSection): string;
 
 #### 1.2 Logic (inspired by codemap)
 
-1. **Detect monorepo structure:** packages/*, apps/*, libs/*
+1. **Detect monorepo structure:** packages/_, apps/_, libs/\*
 2. **Detect entry points:** index.ts, main.ts, files with most exports
 3. **Mark hub files:** 3+ importers from `graph.hubs`
 4. **Detect layers:** api/, core/, utils/, types/ directory patterns
@@ -334,24 +319,24 @@ export function formatArchitectureMd(section: ArchitectureSection): string;
 
 ## Entry Points
 
-| Entry | Path | Exports |
-|-------|------|---------|
-| Main API | src/index.ts | createRouter, Route, useRouter (12 total) |
-| Client | src/client/index.ts | ClientRouter (3 total) |
+| Entry    | Path                | Exports                                   |
+| -------- | ------------------- | ----------------------------------------- |
+| Main API | src/index.ts        | createRouter, Route, useRouter (12 total) |
+| Client   | src/client/index.ts | ClientRouter (3 total)                    |
 
 ## Core Modules
 
-| Module | Purpose | Entry Point | Key Files | Hubs |
-|--------|---------|-------------|-----------|------|
-| core/ | Routing logic | core/index.ts | router.ts, route.ts | router.ts (8←) |
+| Module | Purpose       | Entry Point   | Key Files           | Hubs           |
+| ------ | ------------- | ------------- | ------------------- | -------------- |
+| core/  | Routing logic | core/index.ts | router.ts, route.ts | router.ts (8←) |
 
 ## Dependency Hubs
 
 Files imported by 3+ modules (changes have wide impact):
 
-| File | Importers | Purpose |
-|------|-----------|---------|
-| core/types.ts | 12 | Core type definitions |
+| File          | Importers | Purpose               |
+| ------------- | --------- | --------------------- |
+| core/types.ts | 12        | Core type definitions |
 
 ## Architectural Layers
 
@@ -388,9 +373,9 @@ src/
 
 ## Finding Things
 
-| Looking for... | Location |
-|----------------|----------|
-| Route definitions | packages/core/route.ts |
+| Looking for...        | Location                |
+| --------------------- | ----------------------- |
+| Route definitions     | packages/core/route.ts  |
 | Router implementation | packages/core/router.ts |
 ````
 
@@ -404,35 +389,35 @@ src/
 
 ```typescript
 export interface PublicExport {
-  name: string;
-  path: string;
-  signature: string;
-  kind: "function" | "class" | "interface" | "type" | "const";
-  description?: string;
+	name: string;
+	path: string;
+	signature: string;
+	kind: "function" | "class" | "interface" | "type" | "const";
+	description?: string;
 }
 
 export interface ImportPattern {
-  statement: string;
-  purpose: string;
-  exports: string[];
+	statement: string;
+	purpose: string;
+	exports: string[];
 }
 
 export interface SubpathExport {
-  subpath: string;
-  exports: string[];
+	subpath: string;
+	exports: string[];
 }
 
 export interface APISurface {
-  packageName: string;
-  imports: ImportPattern[];
-  exports: PublicExport[];
-  subpaths: SubpathExport[];
+	packageName: string;
+	imports: ImportPattern[];
+	exports: PublicExport[];
+	subpaths: SubpathExport[];
 }
 
 export function extractAPISurface(
-  parsedFiles: Map<string, ParsedFile>,
-  packageJson?: Record<string, unknown>,
-  repoPath?: string,
+	parsedFiles: Map<string, ParsedFile>,
+	packageJson?: Record<string, unknown>,
+	repoPath?: string,
 ): APISurface;
 
 export function formatAPISurfaceMd(surface: APISurface): string;
@@ -468,25 +453,25 @@ import { createServerRouter } from "@tanstack/router/server";
 
 ## Public Exports
 
-| Export | Type | Signature | Description |
-|--------|------|-----------|-------------|
-| createRouter | function | `(opts: RouterOptions) => Router` | Create a new router instance |
-| Route | class | `class Route<TPath, TParams>` | Represents a route definition |
-| useRouter | function | `() => Router` | Access router in React components |
+| Export       | Type     | Signature                         | Description                       |
+| ------------ | -------- | --------------------------------- | --------------------------------- |
+| createRouter | function | `(opts: RouterOptions) => Router` | Create a new router instance      |
+| Route        | class    | `class Route<TPath, TParams>`     | Represents a route definition     |
+| useRouter    | function | `() => Router`                    | Access router in React components |
 
 ## Subpath Exports
 
-| Subpath | Exports |
-|---------|---------|
-| /react | Link, useParams, useSearch, Outlet |
-| /server | createServerRouter, handleRequest |
+| Subpath | Exports                            |
+| ------- | ---------------------------------- |
+| /react  | Link, useParams, useSearch, Outlet |
+| /server | createServerRouter, handleRequest  |
 
 ## Type Exports
 
-| Type | Definition |
-|------|------------|
+| Type          | Definition                               |
+| ------------- | ---------------------------------------- |
 | RouterOptions | `{ routes: Route[], basePath?: string }` |
-| RouteParams | `Record<string, string>` |
+| RouteParams   | `Record<string, string>`                 |
 ````
 
 ---
@@ -501,17 +486,17 @@ Add context parameter:
 
 ```typescript
 export interface ProseGenerationContext {
-  apiSurface: string;
-  architecture: string;
-  readme?: string;
-  examples?: string[];
-  contributing?: string;
+	apiSurface: string;
+	architecture: string;
+	readme?: string;
+	examples?: string[];
+	contributing?: string;
 }
 
 export async function generateProseWithContext(
-  skeleton: SkillSkeleton,
-  context: ProseGenerationContext,
-  options: ProseGenerationOptions,
+	skeleton: SkillSkeleton,
+	context: ProseGenerationContext,
+	options: ProseGenerationOptions,
 ): Promise<ProseResult>;
 ```
 
@@ -600,24 +585,24 @@ const contributingContent = loadContributing(repoPath);
 
 // Step 3: AI track (uses deterministic as context)
 const proseContext: ProseGenerationContext = {
-  apiSurface: apiSurfaceMd,
-  architecture: architectureMd,
-  readme: readmeContent,
-  examples: examplesContent,
-  contributing: contributingContent,
+	apiSurface: apiSurfaceMd,
+	architecture: architectureMd,
+	readme: readmeContent,
+	examples: examplesContent,
+	contributing: contributingContent,
 };
 
 const proseResult = await generateProseWithContext(skeleton, proseContext, options);
 
 // Step 4: Return all content
 return {
-  skill,
-  graph,
-  architectureGraph,
-  incrementalState,
-  stats,
-  architectureMd,
-  apiSurfaceMd,
+	skill,
+	graph,
+	architectureGraph,
+	incrementalState,
+	stats,
+	architectureMd,
+	apiSurfaceMd,
 };
 ```
 
@@ -631,15 +616,15 @@ return {
 
 ```typescript
 export interface InstallSkillOptions {
-  skillContent: string;
-  summaryContent: string;
-  architectureContent: string;
-  apiReferenceContent: string;
-  developmentContent: string;
-  skillJson?: string;
-  metaJson?: string;
-  architectureJson?: string;
-  fileIndexJson?: string;
+	skillContent: string;
+	summaryContent: string;
+	architectureContent: string;
+	apiReferenceContent: string;
+	developmentContent: string;
+	skillJson?: string;
+	metaJson?: string;
+	architectureJson?: string;
+	fileIndexJson?: string;
 }
 ```
 
@@ -647,15 +632,15 @@ export interface InstallSkillOptions {
 
 ```typescript
 export function installSkillWithReferences(repoName: string, options: InstallSkillOptions): void {
-  // ... existing setup ...
+	// ... existing setup ...
 
-  writeFileSync(join(skillDir, "SKILL.md"), options.skillContent, "utf-8");
-  writeFileSync(join(refsDir, "summary.md"), options.summaryContent, "utf-8");
-  writeFileSync(join(refsDir, "architecture.md"), options.architectureContent, "utf-8");
-  writeFileSync(join(refsDir, "api-reference.md"), options.apiReferenceContent, "utf-8");
-  writeFileSync(join(refsDir, "development.md"), options.developmentContent, "utf-8");
+	writeFileSync(join(skillDir, "SKILL.md"), options.skillContent, "utf-8");
+	writeFileSync(join(refsDir, "summary.md"), options.summaryContent, "utf-8");
+	writeFileSync(join(refsDir, "architecture.md"), options.architectureContent, "utf-8");
+	writeFileSync(join(refsDir, "api-reference.md"), options.apiReferenceContent, "utf-8");
+	writeFileSync(join(refsDir, "development.md"), options.developmentContent, "utf-8");
 
-  // ... rest of function ...
+	// ... rest of function ...
 }
 ```
 
@@ -677,33 +662,33 @@ Pass new content to `installSkillWithReferences()`.
 
 ```typescript
 export const ImportPatternSchema = z.object({
-  import: z.string(),
-  purpose: z.string(),
+	import: z.string(),
+	purpose: z.string(),
 });
 
 export const TroubleshootingEntrySchema = z.object({
-  symptom: z.string(),
-  cause: z.string(),
-  fix: z.string(),
+	symptom: z.string(),
+	cause: z.string(),
+	fix: z.string(),
 });
 
 export const ArchitectureConceptSchema = z.object({
-  name: z.string(),
-  purpose: z.string(),
-  location: z.string(),
+	name: z.string(),
+	purpose: z.string(),
+	location: z.string(),
 });
 
 export const ExtensionPointSchema = z.object({
-  type: z.string(),
-  interface: z.string(),
-  purpose: z.string(),
-  example: z.string().optional(),
+	type: z.string(),
+	interface: z.string(),
+	purpose: z.string(),
+	example: z.string().optional(),
 });
 
 export const CodebaseMapEntrySchema = z.object({
-  path: z.string(),
-  purpose: z.string(),
-  exports: z.array(z.string()).optional(),
+	path: z.string(),
+	purpose: z.string(),
+	exports: z.array(z.string()).optional(),
 });
 ```
 
@@ -711,29 +696,27 @@ export const CodebaseMapEntrySchema = z.object({
 
 ```typescript
 export const SkillSchema = z.object({
-  name: z.string(),
-  description: z.string(),
+	name: z.string(),
+	description: z.string(),
 
-  // User-facing
-  importPatterns: z.array(ImportPatternSchema).optional(),
-  whenToUse: z.array(z.string()).min(5),
-  quickStartCode: z.string().optional(),
-  commonOperations: z
-    .array(z.object({ task: z.string(), code: z.string() }))
-    .optional(),
-  troubleshooting: z.array(TroubleshootingEntrySchema).optional(),
+	// User-facing
+	importPatterns: z.array(ImportPatternSchema).optional(),
+	whenToUse: z.array(z.string()).min(5),
+	quickStartCode: z.string().optional(),
+	commonOperations: z.array(z.object({ task: z.string(), code: z.string() })).optional(),
+	troubleshooting: z.array(TroubleshootingEntrySchema).optional(),
 
-  // Contributor-facing
-  architecture: z.array(ArchitectureConceptSchema).optional(),
-  extensionPoints: z.array(ExtensionPointSchema).optional(),
-  codebaseMap: z.array(CodebaseMapEntrySchema).optional(),
+	// Contributor-facing
+	architecture: z.array(ArchitectureConceptSchema).optional(),
+	extensionPoints: z.array(ExtensionPointSchema).optional(),
+	codebaseMap: z.array(CodebaseMapEntrySchema).optional(),
 
-  // Existing fields
-  basePaths: z.object({ repo: z.string(), analysis: z.string() }).optional(),
-  quickPaths: z.array(QuickPathSchema),
-  searchPatterns: z.array(SearchPatternSchema),
-  bestPractices: z.array(z.string()).optional(),
-  commonPatterns: z.array(CommonPatternSchema).optional(),
+	// Existing fields
+	basePaths: z.object({ repo: z.string(), analysis: z.string() }).optional(),
+	quickPaths: z.array(QuickPathSchema),
+	searchPatterns: z.array(SearchPatternSchema),
+	bestPractices: z.array(z.string()).optional(),
+	commonPatterns: z.array(CommonPatternSchema).optional(),
 });
 ```
 
@@ -764,8 +747,8 @@ export const SkillSchema = z.object({
 
 ````markdown
 ---
-name: {library}
-description: {keyword-rich, user-task-oriented description}
+name: { library }
+description: { keyword-rich, user-task-oriented description }
 allowed-tools: [Read, Grep, Glob]
 ---
 
@@ -782,8 +765,8 @@ allowed-tools: [Read, Grep, Glob]
 ## Import Patterns
 
 ```typescript
-import { x } from "{package}";        // {purpose}
-import { y } from "{package}/sub";    // {purpose}
+import { x } from "{package}"; // {purpose}
+import { y } from "{package}/sub"; // {purpose}
 ```
 
 ## Quick Start
@@ -794,8 +777,8 @@ import { y } from "{package}/sub";    // {purpose}
 
 ## Common Operations
 
-| Task | Code |
-|------|------|
+| Task     | Code        |
+| -------- | ----------- |
 | {task 1} | `{snippet}` |
 
 ## Go Deeper
@@ -810,13 +793,13 @@ import { y } from "{package}/sub";    // {purpose}
 
 ## Token Budget
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| SKILL.md | ~150 | Always loaded on activation |
-| architecture.md | ~300 | Loaded for internals questions, "where is X" |
-| api-reference.md | ~200 | Loaded for import lookups |
-| summary.md | ~150 | Loaded for "explain", "best practices" |
-| development.md | ~150 | Loaded for "contribute", "develop" |
+| File             | Lines | Purpose                                      |
+| ---------------- | ----- | -------------------------------------------- |
+| SKILL.md         | ~150  | Always loaded on activation                  |
+| architecture.md  | ~300  | Loaded for internals questions, "where is X" |
+| api-reference.md | ~200  | Loaded for import lookups                    |
+| summary.md       | ~150  | Loaded for "explain", "best practices"       |
+| development.md   | ~150  | Loaded for "contribute", "develop"           |
 
 **Total:** ~950 lines across 5 files  
 **Per-request:** ~150-450 lines (SKILL.md + 1-2 reference files)

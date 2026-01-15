@@ -404,3 +404,34 @@ CodebaseMapEntrySchema: { path, purpose, exports? }
 - `whenToUse` has `.min(5)` constraint when present - update tests that use fewer items
 - All new fields are optional (`.optional()`) for backward compatibility
 - Test assertions with empty arrays (`whenToUse: []`) must be updated or field omitted
+
+### Named Re-export Extraction (US-014)
+
+**Problem**: AST patterns like `export { $$$ } from "$PATH"` capture the multi-variable `$$$` but `match.getMatch("NAME")` only returns single matches, not lists.
+
+**Solution** (`src/ast/parser.ts`): Parse the match text with regex to extract all named symbols:
+
+```typescript
+function extractNamedExportsFromText(text: string): string[] {
+    const namedExportMatch = text.match(/export\s+(?:type\s+)?\{([^}]+)\}/);
+    if (!namedExportMatch?.[1]) return [];
+    
+    return namedExportMatch[1].split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+        .map(item => {
+            const asMatch = item.match(/(\w+)\s+as\s+(\w+)/);
+            return asMatch?.[2] ?? item.match(/^(\w+)$/)?.[1];
+        })
+        .filter(Boolean);
+}
+```
+
+**Key insight from codemap**: They don't extract exports at all. They only track imports + function definitions, then invert to find importers. For API surface, they look at function definitions IN entry files directly.
+
+**Gotchas**:
+
+- `export { foo as bar }` - extract `bar` (the exported name), not `foo`
+- `export * from '...'` - handle separately as barrel re-exports
+- Type exports (`export type { X }`) need same treatment as value exports
+- AST-grep's `$$$` captures lists but `getMatch()` doesn't expose them as arrays

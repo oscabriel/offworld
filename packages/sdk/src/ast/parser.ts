@@ -222,7 +222,16 @@ export function extractExports(
 		try {
 			const matches = root.root().findAll(pattern);
 			for (const match of matches) {
-				// Get exported names
+				const matchText = match.text();
+
+				const namedExports = extractNamedExportsFromText(matchText);
+				for (const name of namedExports) {
+					if (!seen.has(name)) {
+						seen.add(name);
+						exports.push(name);
+					}
+				}
+
 				const nameNode = match.getMatch("NAME");
 				if (nameNode) {
 					const name = nameNode.text();
@@ -232,9 +241,13 @@ export function extractExports(
 					}
 				}
 
-				// For re-exports with PATH
 				const pathNode = match.getMatch("PATH");
-				if (pathNode) {
+				const isBarrelExport =
+					namedExports.length === 0 &&
+					matchText.includes("export *") &&
+					!matchText.includes("export * as");
+
+				if (pathNode && isBarrelExport) {
 					const path = pathNode.text().replace(/['"]/g, "");
 					const reexport = `* from ${path}`;
 					if (!seen.has(reexport)) {
@@ -261,6 +274,37 @@ export function extractExports(
 	}
 
 	return exports;
+}
+
+function extractNamedExportsFromText(text: string): string[] {
+	const names: string[] = [];
+
+	// Regex: export { ... } with optional 'type' keyword
+	const namedExportMatch = text.match(/export\s+(?:type\s+)?\{([^}]+)\}/);
+	if (!namedExportMatch?.[1]) {
+		return names;
+	}
+
+	const exportList = namedExportMatch[1];
+	const items = exportList.split(",");
+
+	for (const item of items) {
+		const trimmed = item.trim();
+		if (!trimmed) continue;
+
+		// Handle aliases: export { foo as bar } -> extract 'bar'
+		const asMatch = trimmed.match(/(\w+)\s+as\s+(\w+)/);
+		if (asMatch?.[2]) {
+			names.push(asMatch[2]);
+		} else {
+			const simpleMatch = trimmed.match(/^(\w+)$/);
+			if (simpleMatch?.[1]) {
+				names.push(simpleMatch[1]);
+			}
+		}
+	}
+
+	return names;
 }
 
 /**

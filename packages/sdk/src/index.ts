@@ -121,16 +121,6 @@ export {
 } from "./auth.js";
 
 export {
-	validateSkillPaths,
-	pathExists,
-	isAnalysisStale,
-	getCachedCommitSha,
-	type PathValidationResult,
-	type ValidatePathsOptions,
-	type StalenessCheckResult,
-} from "./validation/index.js";
-
-export {
 	generateSkillWithAI,
 	installSkill,
 	type GenerateSkillOptions,

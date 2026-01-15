@@ -44,7 +44,7 @@ check_prd_complete() {
     if [ ! -f "$PRD_FILE" ]; then
         return 1
     fi
-    
+
     # Check for global "passes": true
     if grep -q '"passes"[[:space:]]*:[[:space:]]*true' "$PRD_FILE" | head -1 | grep -v "userStories" > /dev/null 2>&1; then
         # More precise: check if there's a top-level passes: true (not inside userStories)
@@ -54,14 +54,14 @@ check_prd_complete() {
             return 0
         fi
     fi
-    
+
     # Check if all user stories pass
     local failed_count=$(jq '[.userStories[] | select(.passes == false)] | length' "$PRD_FILE" 2>/dev/null)
     if [ "$failed_count" = "0" ]; then
         echo -e "${GREEN}All user stories pass${NC}"
         return 0
     fi
-    
+
     echo -e "${BLUE}Remaining stories: $failed_count${NC}"
     return 1
 }
@@ -71,7 +71,7 @@ get_progress_summary() {
     local total=$(jq '.userStories | length' "$PRD_FILE" 2>/dev/null)
     local passed=$(jq '[.userStories[] | select(.passes == true)] | length' "$PRD_FILE" 2>/dev/null)
     local next_story=$(jq -r '[.userStories[] | select(.passes == false)] | sort_by(.priority) | .[0] | "\(.id): \(.title)"' "$PRD_FILE" 2>/dev/null)
-    
+
     echo -e "${BLUE}Progress: $passed/$total stories complete${NC}"
     if [ "$next_story" != "null: null" ] && [ -n "$next_story" ]; then
         echo -e "${BLUE}Next: $next_story${NC}"
@@ -81,28 +81,28 @@ get_progress_summary() {
 # Run single iteration
 run_iteration() {
     local iteration=$1
-    
+
     echo -e "${BLUE}--- Iteration $iteration/$MAX_ITERATIONS ---${NC}"
     get_progress_summary
     echo ""
-    
+
     # Read prompt
     local prompt=$(cat "$PROMPT_FILE")
-    
+
     # Run opencode
     echo -e "${BLUE}Running opencode...${NC}"
     echo ""
-    
+
     opencode run -m opencode/claude-opus-4-5 --variant high "$prompt"
-    
+
     echo ""
-    
+
     # Check completion
     if check_prd_complete; then
         echo -e "${GREEN}PRD complete after $iteration iterations${NC}"
         return 0
     fi
-    
+
     return 1
 }
 
@@ -131,31 +131,31 @@ fi
 # Main loop
 while [ $ITERATION -lt $MAX_ITERATIONS ]; do
     ITERATION=$((ITERATION + 1))
-    
+
     if run_iteration $ITERATION; then
         echo -e "${GREEN}================================${NC}"
         echo -e "${GREEN}Success! PRD complete.${NC}"
         echo -e "${GREEN}================================${NC}"
-        
+
         echo ""
         echo -e "${BLUE}Final Progress:${NC}"
         get_progress_summary
-        
+
         exit 0
     fi
-    
+
     if [ $ITERATION -ge $MAX_ITERATIONS ]; then
         echo -e "${YELLOW}================================${NC}"
         echo -e "${YELLOW}Warning: Max iterations ($MAX_ITERATIONS) reached${NC}"
         echo -e "${YELLOW}================================${NC}"
-        
+
         echo ""
         echo -e "${BLUE}Current Progress:${NC}"
         get_progress_summary
-        
+
         exit 1
     fi
-    
+
     echo -e "${BLUE}Waiting 2 seconds...${NC}"
     echo ""
     sleep 2

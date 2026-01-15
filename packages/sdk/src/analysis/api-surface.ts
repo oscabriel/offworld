@@ -3,7 +3,7 @@
  * Deterministic extraction of public API from package.json exports and entry points
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import type { ParsedFile, ExtractedSymbol } from "../ast/parser.js";
 
@@ -59,6 +59,7 @@ export interface APISurface {
 
 interface PackageJson {
 	name?: string;
+	private?: boolean;
 	main?: string;
 	module?: string;
 	types?: string;
@@ -84,17 +85,92 @@ function resolveExportPath(exportValue: unknown): string | null {
 
 	if (exportValue && typeof exportValue === "object") {
 		const obj = exportValue as Record<string, unknown>;
-		// Priority: import > require > default > types
+
+		const resolveField = (field: unknown): string | null => {
+			if (typeof field === "string") return field;
+			if (field && typeof field === "object") {
+				const nested = field as Record<string, unknown>;
+				return (
+					(typeof nested.default === "string" ? nested.default : null) ??
+					(typeof nested.types === "string" ? nested.types : null)
+				);
+			}
+			return null;
+		};
+
 		return (
-			(obj.import as string | undefined) ??
-			(obj.require as string | undefined) ??
-			(obj.default as string | undefined) ??
-			(obj.types as string | undefined) ??
+			resolveField(obj.import) ??
+			resolveField(obj.require) ??
+			resolveField(obj.default) ??
+			resolveField(obj.types) ??
 			null
 		);
 	}
 
 	return null;
+}
+
+// ============================================================================
+// Monorepo Detection
+// ============================================================================
+
+interface MonorepoPackageInfo {
+	/** Absolute path to package directory */
+	packagePath: string;
+	/** Package name from package.json */
+	packageName: string;
+	/** Path relative to repo root (e.g., "packages/react-query") */
+	relativePath: string;
+	/** Package.json contents */
+	pkg: PackageJson;
+}
+
+function isMonorepo(pkg: PackageJson): boolean {
+	// Private root package or generic root name indicates monorepo
+	return pkg.private === true || pkg.name === "root" || !pkg.name;
+}
+
+function findMonorepoPackages(repoPath: string): MonorepoPackageInfo[] {
+	const packages: MonorepoPackageInfo[] = [];
+	const packageDirs = ["packages", "apps", "libs"];
+
+	for (const dir of packageDirs) {
+		const dirPath = join(repoPath, dir);
+		if (!existsSync(dirPath)) continue;
+
+		try {
+			const entries = readdirSync(dirPath, { withFileTypes: true });
+			for (const entry of entries) {
+				if (!entry.isDirectory()) continue;
+
+				const pkgDir = join(dirPath, entry.name);
+				const pkgJsonPath = join(pkgDir, "package.json");
+
+				if (!existsSync(pkgJsonPath)) continue;
+
+				try {
+					const content = readFileSync(pkgJsonPath, "utf-8");
+					const subPkg = JSON.parse(content) as PackageJson;
+
+					// Only include non-private packages with a name
+					if (subPkg.name && !subPkg.private) {
+						packages.push({
+							packagePath: pkgDir,
+							packageName: subPkg.name,
+							relativePath: `${dir}/${entry.name}`,
+							pkg: subPkg,
+						});
+					}
+				} catch {
+					// Skip packages we can't parse
+				}
+			}
+		} catch {
+			// Directory read failed
+		}
+	}
+
+	return packages;
 }
 
 // ============================================================================
@@ -309,27 +385,25 @@ function generateImportPatterns(
 // Main Extraction Function
 // ============================================================================
 
-export function extractAPISurface(
-	repoPath: string,
+function extractPackageAPISurface(
+	packagePath: string,
+	relativePath: string,
+	pkg: PackageJson,
 	parsedFiles: Map<string, ParsedFile>,
-): APISurface {
-	const pkg = readPackageJson(repoPath);
-	const packageName = pkg?.name ?? basename(repoPath);
-
-	const entryPoints = pkg ? findEntryPoints(repoPath, pkg) : [];
-
-	const mainExports: PublicExport[] = [];
-	const allTypeExports: PublicExport[] = [];
-	const subpaths: SubpathExport[] = [];
+	onDebug?: (msg: string) => void,
+): { exports: PublicExport[]; typeExports: PublicExport[] } {
+	const entryPoints = findEntryPoints(packagePath, pkg);
+	const exports: PublicExport[] = [];
+	const typeExports: PublicExport[] = [];
+	onDebug?.(`  Package ${relativePath}: ${entryPoints.length} entry points`);
 
 	for (const entry of entryPoints) {
-		// Normalize entry path for lookup
 		const normalizedPath = entry.path.replace(/^\.\//, "");
+		const fullPath = `${relativePath}/${normalizedPath}`;
 
-		// Find the parsed file for this entry point
 		let parsedFile: ParsedFile | undefined;
 		for (const [path, parsed] of parsedFiles) {
-			if (path === normalizedPath || path.endsWith(normalizedPath)) {
+			if (path === fullPath || path.endsWith(normalizedPath)) {
 				parsedFile = parsed;
 				break;
 			}
@@ -337,28 +411,99 @@ export function extractAPISurface(
 
 		if (!parsedFile) continue;
 
-		const { exports, typeExports } = extractExportsFromParsed(parsedFile, normalizedPath);
+		const extracted = extractExportsFromParsed(parsedFile, fullPath);
+		exports.push(...extracted.exports);
+		typeExports.push(...extracted.typeExports);
+	}
 
-		if (entry.subpath === null) {
-			// Main entry
-			mainExports.push(...exports);
-			allTypeExports.push(...typeExports);
+	if (exports.length === 0) {
+		const srcIndexPath = `${relativePath}/src/index.ts`;
+		const srcIndexJsPath = `${relativePath}/src/index.js`;
+
+		onDebug?.(`    Looking for ${srcIndexPath} in parsedFiles`);
+		const parsed = parsedFiles.get(srcIndexPath) ?? parsedFiles.get(srcIndexJsPath);
+		if (parsed) {
+			onDebug?.(`    Found! Extracting exports...`);
+			const extracted = extractExportsFromParsed(parsed, srcIndexPath);
+			exports.push(...extracted.exports);
+			typeExports.push(...extracted.typeExports);
+			onDebug?.(`    Extracted ${exports.length} exports, ${typeExports.length} typeExports`);
 		} else {
-			// Subpath entry
-			subpaths.push({
-				subpath: entry.subpath,
-				exports: [...exports, ...typeExports],
-			});
+			onDebug?.(`    NOT FOUND`);
 		}
 	}
 
-	// If no entry points found, scan all index files
-	if (mainExports.length === 0 && entryPoints.length === 0) {
-		for (const [path, parsed] of parsedFiles) {
-			if (path.endsWith("index.ts") || path.endsWith("index.js")) {
-				const { exports, typeExports } = extractExportsFromParsed(parsed, path);
+	return { exports, typeExports };
+}
+
+export function extractAPISurface(
+	repoPath: string,
+	parsedFiles: Map<string, ParsedFile>,
+	onDebug?: (msg: string) => void,
+): APISurface {
+	const pkg = readPackageJson(repoPath);
+	const packageName = pkg?.name ?? basename(repoPath);
+
+	const mainExports: PublicExport[] = [];
+	const allTypeExports: PublicExport[] = [];
+	const subpaths: SubpathExport[] = [];
+
+	if (pkg && isMonorepo(pkg)) {
+		const monoPackages = findMonorepoPackages(repoPath);
+		onDebug?.(`Detected monorepo with ${monoPackages.length} packages`);
+
+		for (const monoPkg of monoPackages) {
+			const { exports, typeExports } = extractPackageAPISurface(
+				monoPkg.packagePath,
+				monoPkg.relativePath,
+				monoPkg.pkg,
+				parsedFiles,
+				onDebug,
+			);
+
+			if (exports.length > 0 || typeExports.length > 0) {
+				subpaths.push({
+					subpath: monoPkg.packageName,
+					exports: [...exports, ...typeExports],
+				});
+			}
+		}
+	} else {
+		const entryPoints = pkg ? findEntryPoints(repoPath, pkg) : [];
+
+		for (const entry of entryPoints) {
+			const normalizedPath = entry.path.replace(/^\.\//, "");
+
+			let parsedFile: ParsedFile | undefined;
+			for (const [path, parsed] of parsedFiles) {
+				if (path === normalizedPath || path.endsWith(normalizedPath)) {
+					parsedFile = parsed;
+					break;
+				}
+			}
+
+			if (!parsedFile) continue;
+
+			const { exports, typeExports } = extractExportsFromParsed(parsedFile, normalizedPath);
+
+			if (entry.subpath === null) {
 				mainExports.push(...exports);
 				allTypeExports.push(...typeExports);
+			} else {
+				subpaths.push({
+					subpath: entry.subpath,
+					exports: [...exports, ...typeExports],
+				});
+			}
+		}
+
+		if (mainExports.length === 0 && entryPoints.length === 0) {
+			for (const [path, parsed] of parsedFiles) {
+				if (path.endsWith("index.ts") || path.endsWith("index.js")) {
+					const { exports, typeExports } = extractExportsFromParsed(parsed, path);
+					mainExports.push(...exports);
+					allTypeExports.push(...typeExports);
+				}
 			}
 		}
 	}

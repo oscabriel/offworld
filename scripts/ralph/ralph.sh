@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Ralph Agent Loop Runner
-# Runs opencode in a loop using prompt.md until PRD.json shows passes: true
+# Runs claude in a loop using prompt.md until PRD.json shows passes: true
 # Usage: ./ralph.sh [max_iterations]
 
 set -e
@@ -89,11 +89,11 @@ run_iteration() {
     # Read prompt
     local prompt=$(cat "$PROMPT_FILE")
 
-    # Run opencode
-    echo -e "${BLUE}Running opencode...${NC}"
+    # Run claude
+    echo -e "${BLUE}Running claude...${NC}"
     echo ""
 
-    opencode run -m opencode/claude-opus-4-5 --variant high "$prompt"
+    claude --dangerously-skip-permissions -p "$prompt"
 
     echo ""
 

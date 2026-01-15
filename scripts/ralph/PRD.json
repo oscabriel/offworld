@@ -152,7 +152,7 @@
         "typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3 - packages/sdk/src/analysis/pipeline.ts"
     },
     {

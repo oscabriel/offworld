@@ -113,3 +113,20 @@
   - Prompt structure: each prompt type gets deterministic context relevant to that file type
 
 ---
+
+## 2026-01-14 - US-009
+
+- Reordered pipeline: deterministic generation (architecture, API surface) now runs BEFORE AI prose
+- Added loadReadme(), loadExamples(), loadContributing() helper functions
+- Updated AnalysisPipelineResult to include architectureSection, apiSurface, architectureMd, apiSurfaceMd, proseResult
+- Pipeline now passes ProseGenerationContext to generateProseWithContext()
+- Created legacy prose adapter for backward compatibility with mergeProseIntoSkeleton()
+- Removed generateProseWithRetry import (replaced by generateProseWithContext)
+- Files changed: packages/sdk/src/analysis/pipeline.ts, packages/sdk/src/analysis/index.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - Pipeline flow: deterministic extraction MUST happen before AI to populate context
+  - Legacy adapter pattern: when switching to new prose format, create adapter object for existing merge functions
+  - Context loaders: return undefined (not throw) when files not found, use onDebug for error visibility
+  - loadExamples checks multiple patterns: directories (examples/, demos/) then individual files (example.ts)
+
+---

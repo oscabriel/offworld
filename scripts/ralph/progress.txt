@@ -62,3 +62,19 @@
 - 6600+ lines deleted - significant reduction in SDK complexity
 
 ---
+
+## 2026-01-15 - US-004
+
+- Deleted `packages/sdk/src/ast/` directory (3 files)
+- No import cleanup needed - analysis/ was the only consumer
+
+**Files changed:**
+- `packages/sdk/src/ast/` (deleted - 3 files: parser.ts, patterns.ts, index.ts)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- Clean deletion when dependent module already removed - no cascade effects
+- ~1100 lines deleted
+- AST parsing was tightly coupled to analysis/ - removing analysis/ first made this trivial
+
+---

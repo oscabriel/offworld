@@ -78,3 +78,23 @@
 - AST parsing was tightly coupled to analysis/ - removing analysis/ first made this trivial
 
 ---
+
+## 2026-01-15 - US-005
+
+- Deleted `packages/sdk/src/validation/` directory (3 files)
+- Removed validation exports from `packages/sdk/src/index.ts`
+- Deleted `validation.test.ts` test file
+
+**Files changed:**
+- `packages/sdk/src/validation/` (deleted - 3 files: staleness.ts, paths.ts, index.ts)
+- `packages/sdk/src/__tests__/validation.test.ts` (deleted)
+- `packages/sdk/src/index.ts` (updated)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- consistency.ts and quality.ts were already deleted in US-003 (depended on analysis/ types)
+- Only staleness.ts, paths.ts, index.ts remained after US-003
+- ~400 lines deleted
+- Validation was only used for deterministic analysis caching - not needed for AI-only approach
+
+---

@@ -169,7 +169,7 @@
         "Add section documenting new generateSkillWithAI and installSkill functions"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Keep AGENTS.md accurate for future development"
     },
     {

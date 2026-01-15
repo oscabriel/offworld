@@ -266,3 +266,36 @@ interface ContextAwareProseResult {
 **Prompt Pattern**: Each prompt includes verbatim deterministic context so AI imports match `api-reference.md` exactly.
 
 **Gotcha**: `SummaryProse` name conflict - pipeline.ts already has `SummaryProse`. New type named `SummaryContent`.
+
+### Dual-Track Pipeline Flow (US-009)
+
+**Pipeline Order** (deterministic BEFORE AI):
+
+1. Parse files, build dependency graph, architecture graph
+2. Build `ArchitectureSection` (deterministic) → `formatArchitectureMd()`
+3. Extract `APISurface` (deterministic) → `formatAPISurfaceMd()`
+4. Load context: `loadReadme()`, `loadExamples()`, `loadContributing()`
+5. Build `ProseGenerationContext` with deterministic data
+6. Call `generateProseWithContext()` (AI receives deterministic context)
+7. Validate, merge, return result
+
+**New AnalysisPipelineResult Fields**:
+
+```typescript
+interface AnalysisPipelineResult {
+  // ...existing fields...
+  architectureSection: ArchitectureSection;
+  apiSurface: APISurface;
+  architectureMd: string;      // Ready-to-write markdown
+  apiSurfaceMd: string;        // Ready-to-write markdown
+  proseResult: ContextAwareProseResult;
+}
+```
+
+**Context Loaders** (`loadReadme`, `loadExamples`, `loadContributing`):
+
+- Accept `onDebug` callback for error logging
+- Return `undefined` if file not found
+- `loadExamples()` checks directories (examples/, example/, demos/) then individual files
+
+**Legacy Prose Adapter**: For backward compatibility with `mergeProseIntoSkeleton()`, the pipeline creates a legacy prose object from `ContextAwareProseResult` fields.

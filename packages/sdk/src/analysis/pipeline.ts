@@ -24,15 +24,20 @@ import { rankFilesWithAST } from "./heuristics.js";
 import { initLanguages, isSupportedExtension } from "../ast/index.js";
 import { parseFile, type ParsedFile } from "../ast/parser.js";
 import { buildSkeleton } from "./skeleton.js";
-import { generateProseWithRetry } from "./prose.js";
+
 import { validateConsistency } from "../validation/consistency.js";
 import { mergeProseIntoSkeleton, type MergedSkillResult, type MergedEntity } from "./merge.js";
 import { buildDependencyGraph, type DependencyGraph } from "./imports.js";
 import {
 	buildArchitectureGraph,
 	generateMermaidDiagram,
+	buildArchitectureSection,
+	formatArchitectureMd,
 	type ArchitectureGraph,
+	type ArchitectureSection,
 } from "./architecture.js";
+import { extractAPISurface, formatAPISurfaceMd, type APISurface } from "./api-surface.js";
+import { generateProseWithContext, type ProseGenerationContext, type ContextAwareProseResult } from "./prose.js";
 import { buildIncrementalState, type IncrementalState } from "./incremental.js";
 
 // ============================================================================
@@ -50,6 +55,11 @@ export interface AnalysisPipelineResult {
 	skill: MergedSkillResult;
 	graph: DependencyGraph;
 	architectureGraph: ArchitectureGraph;
+	architectureSection: ArchitectureSection;
+	apiSurface: APISurface;
+	architectureMd: string;
+	apiSurfaceMd: string;
+	proseResult: ContextAwareProseResult;
 	incrementalState: IncrementalState;
 	stats: AnalysisPipelineStats;
 }
@@ -433,6 +443,99 @@ export function formatArchitectureMdLegacy(
 }
 
 // ============================================================================
+// Context Loading Helpers
+// ============================================================================
+
+/**
+ * Load README.md content from the repo root
+ */
+export function loadReadme(repoPath: string, onDebug?: (message: string) => void): string | undefined {
+	const readmeNames = ["README.md", "readme.md", "Readme.md", "README", "readme"];
+	for (const name of readmeNames) {
+		const readmePath = join(repoPath, name);
+		if (existsSync(readmePath)) {
+			try {
+				return readFileSync(readmePath, "utf-8");
+			} catch (err) {
+				onDebug?.(`Failed to read ${readmePath}: ${err instanceof Error ? err.message : String(err)}`);
+			}
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Load example code from examples/ directory or common example patterns
+ */
+export function loadExamples(repoPath: string, onDebug?: (message: string) => void): string | undefined {
+	const exampleDirs = ["examples", "example", "demos", "demo"];
+	const exampleFiles = ["example.ts", "example.js", "examples.ts", "examples.js", "usage.ts", "usage.js"];
+
+	// Try example directories first
+	for (const dir of exampleDirs) {
+		const dirPath = join(repoPath, dir);
+		if (existsSync(dirPath)) {
+			try {
+				const stat = statSync(dirPath);
+				if (stat.isDirectory()) {
+					const files = readdirSync(dirPath).filter(
+						(f) => f.endsWith(".ts") || f.endsWith(".js") || f.endsWith(".tsx") || f.endsWith(".jsx")
+					);
+					if (files.length > 0) {
+						const examples: string[] = [];
+						for (const file of files.slice(0, 5)) {
+							try {
+								const content = readFileSync(join(dirPath, file), "utf-8");
+								examples.push(`// ${file}\n${content}`);
+							} catch {
+								// Skip unreadable files
+							}
+						}
+						if (examples.length > 0) {
+							return examples.join("\n\n");
+						}
+					}
+				}
+			} catch (err) {
+				onDebug?.(`Failed to read ${dirPath}: ${err instanceof Error ? err.message : String(err)}`);
+			}
+		}
+	}
+
+	// Try individual example files
+	for (const file of exampleFiles) {
+		const filePath = join(repoPath, file);
+		if (existsSync(filePath)) {
+			try {
+				return readFileSync(filePath, "utf-8");
+			} catch (err) {
+				onDebug?.(`Failed to read ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+			}
+		}
+	}
+
+	return undefined;
+}
+
+/**
+ * Load CONTRIBUTING.md content from the repo root
+ */
+export function loadContributing(repoPath: string, onDebug?: (message: string) => void): string | undefined {
+	const contributingNames = ["CONTRIBUTING.md", "contributing.md", "Contributing.md", "CONTRIBUTING", "contributing"];
+	for (const name of contributingNames) {
+		const contributingPath = join(repoPath, name);
+		if (existsSync(contributingPath)) {
+			try {
+				return readFileSync(contributingPath, "utf-8");
+			} catch (err) {
+				onDebug?.(`Failed to read ${contributingPath}: ${err instanceof Error ? err.message : String(err)}`);
+			}
+		}
+	}
+	return undefined;
+}
+
+// ============================================================================
 // File Discovery
 // ============================================================================
 
@@ -553,33 +656,6 @@ export async function runAnalysisPipeline(
 	const repoName = options.qualifiedName ?? basename(repoPath);
 	const skeleton = buildSkeleton(repoPath, repoName, rankedFiles, parsedFiles);
 
-	// Step 6: Generate prose with AI (with retry)
-	// Use options.provider/model if provided, otherwise fall back to config.ai settings
-	const aiProvider = options.provider ?? config.ai?.provider;
-	const aiModel = options.model ?? config.ai?.model;
-	onProgress("prose", "Generating prose with AI");
-	onDebug?.(`Using AI: ${aiProvider ?? "default"}/${aiModel ?? "default"}`);
-	const proseResult = await generateProseWithRetry(skeleton, {
-		provider: aiProvider,
-		model: aiModel,
-		onDebug,
-		onStream: options.onStream,
-	});
-	onDebug?.(`Prose generation completed in ${proseResult.attempts} attempt(s)`);
-
-	onProgress("validate", "Validating consistency");
-	const consistencyReport = validateConsistency(skeleton, proseResult.prose);
-	if (!consistencyReport.passed) {
-		onDebug?.(`Consistency warnings: ${consistencyReport.issues.map((i) => i.message).join(", ")}`);
-	}
-
-	onProgress("merge", "Merging skeleton and prose");
-	const skill = mergeProseIntoSkeleton(skeleton, proseResult.prose, {
-		qualifiedName: options.qualifiedName,
-		repoRoot: config.repoRoot,
-		metaRoot: config.metaRoot,
-	});
-
 	onProgress("graph", "Building dependency graph");
 	const graph = buildDependencyGraph(parsedFiles, repoPath);
 	onDebug?.(`Graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
@@ -589,6 +665,67 @@ export async function runAnalysisPipeline(
 	onDebug?.(
 		`Architecture: ${architectureGraph.nodes.length} nodes, ${architectureGraph.edges.length} edges, ${architectureGraph.symbolTable.size} symbols`,
 	);
+
+	onProgress("architecture-section", "Building architecture section (deterministic)");
+	const architectureSection = buildArchitectureSection(parsedFiles, graph, architectureGraph);
+	const architectureMd = formatArchitectureMd(architectureSection);
+	onDebug?.(`Architecture section: ${architectureSection.entryPoints.length} entry points, ${architectureSection.hubs.length} hubs`);
+
+	onProgress("api-surface", "Extracting API surface (deterministic)");
+	const apiSurface = extractAPISurface(repoPath, parsedFiles);
+	const apiSurfaceMd = formatAPISurfaceMd(apiSurface);
+	onDebug?.(`API surface: ${apiSurface.exports.length} exports, ${apiSurface.imports.length} import patterns`);
+
+	onProgress("context", "Loading context files");
+	const readme = loadReadme(repoPath, onDebug);
+	const examples = loadExamples(repoPath, onDebug);
+	const contributing = loadContributing(repoPath, onDebug);
+	onDebug?.(`Context: readme=${!!readme}, examples=${!!examples}, contributing=${!!contributing}`);
+
+	const proseContext: ProseGenerationContext = {
+		apiSurface,
+		architecture: architectureSection,
+		readme,
+		examples,
+		contributing,
+	};
+
+	const aiProvider = options.provider ?? config.ai?.provider;
+	const aiModel = options.model ?? config.ai?.model;
+	onProgress("prose", "Generating prose with AI (context-aware)");
+	onDebug?.(`Using AI: ${aiProvider ?? "default"}/${aiModel ?? "default"}`);
+	const proseResult = await generateProseWithContext(skeleton, {
+		context: proseContext,
+		provider: aiProvider,
+		model: aiModel,
+		onDebug,
+		onStream: options.onStream,
+	});
+	onDebug?.("Context-aware prose generation completed");
+
+	onProgress("validate", "Validating consistency");
+	const legacyProse = {
+		overview: proseResult.summary.overview,
+		problemsSolved: proseResult.summary.problemsSolved,
+		features: proseResult.summary.features,
+		patterns: "",
+		targetUseCases: proseResult.summary.targetUseCases,
+		summary: proseResult.summary.overview.slice(0, 100),
+		whenToUse: proseResult.skill.whenToUse,
+		entityDescriptions: {},
+		relationships: [],
+	};
+	const consistencyReport = validateConsistency(skeleton, legacyProse);
+	if (!consistencyReport.passed) {
+		onDebug?.(`Consistency warnings: ${consistencyReport.issues.map((i) => i.message).join(", ")}`);
+	}
+
+	onProgress("merge", "Merging skeleton and prose");
+	const skill = mergeProseIntoSkeleton(skeleton, legacyProse, {
+		qualifiedName: options.qualifiedName,
+		repoRoot: config.repoRoot,
+		metaRoot: config.metaRoot,
+	});
 
 	onProgress("state", "Building incremental state");
 	const commitSha = getCommitSha(repoPath);
@@ -606,6 +743,11 @@ export async function runAnalysisPipeline(
 		skill,
 		graph,
 		architectureGraph,
+		architectureSection,
+		apiSurface,
+		architectureMd,
+		apiSurfaceMd,
+		proseResult,
 		incrementalState,
 		stats,
 	};

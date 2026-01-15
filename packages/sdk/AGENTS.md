@@ -2,7 +2,7 @@
 
 ## OpenCode Integration Patterns
 
-### Provider/Model Validation (US-001)
+### Provider/Model Validation
 
 **Pattern**: Always validate provider and model BEFORE sending prompts
 
@@ -68,7 +68,7 @@ interface OpenCodeClient {
 - `src/ai/errors.ts` - Tagged error types with hints
 - `src/ai/index.ts` - Exports
 
-### Configurable AI Model (US-002)
+### Configurable AI Model
 
 **Config Schema** (in `@offworld/types/schemas.ts`):
 
@@ -82,10 +82,10 @@ export const AIConfigSchema = z.object({
 ai: AIConfigSchema.default({ provider: "opencode", model: "claude-opus-4-5" }),
 ```
 
-**Cascade Order**: CLI flag → Config file → Defaults
+**Cascade Order**: CLI flag -> Config file -> Defaults
 
 ```typescript
-// In pipeline.ts:
+// In generate.ts:
 const aiProvider = options.provider ?? config.ai?.provider;
 const aiModel = options.model ?? config.ai?.model;
 
@@ -94,7 +94,7 @@ const providerID = optProvider ?? DEFAULT_AI_PROVIDER;
 const modelID = optModel ?? DEFAULT_AI_MODEL;
 ```
 
-### Typed Stream Events (US-004)
+### Typed Stream Events
 
 **Stream Module** (`src/ai/stream/`):
 
@@ -127,123 +127,76 @@ switch (parsed.type) {
 }
 ```
 
-### Gotchas
+## AI-Only Skill Generation
 
-1. **Base class \_tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
-2. **Import extensions**: Use `.js` extension for imports even for TypeScript files (`import from "./errors.js"`)
-3. **Pre-existing test failures**: CLI handler tests (`apps/cli`) have unrelated mock issues - don't block on these
-4. **Zod nested default**: When using `.default({})` on nested object schemas, must provide full default: `AIConfigSchema.default({ provider: "...", model: "..." })`
-5. **Test fixture updates**: When adding new required fields to schemas, update all test fixtures that use `Config` type
-6. **z.record() requires two args**: Use `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`
-7. **Avoid type name conflicts**: Name stream payload types distinctly (e.g., `SessionErrorPayload` vs `SessionError` class)
-8. **Silent catch debugging**: When adding debug logging to silent catches, ensure the callback is passed through all recursive calls
-9. **Export naming conflicts**: When adding new formatters, check if export name exists in index.ts (e.g., `formatArchitectureMd` was in pipeline.ts - renamed to `formatArchitectureMdLegacy`)
+### generateSkillWithAI
 
+**Location**: `src/generate.ts`
 
-
-### Simplified AI-Only Generation (US-001 - Strip Pipeline)
-
-**New Module** (`src/generate.ts`):
+Generates a SKILL.md file by delegating codebase exploration to the AI agent.
 
 ```typescript
-// Core function - delegates codebase exploration to AI
-generateSkillWithAI(repoPath, repoName, options) -> { skillContent, commitSha }
+interface GenerateSkillOptions {
+  provider?: string;      // AI provider (default: from config or "opencode")
+  model?: string;         // AI model (default: from config or "claude-opus-4-5")
+  onDebug?: (msg: string) => void;   // Debug callback
+  onStream?: (text: string) => void; // Stream callback for AI output
+}
 
-// Installation function - writes SKILL.md and meta.json
-installSkill(repoName, skillContent, meta) -> void
+interface GenerateSkillResult {
+  skillContent: string;   // The generated SKILL.md content
+  commitSha: string;      // Git commit SHA of the analyzed repo
+}
+
+async function generateSkillWithAI(
+  repoPath: string,       // Path to the local repository
+  repoName: string,       // Qualified name (e.g., "owner/repo" or "repo")
+  options?: GenerateSkillOptions
+): Promise<GenerateSkillResult>
 ```
 
-**Key Design Decisions**:
+**How it works**:
+1. Opens an OpenCode session with the `analyze` agent
+2. Sends a single comprehensive prompt instructing the AI to explore the codebase
+3. AI uses Read/Grep/Glob tools to understand the repository structure
+4. AI generates a SKILL.md file with YAML frontmatter and markdown content
+5. Returns the skill content and the current git commit SHA
 
-1. Single prompt approach - AI uses Read/Grep/Glob to explore codebase
-2. No AST parsing, no deterministic analysis, no context gathering
-3. Reuses existing `streamPrompt()` from `ai/opencode.ts`
-4. Simpler output: only SKILL.md + meta.json (no references/ subdirectory)
+### installSkill
 
-**File Structure**:
+**Location**: `src/generate.ts`
 
+Writes a generated skill to the filesystem and creates symlinks for AI agent discovery.
+
+```typescript
+interface InstallSkillMeta {
+  analyzedAt: string;     // ISO timestamp
+  commitSha: string;      // Git commit SHA
+  version: string;        // SDK version
+}
+
+async function installSkill(
+  repoName: string,       // Qualified name (e.g., "owner/repo" or "repo")
+  skillContent: string,   // The SKILL.md content to write
+  meta: InstallSkillMeta  // Metadata for meta.json
+): Promise<void>
+```
+
+**File structure created**:
 ```
 ~/.config/offworld/skills/{name}-reference/
 └── SKILL.md
 
 ~/.config/offworld/meta/{name}/
 └── meta.json  # { analyzedAt, commitSha, version }
+
+~/.opencode/skills/{name}-reference/  -> symlink to skills dir
+~/.claude/skills/{name}-reference/    -> symlink to skills dir
 ```
 
-**Gotchas**:
+**Name collapsing**: For repos like `better-auth/better-auth`, the skill name is collapsed to `better-auth-reference` (not `better-auth-better-auth-reference`).
 
-- `toSkillDirName()` and `toMetaDirName()` duplicated from pipeline.ts (intentional - will remove pipeline.ts later)
-- Uses `analyze` agent from OpenCode with restricted tools (read-only)
-- Prompt is self-contained (no system prompt needed beyond what's in opencode.ts config)
-
-### Export Pattern (US-002 - Strip Pipeline)
-
-**Public API**: Both `generateSkillWithAI` and `installSkill` are exported from `src/index.ts`:
-
-```typescript
-export {
-	generateSkillWithAI,
-	installSkill,
-	type GenerateSkillOptions,
-	type GenerateSkillResult,
-	type InstallSkillMeta,
-} from "./generate.js";
-```
-
-### Analysis Directory Deletion (US-003 - Strip Pipeline)
-
-**Deleted Files**:
-- `src/analysis/` directory (12 files): pipeline.ts, heuristics.ts, skeleton.ts, architecture.ts, api-surface.ts, imports.ts, merge.ts, incremental.ts, prose.ts, context.ts, parsers.ts, index.ts
-- `src/validation/consistency.ts` - depended on analysis types (dead code)
-- `src/validation/quality.ts` - depended on analysis types (dead code)
-- Test files: analysis.test.ts, parsers.test.ts, pipeline.integration.test.ts
-
-**Cascade Effect**: Removal required deleting validation files that imported from analysis/. These were not exported from validation/index.ts (dead code).
-
-**Gotchas**:
-- validation/index.ts only exports paths.ts and staleness.ts - consistency.ts and quality.ts were orphaned
-- Tests that directly import from analysis/ must be deleted, not just have imports removed
-
-### AST Directory Deletion (US-004 - Strip Pipeline)
-
-**Deleted Files**:
-- `src/ast/` directory (3 files): parser.ts, patterns.ts, index.ts
-
-**Clean Deletion**: No imports from ast/ remained in codebase after US-003 deletion (analysis/ was the only consumer). Verified with grep - no cascade effects.
-
-### Validation Directory Deletion (US-005 - Strip Pipeline)
-
-**Deleted Files**:
-- `src/validation/` directory (3 files): staleness.ts, paths.ts, index.ts
-- Test file: validation.test.ts
-
-**Remaining Validation**: None. The `validateSkillPaths`, `pathExists`, `isAnalysisStale`, `getCachedCommitSha` exports removed from index.ts.
-
-**Gotchas**:
-- consistency.ts and quality.ts were already deleted in US-003 (they depended on analysis/ types)
-- Only paths.ts and staleness.ts remained in validation/index.ts exports
-
-### AST-grep Dependencies Removal (US-006 - Strip Pipeline)
-
-**Removed Dependencies**:
-- `@ast-grep/napi` - core parsing engine
-- `@ast-grep/lang-python`, `@ast-grep/lang-rust`, `@ast-grep/lang-go`, `@ast-grep/lang-java`
-- `@ast-grep/lang-c`, `@ast-grep/lang-cpp`, `@ast-grep/lang-ruby`, `@ast-grep/lang-php`
-
-**Cleanup Process**:
-1. Edit package.json to remove dependencies
-2. Run `bun install` to update lockfile
-3. Manually remove `packages/sdk/node_modules/@ast-grep/` directory (stale symlinks remain after dep removal)
-4. Re-run `bun install` to confirm clean state
-
-**Gotchas**:
-- Bun preserves symlinks to hoisted packages even after dependencies are removed from package.json
-- Must manually `rm -rf` the stale @ast-grep directory before `bun install` will have "no changes"
-- Root node_modules doesn't have @ast-grep (was only in packages/sdk scope)
-
-### SDK Index Exports Verification (US-007 - Strip Pipeline)
-
-**Public API** (`src/index.ts`) after stripping analysis code:
+## Public API Summary
 
 | Module | Key Exports |
 |--------|-------------|
@@ -258,28 +211,11 @@ export {
 | `auth.ts` | getToken, isLoggedIn, saveAuthData |
 | `generate.ts` | generateSkillWithAI, installSkill |
 
-**Removed Exports**: All analysis/, ast/, validation/ exports deleted in US-003/004/005.
+## Gotchas
 
-**Gotchas**:
-- Some stories are verification-only (no code changes needed)
-- Run `bun run build` in packages/sdk to verify bundle builds cleanly after deletions
-
-### Test Cleanup (US-010 - Strip Pipeline)
-
-**Deleted Test Files**:
-- `src/__tests__/reference-quality.test.ts` - tested inline API surface quality functions (no longer needed)
-- `src/__tests__/fixtures/` directory (10 files) - sample code files for AST parsing tests
-
-**Files Deleted Earlier** (in US-003/005):
-- `analysis.test.ts`, `parsers.test.ts`, `pipeline.integration.test.ts` - deleted in US-003
-- `validation.test.ts` - deleted in US-005
-
-**Remaining Test Files** (9 tests, 227 passing):
-- `setup.test.ts`, `auth.test.ts`, `clone.test.ts`, `config.test.ts`
-- `index-manager.test.ts`, `repo-source.test.ts`, `sync.test.ts`, `util.test.ts`
-- `integration/clone.integration.test.ts`
-
-**Gotchas**:
-- `reference-quality.test.ts` defined its own test implementations inline (not imports) - was dead code testing removed functionality
-- Fixtures were only imported by deleted parser/analysis tests - no other tests used them
-- `mocks/` directory still needed by remaining tests (fs.ts, git.ts, fetch.ts)
+1. **Base class _tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
+2. **Import extensions**: Use `.js` extension for imports even for TypeScript files (`import from "./errors.js"`)
+3. **Zod nested default**: When using `.default({})` on nested object schemas, must provide full default: `AIConfigSchema.default({ provider: "...", model: "..." })`
+4. **z.record() requires two args**: Use `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`
+5. **Avoid type name conflicts**: Name stream payload types distinctly (e.g., `SessionErrorPayload` vs `SessionError` class)
+6. **Silent catch debugging**: When adding debug logging to silent catches, ensure the callback is passed through all recursive calls

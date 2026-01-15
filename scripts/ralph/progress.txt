@@ -36,3 +36,29 @@
 - Keep `installSkillWithReferences` export for backward compatibility until analysis/ directory is deleted
 
 ---
+
+## 2026-01-15 - US-003
+
+- Deleted `packages/sdk/src/analysis/` directory (12 files)
+- Removed analysis exports from `packages/sdk/src/index.ts`
+- Deleted orphaned validation files: `consistency.ts`, `quality.ts` (depended on analysis types)
+- Deleted test files importing analysis/: `analysis.test.ts`, `parsers.test.ts`, `pipeline.integration.test.ts`
+- Updated AGENTS.md - removed obsolete analysis sections, added deletion learnings
+
+**Files changed:**
+- `packages/sdk/src/analysis/` (deleted - 12 files)
+- `packages/sdk/src/validation/consistency.ts` (deleted)
+- `packages/sdk/src/validation/quality.ts` (deleted)
+- `packages/sdk/src/__tests__/analysis.test.ts` (deleted)
+- `packages/sdk/src/__tests__/parsers.test.ts` (deleted)
+- `packages/sdk/src/__tests__/pipeline.integration.test.ts` (deleted)
+- `packages/sdk/src/index.ts` (updated)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- validation/consistency.ts and quality.ts imported from analysis/ but were not exported from validation/index.ts - dead code
+- Test files that directly import deleted modules must be deleted, not refactored
+- Cascade deletions: when removing a module, check what else imports it (grep for import patterns)
+- 6600+ lines deleted - significant reduction in SDK complexity
+
+---

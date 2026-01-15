@@ -196,3 +196,24 @@
 - ~770 lines deleted
 
 ---
+
+## 2026-01-15 - US-011
+
+- Rewrote `packages/sdk/AGENTS.md` to remove all analysis-related learnings
+- Removed sections: Analysis Directory Deletion, AST Directory Deletion, Validation Directory Deletion, AST-grep Dependencies Removal, Test Cleanup (these were about removed functionality)
+- Removed US-XXX tags from section headers (no longer relevant)
+- Kept sections: OpenCode Integration Patterns, Provider/Model Validation, Error Types, Stream Events
+- Enhanced documentation for `generateSkillWithAI` and `installSkill` with detailed interface documentation
+- Added Public API Summary table
+- Consolidated Gotchas section (removed analysis-specific gotchas)
+
+**Files changed:**
+- `packages/sdk/AGENTS.md` (rewritten - 61 insertions, 125 deletions)
+
+**Learnings:**
+- AGENTS.md should document current functionality, not deleted functionality
+- After major refactoring, AGENTS.md needs cleanup to remove obsolete information
+- US-XXX tags in section headers are useful during development but should be removed afterward
+- Keeping detailed interface documentation (types, parameters) in AGENTS.md is valuable for future AI agents
+
+---

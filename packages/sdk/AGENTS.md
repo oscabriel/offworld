@@ -263,3 +263,23 @@ export {
 **Gotchas**:
 - Some stories are verification-only (no code changes needed)
 - Run `bun run build` in packages/sdk to verify bundle builds cleanly after deletions
+
+### Test Cleanup (US-010 - Strip Pipeline)
+
+**Deleted Test Files**:
+- `src/__tests__/reference-quality.test.ts` - tested inline API surface quality functions (no longer needed)
+- `src/__tests__/fixtures/` directory (10 files) - sample code files for AST parsing tests
+
+**Files Deleted Earlier** (in US-003/005):
+- `analysis.test.ts`, `parsers.test.ts`, `pipeline.integration.test.ts` - deleted in US-003
+- `validation.test.ts` - deleted in US-005
+
+**Remaining Test Files** (9 tests, 227 passing):
+- `setup.test.ts`, `auth.test.ts`, `clone.test.ts`, `config.test.ts`
+- `index-manager.test.ts`, `repo-source.test.ts`, `sync.test.ts`, `util.test.ts`
+- `integration/clone.integration.test.ts`
+
+**Gotchas**:
+- `reference-quality.test.ts` defined its own test implementations inline (not imports) - was dead code testing removed functionality
+- Fixtures were only imported by deleted parser/analysis tests - no other tests used them
+- `mocks/` directory still needed by remaining tests (fs.ts, git.ts, fetch.ts)

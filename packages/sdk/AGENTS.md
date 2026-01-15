@@ -210,3 +210,15 @@ export {
 - `src/ast/` directory (3 files): parser.ts, patterns.ts, index.ts
 
 **Clean Deletion**: No imports from ast/ remained in codebase after US-003 deletion (analysis/ was the only consumer). Verified with grep - no cascade effects.
+
+### Validation Directory Deletion (US-005 - Strip Pipeline)
+
+**Deleted Files**:
+- `src/validation/` directory (3 files): staleness.ts, paths.ts, index.ts
+- Test file: validation.test.ts
+
+**Remaining Validation**: None. The `validateSkillPaths`, `pathExists`, `isAnalysisStale`, `getCachedCommitSha` exports removed from index.ts.
+
+**Gotchas**:
+- consistency.ts and quality.ts were already deleted in US-003 (they depended on analysis/ types)
+- Only paths.ts and staleness.ts remained in validation/index.ts exports

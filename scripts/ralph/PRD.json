@@ -92,7 +92,7 @@
         "No ast-grep packages in node_modules after install"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Clean up dependencies after removing AST code"
     },
     {

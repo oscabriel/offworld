@@ -472,10 +472,10 @@ function buildSummaryPromptWithContext(
 
 	parts.push(`Schema:
 {
-  "overview": "string (100+ chars, what this library does)",
-  "problemsSolved": "string (50+ chars, problems it solves)",
-  "features": "string (50+ chars, key features)",
-  "targetUseCases": "string (50+ chars, ideal use cases)"
+  "overview": "string (100+ chars, 1-2 sentences: what problem does this solve?)",
+  "problemsSolved": "string (50+ chars, comma-separated list of 3-5 pain points it addresses)",
+  "features": "string (50+ chars, comma-separated list of 5-10 key features)",
+  "targetUseCases": "string (50+ chars, ideal use cases and when to use this)"
 }
 
 Output raw JSON only`);
@@ -506,10 +506,10 @@ function buildDevelopmentPromptWithContext(
 
 	parts.push(`Schema:
 {
-  "gettingStarted": "string (50+ chars, setup instructions)",
-  "projectStructure": "string (50+ chars, directory layout explanation)",
-  "buildAndTest": "string (50+ chars, build/test commands)",
-  "contributingGuidelines": "string (50+ chars, how to contribute)"
+  "gettingStarted": "string (50+ chars, prerequisites, installation, first run)",
+  "projectStructure": "string (50+ chars, brief overview of monorepo layout or key directories)",
+  "buildAndTest": "string (50+ chars, commands for building, testing, linting)",
+  "contributingGuidelines": "string (50+ chars, from CONTRIBUTING.md or inferred from PR templates)"
 }
 
 Output raw JSON only`);

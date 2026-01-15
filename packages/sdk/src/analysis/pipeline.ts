@@ -312,11 +312,22 @@ export interface FormatSkillOptions {
 	generated?: string;
 }
 
+function truncateAtWordBoundary(text: string, maxLength: number): string {
+	if (text.length <= maxLength) return text;
+	const truncated = text.slice(0, maxLength);
+	const lastSpace = truncated.lastIndexOf(" ");
+	if (lastSpace > maxLength - 20) {
+		return truncated.slice(0, lastSpace) + "...";
+	}
+	return truncated + "...";
+}
+
 export function formatSkillMd(skill: Skill, options: FormatSkillOptions = {}): string {
+	const description = truncateAtWordBoundary(skill.description, 100);
 	const lines = [
 		"---",
 		`name: ${skill.name}`,
-		`description: ${skill.description}`,
+		`description: ${description}`,
 		"allowed-tools: [Read, Grep, Glob]",
 	];
 

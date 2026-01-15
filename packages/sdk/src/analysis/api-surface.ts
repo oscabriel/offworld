@@ -234,33 +234,35 @@ function findEntryPoints(repoPath: string, pkg: PackageJson): EntryPointInfo[] {
 // ============================================================================
 
 function inferDescription(name: string, kind: PublicExport["kind"]): string {
-	// Generate description from name using common patterns
 	const words = name
-		.replace(/([A-Z])/g, " $1")
+		.replace(/([A-Z]+)(?=[A-Z][a-z])/g, "$1_")
+		.replace(/([a-z0-9])([A-Z])/g, "$1_$2")
 		.replace(/[_-]/g, " ")
 		.trim()
 		.toLowerCase()
-		.split(/\s+/);
+		.split(/\s+/)
+		.filter(Boolean);
 
 	if (words.length === 0) return name;
 
-	const prefix = kind === "function" ? "Function to" : kind === "class" ? "Class for" : "";
-
-	// Common naming patterns
 	if (words[0] === "create" || words[0] === "make") {
-		return `${prefix} create ${words.slice(1).join(" ")}`.trim();
+		return `Create ${words.slice(1).join(" ")}`;
 	}
-	if (words[0] === "use") {
+	if (words[0] === "use" && kind === "function") {
 		return `React hook for ${words.slice(1).join(" ")}`;
 	}
 	if (words[0] === "get") {
-		return `${prefix} retrieve ${words.slice(1).join(" ")}`.trim();
+		return `Retrieve ${words.slice(1).join(" ")}`;
 	}
 	if (words[0] === "set") {
-		return `${prefix} set ${words.slice(1).join(" ")}`.trim();
+		return `Set ${words.slice(1).join(" ")}`;
 	}
 	if (words[0] === "is" || words[0] === "has" || words[0] === "can") {
 		return `Check if ${words.slice(1).join(" ")}`;
+	}
+
+	if (kind === "const" && name === name.toUpperCase()) {
+		return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 	}
 
 	return `${kind.charAt(0).toUpperCase() + kind.slice(1)} ${words.join(" ")}`;
@@ -321,23 +323,25 @@ function extractExportsFromParsed(
 		}
 	}
 
-	// Handle re-exports by looking at the exports array
 	for (const exp of parsedFile.exports) {
-		// Skip re-exports (handled separately)
 		if (exp.startsWith("* from ")) continue;
 
-		// Check if this export is already captured from symbols
-		const alreadyHave =
-			exports.some((e) => e.name === exp) || typeExports.some((e) => e.name === exp);
-		if (!alreadyHave) {
-			// Likely a const export or type alias
-			exports.push({
-				name: exp,
-				path: filePath,
-				signature: exp,
-				kind: "const",
-				description: inferDescription(exp, "const"),
-			});
+		const names = exp
+			.split(",")
+			.map((n) => n.trim())
+			.filter(Boolean);
+		for (const name of names) {
+			const alreadyHave =
+				exports.some((e) => e.name === name) || typeExports.some((e) => e.name === name);
+			if (!alreadyHave) {
+				exports.push({
+					name,
+					path: filePath,
+					signature: name,
+					kind: "const",
+					description: inferDescription(name, "const"),
+				});
+			}
 		}
 	}
 
@@ -348,6 +352,17 @@ function extractExportsFromParsed(
 // Import Pattern Generation
 // ============================================================================
 
+function inferSubpathPurpose(subpath: string): string {
+	const parts = subpath.split("/");
+	const lastPart = parts[parts.length - 1] ?? subpath;
+	return lastPart
+		.replace(/^@[^/]+\//, "")
+		.replace(/-/g, " ")
+		.split(" ")
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(" ");
+}
+
 function generateImportPatterns(
 	packageName: string,
 	exports: PublicExport[],
@@ -355,7 +370,6 @@ function generateImportPatterns(
 ): ImportPattern[] {
 	const patterns: ImportPattern[] = [];
 
-	// Main import pattern
 	if (exports.length > 0) {
 		const topExports = exports.slice(0, 5).map((e) => e.name);
 		patterns.push({
@@ -365,15 +379,18 @@ function generateImportPatterns(
 		});
 	}
 
-	// Subpath import patterns
 	for (const subpath of subpaths) {
 		if (subpath.exports.length === 0) continue;
 
-		const subpathName = subpath.subpath.replace("./", "");
+		const isFullPackageName = subpath.subpath.startsWith("@") || !subpath.subpath.startsWith("./");
+		const importPath = isFullPackageName
+			? subpath.subpath
+			: `${packageName}/${subpath.subpath.replace("./", "")}`;
+
 		const topExports = subpath.exports.slice(0, 3).map((e) => e.name);
 		patterns.push({
-			statement: `import { ${topExports.join(", ")} } from '${packageName}/${subpathName}'`,
-			purpose: `${subpathName.charAt(0).toUpperCase() + subpathName.slice(1)} utilities`,
+			statement: `import { ${topExports.join(", ")} } from '${importPath}'`,
+			purpose: `${inferSubpathPurpose(importPath)} utilities`,
 			exports: subpath.exports.map((e) => e.name),
 		});
 	}

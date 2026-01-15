@@ -119,7 +119,7 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 2 - new file packages/sdk/src/analysis/api-surface.ts"
     },
     {
@@ -136,7 +136,7 @@
         "typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3 - packages/sdk/src/analysis/prose.ts"
     },
     {

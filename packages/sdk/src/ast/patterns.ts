@@ -6,7 +6,17 @@
  * - $PATH: import path
  */
 
-export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c" | "cpp" | "ruby" | "php";
+export type PatternLanguage =
+	| "typescript"
+	| "javascript"
+	| "python"
+	| "rust"
+	| "go"
+	| "java"
+	| "c"
+	| "cpp"
+	| "ruby"
+	| "php";
 
 /**
  * Patterns for matching function declarations
@@ -199,11 +209,7 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"namespace $NAME { $$$ }",
 		"template<$$$> class $NAME { $$$ }",
 	],
-	ruby: [
-		"class $NAME $$$ end",
-		"class $NAME < $PARENT $$$ end",
-		"module $NAME $$$ end",
-	],
+	ruby: ["class $NAME $$$ end", "class $NAME < $PARENT $$$ end", "module $NAME $$$ end"],
 	php: [
 		"class $NAME { $$$ }",
 		"class $NAME extends $PARENT { $$$ }",

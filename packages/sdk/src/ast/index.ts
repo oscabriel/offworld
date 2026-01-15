@@ -48,16 +48,17 @@ export async function initLanguages(): Promise<void> {
 	}
 
 	// Dynamic imports for language packages
-	const [pythonLang, rustLang, goLang, javaLang, cLang, cppLang, rubyLang, phpLang] = await Promise.all([
-		import("@ast-grep/lang-python"),
-		import("@ast-grep/lang-rust"),
-		import("@ast-grep/lang-go"),
-		import("@ast-grep/lang-java"),
-		import("@ast-grep/lang-c"),
-		import("@ast-grep/lang-cpp"),
-		import("@ast-grep/lang-ruby"),
-		import("@ast-grep/lang-php"),
-	]);
+	const [pythonLang, rustLang, goLang, javaLang, cLang, cppLang, rubyLang, phpLang] =
+		await Promise.all([
+			import("@ast-grep/lang-python"),
+			import("@ast-grep/lang-rust"),
+			import("@ast-grep/lang-go"),
+			import("@ast-grep/lang-java"),
+			import("@ast-grep/lang-c"),
+			import("@ast-grep/lang-cpp"),
+			import("@ast-grep/lang-ruby"),
+			import("@ast-grep/lang-php"),
+		]);
 
 	registerDynamicLanguage({
 		python: {

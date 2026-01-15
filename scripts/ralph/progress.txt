@@ -1,0 +1,38 @@
+## 2026-01-15 - US-001
+
+- Created `packages/sdk/src/generate.ts` with AI-only skill generation
+- Implemented `generateSkillWithAI(repoPath, repoName, options)` function
+- Implemented `installSkill(repoName, skillContent, meta)` function
+- Uses `streamPrompt()` from `ai/opencode.ts` with `analyze` agent
+- Single comprehensive prompt instructs AI to use Read/Grep/Glob tools
+- Returns `{ skillContent, commitSha }` for generated skills
+- Supports provider, model, onDebug, onStream options
+- Updated `packages/sdk/AGENTS.md` with new patterns
+
+**Files changed:**
+- `packages/sdk/src/generate.ts` (new)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- Reusing `streamPrompt()` from existing opencode.ts avoids duplication
+- `toSkillDirName()` and `toMetaDirName()` duplicated from pipeline.ts (intentional - pipeline.ts will be deleted in later stories)
+- Simpler output structure: SKILL.md + meta.json only (no references/ subdirectory needed for AI-only approach)
+- Pre-existing test failures in SDK don't block typecheck
+
+---
+
+## 2026-01-15 - US-002
+
+- Exported `installSkill` and `generateSkillWithAI` from `packages/sdk/src/index.ts`
+- Added type exports: `GenerateSkillOptions`, `GenerateSkillResult`, `InstallSkillMeta`
+- Updated AGENTS.md with export pattern documentation
+
+**Files changed:**
+- `packages/sdk/src/index.ts` (updated)
+- `packages/sdk/AGENTS.md` (updated)
+
+**Learnings:**
+- `installSkill` was already fully implemented in US-001, just needed export from index.ts
+- Keep `installSkillWithReferences` export for backward compatibility until analysis/ directory is deleted
+
+---

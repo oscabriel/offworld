@@ -159,3 +159,11 @@ export {
 	type ValidatePathsOptions,
 	type StalenessCheckResult,
 } from "./validation/index.js";
+
+export {
+	generateSkillWithAI,
+	installSkill,
+	type GenerateSkillOptions,
+	type GenerateSkillResult,
+	type InstallSkillMeta,
+} from "./generate.js";

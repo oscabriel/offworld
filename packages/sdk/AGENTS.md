@@ -472,3 +472,19 @@ installSkill(repoName, skillContent, meta) -> void
 - `toSkillDirName()` and `toMetaDirName()` duplicated from pipeline.ts (intentional - will remove pipeline.ts later)
 - Uses `analyze` agent from OpenCode with restricted tools (read-only)
 - Prompt is self-contained (no system prompt needed beyond what's in opencode.ts config)
+
+### Export Pattern (US-002 - Strip Pipeline)
+
+**Public API**: Both `generateSkillWithAI` and `installSkill` are exported from `src/index.ts`:
+
+```typescript
+export {
+	generateSkillWithAI,
+	installSkill,
+	type GenerateSkillOptions,
+	type GenerateSkillResult,
+	type InstallSkillMeta,
+} from "./generate.js";
+```
+
+**Note**: The old `installSkillWithReferences` from `analysis/pipeline.ts` is still exported for backward compatibility until the analysis directory is deleted in later stories.

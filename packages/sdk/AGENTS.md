@@ -137,25 +137,26 @@ Generates a SKILL.md file by delegating codebase exploration to the AI agent.
 
 ```typescript
 interface GenerateSkillOptions {
-  provider?: string;      // AI provider (default: from config or "opencode")
-  model?: string;         // AI model (default: from config or "claude-opus-4-5")
-  onDebug?: (msg: string) => void;   // Debug callback
-  onStream?: (text: string) => void; // Stream callback for AI output
+	provider?: string; // AI provider (default: from config or "opencode")
+	model?: string; // AI model (default: from config or "claude-opus-4-5")
+	onDebug?: (msg: string) => void; // Debug callback
+	onStream?: (text: string) => void; // Stream callback for AI output
 }
 
 interface GenerateSkillResult {
-  skillContent: string;   // The generated SKILL.md content
-  commitSha: string;      // Git commit SHA of the analyzed repo
+	skillContent: string; // The generated SKILL.md content
+	commitSha: string; // Git commit SHA of the analyzed repo
 }
 
 async function generateSkillWithAI(
-  repoPath: string,       // Path to the local repository
-  repoName: string,       // Qualified name (e.g., "owner/repo" or "repo")
-  options?: GenerateSkillOptions
-): Promise<GenerateSkillResult>
+	repoPath: string, // Path to the local repository
+	repoName: string, // Qualified name (e.g., "owner/repo" or "repo")
+	options?: GenerateSkillOptions,
+): Promise<GenerateSkillResult>;
 ```
 
 **How it works**:
+
 1. Opens an OpenCode session with the `analyze` agent
 2. Sends a single comprehensive prompt instructing the AI to explore the codebase
 3. AI uses Read/Grep/Glob tools to understand the repository structure
@@ -170,19 +171,20 @@ Writes a generated skill to the filesystem and creates symlinks for AI agent dis
 
 ```typescript
 interface InstallSkillMeta {
-  analyzedAt: string;     // ISO timestamp
-  commitSha: string;      // Git commit SHA
-  version: string;        // SDK version
+	analyzedAt: string; // ISO timestamp
+	commitSha: string; // Git commit SHA
+	version: string; // SDK version
 }
 
 async function installSkill(
-  repoName: string,       // Qualified name (e.g., "owner/repo" or "repo")
-  skillContent: string,   // The SKILL.md content to write
-  meta: InstallSkillMeta  // Metadata for meta.json
-): Promise<void>
+	repoName: string, // Qualified name (e.g., "owner/repo" or "repo")
+	skillContent: string, // The SKILL.md content to write
+	meta: InstallSkillMeta, // Metadata for meta.json
+): Promise<void>;
 ```
 
 **File structure created**:
+
 ```
 ~/.config/offworld/skills/{name}-reference/
 └── SKILL.md
@@ -198,22 +200,22 @@ async function installSkill(
 
 ## Public API Summary
 
-| Module | Key Exports |
-|--------|-------------|
-| `constants.ts` | VERSION, SUPPORTED_LANGUAGES, SUPPORTED_EXTENSIONS |
-| `config.ts` | loadConfig, saveConfig, getSkillPath, getMetaPath |
-| `repo-source.ts` | parseRepoInput, RepoSourceError |
-| `util.ts` | isBinaryBuffer, loadGitignorePatterns |
-| `index-manager.ts` | getIndex, updateIndex, removeFromIndex |
-| `clone.ts` | cloneRepo, updateRepo, getCommitSha |
-| `ai/` | streamPrompt, OpenCodeAnalysisError |
-| `sync.ts` | pullAnalysis, pushAnalysis, checkRemote |
-| `auth.ts` | getToken, isLoggedIn, saveAuthData |
-| `generate.ts` | generateSkillWithAI, installSkill |
+| Module             | Key Exports                                        |
+| ------------------ | -------------------------------------------------- |
+| `constants.ts`     | VERSION, SUPPORTED_LANGUAGES, SUPPORTED_EXTENSIONS |
+| `config.ts`        | loadConfig, saveConfig, getSkillPath, getMetaPath  |
+| `repo-source.ts`   | parseRepoInput, RepoSourceError                    |
+| `util.ts`          | isBinaryBuffer, loadGitignorePatterns              |
+| `index-manager.ts` | getIndex, updateIndex, removeFromIndex             |
+| `clone.ts`         | cloneRepo, updateRepo, getCommitSha                |
+| `ai/`              | streamPrompt, OpenCodeAnalysisError                |
+| `sync.ts`          | pullAnalysis, pushAnalysis, checkRemote            |
+| `auth.ts`          | getToken, isLoggedIn, saveAuthData                 |
+| `generate.ts`      | generateSkillWithAI, installSkill                  |
 
 ## Gotchas
 
-1. **Base class _tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
+1. **Base class \_tag typing**: Use `readonly _tag: string` (not `as const`) in base class to allow subclass overrides
 2. **Import extensions**: Use `.js` extension for imports even for TypeScript files (`import from "./errors.js"`)
 3. **Zod nested default**: When using `.default({})` on nested object schemas, must provide full default: `AIConfigSchema.default({ provider: "...", model: "..." })`
 4. **z.record() requires two args**: Use `z.record(z.string(), z.unknown())` not `z.record(z.unknown())`

@@ -111,8 +111,20 @@ async function tryUploadAnalysis(
 		const analysisData: AnalysisData = {
 			fullName: source.fullName,
 			summary: skillContent,
-			architecture: { projectType: "library", entities: [], relationships: [], keyFiles: [], patterns: {} },
-			skill: { name: source.fullName, description: "", quickPaths: [], searchPatterns: [], whenToUse: [] },
+			architecture: {
+				projectType: "library",
+				entities: [],
+				relationships: [],
+				keyFiles: [],
+				patterns: {},
+			},
+			skill: {
+				name: source.fullName,
+				description: "",
+				quickPaths: [],
+				searchPatterns: [],
+				whenToUse: [],
+			},
 			fileIndex: [],
 			commitSha,
 			analyzedAt,

@@ -108,6 +108,32 @@ const LAYER_PATTERNS: [string, RegExp][] = [
 	["test", /^(__tests__|tests?|spec)\//],
 ];
 
+// ============================================================================
+// Architecture Filtering
+// ============================================================================
+
+/**
+ * Paths to ignore in architecture analysis (examples, tests, docs)
+ */
+const IGNORED_PATHS = [
+	/^examples?\//,
+	/^demos?\//,
+	/^docs?\//,
+	/^e2e\//,
+	/\/__tests__\//,
+	/\/tests?\//,
+	/\/spec\//,
+	/\.test\.(ts|js|tsx|jsx)$/,
+	/\.spec\.(ts|js|tsx|jsx)$/,
+];
+
+/**
+ * Check if a path should be included in architecture analysis
+ */
+function shouldIncludeInArchitecture(path: string): boolean {
+	return !IGNORED_PATHS.some((pattern) => pattern.test(path));
+}
+
 function classifyLayer(path: string): string | undefined {
 	for (const [layer, pattern] of LAYER_PATTERNS) {
 		if (pattern.test(path)) return layer;
@@ -322,7 +348,17 @@ const ENTRY_POINT_PATTERNS: [EntryPoint["type"], RegExp][] = [
 	["config", /(?:^|\/)(?:config|settings)\.(ts|js|json)$/],
 ];
 
-function detectEntryPointType(path: string): EntryPoint["type"] | null {
+const PACKAGE_ROOT_PATTERNS = [/^(src|lib|dist)\//, /^packages\/[^/]+\/src\//];
+
+function isInPackageRoot(path: string): boolean {
+	return PACKAGE_ROOT_PATTERNS.some((pattern) => pattern.test(path));
+}
+
+function detectEntryPointType(path: string, isPackageRoot: boolean): EntryPoint["type"] | null {
+	if (!isPackageRoot && !isInPackageRoot(path)) {
+		return null;
+	}
+
 	for (const [type, pattern] of ENTRY_POINT_PATTERNS) {
 		if (pattern.test(path)) return type;
 	}
@@ -427,12 +463,20 @@ export function buildArchitectureSection(
 	dependencyGraph: DependencyGraph,
 	graph: ArchitectureGraph,
 ): ArchitectureSection {
-	const filePaths = Array.from(parsedFiles.keys());
+	const filteredFiles = new Map<string, ParsedFile>();
+	for (const [path, parsed] of parsedFiles) {
+		if (shouldIncludeInArchitecture(path)) {
+			filteredFiles.set(path, parsed);
+		}
+	}
+
+	const filePaths = Array.from(filteredFiles.keys());
 	const hubThreshold = 3;
 
 	const entryPoints: EntryPoint[] = [];
-	for (const [filePath, parsed] of parsedFiles) {
-		const type = detectEntryPointType(filePath);
+	for (const [filePath, parsed] of filteredFiles) {
+		const isPackageRoot = filePath.match(/^(src|lib|packages\/[^/]+\/src)\//);
+		const type = detectEntryPointType(filePath, !!isPackageRoot);
 		if (type) {
 			entryPoints.push({
 				path: filePath,
@@ -444,8 +488,8 @@ export function buildArchitectureSection(
 
 	const coreModules: CoreModule[] = [];
 	for (const node of graph.nodes) {
-		if (node.symbols.length >= 3) {
-			const parsed = parsedFiles.get(node.path);
+		if (node.symbols.length >= 3 && shouldIncludeInArchitecture(node.path)) {
+			const parsed = filteredFiles.get(node.path);
 			coreModules.push({
 				path: node.path,
 				purpose: inferPurpose(node.path, parsed),

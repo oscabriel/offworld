@@ -30,6 +30,7 @@ import {
 import type { RepoSource, Skill } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createSpinner, type SpinnerLike } from "../utils/spinner";
 
 export interface PullOptions {
 	repo: string;
@@ -186,7 +187,7 @@ async function tryUploadAnalysis(
 	commitSha: string,
 	analyzedAt: string,
 	verbose: boolean,
-	spinner: ReturnType<typeof p.spinner>,
+	spinner: SpinnerLike,
 ): Promise<void> {
 	const authData = loadAuthData();
 	if (!authData?.token) {
@@ -242,7 +243,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 	} = options;
 	const config = loadConfig();
 
-	const s = p.spinner();
+	const s = createSpinner();
 
 	if (verbose) {
 		p.log.info(
@@ -455,7 +456,14 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const pipelineOptions = { onProgress, onDebug, qualifiedName, provider, model };
 			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 
-			const { skill: mergedSkill, graph, architectureGraph, architectureMd, apiSurfaceMd, proseResult } = result;
+			const {
+				skill: mergedSkill,
+				graph,
+				architectureGraph,
+				architectureMd,
+				apiSurfaceMd,
+				proseResult,
+			} = result;
 			const skill = mergedSkill.skill;
 			const { entities, prose } = mergedSkill;
 

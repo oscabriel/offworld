@@ -17,6 +17,7 @@ import {
 	updateIndex,
 	getIndexEntry,
 } from "@offworld/sdk";
+import { createSpinner } from "../utils/spinner";
 
 export interface GenerateOptions {
 	repo: string;
@@ -37,7 +38,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 	const { repo, force = false, provider, model } = options;
 	const config = loadConfig();
 
-	const s = p.spinner();
+	const s = createSpinner();
 
 	try {
 		s.start("Parsing repository input...");
@@ -100,7 +101,14 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 		s.stop("Analysis complete");
 
-		const { skill: mergedSkill, graph, architectureGraph, architectureMd, apiSurfaceMd, proseResult } = result;
+		const {
+			skill: mergedSkill,
+			graph,
+			architectureGraph,
+			architectureMd,
+			apiSurfaceMd,
+			proseResult,
+		} = result;
 		const skill = mergedSkill.skill;
 		const { entities, prose } = mergedSkill;
 

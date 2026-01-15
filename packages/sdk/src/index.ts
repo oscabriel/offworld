@@ -102,8 +102,6 @@ export {
 	type CanPushResult,
 } from "./sync.js";
 
-
-
 export {
 	AuthError,
 	NotLoggedInError,
@@ -127,3 +125,12 @@ export {
 	type GenerateSkillResult,
 	type InstallSkillMeta,
 } from "./generate.js";
+
+export {
+	agents,
+	detectInstalledAgents,
+	getAgentConfig,
+	getAllAgentConfigs,
+	expandTilde,
+	type AgentConfig,
+} from "./agents.js";

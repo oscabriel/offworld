@@ -7,10 +7,10 @@
 
 import { mkdirSync, writeFileSync, lstatSync, unlinkSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
 import { loadConfig } from "./config.js";
 import { getCommitSha } from "./clone.js";
+import { agents, expandTilde } from "./agents.js";
 
 // ============================================================================
 // Types
@@ -177,16 +177,6 @@ export async function generateSkillWithAI(
 // ============================================================================
 
 /**
- * Expand ~ to user's home directory
- */
-function expandTilde(path: string): string {
-	if (path.startsWith("~/")) {
-		return join(homedir(), path.slice(2));
-	}
-	return path;
-}
-
-/**
  * Convert owner/repo format to skill directory name.
  * Collapses owner==repo (e.g., better-auth/better-auth -> better-auth-reference)
  */
@@ -237,23 +227,21 @@ function ensureSymlink(target: string, linkPath: string): void {
 	symlinkSync(target, linkPath, "dir");
 }
 
+
+
 /**
  * Install a generated skill to the filesystem.
  *
  * Creates:
  * - ~/.config/offworld/skills/{name}-reference/SKILL.md
  * - ~/.config/offworld/meta/{name}/meta.json
- * - Symlinks from ~/.opencode/skills/ and ~/.claude/skills/
+ * - Symlinks to agent skill directories based on config.agents
  *
  * @param repoName - Qualified name (e.g., "tanstack/query" or "my-local-repo")
  * @param skillContent - The generated SKILL.md content
  * @param meta - Metadata about the generation (analyzedAt, commitSha, version)
  */
-export function installSkill(
-	repoName: string,
-	skillContent: string,
-	meta: InstallSkillMeta,
-): void {
+export function installSkill(repoName: string, skillContent: string, meta: InstallSkillMeta): void {
 	const config = loadConfig();
 	const skillDirName = toSkillDirName(repoName);
 	const metaDirName = toMetaDirName(repoName);
@@ -273,10 +261,13 @@ export function installSkill(
 	const metaJson = JSON.stringify(meta, null, 2);
 	writeFileSync(join(metaDir, "meta.json"), metaJson, "utf-8");
 
-	// Create symlinks for OpenCode and Claude
-	const openCodeSkillDir = expandTilde(join(config.skillDir, skillDirName));
-	const claudeSkillDir = join(homedir(), ".claude", "skills", skillDirName);
-
-	ensureSymlink(skillDir, openCodeSkillDir);
-	ensureSymlink(skillDir, claudeSkillDir);
+	// Create symlinks for configured agents
+	const configuredAgents = config.agents ?? [];
+	for (const agentName of configuredAgents) {
+		const agentConfig = agents[agentName];
+		if (agentConfig) {
+			const agentSkillDir = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
+			ensureSymlink(skillDir, agentSkillDir);
+		}
+	}
 }

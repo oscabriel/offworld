@@ -31,142 +31,143 @@ APPEND to progress.txt:
 
 ## Codebase Patterns
 
-### CLI Analysis Pipeline Architecture
-
-```
-apps/cli/src/handlers/pull.ts → pullHandler()
-    ├─ parseRepoInput()           # Parse "owner/repo" or local path
-    ├─ cloneRepo() / updateRepo() # Git operations
-    ├─ checkRemote()              # Check offworld.sh for existing analysis
-    └─ runAnalysisPipeline()      # packages/sdk/src/analysis/pipeline.ts
-        ├─ initLanguages()       # tree-sitter parsers
-        ├─ discoverFiles()       # Find source files, skip node_modules etc.
-        ├─ parseFile()           # AST parsing per file
-        ├─ rankFilesWithAST()    # Heuristic file importance
-        ├─ buildSkeleton()       # Deterministic structure (no AI)
-        │     └─ quickPaths, searchPatterns, entities, detectedPatterns
-        ├─ generateProseWithRetry() # AI prose generation
-        │     ├─ streamPrompt()     # packages/sdk/src/ai/opencode.ts
-        │     ├─ extractJSON()      # Parse AI response
-        │     └─ validateProseQuality()
-        ├─ validateConsistency()
-        ├─ mergeProseIntoSkeleton()
-        ├─ buildDependencyGraph()
-        ├─ buildArchitectureGraph()
-        └─ buildIncrementalState()
-```
-
-### Key Files to Edit (per plan.md)
-
-| File                                    | Purpose                          | Changes Needed                                   |
-| --------------------------------------- | -------------------------------- | ------------------------------------------------ |
-| `packages/sdk/src/ai/opencode.ts`       | OpenCode embedded server wrapper | Add validation, configurable model, typed errors |
-| `packages/sdk/src/ai/errors.ts`         | **NEW**                          | Tagged error types with hints                    |
-| `packages/sdk/src/ai/stream/types.ts`   | **NEW**                          | Zod schemas for stream events                    |
-| `packages/sdk/src/config.ts`            | Config loading/saving            | Add ai.provider, ai.model fields                 |
-| `packages/sdk/src/analysis/pipeline.ts` | Main orchestrator                | Improve error logging                            |
-
-### OpenCode Integration Pattern
+### pipeline.ts - Naming & Installation
 
 ```typescript
-// opencode.ts creates embedded server per request:
-const { createOpencode, createOpencodeClient } = await getOpenCodeSDK();
-
-// Port retry loop (lines 194-211):
-for (let attempt = 0; attempt < maxAttempts; attempt++) {
-	port = Math.floor(Math.random() * 3000) + 3000;
-	server = (await createOpencode({ port, cwd, config })).server;
-	client = createOpencodeClient({ baseUrl: `http://localhost:${port}`, directory: cwd });
+// Current - does NOT collapse owner==repo
+function toSkillDirName(repoName: string): string {
+	if (repoName.includes("/")) {
+		const [owner, repo] = repoName.split("/");
+		return `${owner}-${repo}-reference`;
+	}
+	return `${repoName}-reference`;
 }
 
-// Session lifecycle:
-// 1. client.session.create()
-// 2. client.event.subscribe() → AsyncIterable<OpenCodeEvent>
-// 3. client.session.prompt({ agent: "explore", parts: [...], model: {...} })
-// 4. Process events until session.idle
-// 5. server.close()
+// InstallSkillOptions - currently has 3 content fields, needs 5
+export interface InstallSkillOptions {
+	skillContent: string;
+	summaryContent: string;
+	architectureContent: string;
+	// MISSING: apiReferenceContent, developmentContent
+	skillJson?: string;
+	metaJson?: string;
+	architectureJson?: string;
+	fileIndexJson?: string;
+}
+
+// installSkillWithReferences writes to:
+// ~/.config/offworld/skills/{owner}-{repo}-reference/SKILL.md
+// ~/.config/offworld/skills/{owner}-{repo}-reference/references/*.md
+// Symlinks to ~/.opencode/skills/ and ~/.claude/skills/
 ```
 
-### Config Schema Location
+### architecture.ts - Graph Structure
 
 ```typescript
-// packages/types/src/config.ts (shared types)
-// packages/sdk/src/config.ts (loading logic)
+export interface ArchitectureNode {
+	path: string;
+	symbols: string[];
+	isHub: boolean;
+	layer?: "ui" | "api" | "domain" | "infra" | "util" | "config" | "test";
+}
 
-export const ConfigSchema = z.object({
-	repoRoot: z.string().default("~/ow"),
-	metaRoot: z.string().default("~/.ow"),
-	skillDir: z.string().default("~/.opencode/skills"),
-	defaultShallow: z.boolean().default(true),
-	// TODO: Add ai.provider, ai.model
+export interface ArchitectureEdge {
+	source: string;
+	target: string;
+	type: "imports" | "extends" | "implements" | "exports" | "re-exports";
+}
+
+// Hub detection: 3+ importers
+// Layer classification via LAYER_PATTERNS regex
+export function buildArchitectureGraph(
+	parsedFiles: Map<string, ParsedFile>,
+	dependencyGraph: DependencyGraph,
+): ArchitectureGraph;
+```
+
+### ast/index.ts - Language Registration
+
+```typescript
+export type SupportedLang = Lang | "python" | "rust" | "go" | "java";
+// EXTEND TO: | "c" | "cpp" | "ruby" | "php"
+
+export const LANG_MAP: Record<string, Lang | string> = {
+  ".ts": Lang.TypeScript,
+  ".tsx": Lang.Tsx,
+  ".js": Lang.JavaScript,
+  ".py": "python",
+  ".rs": "rust",
+  // ADD: ".c": "c", ".cpp": "cpp", ".rb": "ruby", ".php": "php"
+};
+
+// Pattern: dynamic import + registerDynamicLanguage
+export async function initLanguages(): Promise<void> {
+  const [pythonLang, ...] = await Promise.all([
+    import("@ast-grep/lang-python"),
+    // ADD: import("@ast-grep/lang-c"), etc.
+  ]);
+  registerDynamicLanguage({ python: {...}, /* ADD: c, cpp, ruby, php */ });
+}
+```
+
+### ast/patterns.ts - AST Patterns
+
+```typescript
+export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java";
+// EXTEND TO: | "c" | "cpp" | "ruby" | "php"
+
+export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
+  typescript: ["function $NAME($$$) { $$$ }", "export function $NAME($$$): $TYPE { $$$ }"],
+  python: ["def $NAME($$$): $$$"],
+  // ADD: c, cpp, ruby, php patterns
+};
+
+export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = { ... };
+export const IMPORT_PATTERNS: Record<PatternLanguage, string[]> = { ... };
+```
+
+### prose.ts - AI Generation
+
+```typescript
+export const ProseEnhancementsSchema = z.object({
+	overview: z.string().min(100),
+	whenToUse: z.array(z.string()).min(3),
+	entityDescriptions: z.record(z.string(), z.string()),
+	// ...
 });
+
+// Pattern: prompt → stream → extractJSON → Zod validation
+export async function generateProseEnhancements(
+	skeleton: SkillSkeleton,
+	options?: ProseGenerateOptions,
+): Promise<ProseEnhancements>;
 ```
 
-### Error Handling (Current State)
+### Key Files
 
-```typescript
-// Only 2 error classes exist:
-export class OpenCodeAnalysisError extends Error {
-  constructor(message: string, public readonly details?: unknown) { ... }
-}
+| File                                        | Purpose                                                           |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| `packages/sdk/src/analysis/pipeline.ts`     | toSkillDirName, runAnalysisPipeline, installSkillWithReferences   |
+| `packages/sdk/src/analysis/architecture.ts` | ArchitectureGraph, buildArchitectureGraph, generateMermaidDiagram |
+| `packages/sdk/src/analysis/prose.ts`        | AI prose generation, Zod schemas                                  |
+| `packages/sdk/src/ast/index.ts`             | LANG_MAP, SupportedLang, initLanguages                            |
+| `packages/sdk/src/ast/patterns.ts`          | FUNCTION_PATTERNS, CLASS_PATTERNS per language                    |
+| `packages/types/src/schemas.ts`             | Shared Zod schemas                                                |
+| `apps/cli/src/handlers/generate.ts`         | CLI generate command                                              |
+| `apps/cli/src/handlers/pull.ts`             | CLI pull command                                                  |
 
-export class OpenCodeSDKError extends OpenCodeAnalysisError {
-  constructor() {
-    super("Failed to import @opencode-ai/sdk...");
-  }
-}
-
-// No hints, no provider validation, no typed errors
-```
-
-### Stream Event Types (Current State)
-
-```typescript
-// Inline casts, no schemas:
-const part = props.part as { id?: string; type: string; text?: string } | undefined;
-
-// Events handled: message.part.updated, session.idle, session.error
-```
-
-### Prose Generation Flow
-
-```typescript
-// packages/sdk/src/analysis/prose.ts
-
-// 1. buildProsePrompt() - constructs prompt with skeleton data
-// 2. streamPrompt() - sends to OpenCode, gets raw text
-// 3. extractJSON() - parses JSON from response (handles code blocks)
-// 4. ProseEnhancementsSchema.parse() - Zod validation
-// 5. validateProseQuality() - checks for "slop" patterns
-// 6. Retry once on failure with feedback prompt
-```
-
-### CLI Handler Pattern
-
-```typescript
-// apps/cli/src/handlers/*.ts
-
-export interface PullOptions {
-	repo: string;
-	verbose?: boolean;
-	force?: boolean;
-}
-
-export interface PullResult {
-	success: boolean;
-	repoPath: string;
-	analysisSource: "remote" | "local" | "cached";
-}
-
-export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const s = p.spinner(); // @clack/prompts spinner
-	// ...spinner.start(), spinner.stop(), spinner.message()
-}
-```
+---
 
 ## Stop Condition
 
+After completing ONE story:
+
+1. Commit changes
+2. Update PRD.json (`passes: true`)
+3. Append to progress.txt
+4. **STOP IMMEDIATELY** - do not start next story
+
+The loop runner will start a fresh session for the next story.
+
 If ALL stories pass, reply:
 <promise>COMPLETE</promise>
-
-Otherwise end normally.

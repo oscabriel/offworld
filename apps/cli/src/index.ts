@@ -12,6 +12,7 @@ import {
 	configGetHandler,
 	configResetHandler,
 	configPathHandler,
+	configAgentsHandler,
 	authLoginHandler,
 	authLogoutHandler,
 	authStatusHandler,
@@ -208,6 +209,13 @@ export const router = os.router({
 			.meta({ description: "Show config file location" })
 			.handler(async () => {
 				return configPathHandler();
+			}),
+
+		agents: os
+			.input(z.object({}))
+			.meta({ description: "Interactively select agents for skill installation" })
+			.handler(async () => {
+				return configAgentsHandler();
 			}),
 	}),
 

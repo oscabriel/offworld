@@ -9,6 +9,7 @@ export {
 	configGetHandler,
 	configResetHandler,
 	configPathHandler,
+	configAgentsHandler,
 	type ConfigShowOptions,
 	type ConfigShowResult,
 	type ConfigSetOptions,
@@ -17,6 +18,7 @@ export {
 	type ConfigGetResult,
 	type ConfigResetResult,
 	type ConfigPathResult,
+	type ConfigAgentsResult,
 } from "./config.js";
 export {
 	authLoginHandler,

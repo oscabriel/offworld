@@ -1,265 +1,227 @@
 {
-	"branchName": "ralph/analysis-pipeline-overhaul",
-	"passes": false,
-	"userStories": [
-		{
-			"id": "US-001",
-			"title": "Update skill directory naming logic",
-			"acceptanceCriteria": [
-				"toSkillDirName() collapses owner==repo (e.g., better-auth/better-auth → better-auth-reference)",
-				"tanstack/query → tanstack-query-reference",
-				"zod (local) → zod-reference",
-				"typecheck passes"
-			],
-			"priority": 1,
-			"passes": true,
-			"notes": "Phase 0.1 - packages/sdk/src/analysis/pipeline.ts"
-		},
-		{
-			"id": "US-002",
-			"title": "Add C language support",
-			"acceptanceCriteria": [
-				"@ast-grep/lang-c installed in packages/sdk",
-				"LANG_MAP includes .c, .h extensions",
-				"SupportedLang type includes 'c'",
-				"initLanguages() registers C",
-				"AST patterns for C: function, struct, #include",
-				".c files parse without errors",
-				"typecheck passes"
-			],
-			"priority": 1,
-			"passes": true,
-			"notes": "Phase 0.2-0.4"
-		},
-		{
-			"id": "US-003",
-			"title": "Add C++ language support",
-			"acceptanceCriteria": [
-				"@ast-grep/lang-cpp installed in packages/sdk",
-				"LANG_MAP includes .cpp, .cc, .cxx, .hpp, .hxx extensions",
-				"SupportedLang type includes 'cpp'",
-				"initLanguages() registers C++",
-				"AST patterns for C++: class, namespace, inheritance",
-				".cpp files parse without errors",
-				"typecheck passes"
-			],
-			"priority": 1,
-			"passes": true,
-			"notes": "Phase 0.2-0.4"
-		},
-		{
-			"id": "US-004",
-			"title": "Add Ruby language support",
-			"acceptanceCriteria": [
-				"@ast-grep/lang-ruby installed in packages/sdk",
-				"LANG_MAP includes .rb extension",
-				"SupportedLang type includes 'ruby'",
-				"initLanguages() registers Ruby",
-				"AST patterns for Ruby: def, class, module, require",
-				".rb files parse without errors",
-				"typecheck passes"
-			],
-			"priority": 1,
-			"passes": true,
-			"notes": "Phase 0.2-0.4"
-		},
-		{
-			"id": "US-005",
-			"title": "Add PHP language support",
-			"acceptanceCriteria": [
-				"@ast-grep/lang-php installed in packages/sdk",
-				"LANG_MAP includes .php extension",
-				"SupportedLang type includes 'php'",
-				"initLanguages() registers PHP",
-				"AST patterns for PHP: function, class, interface, use, require",
-				".php files parse without errors",
-				"typecheck passes"
-			],
-			"priority": 1,
-			"passes": true,
-			"notes": "Phase 0.2-0.4"
-		},
-		{
-			"id": "US-006",
-			"title": "Overhaul architecture.md generation",
-			"acceptanceCriteria": [
-				"ArchitectureSection interface defined with entryPoints, coreModules, hubs, layers, inheritance",
-				"buildArchitectureSection() function implemented",
-				"formatArchitectureMd() function implemented",
-				"Output includes Entry Points table",
-				"Output includes Core Modules table",
-				"Output includes Dependency Hubs table (3+ importers)",
-				"Output includes simplified layer Mermaid diagram (not raw import graph)",
-				"Output includes inheritance Mermaid class diagram",
-				"Output includes Directory Structure tree with [HUB: N←] annotations",
-				"Output includes 'Finding Things' lookup table",
-				"Monorepo handling: packages/*/apps/*/libs/* get separate sections",
-				"typecheck passes"
-			],
-			"priority": 2,
-			"passes": true,
-			"notes": "Phase 1 - packages/sdk/src/analysis/architecture.ts"
-		},
-		{
-			"id": "US-007",
-			"title": "Create API surface extraction",
-			"acceptanceCriteria": [
-				"api-surface.ts file created in packages/sdk/src/analysis/",
-				"APISurface interface: packageName, imports, exports, subpaths",
-				"PublicExport interface: name, path, signature, kind, description",
-				"ImportPattern interface: statement, purpose, exports",
-				"SubpathExport interface: subpath, exports",
-				"extractAPISurface() reads package.json exports field",
-				"extractAPISurface() finds index.ts/main.ts entry points",
-				"extractAPISurface() extracts public functions, classes, interfaces, types, consts",
-				"formatAPISurfaceMd() generates Import Patterns section with code block",
-				"formatAPISurfaceMd() generates Public Exports table",
-				"formatAPISurfaceMd() generates Subpath Exports table",
-				"formatAPISurfaceMd() generates Type Exports table",
-				"typecheck passes"
-			],
-			"priority": 2,
-			"passes": true,
-			"notes": "Phase 2 - new file packages/sdk/src/analysis/api-surface.ts"
-		},
-		{
-			"id": "US-008",
-			"title": "Integrate deterministic context into AI generation",
-			"acceptanceCriteria": [
-				"ProseGenerationContext interface: apiSurface, architecture, readme, examples, contributing",
-				"generateProseWithContext() accepts ProseGenerationContext",
-				"SKILL.md prompt includes API Surface section (verbatim import patterns)",
-				"SKILL.md prompt includes Architecture Summary section",
-				"summary.md prompt includes API Surface + README + Examples",
-				"development.md prompt includes Architecture + CONTRIBUTING.md",
-				"AI-generated imports match deterministic api-reference.md exactly",
-				"typecheck passes"
-			],
-			"priority": 3,
-			"passes": true,
-			"notes": "Phase 3 - packages/sdk/src/analysis/prose.ts"
-		},
-		{
-			"id": "US-009",
-			"title": "Update pipeline flow for dual-track generation",
-			"acceptanceCriteria": [
-				"runAnalysisPipeline() calls buildArchitectureSection() before AI",
-				"runAnalysisPipeline() calls extractAPISurface() before AI",
-				"loadReadme(), loadExamples(), loadContributing() helpers exist",
-				"Deterministic files (architecture.md, api-reference.md) generated without AI",
-				"AI files (SKILL.md, summary.md, development.md) receive deterministic context",
-				"Pipeline returns architectureMd and apiSurfaceMd",
-				"typecheck passes"
-			],
-			"priority": 3,
-			"passes": true,
-			"notes": "Phase 3 - packages/sdk/src/analysis/pipeline.ts"
-		},
-		{
-			"id": "US-010",
-			"title": "Update InstallSkillOptions for new file structure",
-			"acceptanceCriteria": [
-				"InstallSkillOptions includes skillContent, summaryContent, architectureContent, apiReferenceContent, developmentContent",
-				"installSkillWithReferences() writes SKILL.md to skill root",
-				"installSkillWithReferences() writes summary.md to references/",
-				"installSkillWithReferences() writes architecture.md to references/",
-				"installSkillWithReferences() writes api-reference.md to references/",
-				"installSkillWithReferences() writes development.md to references/",
-				"Output structure: {name}-reference/SKILL.md + {name}-reference/references/*.md",
-				"typecheck passes"
-			],
-			"priority": 4,
-			"passes": true,
-			"notes": "Phase 4 - packages/sdk/src/analysis/pipeline.ts"
-		},
-		{
-			"id": "US-011",
-			"title": "Update generate CLI handler",
-			"acceptanceCriteria": [
-				"generate handler passes architectureContent to installSkillWithReferences()",
-				"generate handler passes apiReferenceContent to installSkillWithReferences()",
-				"generate handler passes summaryContent to installSkillWithReferences()",
-				"generate handler passes developmentContent to installSkillWithReferences()",
-				"All 5 reference files created after ow generate",
-				"typecheck passes"
-			],
-			"priority": 4,
-			"passes": true,
-			"notes": "Phase 4 - apps/cli/src/handlers/generate.ts"
-		},
-		{
-			"id": "US-012",
-			"title": "Update pull CLI handler",
-			"acceptanceCriteria": [
-				"pull handler passes architectureContent to installSkillWithReferences()",
-				"pull handler passes apiReferenceContent to installSkillWithReferences()",
-				"pull handler passes summaryContent to installSkillWithReferences()",
-				"pull handler passes developmentContent to installSkillWithReferences()",
-				"All 5 reference files created after ow pull",
-				"typecheck passes"
-			],
-			"priority": 4,
-			"passes": true,
-			"notes": "Phase 4 - apps/cli/src/handlers/pull.ts"
-		},
-		{
-			"id": "US-013",
-			"title": "Add new Zod schemas for skill types",
-			"acceptanceCriteria": [
-				"ImportPatternSchema: import, purpose",
-				"TroubleshootingEntrySchema: symptom, cause, fix",
-				"ArchitectureConceptSchema: name, purpose, location",
-				"ExtensionPointSchema: type, interface, purpose, example (optional)",
-				"CodebaseMapEntrySchema: path, purpose, exports (optional)",
-				"SkillSchema extended with: importPatterns, whenToUse (min 5), quickStartCode, commonOperations, troubleshooting, architecture, extensionPoints, codebaseMap",
-				"typecheck passes"
-			],
-			"priority": 5,
-			"passes": true,
-			"notes": "Phase 5 - packages/types/src/schemas.ts"
-		},
-		{
-			"id": "US-014",
-			"title": "Integration test: tanstack/query (TypeScript monorepo)",
-			"acceptanceCriteria": [
-				"ow pull tanstack/query completes without error",
-				"Outputs to tanstack-query-reference/ (not tanstack-tanstack-query-reference)",
-				"architecture.md contains monorepo package sections",
-				"api-reference.md contains @tanstack/query-core imports",
-				"SKILL.md imports match api-reference.md verbatim",
-				"No e2e test content in SKILL.md"
-			],
-			"priority": 6,
-			"passes": true,
-			"notes": "Integration test - Fixed: extractExports() now captures named re-exports"
-		},
-		{
-			"id": "US-015",
-			"title": "Integration test: zod (TypeScript library)",
-			"acceptanceCriteria": [
-				"ow pull colinhacks/zod completes without error",
-				"Outputs to zod-reference/ (not colinhacks-zod-reference) OR colinhacks-zod-reference if owner != repo",
-				"api-reference.md contains import { z } from 'zod'",
-				"SKILL.md 'When to Use' triggers are natural language (not 'when you need zod')",
-				"Common operations have copy-paste code"
-			],
-			"priority": 6,
-			"passes": false,
-			"notes": "Integration test - verify naming logic"
-		},
-		{
-			"id": "US-016",
-			"title": "Integration test: better-auth/better-auth (collapsed naming)",
-			"acceptanceCriteria": [
-				"ow pull better-auth/better-auth completes without error",
-				"Outputs to better-auth-reference/ (collapsed owner==repo)",
-				"api-reference.md contains better-auth imports",
-				"architecture.md has entry points, hubs, layers",
-				"No file-level import graph in diagrams"
-			],
-			"priority": 6,
-			"passes": false,
-			"notes": "Integration test - collapsed naming"
-		}
-	]
+  "branchName": "ralph/strip-analysis-pipeline",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create simplified generate.ts in SDK",
+      "acceptanceCriteria": [
+        "New file packages/sdk/src/generate.ts exists",
+        "Exports generateSkillWithAI(repoPath, repoName, options) function",
+        "Function opens OpenCode session and sends single prompt asking agent to generate SKILL.md",
+        "Prompt instructs agent to use Read, Grep, Glob tools to explore codebase",
+        "Function returns { skillContent: string, commitSha: string }",
+        "Supports provider and model options passed through to streamPrompt",
+        "Supports onDebug and onStream callbacks",
+        "typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Core new functionality - AI-only skill generation"
+    },
+    {
+      "id": "US-002",
+      "title": "Create installSkill function in SDK",
+      "acceptanceCriteria": [
+        "installSkill(repoName, skillContent, meta) function exported from generate.ts",
+        "Creates ~/.config/offworld/skills/{owner}-{repo}-reference/ directory",
+        "Writes SKILL.md file to skill directory",
+        "Creates ~/.config/offworld/meta/{owner}-{repo}/ directory",
+        "Writes meta.json with { analyzedAt, commitSha, version } to meta directory",
+        "Creates symlink from ~/.opencode/skills/{name}-reference/ to skill directory",
+        "Creates symlink from ~/.claude/skills/{name}-reference/ to skill directory",
+        "Handles owner/repo name collapsing (e.g., better-auth/better-auth -> better-auth-reference)",
+        "typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Keep symlink logic from current pipeline.ts"
+    },
+    {
+      "id": "US-003",
+      "title": "Delete analysis/ directory from SDK",
+      "acceptanceCriteria": [
+        "packages/sdk/src/analysis/ directory no longer exists",
+        "All files removed: pipeline.ts, heuristics.ts, skeleton.ts, architecture.ts, api-surface.ts, imports.ts, merge.ts, incremental.ts, prose.ts, context.ts, parsers.ts, index.ts",
+        "No imports from ./analysis/ remain in SDK codebase",
+        "typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Major deletion - removes all deterministic analysis code"
+    },
+    {
+      "id": "US-004",
+      "title": "Delete ast/ directory from SDK",
+      "acceptanceCriteria": [
+        "packages/sdk/src/ast/ directory no longer exists",
+        "All files removed: parser.ts, patterns.ts, index.ts",
+        "No imports from ./ast/ remain in SDK codebase",
+        "typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Removes all AST parsing infrastructure"
+    },
+    {
+      "id": "US-005",
+      "title": "Delete validation/ directory from SDK",
+      "acceptanceCriteria": [
+        "packages/sdk/src/validation/ directory no longer exists",
+        "All files removed: consistency.ts, quality.ts, paths.ts, staleness.ts, index.ts",
+        "No imports from ./validation/ remain in SDK codebase",
+        "typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Removes all validation code for deterministic analysis"
+    },
+    {
+      "id": "US-006",
+      "title": "Remove AST-grep dependencies from SDK package.json",
+      "acceptanceCriteria": [
+        "@ast-grep/napi removed from dependencies",
+        "@ast-grep/lang-python removed from dependencies",
+        "@ast-grep/lang-rust removed from dependencies",
+        "@ast-grep/lang-go removed from dependencies",
+        "@ast-grep/lang-java removed from dependencies",
+        "@ast-grep/lang-c removed from dependencies",
+        "@ast-grep/lang-cpp removed from dependencies",
+        "@ast-grep/lang-ruby removed from dependencies",
+        "@ast-grep/lang-php removed from dependencies",
+        "bun install succeeds without errors",
+        "No ast-grep packages in node_modules after install"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Clean up dependencies after removing AST code"
+    },
+    {
+      "id": "US-007",
+      "title": "Update SDK index.ts exports",
+      "acceptanceCriteria": [
+        "packages/sdk/src/index.ts updated to remove all analysis/ exports",
+        "packages/sdk/src/index.ts updated to remove all ast/ exports",
+        "packages/sdk/src/index.ts updated to remove all validation/ exports",
+        "Exports generateSkillWithAI and installSkill from ./generate.js",
+        "Keeps exports for: ai/, clone.ts, config.ts, repo-source.ts, sync.ts, index-manager.ts, util.ts, constants.ts",
+        "typecheck passes",
+        "bun run build succeeds in packages/sdk"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Update public API after deletions"
+    },
+    {
+      "id": "US-008",
+      "title": "Simplify CLI generate handler",
+      "acceptanceCriteria": [
+        "apps/cli/src/handlers/generate.ts imports generateSkillWithAI and installSkill from @offworld/sdk",
+        "No imports of runAnalysisPipeline, formatSkillMd, formatSummaryMd, formatArchitectureMd, formatDevelopmentMd, installSkillWithReferences",
+        "Handler calls generateSkillWithAI(repoPath, qualifiedName, { provider, model, onDebug })",
+        "Handler calls installSkill(qualifiedName, skillContent, { analyzedAt, commitSha, version })",
+        "Handler calls updateIndex() with { qualifiedName, analyzedAt, commitSha, hasSkill: true }",
+        "Preserves remote check and clone logic",
+        "typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Integrate new simplified SDK functions"
+    },
+    {
+      "id": "US-009",
+      "title": "Remove unused types from @offworld/types",
+      "acceptanceCriteria": [
+        "ArchitectureSchema removed or marked optional",
+        "FileIndexEntrySchema removed if unused",
+        "ParsedFile type references removed",
+        "DependencyGraph type references removed",
+        "SkillSchema simplified to only required fields: name, description, whenToUse, bestPractices, commonPatterns",
+        "Remove basePaths, quickPaths, searchPatterns from SkillSchema if not needed",
+        "typecheck passes across all packages"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Clean up types after removing analysis code"
+    },
+    {
+      "id": "US-010",
+      "title": "Delete analysis-related tests",
+      "acceptanceCriteria": [
+        "packages/sdk/src/__tests__/analysis.test.ts removed",
+        "packages/sdk/src/__tests__/parsers.test.ts removed",
+        "packages/sdk/src/__tests__/pipeline.integration.test.ts removed",
+        "packages/sdk/src/__tests__/reference-quality.test.ts removed if analysis-related",
+        "packages/sdk/src/__tests__/validation.test.ts removed",
+        "Test fixtures for analysis removed from __tests__/fixtures/",
+        "Remaining tests pass: bun test in packages/sdk"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Clean up tests after removing analysis code"
+    },
+    {
+      "id": "US-011",
+      "title": "Update SDK AGENTS.md",
+      "acceptanceCriteria": [
+        "packages/sdk/AGENTS.md updated to remove all analysis-related learnings",
+        "Remove sections about: AST parsing, architecture section generation, API surface extraction, context-aware prose, dual-track pipeline, InstallSkillOptions, Named Re-export Extraction",
+        "Keep sections about: OpenCode integration, provider/model validation, error types, stream events",
+        "Add section documenting new generateSkillWithAI and installSkill functions"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Keep AGENTS.md accurate for future development"
+    },
+    {
+      "id": "US-012",
+      "title": "End-to-end test: generate skill for local repo",
+      "acceptanceCriteria": [
+        "Running 'ow generate .' from a local repo succeeds",
+        "SKILL.md file created at ~/.config/offworld/skills/{repo}-reference/SKILL.md",
+        "SKILL.md contains valid YAML frontmatter with name and description",
+        "SKILL.md contains 'When to Use' section with at least 3 items",
+        "SKILL.md contains 'Best Practices' section with at least 2 items",
+        "meta.json created at ~/.config/offworld/meta/{repo}/meta.json",
+        "meta.json contains analyzedAt, commitSha, version fields",
+        "Symlink exists at ~/.opencode/skills/{repo}-reference/",
+        "Symlink exists at ~/.claude/skills/{repo}-reference/"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Manual verification of complete flow"
+    },
+    {
+      "id": "US-013",
+      "title": "End-to-end test: generate skill for remote repo",
+      "acceptanceCriteria": [
+        "Running 'ow generate tanstack/query' succeeds (or similar small repo)",
+        "Repo cloned to configured repoRoot",
+        "SKILL.md file created at ~/.config/offworld/skills/tanstack-query-reference/SKILL.md",
+        "SKILL.md contains valid YAML frontmatter with name and description",
+        "meta.json created with correct commitSha from cloned repo",
+        "Symlinks created for both opencode and claude skill directories"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Manual verification with remote repository"
+    },
+    {
+      "id": "US-014",
+      "title": "Verify no analysis code remains",
+      "acceptanceCriteria": [
+        "grep -r 'buildSkeleton' packages/sdk/src/ returns no results",
+        "grep -r 'buildArchitectureGraph' packages/sdk/src/ returns no results",
+        "grep -r 'extractAPISurface' packages/sdk/src/ returns no results",
+        "grep -r 'buildDependencyGraph' packages/sdk/src/ returns no results",
+        "grep -r 'rankFilesWithAST' packages/sdk/src/ returns no results",
+        "grep -r 'parseFile' packages/sdk/src/ returns no results (from ast/parser)",
+        "grep -r '@ast-grep' packages/sdk/ returns no results",
+        "bun run typecheck passes",
+        "bun run build passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Final verification that all analysis code is removed"
+    }
+  ]
 }

@@ -143,20 +143,23 @@ export const CodebaseMapEntrySchema = z.object({
 });
 
 export const SkillSchema = z.object({
+	// Required fields
 	name: z.string(),
 	description: z.string(),
+	// Core skill fields (now optional for AI-only approach)
+	whenToUse: z.array(z.string()).optional(),
+	bestPractices: z.array(z.string()).optional(),
+	commonPatterns: z.array(CommonPatternSchema).optional(),
+	// Legacy fields for API compatibility (optional)
 	basePaths: z
 		.object({
 			repo: z.string(),
 			analysis: z.string(),
 		})
 		.optional(),
-	quickPaths: z.array(QuickPathSchema),
-	searchPatterns: z.array(SearchPatternSchema),
-	bestPractices: z.array(z.string()).optional(),
-	commonPatterns: z.array(CommonPatternSchema).optional(),
+	quickPaths: z.array(QuickPathSchema).optional(),
+	searchPatterns: z.array(SearchPatternSchema).optional(),
 	importPatterns: z.array(ImportPatternSchema).optional(),
-	whenToUse: z.array(z.string()).min(5).optional(),
 	quickStartCode: z.string().optional(),
 	commonOperations: z.array(z.string()).optional(),
 	troubleshooting: z.array(TroubleshootingEntrySchema).optional(),

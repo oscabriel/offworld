@@ -1,0 +1,448 @@
+/**
+ * API Surface Extraction
+ * Deterministic extraction of public API from package.json exports and entry points
+ */
+
+import { existsSync, readFileSync } from "node:fs";
+import { join, basename } from "node:path";
+import type { ParsedFile, ExtractedSymbol } from "../ast/parser.js";
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface ImportPattern {
+	/** The import statement (e.g., "import { z } from 'zod'") */
+	statement: string;
+	/** Purpose description (e.g., "Main schema builder") */
+	purpose: string;
+	/** Exported symbols available via this import */
+	exports: string[];
+}
+
+export interface PublicExport {
+	/** Export name */
+	name: string;
+	/** File path relative to package root */
+	path: string;
+	/** Type signature or function signature */
+	signature: string;
+	/** Kind of export */
+	kind: "function" | "class" | "interface" | "type" | "const" | "enum";
+	/** Brief description inferred from name/context */
+	description: string;
+}
+
+export interface SubpathExport {
+	/** Subpath (e.g., "./client", "./server") */
+	subpath: string;
+	/** Exports available from this subpath */
+	exports: PublicExport[];
+}
+
+export interface APISurface {
+	/** Package name from package.json */
+	packageName: string;
+	/** Common import patterns with purpose */
+	imports: ImportPattern[];
+	/** All public exports from main entry */
+	exports: PublicExport[];
+	/** Subpath exports (e.g., "package/client", "package/server") */
+	subpaths: SubpathExport[];
+	/** Type-only exports (interfaces, types) */
+	typeExports: PublicExport[];
+}
+
+// ============================================================================
+// Package.json Parsing
+// ============================================================================
+
+interface PackageJson {
+	name?: string;
+	main?: string;
+	module?: string;
+	types?: string;
+	exports?: Record<string, unknown>;
+}
+
+function readPackageJson(repoPath: string): PackageJson | null {
+	const pkgPath = join(repoPath, "package.json");
+	if (!existsSync(pkgPath)) return null;
+
+	try {
+		const content = readFileSync(pkgPath, "utf-8");
+		return JSON.parse(content) as PackageJson;
+	} catch {
+		return null;
+	}
+}
+
+function resolveExportPath(exportValue: unknown): string | null {
+	if (typeof exportValue === "string") {
+		return exportValue;
+	}
+
+	if (exportValue && typeof exportValue === "object") {
+		const obj = exportValue as Record<string, unknown>;
+		// Priority: import > require > default > types
+		return (
+			(obj.import as string | undefined) ??
+			(obj.require as string | undefined) ??
+			(obj.default as string | undefined) ??
+			(obj.types as string | undefined) ??
+			null
+		);
+	}
+
+	return null;
+}
+
+// ============================================================================
+// Entry Point Detection
+// ============================================================================
+
+interface EntryPointInfo {
+	path: string;
+	subpath: string | null; // null = main entry, otherwise subpath like "./client"
+}
+
+function findEntryPoints(repoPath: string, pkg: PackageJson): EntryPointInfo[] {
+	const entries: EntryPointInfo[] = [];
+	const seen = new Set<string>();
+
+	// 1. Check package.json exports field
+	if (pkg.exports) {
+		for (const [subpath, exportValue] of Object.entries(pkg.exports)) {
+			const resolved = resolveExportPath(exportValue);
+			if (resolved && !seen.has(resolved)) {
+				seen.add(resolved);
+				const normalizedSubpath = subpath === "." ? null : subpath;
+				entries.push({ path: resolved, subpath: normalizedSubpath });
+			}
+		}
+	}
+
+	// 2. Fallback to main/module fields
+	if (entries.length === 0) {
+		const mainEntry = pkg.module ?? pkg.main;
+		if (mainEntry && !seen.has(mainEntry)) {
+			seen.add(mainEntry);
+			entries.push({ path: mainEntry, subpath: null });
+		}
+	}
+
+	// 3. Fallback to common entry point patterns
+	if (entries.length === 0) {
+		const commonEntries = [
+			"src/index.ts",
+			"src/index.js",
+			"lib/index.ts",
+			"lib/index.js",
+			"index.ts",
+			"index.js",
+		];
+		for (const entry of commonEntries) {
+			if (existsSync(join(repoPath, entry)) && !seen.has(entry)) {
+				seen.add(entry);
+				entries.push({ path: entry, subpath: null });
+				break;
+			}
+		}
+	}
+
+	return entries;
+}
+
+// ============================================================================
+// Export Extraction
+// ============================================================================
+
+function inferDescription(name: string, kind: PublicExport["kind"]): string {
+	// Generate description from name using common patterns
+	const words = name
+		.replace(/([A-Z])/g, " $1")
+		.replace(/[_-]/g, " ")
+		.trim()
+		.toLowerCase()
+		.split(/\s+/);
+
+	if (words.length === 0) return name;
+
+	const prefix = kind === "function" ? "Function to" : kind === "class" ? "Class for" : "";
+
+	// Common naming patterns
+	if (words[0] === "create" || words[0] === "make") {
+		return `${prefix} create ${words.slice(1).join(" ")}`.trim();
+	}
+	if (words[0] === "use") {
+		return `React hook for ${words.slice(1).join(" ")}`;
+	}
+	if (words[0] === "get") {
+		return `${prefix} retrieve ${words.slice(1).join(" ")}`.trim();
+	}
+	if (words[0] === "set") {
+		return `${prefix} set ${words.slice(1).join(" ")}`.trim();
+	}
+	if (words[0] === "is" || words[0] === "has" || words[0] === "can") {
+		return `Check if ${words.slice(1).join(" ")}`;
+	}
+
+	return `${kind.charAt(0).toUpperCase() + kind.slice(1)} ${words.join(" ")}`;
+}
+
+function symbolToExport(symbol: ExtractedSymbol, filePath: string): PublicExport {
+	let kind: PublicExport["kind"];
+	switch (symbol.kind) {
+		case "class":
+			kind = "class";
+			break;
+		case "interface":
+			kind = "interface";
+			break;
+		case "enum":
+			kind = "enum";
+			break;
+		case "function":
+		case "method":
+			kind = "function";
+			break;
+		default:
+			kind = "function";
+	}
+
+	return {
+		name: symbol.name,
+		path: filePath,
+		signature: symbol.signature ?? symbol.name,
+		kind,
+		description: inferDescription(symbol.name, kind),
+	};
+}
+
+function extractExportsFromParsed(
+	parsedFile: ParsedFile,
+	filePath: string,
+): { exports: PublicExport[]; typeExports: PublicExport[] } {
+	const exports: PublicExport[] = [];
+	const typeExports: PublicExport[] = [];
+
+	// Extract exported functions
+	for (const fn of parsedFile.functions) {
+		if (fn.isExported) {
+			exports.push(symbolToExport(fn, filePath));
+		}
+	}
+
+	// Extract exported classes/interfaces/enums
+	for (const cls of parsedFile.classes) {
+		if (cls.isExported) {
+			const exp = symbolToExport(cls, filePath);
+			if (cls.kind === "interface" || cls.kind === "trait") {
+				typeExports.push(exp);
+			} else {
+				exports.push(exp);
+			}
+		}
+	}
+
+	// Handle re-exports by looking at the exports array
+	for (const exp of parsedFile.exports) {
+		// Skip re-exports (handled separately)
+		if (exp.startsWith("* from ")) continue;
+
+		// Check if this export is already captured from symbols
+		const alreadyHave =
+			exports.some((e) => e.name === exp) || typeExports.some((e) => e.name === exp);
+		if (!alreadyHave) {
+			// Likely a const export or type alias
+			exports.push({
+				name: exp,
+				path: filePath,
+				signature: exp,
+				kind: "const",
+				description: inferDescription(exp, "const"),
+			});
+		}
+	}
+
+	return { exports, typeExports };
+}
+
+// ============================================================================
+// Import Pattern Generation
+// ============================================================================
+
+function generateImportPatterns(
+	packageName: string,
+	exports: PublicExport[],
+	subpaths: SubpathExport[],
+): ImportPattern[] {
+	const patterns: ImportPattern[] = [];
+
+	// Main import pattern
+	if (exports.length > 0) {
+		const topExports = exports.slice(0, 5).map((e) => e.name);
+		patterns.push({
+			statement: `import { ${topExports.join(", ")} } from '${packageName}'`,
+			purpose: "Main entry point",
+			exports: exports.map((e) => e.name),
+		});
+	}
+
+	// Subpath import patterns
+	for (const subpath of subpaths) {
+		if (subpath.exports.length === 0) continue;
+
+		const subpathName = subpath.subpath.replace("./", "");
+		const topExports = subpath.exports.slice(0, 3).map((e) => e.name);
+		patterns.push({
+			statement: `import { ${topExports.join(", ")} } from '${packageName}/${subpathName}'`,
+			purpose: `${subpathName.charAt(0).toUpperCase() + subpathName.slice(1)} utilities`,
+			exports: subpath.exports.map((e) => e.name),
+		});
+	}
+
+	return patterns;
+}
+
+// ============================================================================
+// Main Extraction Function
+// ============================================================================
+
+export function extractAPISurface(
+	repoPath: string,
+	parsedFiles: Map<string, ParsedFile>,
+): APISurface {
+	const pkg = readPackageJson(repoPath);
+	const packageName = pkg?.name ?? basename(repoPath);
+
+	const entryPoints = pkg ? findEntryPoints(repoPath, pkg) : [];
+
+	const mainExports: PublicExport[] = [];
+	const allTypeExports: PublicExport[] = [];
+	const subpaths: SubpathExport[] = [];
+
+	for (const entry of entryPoints) {
+		// Normalize entry path for lookup
+		const normalizedPath = entry.path.replace(/^\.\//, "");
+
+		// Find the parsed file for this entry point
+		let parsedFile: ParsedFile | undefined;
+		for (const [path, parsed] of parsedFiles) {
+			if (path === normalizedPath || path.endsWith(normalizedPath)) {
+				parsedFile = parsed;
+				break;
+			}
+		}
+
+		if (!parsedFile) continue;
+
+		const { exports, typeExports } = extractExportsFromParsed(parsedFile, normalizedPath);
+
+		if (entry.subpath === null) {
+			// Main entry
+			mainExports.push(...exports);
+			allTypeExports.push(...typeExports);
+		} else {
+			// Subpath entry
+			subpaths.push({
+				subpath: entry.subpath,
+				exports: [...exports, ...typeExports],
+			});
+		}
+	}
+
+	// If no entry points found, scan all index files
+	if (mainExports.length === 0 && entryPoints.length === 0) {
+		for (const [path, parsed] of parsedFiles) {
+			if (path.endsWith("index.ts") || path.endsWith("index.js")) {
+				const { exports, typeExports } = extractExportsFromParsed(parsed, path);
+				mainExports.push(...exports);
+				allTypeExports.push(...typeExports);
+			}
+		}
+	}
+
+	const imports = generateImportPatterns(packageName, mainExports, subpaths);
+
+	return {
+		packageName,
+		imports,
+		exports: mainExports,
+		subpaths,
+		typeExports: allTypeExports,
+	};
+}
+
+// ============================================================================
+// Markdown Formatting
+// ============================================================================
+
+export function formatAPISurfaceMd(surface: APISurface): string {
+	const lines: string[] = ["# API Reference", ""];
+
+	// Import Patterns section
+	lines.push("## Import Patterns", "");
+	if (surface.imports.length > 0) {
+		for (const pattern of surface.imports) {
+			lines.push(`**${pattern.purpose}:**`);
+			lines.push("");
+			lines.push("```typescript");
+			lines.push(pattern.statement);
+			lines.push("```");
+			lines.push("");
+		}
+	} else {
+		lines.push("No import patterns detected.");
+		lines.push("");
+	}
+
+	// Public Exports section
+	lines.push("## Public Exports", "");
+	if (surface.exports.length > 0) {
+		lines.push("| Name | Kind | Path | Description |");
+		lines.push("|------|------|------|-------------|");
+		for (const exp of surface.exports) {
+			const desc = exp.description.replace(/\|/g, "\\|").slice(0, 60);
+			lines.push(`| \`${exp.name}\` | ${exp.kind} | \`${exp.path}\` | ${desc} |`);
+		}
+		lines.push("");
+	} else {
+		lines.push("No public exports detected.");
+		lines.push("");
+	}
+
+	// Subpath Exports section
+	if (surface.subpaths.length > 0) {
+		lines.push("## Subpath Exports", "");
+		for (const subpath of surface.subpaths) {
+			lines.push(`### ${subpath.subpath}`, "");
+			if (subpath.exports.length > 0) {
+				lines.push("| Name | Kind | Description |");
+				lines.push("|------|------|-------------|");
+				for (const exp of subpath.exports) {
+					const desc = exp.description.replace(/\|/g, "\\|").slice(0, 60);
+					lines.push(`| \`${exp.name}\` | ${exp.kind} | ${desc} |`);
+				}
+				lines.push("");
+			} else {
+				lines.push("No exports detected.");
+				lines.push("");
+			}
+		}
+	}
+
+	// Type Exports section
+	if (surface.typeExports.length > 0) {
+		lines.push("## Type Exports", "");
+		lines.push("| Name | Kind | Path | Description |");
+		lines.push("|------|------|------|-------------|");
+		for (const exp of surface.typeExports) {
+			const desc = exp.description.replace(/\|/g, "\\|").slice(0, 60);
+			lines.push(`| \`${exp.name}\` | ${exp.kind} | \`${exp.path}\` | ${desc} |`);
+		}
+		lines.push("");
+	}
+
+	return lines.join("\n");
+}

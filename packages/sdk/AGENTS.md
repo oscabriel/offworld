@@ -195,3 +195,43 @@ interface ArchitectureSection {
 7. **Avoid type name conflicts**: Name stream payload types distinctly (e.g., `SessionErrorPayload` vs `SessionError` class)
 8. **Silent catch debugging**: When adding debug logging to silent catches, ensure the callback is passed through all recursive calls
 9. **Export naming conflicts**: When adding new formatters, check if export name exists in index.ts (e.g., `formatArchitectureMd` was in pipeline.ts - renamed to `formatArchitectureMdLegacy`)
+
+### API Surface Extraction (US-007)
+
+**New Types** (`src/analysis/api-surface.ts`):
+
+```typescript
+interface APISurface {
+  packageName: string;
+  imports: ImportPattern[];      // Common import patterns with purpose
+  exports: PublicExport[];       // All public exports from main entry
+  subpaths: SubpathExport[];     // Subpath exports (e.g., "./client", "./server")
+  typeExports: PublicExport[];   // Type-only exports (interfaces, types)
+}
+
+interface ImportPattern {
+  statement: string;   // e.g., "import { z } from 'zod'"
+  purpose: string;     // e.g., "Main schema builder"
+  exports: string[];   // Exported symbols available
+}
+
+interface PublicExport {
+  name: string;
+  path: string;
+  signature: string;
+  kind: "function" | "class" | "interface" | "type" | "const" | "enum";
+  description: string;  // Inferred from name patterns
+}
+```
+
+**Key Functions**:
+
+- `extractAPISurface()` - reads package.json exports, finds entry points, extracts public symbols
+- `formatAPISurfaceMd()` - generates markdown with Import Patterns, Public Exports, Subpath Exports, Type Exports tables
+
+**Entry Point Detection Order**:
+1. `package.json` exports field (resolves import/require/default/types)
+2. Fallback to main/module fields
+3. Fallback to common patterns: `src/index.ts`, `index.ts`, etc.
+
+**Description Inference**: Uses name patterns (`create*`, `use*`, `get*`, `is*`) to generate descriptions automatically.

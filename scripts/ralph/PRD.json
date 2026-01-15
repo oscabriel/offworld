@@ -46,7 +46,7 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Major deletion - removes all deterministic analysis code"
     },
     {

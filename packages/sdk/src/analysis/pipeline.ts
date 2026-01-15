@@ -37,7 +37,12 @@ import {
 	type ArchitectureSection,
 } from "./architecture.js";
 import { extractAPISurface, formatAPISurfaceMd, type APISurface } from "./api-surface.js";
-import { generateProseWithContext, type ProseGenerationContext, type ContextAwareProseResult, type DevelopmentProse } from "./prose.js";
+import {
+	generateProseWithContext,
+	type ProseGenerationContext,
+	type ContextAwareProseResult,
+	type DevelopmentProse,
+} from "./prose.js";
 import { buildIncrementalState, type IncrementalState } from "./incremental.js";
 
 // ============================================================================
@@ -406,7 +411,10 @@ export interface FormatDevelopmentOptions {
 	repoName: string;
 }
 
-export function formatDevelopmentMd(prose: DevelopmentProse, options: FormatDevelopmentOptions): string {
+export function formatDevelopmentMd(
+	prose: DevelopmentProse,
+	options: FormatDevelopmentOptions,
+): string {
 	const lines = [
 		`# ${options.repoName} - Development Guide`,
 		"",
@@ -488,7 +496,10 @@ export function formatArchitectureMdLegacy(
 /**
  * Load README.md content from the repo root
  */
-export function loadReadme(repoPath: string, onDebug?: (message: string) => void): string | undefined {
+export function loadReadme(
+	repoPath: string,
+	onDebug?: (message: string) => void,
+): string | undefined {
 	const readmeNames = ["README.md", "readme.md", "Readme.md", "README", "readme"];
 	for (const name of readmeNames) {
 		const readmePath = join(repoPath, name);
@@ -496,7 +507,9 @@ export function loadReadme(repoPath: string, onDebug?: (message: string) => void
 			try {
 				return readFileSync(readmePath, "utf-8");
 			} catch (err) {
-				onDebug?.(`Failed to read ${readmePath}: ${err instanceof Error ? err.message : String(err)}`);
+				onDebug?.(
+					`Failed to read ${readmePath}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 			}
 		}
 	}
@@ -506,9 +519,19 @@ export function loadReadme(repoPath: string, onDebug?: (message: string) => void
 /**
  * Load example code from examples/ directory or common example patterns
  */
-export function loadExamples(repoPath: string, onDebug?: (message: string) => void): string | undefined {
+export function loadExamples(
+	repoPath: string,
+	onDebug?: (message: string) => void,
+): string | undefined {
 	const exampleDirs = ["examples", "example", "demos", "demo"];
-	const exampleFiles = ["example.ts", "example.js", "examples.ts", "examples.js", "usage.ts", "usage.js"];
+	const exampleFiles = [
+		"example.ts",
+		"example.js",
+		"examples.ts",
+		"examples.js",
+		"usage.ts",
+		"usage.js",
+	];
 
 	// Try example directories first
 	for (const dir of exampleDirs) {
@@ -518,7 +541,8 @@ export function loadExamples(repoPath: string, onDebug?: (message: string) => vo
 				const stat = statSync(dirPath);
 				if (stat.isDirectory()) {
 					const files = readdirSync(dirPath).filter(
-						(f) => f.endsWith(".ts") || f.endsWith(".js") || f.endsWith(".tsx") || f.endsWith(".jsx")
+						(f) =>
+							f.endsWith(".ts") || f.endsWith(".js") || f.endsWith(".tsx") || f.endsWith(".jsx"),
 					);
 					if (files.length > 0) {
 						const examples: string[] = [];
@@ -548,7 +572,9 @@ export function loadExamples(repoPath: string, onDebug?: (message: string) => vo
 			try {
 				return readFileSync(filePath, "utf-8");
 			} catch (err) {
-				onDebug?.(`Failed to read ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+				onDebug?.(
+					`Failed to read ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 			}
 		}
 	}
@@ -559,15 +585,26 @@ export function loadExamples(repoPath: string, onDebug?: (message: string) => vo
 /**
  * Load CONTRIBUTING.md content from the repo root
  */
-export function loadContributing(repoPath: string, onDebug?: (message: string) => void): string | undefined {
-	const contributingNames = ["CONTRIBUTING.md", "contributing.md", "Contributing.md", "CONTRIBUTING", "contributing"];
+export function loadContributing(
+	repoPath: string,
+	onDebug?: (message: string) => void,
+): string | undefined {
+	const contributingNames = [
+		"CONTRIBUTING.md",
+		"contributing.md",
+		"Contributing.md",
+		"CONTRIBUTING",
+		"contributing",
+	];
 	for (const name of contributingNames) {
 		const contributingPath = join(repoPath, name);
 		if (existsSync(contributingPath)) {
 			try {
 				return readFileSync(contributingPath, "utf-8");
 			} catch (err) {
-				onDebug?.(`Failed to read ${contributingPath}: ${err instanceof Error ? err.message : String(err)}`);
+				onDebug?.(
+					`Failed to read ${contributingPath}: ${err instanceof Error ? err.message : String(err)}`,
+				);
 			}
 		}
 	}
@@ -708,12 +745,16 @@ export async function runAnalysisPipeline(
 	onProgress("architecture-section", "Building architecture section (deterministic)");
 	const architectureSection = buildArchitectureSection(parsedFiles, graph, architectureGraph);
 	const architectureMd = formatArchitectureMd(architectureSection);
-	onDebug?.(`Architecture section: ${architectureSection.entryPoints.length} entry points, ${architectureSection.hubs.length} hubs`);
+	onDebug?.(
+		`Architecture section: ${architectureSection.entryPoints.length} entry points, ${architectureSection.hubs.length} hubs`,
+	);
 
 	onProgress("api-surface", "Extracting API surface (deterministic)");
-	const apiSurface = extractAPISurface(repoPath, parsedFiles);
+	const apiSurface = extractAPISurface(repoPath, parsedFiles, onDebug);
 	const apiSurfaceMd = formatAPISurfaceMd(apiSurface);
-	onDebug?.(`API surface: ${apiSurface.exports.length} exports, ${apiSurface.imports.length} import patterns`);
+	onDebug?.(
+		`API surface: ${apiSurface.exports.length} exports, ${apiSurface.imports.length} import patterns`,
+	);
 
 	onProgress("context", "Loading context files");
 	const readme = loadReadme(repoPath, onDebug);

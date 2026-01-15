@@ -349,10 +349,7 @@ function detectMonorepoPackages(filePaths: string[]): string[] {
 	return Array.from(packagePaths);
 }
 
-function buildDirectoryTree(
-	filePaths: string[],
-	hubPaths: Map<string, number>,
-): DirectoryNode {
+function buildDirectoryTree(filePaths: string[], hubPaths: Map<string, number>): DirectoryNode {
 	const root: DirectoryNode = { name: ".", path: ".", isHub: false, children: [] };
 
 	for (const filePath of filePaths) {
@@ -596,7 +593,16 @@ function formatDirectoryTree(node: DirectoryNode, prefix = "", isLast = true): s
 
 function generateLayerDiagram(layers: LayerGroup[]): string {
 	const lines = ["flowchart TB"];
-	const layerOrder: LayerType[] = ["ui", "api", "domain", "infra", "util", "config", "test", "other"];
+	const layerOrder: LayerType[] = [
+		"ui",
+		"api",
+		"domain",
+		"infra",
+		"util",
+		"config",
+		"test",
+		"other",
+	];
 
 	const orderedLayers = layers
 		.filter((l) => l.files.length > 0)

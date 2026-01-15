@@ -203,3 +203,10 @@ export {
 **Gotchas**:
 - validation/index.ts only exports paths.ts and staleness.ts - consistency.ts and quality.ts were orphaned
 - Tests that directly import from analysis/ must be deleted, not just have imports removed
+
+### AST Directory Deletion (US-004 - Strip Pipeline)
+
+**Deleted Files**:
+- `src/ast/` directory (3 files): parser.ts, patterns.ts, index.ts
+
+**Clean Deletion**: No imports from ast/ remained in codebase after US-003 deletion (analysis/ was the only consumer). Verified with grep - no cascade effects.

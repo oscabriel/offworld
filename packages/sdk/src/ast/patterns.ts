@@ -6,7 +6,7 @@
  * - $PATH: import path
  */
 
-export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c";
+export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c" | "cpp";
 
 /**
  * Patterns for matching function declarations
@@ -89,6 +89,13 @@ export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
 		"static $TYPE $NAME($$$) { $$$ }",
 		"inline $TYPE $NAME($$$) { $$$ }",
 	],
+	cpp: [
+		"$TYPE $NAME($$$) { $$$ }",
+		"static $TYPE $NAME($$$) { $$$ }",
+		"inline $TYPE $NAME($$$) { $$$ }",
+		"virtual $TYPE $NAME($$$) { $$$ }",
+		"$TYPE $CLASS::$NAME($$$) { $$$ }",
+	],
 };
 
 /**
@@ -167,6 +174,16 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"typedef enum { $$$ } $NAME",
 		"union $NAME { $$$ }",
 	],
+	cpp: [
+		"class $NAME { $$$ }",
+		"class $NAME : public $PARENT { $$$ }",
+		"class $NAME : private $PARENT { $$$ }",
+		"class $NAME : protected $PARENT { $$$ }",
+		"struct $NAME { $$$ }",
+		"struct $NAME : $PARENT { $$$ }",
+		"namespace $NAME { $$$ }",
+		"template<$$$> class $NAME { $$$ }",
+	],
 };
 
 /**
@@ -185,6 +202,7 @@ export const INTERFACE_PATTERNS: Record<PatternLanguage, string[]> = {
 	go: [],
 	java: [],
 	c: [],
+	cpp: [],
 };
 
 /**
@@ -253,6 +271,7 @@ export const IMPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	go: ['import "$PATH"', 'import $NAME "$PATH"', "import ( $$$ )"],
 	java: ["import $PATH;", "import $PATH.*;", "import static $PATH;", "import static $PATH.*;"],
 	c: ['#include "$PATH"', "#include <$PATH>"],
+	cpp: ['#include "$PATH"', "#include <$PATH>", "using namespace $NAME;", "using $NAME::$$$;"],
 };
 
 /**
@@ -305,6 +324,7 @@ export const EXPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	go: [],
 	java: [],
 	c: [],
+	cpp: [],
 };
 
 /**
@@ -328,6 +348,8 @@ export function getPatternLanguage(lang: string): PatternLanguage | null {
 			return "java";
 		case "c":
 			return "c";
+		case "cpp":
+			return "cpp";
 		default:
 			return null;
 	}

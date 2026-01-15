@@ -85,11 +85,19 @@ function expandTilde(path: string): string {
 }
 
 /**
- * Convert owner/repo format to skill directory name: {owner}-{repo}-reference
+ * Convert owner/repo format to skill directory name.
+ * Collapses owner==repo (e.g., better-auth/better-auth → better-auth-reference)
+ * Examples:
+ *   better-auth/better-auth → better-auth-reference
+ *   tanstack/query → tanstack-query-reference
+ *   zod (local) → zod-reference
  */
 function toSkillDirName(repoName: string): string {
 	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/");
+		const [owner, repo] = repoName.split("/") as [string, string];
+		if (owner === repo) {
+			return `${repo}-reference`;
+		}
 		return `${owner}-${repo}-reference`;
 	}
 	return `${repoName}-reference`;
@@ -97,7 +105,10 @@ function toSkillDirName(repoName: string): string {
 
 function toMetaDirName(repoName: string): string {
 	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/");
+		const [owner, repo] = repoName.split("/") as [string, string];
+		if (owner === repo) {
+			return repo;
+		}
 		return `${owner}-${repo}`;
 	}
 	return repoName;

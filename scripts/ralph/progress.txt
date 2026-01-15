@@ -130,3 +130,18 @@
   - loadExamples checks multiple patterns: directories (examples/, demos/) then individual files (example.ts)
 
 ---
+
+## 2026-01-14 - US-010
+
+- Added apiReferenceContent and developmentContent to InstallSkillOptions interface (optional fields)
+- Updated installSkillWithReferences() to conditionally write api-reference.md and development.md
+- Updated SKILL.md "See also" links to include all 4 reference files
+- Fixed broken callers: exported formatArchitectureMdLegacy from SDK, updated plugin/CLI to use it
+- Files changed: packages/sdk/src/analysis/pipeline.ts, packages/sdk/src/index.ts, packages/plugin/src/index.ts, apps/cli/src/handlers/generate.ts, apps/cli/src/handlers/pull.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - Making new interface fields optional maintains backward compatibility with existing callers
+  - Turbo cache can hide type errors - run `bunx turbo typecheck --force` or rebuild SDK to catch issues
+  - When renaming exports (e.g., formatArchitectureMd → formatArchitectureMdLegacy), must add new name to SDK index.ts exports
+  - Conditional file writes: use `if (content) { writeFileSync(...) }` to handle optional fields
+
+---

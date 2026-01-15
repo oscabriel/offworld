@@ -6,7 +6,7 @@
  * - $PATH: import path
  */
 
-export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java";
+export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c";
 
 /**
  * Patterns for matching function declarations
@@ -84,6 +84,11 @@ export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
 		"private static $TYPE $NAME($$$) { $$$ }",
 		"$TYPE $NAME($$$) { $$$ }",
 	],
+	c: [
+		"$TYPE $NAME($$$) { $$$ }",
+		"static $TYPE $NAME($$$) { $$$ }",
+		"inline $TYPE $NAME($$$) { $$$ }",
+	],
 };
 
 /**
@@ -154,6 +159,14 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"interface $NAME extends $IFACE { $$$ }",
 		"public interface $NAME extends $IFACE { $$$ }",
 	],
+	c: [
+		"struct $NAME { $$$ }",
+		"typedef struct { $$$ } $NAME",
+		"typedef struct $TAG { $$$ } $NAME",
+		"enum $NAME { $$$ }",
+		"typedef enum { $$$ } $NAME",
+		"union $NAME { $$$ }",
+	],
 };
 
 /**
@@ -171,6 +184,7 @@ export const INTERFACE_PATTERNS: Record<PatternLanguage, string[]> = {
 	rust: [],
 	go: [],
 	java: [],
+	c: [],
 };
 
 /**
@@ -238,6 +252,7 @@ export const IMPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	],
 	go: ['import "$PATH"', 'import $NAME "$PATH"', "import ( $$$ )"],
 	java: ["import $PATH;", "import $PATH.*;", "import static $PATH;", "import static $PATH.*;"],
+	c: ['#include "$PATH"', "#include <$PATH>"],
 };
 
 /**
@@ -287,13 +302,9 @@ export const EXPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 		"pub use $PATH;",
 		"pub use $PATH::{ $$$ };",
 	],
-	go: [
-		// Go exports via capitalization - no syntax patterns
-		// Capitalized names are public
-	],
-	java: [
-		// Java exports via public modifier - handled by class/function patterns
-	],
+	go: [],
+	java: [],
+	c: [],
 };
 
 /**
@@ -315,6 +326,8 @@ export function getPatternLanguage(lang: string): PatternLanguage | null {
 			return "go";
 		case "java":
 			return "java";
+		case "c":
+			return "c";
 		default:
 			return null;
 	}

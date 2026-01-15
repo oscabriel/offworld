@@ -22,6 +22,7 @@ import {
 	isAnalysisStale,
 	formatSkillMd,
 	formatSummaryMd,
+	formatDevelopmentMd,
 	formatArchitectureMdLegacy,
 	type PullResponse,
 	type AnalysisData,
@@ -454,7 +455,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const pipelineOptions = { onProgress, onDebug, qualifiedName, provider, model };
 			const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 
-			const { skill: mergedSkill, graph, architectureGraph } = result;
+			const { skill: mergedSkill, graph, architectureGraph, architectureMd, apiSurfaceMd, proseResult } = result;
 			const skill = mergedSkill.skill;
 			const { entities, prose } = mergedSkill;
 
@@ -464,14 +465,17 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const repoName = source.type === "remote" ? source.fullName : source.name;
 
 			const summaryMd = formatSummaryMd(prose, { repoName });
-			const architectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
+			const legacyArchitectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
+			const developmentMd = formatDevelopmentMd(proseResult.development, { repoName });
 			const skillMd = formatSkillMd(skill, { commitSha: analysisCommitSha, generated });
 			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
 
 			installSkillWithReferences(repoName, {
 				skillContent: skillMd,
 				summaryContent: summaryMd,
-				architectureContent: architectureMd,
+				architectureContent: architectureMd || legacyArchitectureMd,
+				apiReferenceContent: apiSurfaceMd,
+				developmentContent: developmentMd,
 				skillJson: JSON.stringify(skill, null, 2),
 				metaJson: JSON.stringify(meta, null, 2),
 			});

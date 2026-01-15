@@ -335,3 +335,43 @@ interface InstallSkillOptions {
 - `apiReferenceContent` and `developmentContent` are optional to maintain backward compatibility with existing callers
 - Files only written when content is provided (conditional writes)
 - Must export `formatArchitectureMdLegacy` from SDK for callers still using old 3-arg signature
+
+### Generate Handler Update (US-011)
+
+**formatDevelopmentMd Function** (`src/analysis/pipeline.ts`):
+
+```typescript
+interface FormatDevelopmentOptions {
+  repoName: string;
+}
+
+function formatDevelopmentMd(prose: DevelopmentProse, options: FormatDevelopmentOptions): string
+```
+
+Generates markdown with sections: Getting Started, Project Structure, Build & Test, Contributing Guidelines.
+
+**CLI Handler Changes** (`apps/cli/src/handlers/generate.ts`):
+
+```typescript
+// Extract from pipeline result
+const { architectureMd, apiSurfaceMd, proseResult } = result;
+
+// Format development content
+const developmentMd = formatDevelopmentMd(proseResult.development, { repoName });
+
+// Pass all 5 content fields
+installSkillWithReferences(repoName, {
+  skillContent: skillMd,
+  summaryContent: summaryMd,
+  architectureContent: architectureMd || legacyArchitectureMd,  // prefer new, fallback to legacy
+  apiReferenceContent: apiSurfaceMd,
+  developmentContent: developmentMd,
+  // ...json fields
+});
+```
+
+**Gotchas**:
+
+- `DevelopmentProse` type is imported from prose.ts (not redefined in pipeline.ts)
+- Use `architectureMd || legacyArchitectureMd` pattern to prefer new deterministic architecture but fall back to legacy 3-arg version
+- Must rebuild SDK (`bun run build`) before CLI typecheck will see new exports

@@ -4,7 +4,7 @@ import { Lang, registerDynamicLanguage } from "@ast-grep/napi";
 export { Lang };
 
 // Language type that includes both built-in and dynamic languages
-export type SupportedLang = Lang | "python" | "rust" | "go" | "java" | "c" | "cpp" | "ruby";
+export type SupportedLang = Lang | "python" | "rust" | "go" | "java" | "c" | "cpp" | "ruby" | "php";
 
 // Extension to language mapping
 export const LANG_MAP: Record<string, Lang | string> = {
@@ -31,6 +31,7 @@ export const LANG_MAP: Record<string, Lang | string> = {
 	".hpp": "cpp",
 	".hxx": "cpp",
 	".rb": "ruby",
+	".php": "php",
 };
 
 // Track initialization state
@@ -47,7 +48,7 @@ export async function initLanguages(): Promise<void> {
 	}
 
 	// Dynamic imports for language packages
-	const [pythonLang, rustLang, goLang, javaLang, cLang, cppLang, rubyLang] = await Promise.all([
+	const [pythonLang, rustLang, goLang, javaLang, cLang, cppLang, rubyLang, phpLang] = await Promise.all([
 		import("@ast-grep/lang-python"),
 		import("@ast-grep/lang-rust"),
 		import("@ast-grep/lang-go"),
@@ -55,6 +56,7 @@ export async function initLanguages(): Promise<void> {
 		import("@ast-grep/lang-c"),
 		import("@ast-grep/lang-cpp"),
 		import("@ast-grep/lang-ruby"),
+		import("@ast-grep/lang-php"),
 	]);
 
 	registerDynamicLanguage({
@@ -99,6 +101,12 @@ export async function initLanguages(): Promise<void> {
 			extensions: rubyLang.default.extensions,
 			languageSymbol: rubyLang.default.languageSymbol,
 			expandoChar: rubyLang.default.expandoChar,
+		},
+		php: {
+			libraryPath: phpLang.default.libraryPath,
+			extensions: phpLang.default.extensions,
+			languageSymbol: phpLang.default.languageSymbol,
+			expandoChar: phpLang.default.expandoChar,
 		},
 	});
 

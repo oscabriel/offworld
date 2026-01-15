@@ -193,9 +193,13 @@
       "version": "0.1.0",
       "dependencies": {
         "@anthropic-ai/claude-agent-sdk": "^0.2.6",
+        "@ast-grep/lang-c": "^0.0.5",
+        "@ast-grep/lang-cpp": "^0.0.5",
         "@ast-grep/lang-go": "^0.0.5",
         "@ast-grep/lang-java": "^0.0.6",
+        "@ast-grep/lang-php": "^0.0.6",
         "@ast-grep/lang-python": "^0.0.5",
+        "@ast-grep/lang-ruby": "^0.0.6",
         "@ast-grep/lang-rust": "^0.0.6",
         "@ast-grep/napi": "^0.40.5",
         "@offworld/types": "workspace:*",
@@ -248,11 +252,19 @@
 
     "@asamuzakjp/nwsapi": ["@asamuzakjp/nwsapi@2.3.9", "", {}, "sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q=="],
 
+    "@ast-grep/lang-c": ["@ast-grep/lang-c@0.0.5", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-UNIPbUehaIZEQ3ALQ/A3Aia1VqF9/B27j1s82DP+A1Z5yQiuZWSCZGJh+hVnUzI+J/JDOTi7BIkdXqU1F74W0g=="],
+
+    "@ast-grep/lang-cpp": ["@ast-grep/lang-cpp@0.0.5", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-d/rabxd0bmYNvi8a3VL7w4XRw1IP7L7uzAWV7OUJ77pc6hHioqKgF/f7f4cxPK/3C3jz54QvjD9rKh/C+iQJ6A=="],
+
     "@ast-grep/lang-go": ["@ast-grep/lang-go@0.0.5", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-rPrTHtT2wDmyAi8tXe3xb3T94GrdXUwynt97l2AIULviQjEjzrewscUO3n0WkwQBuiKU78CDx+27PsmsykUlPQ=="],
 
     "@ast-grep/lang-java": ["@ast-grep/lang-java@0.0.6", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-OOxKk6RvMOC+fL+6sItWQmwPMvcQPtZM1/x6dA2WeHtRqqP+NZV3qmSaApXB6ZfP+tmuLFYu7sr7tIVWcI0IlA=="],
 
+    "@ast-grep/lang-php": ["@ast-grep/lang-php@0.0.6", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-jga+/CwVK8buGTows2ypRv3brP0OSzle+RcAXk3CsachlfUPvEualJ0z+1bwIJQAnTAGntfA5kyB9wSJV/vItQ=="],
+
     "@ast-grep/lang-python": ["@ast-grep/lang-python@0.0.5", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-gbNwaCPvuyZFEG4y6zwylLRLsh1DWiOeLeZ/aWOlYRR0nxoXimuMPank6psT88rijnD6esBLWhFq6kkFhndzjQ=="],
+
+    "@ast-grep/lang-ruby": ["@ast-grep/lang-ruby@0.0.6", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-IOGhMm18rApkIgzRLVuyQyI/6AwCeg6yJXqFslNZivRk7w+sugS5Ks4Iicq3yWRYxkNDp4g2GKTZO0ePP1oMrw=="],
 
     "@ast-grep/lang-rust": ["@ast-grep/lang-rust@0.0.6", "", { "dependencies": { "@ast-grep/setup-lang": "0.0.6" }, "peerDependencies": { "tree-sitter-cli": "0.25.8" }, "optionalPeers": ["tree-sitter-cli"] }, "sha512-TZs8QD8SONj2mcoUVTANZF8t4uNlaKw9GE86reeHnczV3uWS44Z6pEAmwE9bJQnl430R6BTnerIitBlncAVqiw=="],
 

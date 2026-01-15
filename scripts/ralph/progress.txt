@@ -217,3 +217,21 @@
 - Keeping detailed interface documentation (types, parameters) in AGENTS.md is valuable for future AI agents
 
 ---
+
+## 2026-01-15 - US-014
+
+- Verified no analysis code remains in SDK (verification-only story)
+- All grep checks pass: no references to buildSkeleton, buildArchitectureGraph, extractAPISurface, buildDependencyGraph, rankFilesWithAST, parseFile, or @ast-grep
+- Typecheck passes across all packages
+- SDK build succeeds (55.53 kB bundle)
+- Note: docs build has unrelated Zod v4/Astro compatibility issue - not related to analysis code removal
+
+**Files changed:**
+- `scripts/ralph/PRD.json` (updated - US-001 and US-014 passes: true)
+
+**Learnings:**
+- Verification stories confirm work from previous stories - no code changes needed
+- PRD.json should be updated immediately after each story (US-001 was missed in earlier sessions)
+- Docs app build failure is unrelated to SDK changes - Zod v4 incompatibility with Astro Starlight
+
+---

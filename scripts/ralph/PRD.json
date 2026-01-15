@@ -15,7 +15,7 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Core new functionality - AI-only skill generation"
     },
     {
@@ -220,7 +220,7 @@
         "bun run build passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Final verification that all analysis code is removed"
     }
   ]

@@ -108,7 +108,7 @@
         "bun run build succeeds in packages/sdk"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Update public API after deletions"
     },
     {

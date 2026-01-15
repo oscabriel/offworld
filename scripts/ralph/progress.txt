@@ -117,3 +117,20 @@
 - 9 ast-grep packages removed: napi + 8 language bindings (python, rust, go, java, c, cpp, ruby, php)
 
 ---
+
+## 2026-01-15 - US-007
+
+- Verified SDK index.ts exports are correct (verification-only story)
+- No code changes to index.ts needed - all criteria already satisfied from previous stories
+- Typecheck passes, `bun run build` succeeds (55.53 kB bundle)
+- Updated AGENTS.md with public API summary table
+
+**Files changed:**
+- `packages/sdk/AGENTS.md` (updated - added exports summary)
+
+**Learnings:**
+- Some stories are verification-only (criteria already met from previous work)
+- Always run `bun run build` in packages/sdk to confirm bundle builds cleanly
+- SDK bundle is ~55kB after stripping analysis code (down from larger size with AST deps)
+
+---

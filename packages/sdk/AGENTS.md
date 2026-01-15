@@ -240,3 +240,26 @@ export {
 - Bun preserves symlinks to hoisted packages even after dependencies are removed from package.json
 - Must manually `rm -rf` the stale @ast-grep directory before `bun install` will have "no changes"
 - Root node_modules doesn't have @ast-grep (was only in packages/sdk scope)
+
+### SDK Index Exports Verification (US-007 - Strip Pipeline)
+
+**Public API** (`src/index.ts`) after stripping analysis code:
+
+| Module | Key Exports |
+|--------|-------------|
+| `constants.ts` | VERSION, SUPPORTED_LANGUAGES, SUPPORTED_EXTENSIONS |
+| `config.ts` | loadConfig, saveConfig, getSkillPath, getMetaPath |
+| `repo-source.ts` | parseRepoInput, RepoSourceError |
+| `util.ts` | isBinaryBuffer, loadGitignorePatterns |
+| `index-manager.ts` | getIndex, updateIndex, removeFromIndex |
+| `clone.ts` | cloneRepo, updateRepo, getCommitSha |
+| `ai/` | streamPrompt, OpenCodeAnalysisError |
+| `sync.ts` | pullAnalysis, pushAnalysis, checkRemote |
+| `auth.ts` | getToken, isLoggedIn, saveAuthData |
+| `generate.ts` | generateSkillWithAI, installSkill |
+
+**Removed Exports**: All analysis/, ast/, validation/ exports deleted in US-003/004/005.
+
+**Gotchas**:
+- Some stories are verification-only (no code changes needed)
+- Run `bun run build` in packages/sdk to verify bundle builds cleanly after deletions

@@ -37,7 +37,7 @@ import {
 	type ArchitectureSection,
 } from "./architecture.js";
 import { extractAPISurface, formatAPISurfaceMd, type APISurface } from "./api-surface.js";
-import { generateProseWithContext, type ProseGenerationContext, type ContextAwareProseResult } from "./prose.js";
+import { generateProseWithContext, type ProseGenerationContext, type ContextAwareProseResult, type DevelopmentProse } from "./prose.js";
 import { buildIncrementalState, type IncrementalState } from "./incremental.js";
 
 // ============================================================================
@@ -396,6 +396,35 @@ export function formatSummaryMd(prose: SummaryProse, options: FormatSummaryOptio
 		"## Target Use Cases",
 		"",
 		prose.targetUseCases,
+		"",
+	];
+
+	return lines.join("\n");
+}
+
+export interface FormatDevelopmentOptions {
+	repoName: string;
+}
+
+export function formatDevelopmentMd(prose: DevelopmentProse, options: FormatDevelopmentOptions): string {
+	const lines = [
+		`# ${options.repoName} - Development Guide`,
+		"",
+		"## Getting Started",
+		"",
+		prose.gettingStarted,
+		"",
+		"## Project Structure",
+		"",
+		prose.projectStructure,
+		"",
+		"## Build & Test",
+		"",
+		prose.buildAndTest,
+		"",
+		"## Contributing Guidelines",
+		"",
+		prose.contributingGuidelines,
 		"",
 	];
 

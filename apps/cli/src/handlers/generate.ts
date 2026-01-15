@@ -10,6 +10,7 @@ import {
 	installSkillWithReferences,
 	formatSkillMd,
 	formatSummaryMd,
+	formatDevelopmentMd,
 	formatArchitectureMdLegacy,
 	loadConfig,
 	getSkillPath,
@@ -99,7 +100,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const result = await runAnalysisPipeline(repoPath, pipelineOptions);
 		s.stop("Analysis complete");
 
-		const { skill: mergedSkill, graph, architectureGraph } = result;
+		const { skill: mergedSkill, graph, architectureGraph, architectureMd, apiSurfaceMd, proseResult } = result;
 		const skill = mergedSkill.skill;
 		const { entities, prose } = mergedSkill;
 
@@ -109,7 +110,8 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const repoName = source.type === "remote" ? source.fullName : source.name;
 
 		const summaryMd = formatSummaryMd(prose, { repoName });
-		const architectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
+		const legacyArchitectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
+		const developmentMd = formatDevelopmentMd(proseResult.development, { repoName });
 		const skillMd = formatSkillMd(skill, { commitSha, generated });
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 
@@ -118,7 +120,9 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		installSkillWithReferences(repoName, {
 			skillContent: skillMd,
 			summaryContent: summaryMd,
-			architectureContent: architectureMd,
+			architectureContent: architectureMd || legacyArchitectureMd,
+			apiReferenceContent: apiSurfaceMd,
+			developmentContent: developmentMd,
 			skillJson: JSON.stringify(skill, null, 2),
 			metaJson: JSON.stringify(meta, null, 2),
 		});

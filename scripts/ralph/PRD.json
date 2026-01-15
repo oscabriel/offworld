@@ -72,7 +72,7 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Removes all validation code for deterministic analysis"
     },
     {

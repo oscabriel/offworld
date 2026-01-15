@@ -437,3 +437,38 @@ function extractNamedExportsFromText(text: string): string[] {
 - `export * from '...'` - handle separately as barrel re-exports
 - Type exports (`export type { X }`) need same treatment as value exports
 - AST-grep's `$$$` captures lists but `getMatch()` doesn't expose them as arrays
+
+### Simplified AI-Only Generation (US-001 - Strip Pipeline)
+
+**New Module** (`src/generate.ts`):
+
+```typescript
+// Core function - delegates codebase exploration to AI
+generateSkillWithAI(repoPath, repoName, options) -> { skillContent, commitSha }
+
+// Installation function - writes SKILL.md and meta.json
+installSkill(repoName, skillContent, meta) -> void
+```
+
+**Key Design Decisions**:
+
+1. Single prompt approach - AI uses Read/Grep/Glob to explore codebase
+2. No AST parsing, no deterministic analysis, no context gathering
+3. Reuses existing `streamPrompt()` from `ai/opencode.ts`
+4. Simpler output: only SKILL.md + meta.json (no references/ subdirectory)
+
+**File Structure**:
+
+```
+~/.config/offworld/skills/{name}-reference/
+└── SKILL.md
+
+~/.config/offworld/meta/{name}/
+└── meta.json  # { analyzedAt, commitSha, version }
+```
+
+**Gotchas**:
+
+- `toSkillDirName()` and `toMetaDirName()` duplicated from pipeline.ts (intentional - will remove pipeline.ts later)
+- Uses `analyze` agent from OpenCode with restricted tools (read-only)
+- Prompt is self-contained (no system prompt needed beyond what's in opencode.ts config)

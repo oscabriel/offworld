@@ -4,14 +4,9 @@ import {
 	cloneRepo,
 	isRepoCloned,
 	getClonedRepoPath,
-	getCommitSha,
 	checkRemote,
-	runAnalysisPipeline,
-	installSkillWithReferences,
-	formatSkillMd,
-	formatSummaryMd,
-	formatDevelopmentMd,
-	formatArchitectureMdLegacy,
+	generateSkillWithAI,
+	installSkill,
 	loadConfig,
 	getSkillPath,
 	updateIndex,
@@ -85,55 +80,25 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			repoPath = source.path;
 		}
 
-		s.start("Running analysis pipeline...");
+		s.start("Generating skill with AI...");
 
 		// Use fullName for remote repos (e.g. 'tanstack/query'), name for local repos
 		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
-		const pipelineOptions = {
-			onProgress: (_step: string, message: string) => {
-				s.message(message);
-			},
-			qualifiedName,
+
+		const result = await generateSkillWithAI(repoPath, qualifiedName, {
 			provider,
 			model,
-		};
+			onDebug: (msg) => s.message(msg),
+		});
+		s.stop("Skill generated");
 
-		const result = await runAnalysisPipeline(repoPath, pipelineOptions);
-		s.stop("Analysis complete");
-
-		const {
-			skill: mergedSkill,
-			graph,
-			architectureGraph,
-			architectureMd,
-			apiSurfaceMd,
-			proseResult,
-		} = result;
-		const skill = mergedSkill.skill;
-		const { entities, prose } = mergedSkill;
-
-		const commitSha = getCommitSha(repoPath);
+		const { skillContent, commitSha } = result;
 		const analyzedAt = new Date().toISOString();
-		const generated = analyzedAt.split("T")[0];
-		const repoName = source.type === "remote" ? source.fullName : source.name;
-
-		const summaryMd = formatSummaryMd(prose, { repoName });
-		const legacyArchitectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
-		const developmentMd = formatDevelopmentMd(proseResult.development, { repoName });
-		const skillMd = formatSkillMd(skill, { commitSha, generated });
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 
-		const skillPath = getSkillPath(repoName);
+		const skillPath = getSkillPath(qualifiedName);
 
-		installSkillWithReferences(repoName, {
-			skillContent: skillMd,
-			summaryContent: summaryMd,
-			architectureContent: architectureMd || legacyArchitectureMd,
-			apiReferenceContent: apiSurfaceMd,
-			developmentContent: developmentMd,
-			skillJson: JSON.stringify(skill, null, 2),
-			metaJson: JSON.stringify(meta, null, 2),
-		});
+		installSkill(qualifiedName, skillContent, meta);
 
 		const entry = getIndexEntry(source.qualifiedName);
 		if (entry) {
@@ -146,10 +111,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		}
 
 		p.log.success(`Skill saved to: ${skillPath}`);
-		p.log.info(`Skill installed for: ${repoName}`);
-		p.log.info(
-			`Files parsed: ${result.stats.filesParsed}, Symbols: ${result.stats.symbolsExtracted}`,
-		);
+		p.log.info(`Skill installed for: ${qualifiedName}`);
 
 		return {
 			success: true,

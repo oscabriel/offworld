@@ -8,14 +8,10 @@ import {
 	listIndexedRepos,
 	getSkillPath,
 	getMetaPath,
-	getCommitSha,
 	cloneRepo,
 	parseRepoInput,
-	runAnalysisPipeline,
-	installSkillWithReferences,
-	formatSkillMd,
-	formatSummaryMd,
-	formatArchitectureMdLegacy,
+	generateSkillWithAI,
+	installSkill,
 	loadConfig,
 } from "@offworld/sdk";
 import type { Architecture } from "@offworld/types";
@@ -161,31 +157,13 @@ async function cloneAndAnalyze(
 			config,
 		});
 
-		const result = await runAnalysisPipeline(repoPath, {
-			qualifiedName: source.fullName,
-		});
+		const result = await generateSkillWithAI(repoPath, source.fullName);
 
-		const { skill: mergedSkill, graph, architectureGraph } = result;
-		const skill = mergedSkill.skill;
-		const { entities, prose } = mergedSkill;
-
-		const commitSha = getCommitSha(repoPath);
+		const { skillContent, commitSha } = result;
 		const analyzedAt = new Date().toISOString();
-		const generated = analyzedAt.split("T")[0];
-
-		const summaryMd = formatSummaryMd(prose, { repoName: source.fullName });
-		const architectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
-		const skillMd = formatSkillMd(skill, { commitSha, generated });
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 
-		installSkillWithReferences(source.fullName, {
-			skillContent: skillMd,
-			summaryContent: summaryMd,
-			architectureContent: architectureMd,
-			skillJson: JSON.stringify(skill, null, 2),
-			metaJson: JSON.stringify(meta, null, 2),
-			architectureJson: JSON.stringify(architectureGraph, null, 2),
-		});
+		installSkill(source.fullName, skillContent, meta);
 
 		return {
 			success: true,

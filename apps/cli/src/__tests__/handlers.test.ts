@@ -49,14 +49,8 @@ vi.mock("@offworld/sdk", () => ({
 	pullAnalysis: vi.fn(),
 	checkRemote: vi.fn(),
 	checkStaleness: vi.fn(),
-	runAnalysisPipeline: vi.fn(),
-	isAnalysisStale: vi.fn(),
-	formatSkillMd: vi.fn(() => "---\nname: test\n---\n# Skill"),
-	formatSummaryMd: vi.fn(() => "# Summary"),
-	formatArchitectureMd: vi.fn(() => "# Architecture"),
-	formatArchitectureMdLegacy: vi.fn(() => "# Architecture (Legacy)"),
-	formatDevelopmentMd: vi.fn(() => "# Development"),
-	installSkillWithReferences: vi.fn(),
+	generateSkillWithAI: vi.fn(),
+	installSkill: vi.fn(),
 	loadAuthData: vi.fn(),
 	canPushToWeb: vi.fn(),
 	pushAnalysis: vi.fn(),
@@ -81,8 +75,7 @@ import {
 	listRepos,
 	pullAnalysis,
 	checkRemote,
-	runAnalysisPipeline,
-	isAnalysisStale,
+	generateSkillWithAI,
 	loadAuthData,
 	canPushToWeb,
 } from "@offworld/sdk";
@@ -112,8 +105,7 @@ describe("CLI handlers", () => {
 	const mockListRepos = listRepos as ReturnType<typeof vi.fn>;
 	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
 	const mockCheckRemote = checkRemote as ReturnType<typeof vi.fn>;
-	const mockRunAnalysisPipeline = runAnalysisPipeline as ReturnType<typeof vi.fn>;
-	const mockIsAnalysisStale = isAnalysisStale as ReturnType<typeof vi.fn>;
+	const mockGenerateSkillWithAI = generateSkillWithAI as ReturnType<typeof vi.fn>;
 	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
 	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
 	const mockConfirm = p.confirm as ReturnType<typeof vi.fn>;
@@ -181,7 +173,6 @@ describe("CLI handlers", () => {
 		mockLoadConfig.mockReturnValue(defaultConfig);
 		mockGetMetaRoot.mockReturnValue("/home/user/.ow");
 		mockExistsSync.mockReturnValue(false);
-		mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 	});
 
 	afterEach(() => {
@@ -196,7 +187,9 @@ describe("CLI handlers", () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
+			mockGetCommitSha.mockReturnValue("abc1234");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.config/offworld/skills/tanstack-router-reference",
@@ -223,8 +216,13 @@ describe("CLI handlers", () => {
 				previousSha: "abc123",
 				currentSha: "def456",
 			});
+			mockGetCommitSha.mockReturnValue("def4567");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
-			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
+			mockCheckRemote.mockResolvedValue({ exists: false });
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "def456",
+			});
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.config/offworld/skills/tanstack-router-reference",
 			);
@@ -258,7 +256,7 @@ describe("CLI handlers", () => {
 
 			expect(mockCheckRemote).toHaveBeenCalledWith("tanstack/router");
 			expect(mockPullAnalysis).toHaveBeenCalledWith("tanstack/router");
-			expect(mockRunAnalysisPipeline).not.toHaveBeenCalled();
+			expect(mockGenerateSkillWithAI).not.toHaveBeenCalled();
 			expect(result.analysisSource).toBe("remote");
 		});
 
@@ -275,24 +273,16 @@ describe("CLI handlers", () => {
 			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
-			mockRunAnalysisPipeline.mockResolvedValue({
-				skill: {
-					skill: mockRemoteAnalysis.skill,
-					entities: [],
-					relationships: [],
-					keyFiles: [],
-				},
-				graph: { nodes: [], edges: [], hubs: [] },
-				incrementalState: {},
-				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "abc123",
 			});
-			mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
 			expect(mockCheckRemote).toHaveBeenCalled();
 			expect(mockPullAnalysis).not.toHaveBeenCalled();
-			expect(mockRunAnalysisPipeline).toHaveBeenCalled();
+			expect(mockGenerateSkillWithAI).toHaveBeenCalled();
 			expect(result.analysisSource).toBe("local");
 		});
 
@@ -309,24 +299,16 @@ describe("CLI handlers", () => {
 			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
-			mockRunAnalysisPipeline.mockResolvedValue({
-				skill: {
-					skill: mockRemoteAnalysis.skill,
-					entities: [],
-					relationships: [],
-					keyFiles: [],
-				},
-				graph: { nodes: [], edges: [], hubs: [] },
-				incrementalState: {},
-				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "abc123",
 			});
-			mockIsAnalysisStale.mockReturnValue({ isStale: true, reason: "missing_meta" });
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
 			expect(mockCheckRemote).toHaveBeenCalled();
 			expect(mockPullAnalysis).not.toHaveBeenCalled();
-			expect(mockRunAnalysisPipeline).toHaveBeenCalled();
+			expect(mockGenerateSkillWithAI).toHaveBeenCalled();
 			expect(result.analysisSource).toBe("local");
 		});
 
@@ -351,39 +333,25 @@ describe("CLI handlers", () => {
 				if (path.endsWith("meta.json")) {
 					return JSON.stringify({ commitSha: "abc123" });
 				}
-				if (path.endsWith("skill.json")) {
-					return JSON.stringify(mockRemoteAnalysis.skill);
-				}
 				return "";
 			});
 			mockGetCommitSha.mockReturnValue("abc123");
-			mockIsAnalysisStale.mockReturnValue({
-				isStale: false,
-				cachedSha: "abc123",
-				currentSha: "abc123",
-			});
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
 			expect(result.analysisSource).toBe("cached");
 			expect(mockPullAnalysis).not.toHaveBeenCalled();
+			expect(mockGenerateSkillWithAI).not.toHaveBeenCalled();
 		});
 
 		it("handles local repos without cloning", async () => {
 			mockParseRepoInput.mockReturnValue(mockLocalSource);
-			mockPullAnalysis.mockResolvedValue(null);
 			mockGetMetaRoot.mockReturnValue("/home/user/.ow");
+			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/myrepo");
 			mockGetCommitSha.mockReturnValue("xyz789");
-			mockRunAnalysisPipeline.mockResolvedValue({
-				skill: {
-					skill: mockRemoteAnalysis.skill,
-					entities: [],
-					relationships: [],
-					keyFiles: [],
-				},
-				graph: { nodes: [], edges: [], hubs: [] },
-				incrementalState: {},
-				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "xyz789",
 			});
 
 			const result = await pullHandler({ repo: "/home/user/projects/myrepo" });
@@ -426,45 +394,19 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("def456");
-			mockRunAnalysisPipeline.mockResolvedValue({
-				skill: {
-					skill: mockRemoteAnalysis.skill,
-					entities: [],
-					relationships: [],
-					keyFiles: [],
-					prose: {
-						overview: "Test overview",
-						problemsSolved: ["Test problem"],
-						features: ["Test feature"],
-						targetUseCases: ["Test use case"],
-					},
-				},
-				graph: { nodes: [], edges: [], hubs: [] },
-				architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
-				architectureMd: "# Architecture\n\nTest architecture",
-				apiSurfaceMd: "# API Reference\n\nTest API",
-				proseResult: {
-					skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
-					summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
-					development: {
-						gettingStarted: "Test getting started",
-						projectStructure: "Test structure",
-						buildAndTest: "Test build",
-						contributingGuidelines: "Test contributing",
-					},
-				},
-				incrementalState: {},
-				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "def456",
 			});
 
 			const result = await generateHandler({ repo: "tanstack/router", force: true });
 
 			// Should not check remote when force=true
 			expect(result.success).toBe(true);
-			expect(mockRunAnalysisPipeline).toHaveBeenCalled();
+			expect(mockGenerateSkillWithAI).toHaveBeenCalled();
 		});
 
-		it("calls full analysis pipeline", async () => {
+		it("calls generateSkillWithAI", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockIsRepoCloned.mockReturnValue(true);
@@ -477,44 +419,17 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
-			mockRunAnalysisPipeline.mockResolvedValue({
-				skill: {
-					skill: mockRemoteAnalysis.skill,
-					entities: [],
-					relationships: [],
-					keyFiles: [],
-					prose: {
-						overview: "Test overview",
-						problemsSolved: ["Test problem"],
-						features: ["Test feature"],
-						targetUseCases: ["Test use case"],
-					},
-				},
-				graph: { nodes: [], edges: [], hubs: [] },
-				architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
-				architectureMd: "# Architecture\n\nTest architecture",
-				apiSurfaceMd: "# API Reference\n\nTest API",
-				proseResult: {
-					skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
-					summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
-					development: {
-						gettingStarted: "Test getting started",
-						projectStructure: "Test structure",
-						buildAndTest: "Test build",
-						contributingGuidelines: "Test contributing",
-					},
-				},
-				incrementalState: {},
-				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "abc123",
 			});
 
 			const result = await generateHandler({ repo: "tanstack/router" });
 
-			expect(mockRunAnalysisPipeline).toHaveBeenCalledWith(
+			expect(mockGenerateSkillWithAI).toHaveBeenCalledWith(
 				"/home/user/ow/github/tanstack/router",
-				expect.objectContaining({
-					qualifiedName: "tanstack/router",
-				}),
+				"tanstack/router",
+				expect.objectContaining({}),
 			);
 			expect(result.success).toBe(true);
 			expect(result.analysisPath).toBeDefined();
@@ -533,35 +448,9 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
-			mockRunAnalysisPipeline.mockResolvedValue({
-				skill: {
-					skill: mockRemoteAnalysis.skill,
-					entities: [],
-					relationships: [],
-					keyFiles: [],
-					prose: {
-						overview: "Test overview",
-						problemsSolved: ["Test problem"],
-						features: ["Test feature"],
-						targetUseCases: ["Test use case"],
-					},
-				},
-				graph: { nodes: [], edges: [], hubs: [] },
-				architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
-				architectureMd: "# Architecture\n\nTest architecture",
-				apiSurfaceMd: "# API Reference\n\nTest API",
-				proseResult: {
-					skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
-					summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
-					development: {
-						gettingStarted: "Test getting started",
-						projectStructure: "Test structure",
-						buildAndTest: "Test build",
-						contributingGuidelines: "Test contributing",
-					},
-				},
-				incrementalState: {},
-				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			mockGenerateSkillWithAI.mockResolvedValue({
+				skillContent: "# Skill\n...",
+				commitSha: "abc123",
 			});
 
 			const result = await generateHandler({ repo: "tanstack/router" });

@@ -124,7 +124,7 @@
         "typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Integrate new simplified SDK functions"
     },
     {

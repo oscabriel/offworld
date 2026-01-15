@@ -382,7 +382,7 @@ export function formatSummaryMd(prose: SummaryProse, options: FormatSummaryOptio
 	return lines.join("\n");
 }
 
-export function formatArchitectureMd(
+export function formatArchitectureMdLegacy(
 	architectureGraph: ArchitectureGraph,
 	entities: MergedEntity[],
 	graph: DependencyGraph,

@@ -33,7 +33,7 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Keep symlink logic from current pipeline.ts"
     },
     {

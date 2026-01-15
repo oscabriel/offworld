@@ -235,3 +235,34 @@ interface PublicExport {
 3. Fallback to common patterns: `src/index.ts`, `index.ts`, etc.
 
 **Description Inference**: Uses name patterns (`create*`, `use*`, `get*`, `is*`) to generate descriptions automatically.
+
+### Context-Aware Prose Generation (US-008)
+
+**New Types** (`src/analysis/prose.ts`):
+
+```typescript
+interface ProseGenerationContext {
+  apiSurface?: APISurface;      // Deterministic API surface from extractAPISurface()
+  architecture?: ArchitectureSection;  // Deterministic architecture from buildArchitectureSection()
+  readme?: string;              // README.md content
+  examples?: string;            // Example code from examples/ directory
+  contributing?: string;        // CONTRIBUTING.md content
+}
+
+interface ContextAwareProseResult {
+  skill: SkillProse;           // For SKILL.md
+  summary: SummaryContent;     // For summary.md
+  development: DevelopmentProse; // For development.md
+}
+```
+
+**Key Functions**:
+
+- `generateProseWithContext()` - generates all three AI prose outputs with deterministic context
+- `buildSkillPromptWithContext()` - includes API Surface + Architecture for SKILL.md
+- `buildSummaryPromptWithContext()` - includes API Surface + README + Examples for summary.md
+- `buildDevelopmentPromptWithContext()` - includes Architecture + CONTRIBUTING for development.md
+
+**Prompt Pattern**: Each prompt includes verbatim deterministic context so AI imports match `api-reference.md` exactly.
+
+**Gotcha**: `SummaryProse` name conflict - pipeline.ts already has `SummaryProse`. New type named `SummaryContent`.

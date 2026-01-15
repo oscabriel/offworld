@@ -32,7 +32,16 @@ export {
 
 export { type MergedSkillResult, type MergedEntity, type MergedKeyFile } from "./merge.js";
 
-export { type EntityRelationship } from "./prose.js";
+export {
+	type EntityRelationship,
+	type ProseGenerationContext,
+	type SkillProse,
+	type SummaryContent,
+	type DevelopmentProse,
+	type ContextAwareProseResult,
+	type GenerateWithContextOptions,
+	generateProseWithContext,
+} from "./prose.js";
 
 export {
 	buildArchitectureGraph,

@@ -272,11 +272,17 @@ describe("SkillSchema", () => {
 					path: "packages/router/src",
 				},
 			],
-			whenToUse: ["User asks about file-based routing"],
-		};
-		const result = SkillSchema.safeParse(skill);
-		expect(result.success).toBe(true);
-	});
+		whenToUse: [
+			"User asks about file-based routing",
+			"Need client-side navigation",
+			"Building a single-page application",
+			"Want type-safe route params",
+			"Implementing route guards",
+		],
+	};
+	const result = SkillSchema.safeParse(skill);
+	expect(result.success).toBe(true);
+});
 
 	it("rejects skill missing required fields", () => {
 		const incomplete = {
@@ -287,17 +293,16 @@ describe("SkillSchema", () => {
 		expect(result.success).toBe(false);
 	});
 
-	it("accepts empty arrays for collection fields", () => {
-		const skill = {
-			name: "minimal",
-			description: "Minimal skill",
-			quickPaths: [],
-			searchPatterns: [],
-			whenToUse: [],
-		};
-		const result = SkillSchema.safeParse(skill);
-		expect(result.success).toBe(true);
-	});
+it("accepts empty arrays for collection fields (except constrained ones)", () => {
+	const skill = {
+		name: "minimal",
+		description: "Minimal skill",
+		quickPaths: [],
+		searchPatterns: [],
+	};
+	const result = SkillSchema.safeParse(skill);
+	expect(result.success).toBe(true);
+});
 });
 
 describe("FileRoleSchema", () => {

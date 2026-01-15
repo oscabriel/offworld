@@ -112,6 +112,36 @@ export const CommonPatternSchema = z.object({
 	steps: z.array(z.string()),
 });
 
+export const ImportPatternSchema = z.object({
+	import: z.string(),
+	purpose: z.string(),
+});
+
+export const TroubleshootingEntrySchema = z.object({
+	symptom: z.string(),
+	cause: z.string(),
+	fix: z.string(),
+});
+
+export const ArchitectureConceptSchema = z.object({
+	name: z.string(),
+	purpose: z.string(),
+	location: z.string(),
+});
+
+export const ExtensionPointSchema = z.object({
+	type: z.string(),
+	interface: z.string(),
+	purpose: z.string(),
+	example: z.string().optional(),
+});
+
+export const CodebaseMapEntrySchema = z.object({
+	path: z.string(),
+	purpose: z.string(),
+	exports: z.array(z.string()).optional(),
+});
+
 export const SkillSchema = z.object({
 	name: z.string(),
 	description: z.string(),
@@ -123,9 +153,16 @@ export const SkillSchema = z.object({
 		.optional(),
 	quickPaths: z.array(QuickPathSchema),
 	searchPatterns: z.array(SearchPatternSchema),
-	whenToUse: z.array(z.string()).optional(),
 	bestPractices: z.array(z.string()).optional(),
 	commonPatterns: z.array(CommonPatternSchema).optional(),
+	importPatterns: z.array(ImportPatternSchema).optional(),
+	whenToUse: z.array(z.string()).min(5).optional(),
+	quickStartCode: z.string().optional(),
+	commonOperations: z.array(z.string()).optional(),
+	troubleshooting: z.array(TroubleshootingEntrySchema).optional(),
+	architecture: z.array(ArchitectureConceptSchema).optional(),
+	extensionPoints: z.array(ExtensionPointSchema).optional(),
+	codebaseMap: z.array(CodebaseMapEntrySchema).optional(),
 });
 
 export const RepoIndexEntrySchema = z.object({

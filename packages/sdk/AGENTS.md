@@ -375,3 +375,32 @@ installSkillWithReferences(repoName, {
 - `DevelopmentProse` type is imported from prose.ts (not redefined in pipeline.ts)
 - Use `architectureMd || legacyArchitectureMd` pattern to prefer new deterministic architecture but fall back to legacy 3-arg version
 - Must rebuild SDK (`bun run build`) before CLI typecheck will see new exports
+
+### Extended SkillSchema (US-013)
+
+**New Schemas** (`packages/types/src/schemas.ts`):
+
+```typescript
+ImportPatternSchema: { import, purpose }
+TroubleshootingEntrySchema: { symptom, cause, fix }
+ArchitectureConceptSchema: { name, purpose, location }
+ExtensionPointSchema: { type, interface, purpose, example? }
+CodebaseMapEntrySchema: { path, purpose, exports? }
+```
+
+**Extended SkillSchema fields**:
+
+- `importPatterns: ImportPatternSchema[]` - canonical import statements
+- `whenToUse: string[]` (min 5 when present) - natural language triggers
+- `quickStartCode: string` - copy-paste starter code
+- `commonOperations: string[]` - frequent operations list
+- `troubleshooting: TroubleshootingEntrySchema[]` - symptom/cause/fix entries
+- `architecture: ArchitectureConceptSchema[]` - key concepts with locations
+- `extensionPoints: ExtensionPointSchema[]` - where to extend
+- `codebaseMap: CodebaseMapEntrySchema[]` - path/purpose lookup
+
+**Gotchas**:
+
+- `whenToUse` has `.min(5)` constraint when present - update tests that use fewer items
+- All new fields are optional (`.optional()`) for backward compatibility
+- Test assertions with empty arrays (`whenToUse: []`) must be updated or field omitted

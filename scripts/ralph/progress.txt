@@ -65,3 +65,20 @@
   - PHP has 4 include variants: require, require_once, include, include_once
 
 ---
+
+## 2026-01-14 - US-006
+
+- Added ArchitectureSection interface with entryPoints, coreModules, hubs, layers, inheritance, directoryTree, findingTable, packages
+- Implemented buildArchitectureSection() extracting architecture from parsedFiles + dependencyGraph
+- Implemented formatArchitectureMd() generating full markdown with tables and Mermaid diagrams
+- Renamed old formatArchitectureMd to formatArchitectureMdLegacy in pipeline.ts
+- Updated index.ts exports with new types and functions
+- Files changed: packages/sdk/src/analysis/architecture.ts, packages/sdk/src/analysis/index.ts, packages/sdk/src/analysis/pipeline.ts, packages/sdk/AGENTS.md
+- **Learnings:**
+  - Export naming conflicts: check index.ts before adding functions with common names
+  - Entry point detection uses regex patterns on file paths (main, cli, server, worker, index, config)
+  - Hub threshold of 3+ importers is standard for identifying dependency hubs
+  - Monorepo detection looks for packages/*/apps/*/libs/* prefixes
+  - Layer diagram is simplified flowchart showing layer counts, not raw file-level imports
+
+---

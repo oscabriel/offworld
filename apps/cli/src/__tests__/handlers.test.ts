@@ -426,38 +426,38 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("def456");
-		mockRunAnalysisPipeline.mockResolvedValue({
-			skill: {
-				skill: mockRemoteAnalysis.skill,
-				entities: [],
-				relationships: [],
-				keyFiles: [],
-				prose: {
-					overview: "Test overview",
-					problemsSolved: ["Test problem"],
-					features: ["Test feature"],
-					targetUseCases: ["Test use case"],
+			mockRunAnalysisPipeline.mockResolvedValue({
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+					prose: {
+						overview: "Test overview",
+						problemsSolved: ["Test problem"],
+						features: ["Test feature"],
+						targetUseCases: ["Test use case"],
+					},
 				},
-			},
-			graph: { nodes: [], edges: [], hubs: [] },
-			architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
-			architectureMd: "# Architecture\n\nTest architecture",
-			apiSurfaceMd: "# API Reference\n\nTest API",
-			proseResult: {
-				skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
-				summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
-				development: {
-					gettingStarted: "Test getting started",
-					projectStructure: "Test structure",
-					buildAndTest: "Test build",
-					contributingGuidelines: "Test contributing",
+				graph: { nodes: [], edges: [], hubs: [] },
+				architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
+				architectureMd: "# Architecture\n\nTest architecture",
+				apiSurfaceMd: "# API Reference\n\nTest API",
+				proseResult: {
+					skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
+					summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
+					development: {
+						gettingStarted: "Test getting started",
+						projectStructure: "Test structure",
+						buildAndTest: "Test build",
+						contributingGuidelines: "Test contributing",
+					},
 				},
-			},
-			incrementalState: {},
-			stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
-		});
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			});
 
-		const result = await generateHandler({ repo: "tanstack/router", force: true });
+			const result = await generateHandler({ repo: "tanstack/router", force: true });
 
 			// Should not check remote when force=true
 			expect(result.success).toBe(true);
@@ -477,40 +477,40 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
-		mockRunAnalysisPipeline.mockResolvedValue({
-			skill: {
-				skill: mockRemoteAnalysis.skill,
-				entities: [],
-				relationships: [],
-				keyFiles: [],
-				prose: {
-					overview: "Test overview",
-					problemsSolved: ["Test problem"],
-					features: ["Test feature"],
-					targetUseCases: ["Test use case"],
+			mockRunAnalysisPipeline.mockResolvedValue({
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+					prose: {
+						overview: "Test overview",
+						problemsSolved: ["Test problem"],
+						features: ["Test feature"],
+						targetUseCases: ["Test use case"],
+					},
 				},
-			},
-			graph: { nodes: [], edges: [], hubs: [] },
-			architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
-			architectureMd: "# Architecture\n\nTest architecture",
-			apiSurfaceMd: "# API Reference\n\nTest API",
-			proseResult: {
-				skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
-				summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
-				development: {
-					gettingStarted: "Test getting started",
-					projectStructure: "Test structure",
-					buildAndTest: "Test build",
-					contributingGuidelines: "Test contributing",
+				graph: { nodes: [], edges: [], hubs: [] },
+				architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
+				architectureMd: "# Architecture\n\nTest architecture",
+				apiSurfaceMd: "# API Reference\n\nTest API",
+				proseResult: {
+					skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
+					summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
+					development: {
+						gettingStarted: "Test getting started",
+						projectStructure: "Test structure",
+						buildAndTest: "Test build",
+						contributingGuidelines: "Test contributing",
+					},
 				},
-			},
-			incrementalState: {},
-			stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
-		});
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			});
 
-		const result = await generateHandler({ repo: "tanstack/router" });
+			const result = await generateHandler({ repo: "tanstack/router" });
 
-		expect(mockRunAnalysisPipeline).toHaveBeenCalledWith(
+			expect(mockRunAnalysisPipeline).toHaveBeenCalledWith(
 				"/home/user/ow/github/tanstack/router",
 				expect.objectContaining({
 					qualifiedName: "tanstack/router",
@@ -533,46 +533,46 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
-		mockRunAnalysisPipeline.mockResolvedValue({
-			skill: {
-				skill: mockRemoteAnalysis.skill,
-				entities: [],
-				relationships: [],
-				keyFiles: [],
-				prose: {
-					overview: "Test overview",
-					problemsSolved: ["Test problem"],
-					features: ["Test feature"],
-					targetUseCases: ["Test use case"],
+			mockRunAnalysisPipeline.mockResolvedValue({
+				skill: {
+					skill: mockRemoteAnalysis.skill,
+					entities: [],
+					relationships: [],
+					keyFiles: [],
+					prose: {
+						overview: "Test overview",
+						problemsSolved: ["Test problem"],
+						features: ["Test feature"],
+						targetUseCases: ["Test use case"],
+					},
 				},
-			},
-			graph: { nodes: [], edges: [], hubs: [] },
-			architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
-			architectureMd: "# Architecture\n\nTest architecture",
-			apiSurfaceMd: "# API Reference\n\nTest API",
-			proseResult: {
-				skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
-				summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
-				development: {
-					gettingStarted: "Test getting started",
-					projectStructure: "Test structure",
-					buildAndTest: "Test build",
-					contributingGuidelines: "Test contributing",
+				graph: { nodes: [], edges: [], hubs: [] },
+				architectureGraph: { nodes: [], edges: [], symbolTable: new Map() },
+				architectureMd: "# Architecture\n\nTest architecture",
+				apiSurfaceMd: "# API Reference\n\nTest API",
+				proseResult: {
+					skill: { whenToUse: [], quickPaths: [], searchPatterns: [] },
+					summary: { overview: "Test", problemsSolved: [], features: [], targetUseCases: [] },
+					development: {
+						gettingStarted: "Test getting started",
+						projectStructure: "Test structure",
+						buildAndTest: "Test build",
+						contributingGuidelines: "Test contributing",
+					},
 				},
-			},
-			incrementalState: {},
-			stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+				incrementalState: {},
+				stats: { filesParsed: 10, symbolsExtracted: 50, entitiesCreated: 5 },
+			});
+
+			const result = await generateHandler({ repo: "tanstack/router" });
+
+			expect(mockCloneRepo).toHaveBeenCalled();
+			expect(result.success).toBe(true);
 		});
-
-		const result = await generateHandler({ repo: "tanstack/router" });
-
-		expect(mockCloneRepo).toHaveBeenCalled();
-		expect(result.success).toBe(true);
 	});
-});
 
-// =========================================================================
-// listHandler tests
+	// =========================================================================
+	// listHandler tests
 	// =========================================================================
 	describe("listHandler", () => {
 		it("formats repo list correctly", async () => {

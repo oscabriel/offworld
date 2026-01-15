@@ -164,14 +164,14 @@ const filePaths = discoverFiles(repoPath, "", onDebug);
 
 ```typescript
 interface ArchitectureSection {
-  entryPoints: EntryPoint[];     // main/cli/server/worker/index/config files
-  coreModules: CoreModule[];     // files with 3+ exported symbols
-  hubs: DependencyHub[];         // files with 3+ importers
-  layers: LayerGroup[];          // ui/api/domain/infra/util/config/test
-  inheritance: InheritanceRelation[];
-  directoryTree: DirectoryNode;  // tree with [HUB: N←] annotations
-  findingTable: FindingEntry[];  // "Where do I find X?" lookup
-  packages?: MonorepoPackage[];  // for packages/*/apps/*/libs/*
+	entryPoints: EntryPoint[]; // main/cli/server/worker/index/config files
+	coreModules: CoreModule[]; // files with 3+ exported symbols
+	hubs: DependencyHub[]; // files with 3+ importers
+	layers: LayerGroup[]; // ui/api/domain/infra/util/config/test
+	inheritance: InheritanceRelation[];
+	directoryTree: DirectoryNode; // tree with [HUB: N←] annotations
+	findingTable: FindingEntry[]; // "Where do I find X?" lookup
+	packages?: MonorepoPackage[]; // for packages/*/apps/*/libs/*
 }
 ```
 
@@ -202,25 +202,25 @@ interface ArchitectureSection {
 
 ```typescript
 interface APISurface {
-  packageName: string;
-  imports: ImportPattern[];      // Common import patterns with purpose
-  exports: PublicExport[];       // All public exports from main entry
-  subpaths: SubpathExport[];     // Subpath exports (e.g., "./client", "./server")
-  typeExports: PublicExport[];   // Type-only exports (interfaces, types)
+	packageName: string;
+	imports: ImportPattern[]; // Common import patterns with purpose
+	exports: PublicExport[]; // All public exports from main entry
+	subpaths: SubpathExport[]; // Subpath exports (e.g., "./client", "./server")
+	typeExports: PublicExport[]; // Type-only exports (interfaces, types)
 }
 
 interface ImportPattern {
-  statement: string;   // e.g., "import { z } from 'zod'"
-  purpose: string;     // e.g., "Main schema builder"
-  exports: string[];   // Exported symbols available
+	statement: string; // e.g., "import { z } from 'zod'"
+	purpose: string; // e.g., "Main schema builder"
+	exports: string[]; // Exported symbols available
 }
 
 interface PublicExport {
-  name: string;
-  path: string;
-  signature: string;
-  kind: "function" | "class" | "interface" | "type" | "const" | "enum";
-  description: string;  // Inferred from name patterns
+	name: string;
+	path: string;
+	signature: string;
+	kind: "function" | "class" | "interface" | "type" | "const" | "enum";
+	description: string; // Inferred from name patterns
 }
 ```
 
@@ -230,6 +230,7 @@ interface PublicExport {
 - `formatAPISurfaceMd()` - generates markdown with Import Patterns, Public Exports, Subpath Exports, Type Exports tables
 
 **Entry Point Detection Order**:
+
 1. `package.json` exports field (resolves import/require/default/types)
 2. Fallback to main/module fields
 3. Fallback to common patterns: `src/index.ts`, `index.ts`, etc.
@@ -242,17 +243,17 @@ interface PublicExport {
 
 ```typescript
 interface ProseGenerationContext {
-  apiSurface?: APISurface;      // Deterministic API surface from extractAPISurface()
-  architecture?: ArchitectureSection;  // Deterministic architecture from buildArchitectureSection()
-  readme?: string;              // README.md content
-  examples?: string;            // Example code from examples/ directory
-  contributing?: string;        // CONTRIBUTING.md content
+	apiSurface?: APISurface; // Deterministic API surface from extractAPISurface()
+	architecture?: ArchitectureSection; // Deterministic architecture from buildArchitectureSection()
+	readme?: string; // README.md content
+	examples?: string; // Example code from examples/ directory
+	contributing?: string; // CONTRIBUTING.md content
 }
 
 interface ContextAwareProseResult {
-  skill: SkillProse;           // For SKILL.md
-  summary: SummaryContent;     // For summary.md
-  development: DevelopmentProse; // For development.md
+	skill: SkillProse; // For SKILL.md
+	summary: SummaryContent; // For summary.md
+	development: DevelopmentProse; // For development.md
 }
 ```
 
@@ -283,12 +284,12 @@ interface ContextAwareProseResult {
 
 ```typescript
 interface AnalysisPipelineResult {
-  // ...existing fields...
-  architectureSection: ArchitectureSection;
-  apiSurface: APISurface;
-  architectureMd: string;      // Ready-to-write markdown
-  apiSurfaceMd: string;        // Ready-to-write markdown
-  proseResult: ContextAwareProseResult;
+	// ...existing fields...
+	architectureSection: ArchitectureSection;
+	apiSurface: APISurface;
+	architectureMd: string; // Ready-to-write markdown
+	apiSurfaceMd: string; // Ready-to-write markdown
+	proseResult: ContextAwareProseResult;
 }
 ```
 
@@ -306,15 +307,15 @@ interface AnalysisPipelineResult {
 
 ```typescript
 interface InstallSkillOptions {
-  skillContent: string;          // Required: SKILL.md content
-  summaryContent: string;        // Required: summary.md content
-  architectureContent: string;   // Required: architecture.md content
-  apiReferenceContent?: string;  // Optional: api-reference.md content
-  developmentContent?: string;   // Optional: development.md content
-  skillJson?: string;            // Optional: JSON for meta/
-  metaJson?: string;             // Optional: JSON for meta/
-  architectureJson?: string;     // Optional: JSON for meta/
-  fileIndexJson?: string;        // Optional: JSON for meta/
+	skillContent: string; // Required: SKILL.md content
+	summaryContent: string; // Required: summary.md content
+	architectureContent: string; // Required: architecture.md content
+	apiReferenceContent?: string; // Optional: api-reference.md content
+	developmentContent?: string; // Optional: development.md content
+	skillJson?: string; // Optional: JSON for meta/
+	metaJson?: string; // Optional: JSON for meta/
+	architectureJson?: string; // Optional: JSON for meta/
+	fileIndexJson?: string; // Optional: JSON for meta/
 }
 ```
 
@@ -342,10 +343,10 @@ interface InstallSkillOptions {
 
 ```typescript
 interface FormatDevelopmentOptions {
-  repoName: string;
+	repoName: string;
 }
 
-function formatDevelopmentMd(prose: DevelopmentProse, options: FormatDevelopmentOptions): string
+function formatDevelopmentMd(prose: DevelopmentProse, options: FormatDevelopmentOptions): string;
 ```
 
 Generates markdown with sections: Getting Started, Project Structure, Build & Test, Contributing Guidelines.
@@ -361,12 +362,12 @@ const developmentMd = formatDevelopmentMd(proseResult.development, { repoName })
 
 // Pass all 5 content fields
 installSkillWithReferences(repoName, {
-  skillContent: skillMd,
-  summaryContent: summaryMd,
-  architectureContent: architectureMd || legacyArchitectureMd,  // prefer new, fallback to legacy
-  apiReferenceContent: apiSurfaceMd,
-  developmentContent: developmentMd,
-  // ...json fields
+	skillContent: skillMd,
+	summaryContent: summaryMd,
+	architectureContent: architectureMd || legacyArchitectureMd, // prefer new, fallback to legacy
+	apiReferenceContent: apiSurfaceMd,
+	developmentContent: developmentMd,
+	// ...json fields
 });
 ```
 
@@ -413,17 +414,18 @@ CodebaseMapEntrySchema: { path, purpose, exports? }
 
 ```typescript
 function extractNamedExportsFromText(text: string): string[] {
-    const namedExportMatch = text.match(/export\s+(?:type\s+)?\{([^}]+)\}/);
-    if (!namedExportMatch?.[1]) return [];
-    
-    return namedExportMatch[1].split(',')
-        .map(item => item.trim())
-        .filter(Boolean)
-        .map(item => {
-            const asMatch = item.match(/(\w+)\s+as\s+(\w+)/);
-            return asMatch?.[2] ?? item.match(/^(\w+)$/)?.[1];
-        })
-        .filter(Boolean);
+	const namedExportMatch = text.match(/export\s+(?:type\s+)?\{([^}]+)\}/);
+	if (!namedExportMatch?.[1]) return [];
+
+	return namedExportMatch[1]
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean)
+		.map((item) => {
+			const asMatch = item.match(/(\w+)\s+as\s+(\w+)/);
+			return asMatch?.[2] ?? item.match(/^(\w+)$/)?.[1];
+		})
+		.filter(Boolean);
 }
 ```
 

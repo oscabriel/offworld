@@ -1,265 +1,265 @@
 {
-  "branchName": "ralph/analysis-pipeline-overhaul",
-  "passes": false,
-  "userStories": [
-    {
-      "id": "US-001",
-      "title": "Update skill directory naming logic",
-      "acceptanceCriteria": [
-        "toSkillDirName() collapses owner==repo (e.g., better-auth/better-auth → better-auth-reference)",
-        "tanstack/query → tanstack-query-reference",
-        "zod (local) → zod-reference",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 0.1 - packages/sdk/src/analysis/pipeline.ts"
-    },
-    {
-      "id": "US-002",
-      "title": "Add C language support",
-      "acceptanceCriteria": [
-        "@ast-grep/lang-c installed in packages/sdk",
-        "LANG_MAP includes .c, .h extensions",
-        "SupportedLang type includes 'c'",
-        "initLanguages() registers C",
-        "AST patterns for C: function, struct, #include",
-        ".c files parse without errors",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 0.2-0.4"
-    },
-    {
-      "id": "US-003",
-      "title": "Add C++ language support",
-      "acceptanceCriteria": [
-        "@ast-grep/lang-cpp installed in packages/sdk",
-        "LANG_MAP includes .cpp, .cc, .cxx, .hpp, .hxx extensions",
-        "SupportedLang type includes 'cpp'",
-        "initLanguages() registers C++",
-        "AST patterns for C++: class, namespace, inheritance",
-        ".cpp files parse without errors",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 0.2-0.4"
-    },
-    {
-      "id": "US-004",
-      "title": "Add Ruby language support",
-      "acceptanceCriteria": [
-        "@ast-grep/lang-ruby installed in packages/sdk",
-        "LANG_MAP includes .rb extension",
-        "SupportedLang type includes 'ruby'",
-        "initLanguages() registers Ruby",
-        "AST patterns for Ruby: def, class, module, require",
-        ".rb files parse without errors",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 0.2-0.4"
-    },
-    {
-      "id": "US-005",
-      "title": "Add PHP language support",
-      "acceptanceCriteria": [
-        "@ast-grep/lang-php installed in packages/sdk",
-        "LANG_MAP includes .php extension",
-        "SupportedLang type includes 'php'",
-        "initLanguages() registers PHP",
-        "AST patterns for PHP: function, class, interface, use, require",
-        ".php files parse without errors",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 0.2-0.4"
-    },
-    {
-      "id": "US-006",
-      "title": "Overhaul architecture.md generation",
-      "acceptanceCriteria": [
-        "ArchitectureSection interface defined with entryPoints, coreModules, hubs, layers, inheritance",
-        "buildArchitectureSection() function implemented",
-        "formatArchitectureMd() function implemented",
-        "Output includes Entry Points table",
-        "Output includes Core Modules table",
-        "Output includes Dependency Hubs table (3+ importers)",
-        "Output includes simplified layer Mermaid diagram (not raw import graph)",
-        "Output includes inheritance Mermaid class diagram",
-        "Output includes Directory Structure tree with [HUB: N←] annotations",
-        "Output includes 'Finding Things' lookup table",
-        "Monorepo handling: packages/*/apps/*/libs/* get separate sections",
-        "typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Phase 1 - packages/sdk/src/analysis/architecture.ts"
-    },
-    {
-      "id": "US-007",
-      "title": "Create API surface extraction",
-      "acceptanceCriteria": [
-        "api-surface.ts file created in packages/sdk/src/analysis/",
-        "APISurface interface: packageName, imports, exports, subpaths",
-        "PublicExport interface: name, path, signature, kind, description",
-        "ImportPattern interface: statement, purpose, exports",
-        "SubpathExport interface: subpath, exports",
-        "extractAPISurface() reads package.json exports field",
-        "extractAPISurface() finds index.ts/main.ts entry points",
-        "extractAPISurface() extracts public functions, classes, interfaces, types, consts",
-        "formatAPISurfaceMd() generates Import Patterns section with code block",
-        "formatAPISurfaceMd() generates Public Exports table",
-        "formatAPISurfaceMd() generates Subpath Exports table",
-        "formatAPISurfaceMd() generates Type Exports table",
-        "typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Phase 2 - new file packages/sdk/src/analysis/api-surface.ts"
-    },
-    {
-      "id": "US-008",
-      "title": "Integrate deterministic context into AI generation",
-      "acceptanceCriteria": [
-        "ProseGenerationContext interface: apiSurface, architecture, readme, examples, contributing",
-        "generateProseWithContext() accepts ProseGenerationContext",
-        "SKILL.md prompt includes API Surface section (verbatim import patterns)",
-        "SKILL.md prompt includes Architecture Summary section",
-        "summary.md prompt includes API Surface + README + Examples",
-        "development.md prompt includes Architecture + CONTRIBUTING.md",
-        "AI-generated imports match deterministic api-reference.md exactly",
-        "typecheck passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "Phase 3 - packages/sdk/src/analysis/prose.ts"
-    },
-    {
-      "id": "US-009",
-      "title": "Update pipeline flow for dual-track generation",
-      "acceptanceCriteria": [
-        "runAnalysisPipeline() calls buildArchitectureSection() before AI",
-        "runAnalysisPipeline() calls extractAPISurface() before AI",
-        "loadReadme(), loadExamples(), loadContributing() helpers exist",
-        "Deterministic files (architecture.md, api-reference.md) generated without AI",
-        "AI files (SKILL.md, summary.md, development.md) receive deterministic context",
-        "Pipeline returns architectureMd and apiSurfaceMd",
-        "typecheck passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "Phase 3 - packages/sdk/src/analysis/pipeline.ts"
-    },
-    {
-      "id": "US-010",
-      "title": "Update InstallSkillOptions for new file structure",
-      "acceptanceCriteria": [
-        "InstallSkillOptions includes skillContent, summaryContent, architectureContent, apiReferenceContent, developmentContent",
-        "installSkillWithReferences() writes SKILL.md to skill root",
-        "installSkillWithReferences() writes summary.md to references/",
-        "installSkillWithReferences() writes architecture.md to references/",
-        "installSkillWithReferences() writes api-reference.md to references/",
-        "installSkillWithReferences() writes development.md to references/",
-        "Output structure: {name}-reference/SKILL.md + {name}-reference/references/*.md",
-        "typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "Phase 4 - packages/sdk/src/analysis/pipeline.ts"
-    },
-    {
-      "id": "US-011",
-      "title": "Update generate CLI handler",
-      "acceptanceCriteria": [
-        "generate handler passes architectureContent to installSkillWithReferences()",
-        "generate handler passes apiReferenceContent to installSkillWithReferences()",
-        "generate handler passes summaryContent to installSkillWithReferences()",
-        "generate handler passes developmentContent to installSkillWithReferences()",
-        "All 5 reference files created after ow generate",
-        "typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "Phase 4 - apps/cli/src/handlers/generate.ts"
-    },
-    {
-      "id": "US-012",
-      "title": "Update pull CLI handler",
-      "acceptanceCriteria": [
-        "pull handler passes architectureContent to installSkillWithReferences()",
-        "pull handler passes apiReferenceContent to installSkillWithReferences()",
-        "pull handler passes summaryContent to installSkillWithReferences()",
-        "pull handler passes developmentContent to installSkillWithReferences()",
-        "All 5 reference files created after ow pull",
-        "typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "Phase 4 - apps/cli/src/handlers/pull.ts"
-    },
-    {
-      "id": "US-013",
-      "title": "Add new Zod schemas for skill types",
-      "acceptanceCriteria": [
-        "ImportPatternSchema: import, purpose",
-        "TroubleshootingEntrySchema: symptom, cause, fix",
-        "ArchitectureConceptSchema: name, purpose, location",
-        "ExtensionPointSchema: type, interface, purpose, example (optional)",
-        "CodebaseMapEntrySchema: path, purpose, exports (optional)",
-        "SkillSchema extended with: importPatterns, whenToUse (min 5), quickStartCode, commonOperations, troubleshooting, architecture, extensionPoints, codebaseMap",
-        "typecheck passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "Phase 5 - packages/types/src/schemas.ts"
-    },
-    {
-      "id": "US-014",
-      "title": "Integration test: tanstack/query (TypeScript monorepo)",
-      "acceptanceCriteria": [
-        "ow pull tanstack/query completes without error",
-        "Outputs to tanstack-query-reference/ (not tanstack-tanstack-query-reference)",
-        "architecture.md contains monorepo package sections",
-        "api-reference.md contains @tanstack/query-core imports",
-        "SKILL.md imports match api-reference.md verbatim",
-        "No e2e test content in SKILL.md"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "Integration test - Fixed: extractExports() now captures named re-exports"
-    },
-    {
-      "id": "US-015",
-      "title": "Integration test: zod (TypeScript library)",
-      "acceptanceCriteria": [
-        "ow pull colinhacks/zod completes without error",
-        "Outputs to zod-reference/ (not colinhacks-zod-reference) OR colinhacks-zod-reference if owner != repo",
-        "api-reference.md contains import { z } from 'zod'",
-        "SKILL.md 'When to Use' triggers are natural language (not 'when you need zod')",
-        "Common operations have copy-paste code"
-      ],
-      "priority": 6,
-      "passes": false,
-      "notes": "Integration test - verify naming logic"
-    },
-    {
-      "id": "US-016",
-      "title": "Integration test: better-auth/better-auth (collapsed naming)",
-      "acceptanceCriteria": [
-        "ow pull better-auth/better-auth completes without error",
-        "Outputs to better-auth-reference/ (collapsed owner==repo)",
-        "api-reference.md contains better-auth imports",
-        "architecture.md has entry points, hubs, layers",
-        "No file-level import graph in diagrams"
-      ],
-      "priority": 6,
-      "passes": false,
-      "notes": "Integration test - collapsed naming"
-    }
-  ]
+	"branchName": "ralph/analysis-pipeline-overhaul",
+	"passes": false,
+	"userStories": [
+		{
+			"id": "US-001",
+			"title": "Update skill directory naming logic",
+			"acceptanceCriteria": [
+				"toSkillDirName() collapses owner==repo (e.g., better-auth/better-auth → better-auth-reference)",
+				"tanstack/query → tanstack-query-reference",
+				"zod (local) → zod-reference",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 0.1 - packages/sdk/src/analysis/pipeline.ts"
+		},
+		{
+			"id": "US-002",
+			"title": "Add C language support",
+			"acceptanceCriteria": [
+				"@ast-grep/lang-c installed in packages/sdk",
+				"LANG_MAP includes .c, .h extensions",
+				"SupportedLang type includes 'c'",
+				"initLanguages() registers C",
+				"AST patterns for C: function, struct, #include",
+				".c files parse without errors",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 0.2-0.4"
+		},
+		{
+			"id": "US-003",
+			"title": "Add C++ language support",
+			"acceptanceCriteria": [
+				"@ast-grep/lang-cpp installed in packages/sdk",
+				"LANG_MAP includes .cpp, .cc, .cxx, .hpp, .hxx extensions",
+				"SupportedLang type includes 'cpp'",
+				"initLanguages() registers C++",
+				"AST patterns for C++: class, namespace, inheritance",
+				".cpp files parse without errors",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 0.2-0.4"
+		},
+		{
+			"id": "US-004",
+			"title": "Add Ruby language support",
+			"acceptanceCriteria": [
+				"@ast-grep/lang-ruby installed in packages/sdk",
+				"LANG_MAP includes .rb extension",
+				"SupportedLang type includes 'ruby'",
+				"initLanguages() registers Ruby",
+				"AST patterns for Ruby: def, class, module, require",
+				".rb files parse without errors",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 0.2-0.4"
+		},
+		{
+			"id": "US-005",
+			"title": "Add PHP language support",
+			"acceptanceCriteria": [
+				"@ast-grep/lang-php installed in packages/sdk",
+				"LANG_MAP includes .php extension",
+				"SupportedLang type includes 'php'",
+				"initLanguages() registers PHP",
+				"AST patterns for PHP: function, class, interface, use, require",
+				".php files parse without errors",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 0.2-0.4"
+		},
+		{
+			"id": "US-006",
+			"title": "Overhaul architecture.md generation",
+			"acceptanceCriteria": [
+				"ArchitectureSection interface defined with entryPoints, coreModules, hubs, layers, inheritance",
+				"buildArchitectureSection() function implemented",
+				"formatArchitectureMd() function implemented",
+				"Output includes Entry Points table",
+				"Output includes Core Modules table",
+				"Output includes Dependency Hubs table (3+ importers)",
+				"Output includes simplified layer Mermaid diagram (not raw import graph)",
+				"Output includes inheritance Mermaid class diagram",
+				"Output includes Directory Structure tree with [HUB: N←] annotations",
+				"Output includes 'Finding Things' lookup table",
+				"Monorepo handling: packages/*/apps/*/libs/* get separate sections",
+				"typecheck passes"
+			],
+			"priority": 2,
+			"passes": true,
+			"notes": "Phase 1 - packages/sdk/src/analysis/architecture.ts"
+		},
+		{
+			"id": "US-007",
+			"title": "Create API surface extraction",
+			"acceptanceCriteria": [
+				"api-surface.ts file created in packages/sdk/src/analysis/",
+				"APISurface interface: packageName, imports, exports, subpaths",
+				"PublicExport interface: name, path, signature, kind, description",
+				"ImportPattern interface: statement, purpose, exports",
+				"SubpathExport interface: subpath, exports",
+				"extractAPISurface() reads package.json exports field",
+				"extractAPISurface() finds index.ts/main.ts entry points",
+				"extractAPISurface() extracts public functions, classes, interfaces, types, consts",
+				"formatAPISurfaceMd() generates Import Patterns section with code block",
+				"formatAPISurfaceMd() generates Public Exports table",
+				"formatAPISurfaceMd() generates Subpath Exports table",
+				"formatAPISurfaceMd() generates Type Exports table",
+				"typecheck passes"
+			],
+			"priority": 2,
+			"passes": true,
+			"notes": "Phase 2 - new file packages/sdk/src/analysis/api-surface.ts"
+		},
+		{
+			"id": "US-008",
+			"title": "Integrate deterministic context into AI generation",
+			"acceptanceCriteria": [
+				"ProseGenerationContext interface: apiSurface, architecture, readme, examples, contributing",
+				"generateProseWithContext() accepts ProseGenerationContext",
+				"SKILL.md prompt includes API Surface section (verbatim import patterns)",
+				"SKILL.md prompt includes Architecture Summary section",
+				"summary.md prompt includes API Surface + README + Examples",
+				"development.md prompt includes Architecture + CONTRIBUTING.md",
+				"AI-generated imports match deterministic api-reference.md exactly",
+				"typecheck passes"
+			],
+			"priority": 3,
+			"passes": true,
+			"notes": "Phase 3 - packages/sdk/src/analysis/prose.ts"
+		},
+		{
+			"id": "US-009",
+			"title": "Update pipeline flow for dual-track generation",
+			"acceptanceCriteria": [
+				"runAnalysisPipeline() calls buildArchitectureSection() before AI",
+				"runAnalysisPipeline() calls extractAPISurface() before AI",
+				"loadReadme(), loadExamples(), loadContributing() helpers exist",
+				"Deterministic files (architecture.md, api-reference.md) generated without AI",
+				"AI files (SKILL.md, summary.md, development.md) receive deterministic context",
+				"Pipeline returns architectureMd and apiSurfaceMd",
+				"typecheck passes"
+			],
+			"priority": 3,
+			"passes": true,
+			"notes": "Phase 3 - packages/sdk/src/analysis/pipeline.ts"
+		},
+		{
+			"id": "US-010",
+			"title": "Update InstallSkillOptions for new file structure",
+			"acceptanceCriteria": [
+				"InstallSkillOptions includes skillContent, summaryContent, architectureContent, apiReferenceContent, developmentContent",
+				"installSkillWithReferences() writes SKILL.md to skill root",
+				"installSkillWithReferences() writes summary.md to references/",
+				"installSkillWithReferences() writes architecture.md to references/",
+				"installSkillWithReferences() writes api-reference.md to references/",
+				"installSkillWithReferences() writes development.md to references/",
+				"Output structure: {name}-reference/SKILL.md + {name}-reference/references/*.md",
+				"typecheck passes"
+			],
+			"priority": 4,
+			"passes": true,
+			"notes": "Phase 4 - packages/sdk/src/analysis/pipeline.ts"
+		},
+		{
+			"id": "US-011",
+			"title": "Update generate CLI handler",
+			"acceptanceCriteria": [
+				"generate handler passes architectureContent to installSkillWithReferences()",
+				"generate handler passes apiReferenceContent to installSkillWithReferences()",
+				"generate handler passes summaryContent to installSkillWithReferences()",
+				"generate handler passes developmentContent to installSkillWithReferences()",
+				"All 5 reference files created after ow generate",
+				"typecheck passes"
+			],
+			"priority": 4,
+			"passes": true,
+			"notes": "Phase 4 - apps/cli/src/handlers/generate.ts"
+		},
+		{
+			"id": "US-012",
+			"title": "Update pull CLI handler",
+			"acceptanceCriteria": [
+				"pull handler passes architectureContent to installSkillWithReferences()",
+				"pull handler passes apiReferenceContent to installSkillWithReferences()",
+				"pull handler passes summaryContent to installSkillWithReferences()",
+				"pull handler passes developmentContent to installSkillWithReferences()",
+				"All 5 reference files created after ow pull",
+				"typecheck passes"
+			],
+			"priority": 4,
+			"passes": true,
+			"notes": "Phase 4 - apps/cli/src/handlers/pull.ts"
+		},
+		{
+			"id": "US-013",
+			"title": "Add new Zod schemas for skill types",
+			"acceptanceCriteria": [
+				"ImportPatternSchema: import, purpose",
+				"TroubleshootingEntrySchema: symptom, cause, fix",
+				"ArchitectureConceptSchema: name, purpose, location",
+				"ExtensionPointSchema: type, interface, purpose, example (optional)",
+				"CodebaseMapEntrySchema: path, purpose, exports (optional)",
+				"SkillSchema extended with: importPatterns, whenToUse (min 5), quickStartCode, commonOperations, troubleshooting, architecture, extensionPoints, codebaseMap",
+				"typecheck passes"
+			],
+			"priority": 5,
+			"passes": true,
+			"notes": "Phase 5 - packages/types/src/schemas.ts"
+		},
+		{
+			"id": "US-014",
+			"title": "Integration test: tanstack/query (TypeScript monorepo)",
+			"acceptanceCriteria": [
+				"ow pull tanstack/query completes without error",
+				"Outputs to tanstack-query-reference/ (not tanstack-tanstack-query-reference)",
+				"architecture.md contains monorepo package sections",
+				"api-reference.md contains @tanstack/query-core imports",
+				"SKILL.md imports match api-reference.md verbatim",
+				"No e2e test content in SKILL.md"
+			],
+			"priority": 6,
+			"passes": true,
+			"notes": "Integration test - Fixed: extractExports() now captures named re-exports"
+		},
+		{
+			"id": "US-015",
+			"title": "Integration test: zod (TypeScript library)",
+			"acceptanceCriteria": [
+				"ow pull colinhacks/zod completes without error",
+				"Outputs to zod-reference/ (not colinhacks-zod-reference) OR colinhacks-zod-reference if owner != repo",
+				"api-reference.md contains import { z } from 'zod'",
+				"SKILL.md 'When to Use' triggers are natural language (not 'when you need zod')",
+				"Common operations have copy-paste code"
+			],
+			"priority": 6,
+			"passes": false,
+			"notes": "Integration test - verify naming logic"
+		},
+		{
+			"id": "US-016",
+			"title": "Integration test: better-auth/better-auth (collapsed naming)",
+			"acceptanceCriteria": [
+				"ow pull better-auth/better-auth completes without error",
+				"Outputs to better-auth-reference/ (collapsed owner==repo)",
+				"api-reference.md contains better-auth imports",
+				"architecture.md has entry points, hubs, layers",
+				"No file-level import graph in diagrams"
+			],
+			"priority": 6,
+			"passes": false,
+			"notes": "Integration test - collapsed naming"
+		}
+	]
 }

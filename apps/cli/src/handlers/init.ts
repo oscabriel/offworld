@@ -2,7 +2,14 @@ import * as p from "@clack/prompts";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-import { loadConfig, saveConfig, getConfigPath } from "@offworld/sdk";
+import {
+	loadConfig,
+	saveConfig,
+	getConfigPath,
+	detectInstalledAgents,
+	getAllAgentConfigs,
+} from "@offworld/sdk";
+import type { Agent } from "@offworld/types";
 
 export interface InitOptions {
 	yes?: boolean;
@@ -15,6 +22,7 @@ export interface InitResult {
 		repoRoot: string;
 		metaRoot: string;
 		ai: { provider: string; model: string };
+		agents: Agent[];
 	};
 }
 
@@ -39,6 +47,8 @@ const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string; hint?:
 		{ value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
 	],
 };
+
+
 
 function expandTilde(path: string): string {
 	if (path.startsWith("~/")) {
@@ -137,10 +147,49 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 	const model = modelResult as string;
 
+	// Agent selection with auto-detection
+	const detectedAgents = detectInstalledAgents();
+	const allAgentConfigs = getAllAgentConfigs();
+
+	if (detectedAgents.length > 0) {
+		const detectedNames = detectedAgents
+			.map((a) => allAgentConfigs.find((c) => c.name === a)?.displayName ?? a)
+			.join(", ");
+		p.log.info(`Detected agents: ${detectedNames}`);
+	}
+
+	// Build options from registry
+	const agentOptions = allAgentConfigs.map((config) => ({
+		value: config.name,
+		label: config.displayName,
+		hint: config.globalSkillsDir,
+	}));
+
+	// Use existing config if set, otherwise use detected agents
+	const initialAgents =
+		existingConfig.agents && existingConfig.agents.length > 0
+			? existingConfig.agents
+			: detectedAgents;
+
+	const agentsResult = await p.multiselect({
+		message: "Select agents to install skills to",
+		options: agentOptions,
+		initialValues: initialAgents,
+		required: false,
+	});
+
+	if (p.isCancel(agentsResult)) {
+		p.outro("Setup cancelled");
+		return { success: false, configPath };
+	}
+
+	const agents = agentsResult as Agent[];
+
 	const newConfig = {
 		repoRoot,
 		metaRoot,
 		ai: { provider, model },
+		agents,
 	};
 
 	try {
@@ -151,6 +200,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.info(`  Repo root: ${repoRoot}`);
 		p.log.info(`  Meta root: ${metaRoot}`);
 		p.log.info(`  AI: ${provider}/${model}`);
+		p.log.info(`  Agents: ${agents.join(", ")}`);
 
 		p.outro("Setup complete. Run 'ow pull <repo>' to get started.");
 

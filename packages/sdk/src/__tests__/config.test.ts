@@ -175,6 +175,7 @@ describe("config.ts", () => {
 				defaultShallow: true,
 				autoAnalyze: true,
 				ai: { provider: "opencode", model: "claude-opus-4-5" },
+				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe("/custom/repos");
@@ -188,6 +189,7 @@ describe("config.ts", () => {
 				defaultShallow: true,
 				autoAnalyze: true,
 				ai: { provider: "opencode", model: "claude-opus-4-5" },
+				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe(join(home, "custom/repos"));
@@ -221,6 +223,7 @@ describe("config.ts", () => {
 				defaultShallow: true,
 				autoAnalyze: true,
 				ai: { provider: "opencode", model: "claude-opus-4-5" },
+				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
 			};
 			const result = getRepoPath("owner/repo", "github", config);
 			expect(result).toBe(join("/data/repos", "github", "owner", "repo"));

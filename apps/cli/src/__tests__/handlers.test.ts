@@ -117,6 +117,7 @@ describe("CLI handlers", () => {
 		defaultShallow: true,
 		autoAnalyze: true,
 		ai: { provider: "opencode", model: "claude-opus-4-5" },
+		agents: ["opencode"],
 	};
 
 	const mockGitHubSource: RemoteRepoSource = {

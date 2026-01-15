@@ -50,3 +50,18 @@
   - module in Ruby is similar to namespace - grouped with class patterns
 
 ---
+
+## 2026-01-14 - US-005
+
+- Installed @ast-grep/lang-php
+- Added .php extension to LANG_MAP
+- Added "php" to SupportedLang, PatternLanguage types
+- Registered PHP in initLanguages()
+- Added AST patterns for PHP: function (public/private/protected/static), class, interface, trait, use, require/require_once/include/include_once
+- Files changed: packages/sdk/src/ast/index.ts, packages/sdk/src/ast/patterns.ts, packages/sdk/package.json
+- **Learnings:**
+  - PHP has trait as a class-like construct (similar to Ruby mixins)
+  - PHP namespaces use backslash separator: `use Namespace\Class`
+  - PHP has 4 include variants: require, require_once, include, include_once
+
+---

@@ -76,7 +76,7 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 0.2-0.4"
     },
     {

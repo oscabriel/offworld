@@ -6,7 +6,7 @@
  * - $PATH: import path
  */
 
-export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c" | "cpp" | "ruby";
+export type PatternLanguage = "typescript" | "javascript" | "python" | "rust" | "go" | "java" | "c" | "cpp" | "ruby" | "php";
 
 /**
  * Patterns for matching function declarations
@@ -102,6 +102,15 @@ export const FUNCTION_PATTERNS: Record<PatternLanguage, string[]> = {
 		"def self.$NAME($$$) $$$ end",
 		"def self.$NAME $$$ end",
 	],
+	php: [
+		"function $NAME($$$) { $$$ }",
+		"public function $NAME($$$) { $$$ }",
+		"private function $NAME($$$) { $$$ }",
+		"protected function $NAME($$$) { $$$ }",
+		"public static function $NAME($$$) { $$$ }",
+		"private static function $NAME($$$) { $$$ }",
+		"protected static function $NAME($$$) { $$$ }",
+	],
 };
 
 /**
@@ -195,6 +204,17 @@ export const CLASS_PATTERNS: Record<PatternLanguage, string[]> = {
 		"class $NAME < $PARENT $$$ end",
 		"module $NAME $$$ end",
 	],
+	php: [
+		"class $NAME { $$$ }",
+		"class $NAME extends $PARENT { $$$ }",
+		"class $NAME implements $IFACE { $$$ }",
+		"class $NAME extends $PARENT implements $IFACE { $$$ }",
+		"abstract class $NAME { $$$ }",
+		"abstract class $NAME extends $PARENT { $$$ }",
+		"interface $NAME { $$$ }",
+		"interface $NAME extends $IFACE { $$$ }",
+		"trait $NAME { $$$ }",
+	],
 };
 
 /**
@@ -215,6 +235,7 @@ export const INTERFACE_PATTERNS: Record<PatternLanguage, string[]> = {
 	c: [],
 	cpp: [],
 	ruby: [],
+	php: [],
 };
 
 /**
@@ -292,6 +313,19 @@ export const IMPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 		"load '$PATH'",
 		'load "$PATH"',
 	],
+	php: [
+		"use $PATH;",
+		"use $PATH as $NAME;",
+		"use $PATH\\{ $$$ };",
+		"require '$PATH';",
+		'require "$PATH";',
+		"require_once '$PATH';",
+		'require_once "$PATH";',
+		"include '$PATH';",
+		'include "$PATH";',
+		"include_once '$PATH';",
+		'include_once "$PATH";',
+	],
 };
 
 /**
@@ -346,6 +380,7 @@ export const EXPORT_PATTERNS: Record<PatternLanguage, string[]> = {
 	c: [],
 	cpp: [],
 	ruby: [],
+	php: [],
 };
 
 /**
@@ -373,6 +408,8 @@ export function getPatternLanguage(lang: string): PatternLanguage | null {
 			return "cpp";
 		case "ruby":
 			return "ruby";
+		case "php":
+			return "php";
 		default:
 			return null;
 	}

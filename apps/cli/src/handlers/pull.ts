@@ -22,7 +22,7 @@ import {
 	isAnalysisStale,
 	formatSkillMd,
 	formatSummaryMd,
-	formatArchitectureMd,
+	formatArchitectureMdLegacy,
 	type PullResponse,
 	type AnalysisData,
 } from "@offworld/sdk";
@@ -464,7 +464,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const repoName = source.type === "remote" ? source.fullName : source.name;
 
 			const summaryMd = formatSummaryMd(prose, { repoName });
-			const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
+			const architectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
 			const skillMd = formatSkillMd(skill, { commitSha: analysisCommitSha, generated });
 			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
 

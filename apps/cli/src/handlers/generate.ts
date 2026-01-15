@@ -10,7 +10,7 @@ import {
 	installSkillWithReferences,
 	formatSkillMd,
 	formatSummaryMd,
-	formatArchitectureMd,
+	formatArchitectureMdLegacy,
 	loadConfig,
 	getSkillPath,
 	updateIndex,
@@ -109,7 +109,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const repoName = source.type === "remote" ? source.fullName : source.name;
 
 		const summaryMd = formatSummaryMd(prose, { repoName });
-		const architectureMd = formatArchitectureMd(architectureGraph, entities, graph);
+		const architectureMd = formatArchitectureMdLegacy(architectureGraph, entities, graph);
 		const skillMd = formatSkillMd(skill, { commitSha, generated });
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 

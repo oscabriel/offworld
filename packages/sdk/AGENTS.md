@@ -299,3 +299,39 @@ interface AnalysisPipelineResult {
 - `loadExamples()` checks directories (examples/, example/, demos/) then individual files
 
 **Legacy Prose Adapter**: For backward compatibility with `mergeProseIntoSkeleton()`, the pipeline creates a legacy prose object from `ContextAwareProseResult` fields.
+
+### InstallSkillOptions Update (US-010)
+
+**Updated Interface** (`src/analysis/pipeline.ts`):
+
+```typescript
+interface InstallSkillOptions {
+  skillContent: string;          // Required: SKILL.md content
+  summaryContent: string;        // Required: summary.md content
+  architectureContent: string;   // Required: architecture.md content
+  apiReferenceContent?: string;  // Optional: api-reference.md content
+  developmentContent?: string;   // Optional: development.md content
+  skillJson?: string;            // Optional: JSON for meta/
+  metaJson?: string;             // Optional: JSON for meta/
+  architectureJson?: string;     // Optional: JSON for meta/
+  fileIndexJson?: string;        // Optional: JSON for meta/
+}
+```
+
+**File Output Structure**:
+
+```
+~/.config/offworld/skills/{name}-reference/
+├── SKILL.md
+└── references/
+    ├── summary.md
+    ├── architecture.md
+    ├── api-reference.md    # Only written if apiReferenceContent provided
+    └── development.md      # Only written if developmentContent provided
+```
+
+**Gotchas**:
+
+- `apiReferenceContent` and `developmentContent` are optional to maintain backward compatibility with existing callers
+- Files only written when content is provided (conditional writes)
+- Must export `formatArchitectureMdLegacy` from SDK for callers still using old 3-arg signature

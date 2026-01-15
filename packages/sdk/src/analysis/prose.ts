@@ -2,6 +2,8 @@ import { z } from "zod";
 import { streamPrompt } from "../ai/index.js";
 import { validateProseQuality, type QualityReport } from "../validation/quality.js";
 import type { SkillSkeleton } from "./skeleton.js";
+import type { APISurface } from "./api-surface.js";
+import type { ArchitectureSection } from "./architecture.js";
 
 /**
  * Relationship between entities
@@ -10,6 +12,23 @@ export interface EntityRelationship {
 	from: string;
 	to: string;
 	type: string;
+}
+
+/**
+ * Context for prose generation with deterministic data
+ * Used to inject pre-computed API surface and architecture into AI prompts
+ */
+export interface ProseGenerationContext {
+	/** Extracted API surface (imports, exports, subpaths) */
+	apiSurface?: APISurface;
+	/** Built architecture section (entry points, hubs, layers) */
+	architecture?: ArchitectureSection;
+	/** README.md content if present */
+	readme?: string;
+	/** Example files content (from examples/, example.ts, etc.) */
+	examples?: string;
+	/** CONTRIBUTING.md content if present */
+	contributing?: string;
 }
 
 /**
@@ -302,4 +321,246 @@ Fix these issues:
 - Each prose section should be substantive (100+ chars for overview, 50+ for others)
 - Use cases must be descriptive (20+ chars each)
 - Entity descriptions must be specific (20+ chars each)`;
+}
+
+export const SkillProseSchema = z.object({
+	whenToUse: z.array(z.string()).min(5),
+	bestPractices: z.array(z.string()).min(3),
+	commonMistakes: z.array(z.string()).min(2),
+	quickStartSteps: z.array(z.string()).min(3),
+});
+
+export type SkillProse = z.infer<typeof SkillProseSchema>;
+
+export const SummaryContentSchema = z.object({
+	overview: z.string().min(100),
+	problemsSolved: z.string().min(50),
+	features: z.string().min(50),
+	targetUseCases: z.string().min(50),
+});
+
+export type SummaryContent = z.infer<typeof SummaryContentSchema>;
+
+export const DevelopmentProseSchema = z.object({
+	gettingStarted: z.string().min(50),
+	projectStructure: z.string().min(50),
+	buildAndTest: z.string().min(50),
+	contributingGuidelines: z.string().min(50),
+});
+
+export type DevelopmentProse = z.infer<typeof DevelopmentProseSchema>;
+
+export interface ContextAwareProseResult {
+	skill: SkillProse;
+	summary: SummaryContent;
+	development: DevelopmentProse;
+}
+
+export interface GenerateWithContextOptions extends ProseGenerateOptions {
+	context: ProseGenerationContext;
+}
+
+function formatApiSurfaceContext(apiSurface: APISurface): string {
+	const lines: string[] = ["## API Surface"];
+
+	if (apiSurface.imports.length > 0) {
+		lines.push("", "Import patterns (use these VERBATIM in examples):");
+		for (const imp of apiSurface.imports.slice(0, 5)) {
+			lines.push(`- ${imp.statement}`);
+		}
+	}
+
+	if (apiSurface.exports.length > 0) {
+		lines.push("", "Public exports:");
+		for (const exp of apiSurface.exports.slice(0, 20)) {
+			lines.push(`- ${exp.name} (${exp.kind}): ${exp.description}`);
+		}
+	}
+
+	return lines.join("\n");
+}
+
+function formatArchitectureContext(arch: ArchitectureSection): string {
+	const lines: string[] = ["## Architecture Summary"];
+
+	if (arch.entryPoints.length > 0) {
+		lines.push("", "Entry points:");
+		for (const ep of arch.entryPoints.slice(0, 5)) {
+			lines.push(`- ${ep.path} (${ep.type})`);
+		}
+	}
+
+	if (arch.hubs.length > 0) {
+		lines.push("", "Dependency hubs:");
+		for (const hub of arch.hubs.slice(0, 5)) {
+			lines.push(`- ${hub.path} (${hub.importerCount} importers)`);
+		}
+	}
+
+	if (arch.layers.length > 0) {
+		lines.push("", "Layers:");
+		for (const layer of arch.layers) {
+			lines.push(`- ${layer.layer}: ${layer.files.length} files`);
+		}
+	}
+
+	return lines.join("\n");
+}
+
+function buildSkillPromptWithContext(
+	skeleton: SkillSkeleton,
+	context: ProseGenerationContext,
+): string {
+	const parts: string[] = [
+		`You are analyzing ${skeleton.name} (${skeleton.detectedPatterns.language}).`,
+		"Generate JSON for a SKILL.md file. Output ONLY valid JSON.",
+		"",
+	];
+
+	if (context.apiSurface) {
+		parts.push(formatApiSurfaceContext(context.apiSurface));
+		parts.push("");
+	}
+
+	if (context.architecture) {
+		parts.push(formatArchitectureContext(context.architecture));
+		parts.push("");
+	}
+
+	parts.push(`Schema:
+{
+  "whenToUse": ["trigger phrase 1", "trigger phrase 2", ...min 5],
+  "bestPractices": ["practice 1", ...min 3],
+  "commonMistakes": ["mistake 1", ...min 2],
+  "quickStartSteps": ["step 1", ...min 3]
+}
+
+IMPORTANT:
+- whenToUse: Natural language triggers like "when building a form", NOT "when you need ${skeleton.name}"
+- Import examples MUST match the API Surface imports exactly
+- Output raw JSON only`);
+
+	return parts.join("\n");
+}
+
+function buildSummaryPromptWithContext(
+	skeleton: SkillSkeleton,
+	context: ProseGenerationContext,
+): string {
+	const parts: string[] = [
+		`You are analyzing ${skeleton.name} (${skeleton.detectedPatterns.language}).`,
+		"Generate JSON for summary.md. Output ONLY valid JSON.",
+		"",
+	];
+
+	if (context.apiSurface) {
+		parts.push(formatApiSurfaceContext(context.apiSurface));
+		parts.push("");
+	}
+
+	if (context.readme) {
+		const readmeSnippet = context.readme.slice(0, 2000);
+		parts.push(`## README Content\n${readmeSnippet}`);
+		parts.push("");
+	}
+
+	if (context.examples) {
+		const examplesSnippet = context.examples.slice(0, 1500);
+		parts.push(`## Example Code\n\`\`\`\n${examplesSnippet}\n\`\`\``);
+		parts.push("");
+	}
+
+	parts.push(`Schema:
+{
+  "overview": "string (100+ chars, what this library does)",
+  "problemsSolved": "string (50+ chars, problems it solves)",
+  "features": "string (50+ chars, key features)",
+  "targetUseCases": "string (50+ chars, ideal use cases)"
+}
+
+Output raw JSON only`);
+
+	return parts.join("\n");
+}
+
+function buildDevelopmentPromptWithContext(
+	skeleton: SkillSkeleton,
+	context: ProseGenerationContext,
+): string {
+	const parts: string[] = [
+		`You are analyzing ${skeleton.name} (${skeleton.detectedPatterns.language}).`,
+		"Generate JSON for development.md. Output ONLY valid JSON.",
+		"",
+	];
+
+	if (context.architecture) {
+		parts.push(formatArchitectureContext(context.architecture));
+		parts.push("");
+	}
+
+	if (context.contributing) {
+		const contributingSnippet = context.contributing.slice(0, 2000);
+		parts.push(`## CONTRIBUTING.md Content\n${contributingSnippet}`);
+		parts.push("");
+	}
+
+	parts.push(`Schema:
+{
+  "gettingStarted": "string (50+ chars, setup instructions)",
+  "projectStructure": "string (50+ chars, directory layout explanation)",
+  "buildAndTest": "string (50+ chars, build/test commands)",
+  "contributingGuidelines": "string (50+ chars, how to contribute)"
+}
+
+Output raw JSON only`);
+
+	return parts.join("\n");
+}
+
+export async function generateProseWithContext(
+	skeleton: SkillSkeleton,
+	options: GenerateWithContextOptions,
+): Promise<ContextAwareProseResult> {
+	const { context, onDebug, onStream, provider, model } = options;
+
+	onDebug?.("Generating SKILL.md prose with context");
+	const skillPrompt = buildSkillPromptWithContext(skeleton, context);
+	const skillResult = await streamPrompt({
+		prompt: skillPrompt,
+		cwd: skeleton.repoPath,
+		provider,
+		model,
+		onDebug,
+		onStream,
+	});
+	const skillJson = extractJSON(skillResult.text);
+	const skill = SkillProseSchema.parse(skillJson);
+
+	onDebug?.("Generating summary.md prose with context");
+	const summaryPrompt = buildSummaryPromptWithContext(skeleton, context);
+	const summaryResult = await streamPrompt({
+		prompt: summaryPrompt,
+		cwd: skeleton.repoPath,
+		provider,
+		model,
+		onDebug,
+		onStream,
+	});
+	const summaryJson = extractJSON(summaryResult.text);
+	const summary = SummaryContentSchema.parse(summaryJson);
+
+	onDebug?.("Generating development.md prose with context");
+	const developmentPrompt = buildDevelopmentPromptWithContext(skeleton, context);
+	const developmentResult = await streamPrompt({
+		prompt: developmentPrompt,
+		cwd: skeleton.repoPath,
+		provider,
+		model,
+		onDebug,
+		onStream,
+	});
+	const developmentJson = extractJSON(developmentResult.text);
+	const development = DevelopmentProseSchema.parse(developmentJson);
+
+	return { skill, summary, development };
 }

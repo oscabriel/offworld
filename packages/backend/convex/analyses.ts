@@ -98,7 +98,7 @@ export const getMeta = internalQuery({
  * Get push count for a repo in the last 24 hours (rate limiting)
  */
 export const getPushCountToday = internalQuery({
-	args: { fullName: v.string(), userId: v.id("users") },
+	args: { fullName: v.string(), userId: v.string() },
 	handler: async (ctx, args) => {
 		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -154,7 +154,7 @@ export const upsert = internalMutation({
 		commitSha: v.string(),
 		analyzedAt: v.string(),
 		version: v.string(),
-		userId: v.optional(v.id("users")),
+		userId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const { userId, ...analysisData } = args;

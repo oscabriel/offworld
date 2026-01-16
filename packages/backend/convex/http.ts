@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+
 import { authComponent, createAuth } from "./auth";
 
 const http = httpRouter();
@@ -17,7 +18,7 @@ http.route({
 	method: "POST",
 	handler: httpAction(async (ctx, request) => {
 		try {
-			const body = await request.json();
+			const body = (await request.json()) as { fullName?: string };
 			const { fullName } = body;
 
 			// Validate required field
@@ -96,19 +97,31 @@ http.route({
 				);
 			}
 
-			const token = authHeader.slice(7);
+			// Validate token with Better Auth
+			// Pass request.headers directly - bearer plugin handles Bearer token conversion
+			const auth = createAuth(ctx);
+			const session = await auth.api.getSession({
+				headers: request.headers,
+			});
 
-			// Validate token and get user (simplified - in production, use proper JWT validation)
-			// For now, we'll accept any non-empty token and use a placeholder user ID
-			// TODO: Implement proper token validation with Better Auth
-			if (!token) {
-				return new Response(JSON.stringify({ error: "Invalid token" }), {
+			if (!session?.user) {
+				return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
 					status: 401,
 					headers: { "Content-Type": "application/json" },
 				});
 			}
 
-			const body = await request.json();
+			const userId = session.user.id;
+
+			const body = (await request.json()) as {
+				fullName?: string;
+				summary?: string;
+				architecture?: unknown;
+				skill?: unknown;
+				fileIndex?: unknown;
+				commitSha?: string;
+				analyzedAt?: string;
+			};
 			const { fullName, summary, architecture, skill, fileIndex, commitSha, analyzedAt } = body;
 
 			// Validate required fields
@@ -148,7 +161,7 @@ http.route({
 				commitSha,
 				analyzedAt,
 				version: "0.1.0",
-				// userId would come from validated token
+				userId,
 			});
 
 			if (!result.success) {
@@ -192,7 +205,7 @@ http.route({
 	method: "POST",
 	handler: httpAction(async (ctx, request) => {
 		try {
-			const body = await request.json();
+			const body = (await request.json()) as { fullName?: string };
 			const { fullName } = body;
 
 			// Validate required field

@@ -13,8 +13,17 @@ import {
 import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
 
-// Valid config keys
-const VALID_KEYS = ["repoRoot", "metaRoot", "skillDir", "defaultShallow", "autoAnalyze", "agents"] as const;
+// Valid config keys (supports dot notation for nested keys)
+const VALID_KEYS = [
+	"repoRoot",
+	"metaRoot",
+	"skillDir",
+	"defaultShallow",
+	"autoAnalyze",
+	"agents",
+	"ai.provider",
+	"ai.model",
+] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
 
 function isValidKey(key: string): key is ConfigKey {
@@ -115,12 +124,26 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 
 		parsedValue = agentValues as Agent[];
 	} else {
-		// String values
+		// String values (including ai.provider, ai.model)
 		parsedValue = value;
 	}
 
 	try {
-		const updates = { [key]: parsedValue };
+		// Handle nested keys (e.g., ai.provider, ai.model)
+		let updates: Record<string, unknown>;
+		if (key.startsWith("ai.")) {
+			const config = loadConfig();
+			const aiKey = key.split(".")[1] as "provider" | "model";
+			updates = {
+				ai: {
+					...config.ai,
+					[aiKey]: parsedValue,
+				},
+			};
+		} else {
+			updates = { [key]: parsedValue };
+		}
+
 		saveConfig(updates);
 		p.log.success(`Set ${key} = ${JSON.stringify(parsedValue)}`);
 
@@ -162,7 +185,14 @@ export async function configGetHandler(options: ConfigGetOptions): Promise<Confi
 		return { key, value: null };
 	}
 
-	const value = config[key];
+	// Handle nested keys (e.g., ai.provider, ai.model)
+	let value: unknown;
+	if (key.startsWith("ai.")) {
+		const aiKey = key.split(".")[1] as "provider" | "model";
+		value = config.ai[aiKey];
+	} else {
+		value = config[key as keyof Omit<typeof config, "ai">];
+	}
 	console.log(JSON.stringify(value));
 
 	return { key, value };
@@ -240,8 +270,7 @@ export async function configAgentsHandler(): Promise<ConfigAgentsResult> {
 	}));
 
 	// Use existing config if set, otherwise use detected agents
-	const initialAgents =
-		config.agents && config.agents.length > 0 ? config.agents : detectedAgents;
+	const initialAgents = config.agents && config.agents.length > 0 ? config.agents : detectedAgents;
 
 	const agentsResult = await p.multiselect({
 		message: "Select agents to install skills to",

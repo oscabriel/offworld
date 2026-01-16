@@ -27,28 +27,51 @@ export interface InitResult {
 }
 
 const PROVIDER_OPTIONS = [
-	{ value: "anthropic", label: "Anthropic", hint: "Claude models" },
-	{ value: "openai", label: "OpenAI", hint: "GPT models" },
-	{ value: "opencode", label: "OpenCode Zen", hint: "OpenCode's hosted service" },
+	{
+		value: "opencode",
+		label: "OpenCode Zen (Recommended)",
+		hint: "Curated models, no extra keys needed",
+	},
+	{ value: "anthropic", label: "Anthropic", hint: "Direct API - Claude models" },
+	{ value: "openai", label: "OpenAI", hint: "Direct API - GPT/o-series" },
 ] as const;
 
 const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string; hint?: string }>> = {
+	opencode: [
+		// Claude models via Zen
+		{ value: "claude-opus-4-5", label: "Claude Opus 4.5", hint: "most capable" },
+		{ value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", hint: "balanced" },
+		{ value: "claude-sonnet-4", label: "Claude Sonnet 4" },
+		{ value: "claude-haiku-4-5", label: "Claude Haiku 4.5", hint: "fast" },
+		// GPT models via Zen
+		{ value: "gpt-5.2-codex", label: "GPT 5.2 Codex", hint: "latest" },
+		{ value: "gpt-5.1-codex", label: "GPT 5.1 Codex" },
+		{ value: "gpt-5-codex", label: "GPT 5 Codex" },
+		// Other models via Zen
+		{ value: "gemini-3-pro", label: "Gemini 3 Pro" },
+		{ value: "qwen3-coder", label: "Qwen3 Coder 480B" },
+		{ value: "kimi-k2", label: "Kimi K2" },
+		{ value: "glm-4.7-free", label: "GLM 4.7", hint: "free" },
+		{ value: "grok-code", label: "Grok Code Fast 1", hint: "free" },
+	],
 	anthropic: [
-		{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4", hint: "balanced" },
-		{ value: "claude-opus-4-20250514", label: "Claude Opus 4", hint: "most capable" },
+		{ value: "claude-opus-4-5", label: "Claude Opus 4.5", hint: "most capable" },
+		{ value: "claude-sonnet-4-5-20250929", label: "Claude Sonnet 4.5", hint: "balanced" },
+		{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
+		{ value: "claude-opus-4-20250514", label: "Claude Opus 4" },
+		{ value: "claude-haiku-4-5-20250929", label: "Claude Haiku 4.5", hint: "fast" },
+		{ value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
 	],
 	openai: [
+		{ value: "gpt-5.2", label: "GPT 5.2", hint: "latest" },
+		{ value: "gpt-5.1-codex", label: "GPT 5.1 Codex" },
+		{ value: "gpt-5.1", label: "GPT 5.1" },
+		{ value: "gpt-5", label: "GPT 5" },
 		{ value: "gpt-4o", label: "GPT-4o", hint: "balanced" },
-		{ value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-		{ value: "o3", label: "o3", hint: "reasoning model" },
-	],
-	opencode: [
-		{ value: "claude-opus-4-5", label: "Claude Opus 4.5", hint: "default" },
-		{ value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
+		{ value: "o3", label: "o3", hint: "reasoning" },
+		{ value: "o3-mini", label: "o3-mini", hint: "fast reasoning" },
 	],
 };
-
-
 
 function expandTilde(path: string): string {
 	if (path.startsWith("~/")) {

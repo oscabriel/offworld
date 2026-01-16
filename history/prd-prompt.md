@@ -1,4 +1,4 @@
-Convert the plan document below into structured PRD user stories. Save to @scripts/ralph/PRD.json.
+Convert the plan document into structured PRD user stories. Save to @scripts/ralph/PRD.json.
 Each story should have: title, priority, description, steps to verify, and passes: false.
 Format as JSON. Be specific about acceptance criteria.
 

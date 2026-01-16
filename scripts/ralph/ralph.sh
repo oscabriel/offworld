@@ -93,7 +93,7 @@ run_iteration() {
     echo -e "${BLUE}Running claude...${NC}"
     echo ""
 
-    claude --dangerously-skip-permissions -p "$prompt"
+    opencode run -m anthropic/claude-opus-4-5 "$prompt"
 
     echo ""
 

@@ -5,17 +5,19 @@
 import * as p from "@clack/prompts";
 import { saveAuthData, clearAuthData, getAuthStatus, getAuthPath } from "@offworld/sdk";
 import open from "open";
-import http from "node:http";
-import { URL } from "node:url";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@offworld/backend/convex/_generated/api";
 import { createSpinner } from "../utils/spinner";
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-const DEFAULT_AUTH_BASE = "https://offworld.sh";
-const CALLBACK_PORT = 9876;
-const CALLBACK_PATH = "/callback";
+const CONVEX_URL = process.env.CONVEX_URL ?? "https://quiet-zebra-310.convex.cloud";
+const CLIENT_ID = process.env.DEVICE_AUTHORIZATION_CLIENT_ID ?? "offworld-cli";
+const SITE_URL = process.env.SITE_URL ?? "https://offworld.sh";
+const POLL_INTERVAL = 5000;
+const MAX_POLL_TIME = 15 * 60 * 1000;
 
 // ============================================================================
 // Handler Types
@@ -43,14 +45,9 @@ export interface AuthStatusResult {
 // Login Handler
 // ============================================================================
 
-/**
- * Handles 'ow auth login' command
- * Opens browser to offworld.sh/login and waits for OAuth callback
- */
 export async function authLoginHandler(): Promise<AuthLoginResult> {
 	const s = createSpinner();
 
-	// Check if already logged in
 	const currentStatus = getAuthStatus();
 	if (currentStatus.isLoggedIn) {
 		p.log.info(`Already logged in as ${currentStatus.email || "unknown user"}`);
@@ -62,48 +59,95 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 		}
 	}
 
-	// Create callback server to receive token
-	const tokenPromise = createCallbackServer();
+	const client = new ConvexHttpClient(CONVEX_URL);
 
-	// Build login URL with callback
-	const callbackUrl = `http://localhost:${CALLBACK_PORT}${CALLBACK_PATH}`;
-	const loginUrl = `${DEFAULT_AUTH_BASE}/login?callback=${encodeURIComponent(callbackUrl)}`;
+	s.start("Requesting device code...");
 
-	s.start("Opening browser for login...");
-
-	// Open browser
+	let deviceData;
 	try {
-		await open(loginUrl);
-		s.message("Waiting for authentication...");
-	} catch {
-		s.stop("Failed to open browser");
-		p.log.error(`Please open this URL manually:\n${loginUrl}`);
+		deviceData = await client.mutation(api.deviceAuth.requestDeviceCode, {
+			clientId: CLIENT_ID,
+		});
+	} catch (error) {
+		s.stop("Failed to get device code");
+		return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
 	}
 
+	s.stop();
+
+	const { device_code, user_code, verification_uri } = deviceData as {
+		device_code: string;
+		user_code: string;
+		verification_uri: string;
+	};
+
+	const verifyUrl = verification_uri || `${SITE_URL}/device`;
+
+	p.log.info(`\nOpen this URL in your browser:\n`);
+	p.log.info(`  ${verifyUrl}/${user_code}\n`);
+	p.log.info(`Or go to ${verifyUrl} and enter code: ${user_code}\n`);
+
 	try {
-		// Wait for callback with token
-		const authData = await tokenPromise;
+		await open(`${verifyUrl}/${user_code}`);
+	} catch {
+		// Ignore - user can open manually
+	}
+
+	s.start("Waiting for approval...");
+
+	const startTime = Date.now();
+
+	while (Date.now() - startTime < MAX_POLL_TIME) {
+		await sleep(POLL_INTERVAL);
+
+		const status = await client.query(api.deviceAuth.getDeviceCodeStatus, {
+			deviceCode: device_code,
+			clientId: CLIENT_ID,
+		});
+
+		if (status === "approved") {
+			break;
+		}
+
+		if (status === "denied") {
+			s.stop("Login denied");
+			return { success: false, message: "Authorization denied by user" };
+		}
+
+		if (status === "expired" || status === "unknown") {
+			s.stop("Code expired");
+			return { success: false, message: "Device code expired. Please try again." };
+		}
+	}
+
+	s.message("Exchanging code for token...");
+
+	try {
+		const tokenData = (await client.mutation(api.deviceAuth.createDeviceToken, {
+			deviceCode: device_code,
+			clientId: CLIENT_ID,
+		})) as { access_token: string; expires_in?: number };
 
 		s.stop("Login successful!");
 
-		// Save the token
-		saveAuthData(authData);
+		saveAuthData({
+			token: tokenData.access_token,
+			expiresAt: tokenData.expires_in
+				? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+				: undefined,
+		});
 
-		p.log.success(`Logged in as ${authData.email || "user"}`);
+		p.log.success("Logged in successfully");
 
-		return {
-			success: true,
-			email: authData.email,
-		};
+		return { success: true };
 	} catch (error) {
-		s.stop("Login failed");
-		const message = error instanceof Error ? error.message : "Unknown error";
-		p.log.error(message);
-		return {
-			success: false,
-			message,
-		};
+		s.stop("Failed to get token");
+		return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
 	}
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ============================================================================
@@ -171,193 +215,4 @@ export async function authStatusHandler(): Promise<AuthStatusResult> {
 		userId: status.userId,
 		expiresAt: status.expiresAt,
 	};
-}
-
-// ============================================================================
-// Callback Server
-// ============================================================================
-
-interface ReceivedAuthData {
-	token: string;
-	expiresAt?: string;
-	userId?: string;
-	email?: string;
-}
-
-/**
- * Creates a temporary HTTP server to receive the OAuth callback
- * Times out after 5 minutes
- */
-function createCallbackServer(): Promise<ReceivedAuthData> {
-	return new Promise((resolve, reject) => {
-		const timeout = setTimeout(
-			() => {
-				server.close();
-				reject(new Error("Login timed out. Please try again."));
-			},
-			5 * 60 * 1000,
-		); // 5 minute timeout
-
-		const server = http.createServer((req, res) => {
-			if (!req.url?.startsWith(CALLBACK_PATH)) {
-				res.writeHead(404);
-				res.end("Not found");
-				return;
-			}
-
-			try {
-				const url = new URL(req.url, `http://localhost:${CALLBACK_PORT}`);
-				const token = url.searchParams.get("token");
-				const error = url.searchParams.get("error");
-
-				if (error) {
-					// Send error response page
-					res.writeHead(200, { "Content-Type": "text/html" });
-					res.end(getErrorPage(error));
-
-					clearTimeout(timeout);
-					server.close();
-					reject(new Error(error));
-					return;
-				}
-
-				if (!token) {
-					res.writeHead(400, { "Content-Type": "text/html" });
-					res.end(getErrorPage("No token received"));
-
-					clearTimeout(timeout);
-					server.close();
-					reject(new Error("No token received from server"));
-					return;
-				}
-
-				// Extract optional fields
-				const expiresAt = url.searchParams.get("expiresAt") ?? undefined;
-				const userId = url.searchParams.get("userId") ?? undefined;
-				const email = url.searchParams.get("email") ?? undefined;
-
-				// Send success response page
-				res.writeHead(200, { "Content-Type": "text/html" });
-				res.end(getSuccessPage(email));
-
-				clearTimeout(timeout);
-				server.close();
-
-				resolve({
-					token,
-					expiresAt,
-					userId,
-					email,
-				});
-			} catch {
-				res.writeHead(500, { "Content-Type": "text/html" });
-				res.end(getErrorPage("Internal error"));
-
-				clearTimeout(timeout);
-				server.close();
-				reject(new Error("Failed to process callback"));
-			}
-		});
-
-		server.listen(CALLBACK_PORT, "127.0.0.1", () => {
-			// Server is ready
-		});
-
-		server.on("error", (err) => {
-			clearTimeout(timeout);
-			if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") {
-				reject(
-					new Error(
-						`Port ${CALLBACK_PORT} is already in use. Please close any conflicting applications.`,
-					),
-				);
-			} else {
-				reject(err);
-			}
-		});
-	});
-}
-
-// ============================================================================
-// HTML Pages
-// ============================================================================
-
-function getSuccessPage(email?: string): string {
-	return `<!DOCTYPE html>
-<html>
-<head>
-  <title>Offworld - Login Successful</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .card {
-      background: white;
-      padding: 3rem;
-      border-radius: 1rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      text-align: center;
-      max-width: 400px;
-    }
-    h1 { color: #1a202c; margin-bottom: 0.5rem; }
-    p { color: #4a5568; }
-    .check { font-size: 3rem; margin-bottom: 1rem; }
-    .close-note { color: #718096; font-size: 0.875rem; margin-top: 1.5rem; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="check">✓</div>
-    <h1>Login Successful!</h1>
-    <p>${email ? `Logged in as <strong>${email}</strong>` : "You are now authenticated."}</p>
-    <p class="close-note">You can close this window and return to your terminal.</p>
-  </div>
-</body>
-</html>`;
-}
-
-function getErrorPage(error: string): string {
-	return `<!DOCTYPE html>
-<html>
-<head>
-  <title>Offworld - Login Failed</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
-    }
-    .card {
-      background: white;
-      padding: 3rem;
-      border-radius: 1rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      text-align: center;
-      max-width: 400px;
-    }
-    h1 { color: #1a202c; margin-bottom: 0.5rem; }
-    p { color: #4a5568; }
-    .error-icon { font-size: 3rem; margin-bottom: 1rem; }
-    .error-msg { color: #c53030; font-family: monospace; background: #fff5f5; padding: 0.5rem 1rem; border-radius: 0.25rem; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="error-icon">✕</div>
-    <h1>Login Failed</h1>
-    <p class="error-msg">${error}</p>
-    <p>Please try again or contact support if the issue persists.</p>
-  </div>
-</body>
-</html>`;
 }

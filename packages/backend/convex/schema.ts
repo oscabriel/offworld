@@ -82,12 +82,6 @@ const fileIndexEntrySchema = v.object({
 });
 
 export default defineSchema({
-	// Existing todos table (keep for compatibility)
-	todos: defineTable({
-		text: v.string(),
-		completed: v.boolean(),
-	}),
-
 	// Analyses table
 	analyses: defineTable({
 		// Repository identification
@@ -110,7 +104,8 @@ export default defineSchema({
 		isVerified: v.boolean(), // verified by offworld team
 
 		// User who pushed (optional for public analyses)
-		pushedBy: v.optional(v.id("users")),
+		// String ID from Better Auth's internal user table
+		pushedBy: v.optional(v.string()),
 	})
 		.index("by_fullName", ["fullName"])
 		.index("by_pullCount", ["pullCount"])
@@ -120,7 +115,8 @@ export default defineSchema({
 	// Push logs for rate limiting
 	pushLogs: defineTable({
 		fullName: v.string(),
-		userId: v.id("users"),
+		// String ID from Better Auth's internal user table
+		userId: v.string(),
 		pushedAt: v.string(), // ISO timestamp
 		commitSha: v.string(),
 	})
@@ -134,4 +130,18 @@ export default defineSchema({
 		image: v.optional(v.string()),
 		createdAt: v.string(),
 	}).index("by_email", ["email"]),
+
+	// Device authorization codes for CLI auth (OAuth 2.0 Device Flow)
+	deviceCode: defineTable({
+		deviceCode: v.string(),
+		userCode: v.string(),
+		userId: v.optional(v.string()),
+		expiresAt: v.number(),
+		status: v.string(), // 'pending' | 'approved' | 'denied'
+		lastPolledAt: v.optional(v.number()),
+		clientId: v.optional(v.string()),
+		scope: v.optional(v.string()),
+	})
+		.index("by_deviceCode", ["deviceCode"])
+		.index("by_userCode", ["userCode"]),
 });

@@ -11,11 +11,10 @@
 import type * as admin from "../admin.js";
 import type * as analyses from "../analyses.js";
 import type * as auth from "../auth.js";
+import type * as deviceAuth from "../deviceAuth.js";
 import type * as github from "../github.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
-import type * as privateData from "../privateData.js";
-import type * as todos from "../todos.js";
 
 import type {
   ApiFromModules,
@@ -27,11 +26,10 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   analyses: typeof analyses;
   auth: typeof auth;
+  deviceAuth: typeof deviceAuth;
   github: typeof github;
   healthCheck: typeof healthCheck;
   http: typeof http;
-  privateData: typeof privateData;
-  todos: typeof todos;
 }>;
 
 /**

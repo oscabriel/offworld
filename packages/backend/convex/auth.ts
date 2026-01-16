@@ -1,13 +1,15 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth";
+import { deviceAuthorization } from "better-auth/plugins";
 import { v } from "convex/values";
 import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import authConfig from "./auth.config";
 
-const siteUrl = process.env.SITE_URL!;
+const siteUrl = process.env.SITE_URL;
+if (!siteUrl) throw new Error("SITE_URL env var required");
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
@@ -27,14 +29,25 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 		socialProviders: {
 			github: {
 				enabled: true,
-				clientId: process.env.GITHUB_CLIENT_ID!,
-				clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+				clientId: (() => {
+					const id = process.env.GITHUB_CLIENT_ID;
+					if (!id) throw new Error("GITHUB_CLIENT_ID env var required");
+					return id;
+				})(),
+				clientSecret: (() => {
+					const secret = process.env.GITHUB_CLIENT_SECRET;
+					if (!secret) throw new Error("GITHUB_CLIENT_SECRET env var required");
+					return secret;
+				})(),
 			},
 		},
 		plugins: [
 			convex({
 				authConfig,
 				jwksRotateOnTokenGenerationError: true,
+			}),
+			deviceAuthorization({
+				expiresIn: "15m", // Shorter than default for CLI security
 			}),
 		],
 	});

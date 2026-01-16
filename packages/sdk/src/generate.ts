@@ -122,7 +122,77 @@ allowed-tools: [Read, Grep, Glob]
 
 4. Be accurate - only include information you've verified by reading the actual source code.
 
-Now explore the codebase and generate the SKILL.md content. Output ONLY the markdown content, no explanations.`;
+Now explore the codebase and generate the SKILL.md content.
+
+CRITICAL: Wrap your final SKILL.md output in XML tags exactly like this:
+<skill_output>
+---
+name: ...
+(the complete markdown content)
+</skill_output>
+
+Output ONLY the skill content inside the tags. No explanations before or after the tags.
+
+REMINDER: Your response MUST contain <skill_output>...</skill_output> tags with valid YAML frontmatter.`;
+
+/**
+ * Extract the actual SKILL.md content from AI response.
+ * The response may include echoed prompt/system context before the actual skill.
+ * We look for the LAST occurrence of XML tags: <skill_output>...</skill_output>
+ * (Using last occurrence avoids extracting example tags from echoed prompt)
+ */
+function extractSkillContent(rawResponse: string): string {
+	// Try XML tag extraction first (preferred)
+	// Use lastIndexOf to skip any echoed prompt examples
+	const openTag = "<skill_output>";
+	const closeTag = "</skill_output>";
+	const closeIndex = rawResponse.lastIndexOf(closeTag);
+
+	if (closeIndex !== -1) {
+		// Find the last open tag before this close tag
+		const openIndex = rawResponse.lastIndexOf(openTag, closeIndex);
+
+		if (openIndex !== -1) {
+			let content = rawResponse.slice(openIndex + openTag.length, closeIndex).trim();
+
+			// Remove markdown code fence wrapper if present
+			if (content.startsWith("```")) {
+				content = content.replace(/^```(?:markdown)?\s*\n?/, "");
+				content = content.replace(/\n?```\s*$/, "");
+			}
+
+			content = content.trim();
+			validateSkillContent(content);
+			return content;
+		}
+	}
+
+	// No valid extraction - fail loud instead of returning garbage
+	throw new Error(
+		"Failed to extract skill content: no <skill_output> tags found in AI response. " +
+			"The AI may have failed to follow the output format instructions.",
+	);
+}
+
+/**
+ * Validate extracted skill content has minimum required structure.
+ * Throws if content is invalid.
+ */
+function validateSkillContent(content: string): void {
+	if (content.length < 500) {
+		throw new Error(
+			`Invalid skill content: too short (${content.length} chars, minimum 500). ` +
+				"The AI may have produced placeholder or incomplete content.",
+		);
+	}
+
+	if (!content.startsWith("---")) {
+		throw new Error(
+			"Invalid skill content: missing YAML frontmatter. " +
+				"Content must start with '---' followed by name and description fields.",
+		);
+	}
+}
 
 /**
  * Generate a SKILL.md file for a repository using AI.
@@ -166,8 +236,12 @@ export async function generateSkillWithAI(
 
 	onDebug?.(`Generation complete (${result.durationMs}ms, ${result.text.length} chars)`);
 
+	// Extract just the skill content, removing any echoed prompt/system context
+	const skillContent = extractSkillContent(result.text);
+	onDebug?.(`Extracted skill content (${skillContent.length} chars)`);
+
 	return {
-		skillContent: result.text,
+		skillContent,
 		commitSha,
 	};
 }
@@ -226,8 +300,6 @@ function ensureSymlink(target: string, linkPath: string): void {
 	mkdirSync(linkDir, { recursive: true });
 	symlinkSync(target, linkPath, "dir");
 }
-
-
 
 /**
  * Install a generated skill to the filesystem.

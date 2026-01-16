@@ -8,7 +8,7 @@ import type { Architecture, FileIndex, RepoSource, Skill } from "@offworld/types
 // Configuration
 // ============================================================================
 
-const DEFAULT_API_BASE = "https://offworld.sh";
+const DEFAULT_API_BASE = process.env.OW_API_URL ?? "https://offworld.sh";
 const GITHUB_API_BASE = "https://api.github.com";
 const MIN_STARS_FOR_PUSH = 5;
 

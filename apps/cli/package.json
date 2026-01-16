@@ -49,15 +49,17 @@
 	},
 	"dependencies": {
 		"@clack/prompts": "^0.11.0",
+		"@offworld/backend": "workspace:*",
 		"@offworld/sdk": "workspace:*",
 		"@offworld/types": "workspace:*",
 		"@orpc/server": "^1.13.4",
+		"convex": "catalog:",
 		"open": "^11.0.0",
 		"trpc-cli": "^0.12.2",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"@types/node": "^25.0.8",
+		"@types/node": "^25.0.9",
 		"tsdown": "catalog:",
 		"typescript": "catalog:",
 		"vitest": "catalog:"

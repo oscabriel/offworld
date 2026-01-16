@@ -10,14 +10,14 @@
 			"dotenv": "^17.2.3",
 			"zod": "^4.3.5",
 			"typescript": "^5.9.3",
-			"convex": "^1.31.4",
-			"better-auth": "1.4.9",
+			"convex": "^1.31.5",
+			"better-auth": "1.4.13",
 			"@convex-dev/better-auth": "^0.10.9",
 			"alchemy": "^0.83.1",
 			"vitest": "^4.0.17",
 			"convex-test": "^0.0.41",
 			"@edge-runtime/vm": "^5.0.0",
-			"tsdown": "^0.20.0-beta.1"
+			"tsdown": "^0.20.0-beta.3"
 		}
 	},
 	"type": "module",
@@ -40,7 +40,7 @@
 		"zod": "^4.3.5"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20260113.0",
+		"@cloudflare/workers-types": "^4.20260115.0",
 		"@offworld/config": "workspace:*",
 		"oxfmt": "^0.24.0",
 		"oxlint": "^1.39.0",

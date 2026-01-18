@@ -27,7 +27,7 @@ export const listAllUsers = query({
 	handler: async (ctx) => {
 		await requireAdmin(ctx);
 
-		const users = await ctx.db.query("users").order("desc").collect();
+		const users = await ctx.db.query("user").order("desc").collect();
 
 		return users.map((u) => ({
 			_id: u._id,

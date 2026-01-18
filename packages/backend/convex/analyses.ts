@@ -98,14 +98,14 @@ export const getMeta = internalQuery({
  * Get push count for a repo in the last 24 hours (rate limiting)
  */
 export const getPushCountToday = internalQuery({
-	args: { fullName: v.string(), userId: v.string() },
+	args: { fullName: v.string(), workosId: v.string() },
 	handler: async (ctx, args) => {
 		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
 		const pushes = await ctx.db
 			.query("pushLogs")
 			.withIndex("by_repo_date", (q) => q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo))
-			.filter((q) => q.eq(q.field("userId"), args.userId))
+			.filter((q) => q.eq(q.field("workosId"), args.workosId))
 			.collect();
 
 		return pushes.length;
@@ -154,10 +154,10 @@ export const upsert = internalMutation({
 		commitSha: v.string(),
 		analyzedAt: v.string(),
 		version: v.string(),
-		userId: v.optional(v.string()),
+		workosId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const { userId, ...analysisData } = args;
+		const { workosId, ...analysisData } = args;
 
 		// Check for existing analysis
 		const existing = await ctx.db
@@ -166,7 +166,7 @@ export const upsert = internalMutation({
 			.first();
 
 		// Rate limit check (3 pushes per repo per day per user)
-		if (userId) {
+		if (workosId) {
 			const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
 			const recentPushes = await ctx.db
@@ -174,7 +174,7 @@ export const upsert = internalMutation({
 				.withIndex("by_repo_date", (q) =>
 					q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo),
 				)
-				.filter((q) => q.eq(q.field("userId"), userId))
+				.filter((q) => q.eq(q.field("workosId"), workosId))
 				.collect();
 
 			if (recentPushes.length >= 3) {
@@ -217,22 +217,22 @@ export const upsert = internalMutation({
 				...analysisData,
 				pullCount: existing.pullCount, // Preserve pull count
 				isVerified: existing.isVerified, // Preserve verification
-				pushedBy: userId ?? existing.pushedBy,
+				workosId: workosId ?? existing.workosId,
 			});
 		} else {
 			await ctx.db.insert("analyses", {
 				...analysisData,
 				pullCount: 0,
 				isVerified: false,
-				pushedBy: userId,
+				workosId,
 			});
 		}
 
 		// Log the push
-		if (userId) {
+		if (workosId) {
 			await ctx.db.insert("pushLogs", {
 				fullName: args.fullName,
-				userId,
+				workosId,
 				pushedAt: new Date().toISOString(),
 				commitSha: args.commitSha,
 			});

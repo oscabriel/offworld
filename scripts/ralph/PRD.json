@@ -91,8 +91,8 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Phase 2.1"
+      "passes": true,
+      "notes": "Phase 2.1 - Completed with US-016 as dependency"
     },
     {
       "id": "US-008",
@@ -217,8 +217,8 @@
         "bun install succeeds"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "Phase 5.1"
+      "passes": true,
+      "notes": "Phase 5.1 - Completed with US-007 (dependency)"
     },
     {
       "id": "US-017",

@@ -42,3 +42,21 @@
   - convex codegen env var error is deployment-level, not schema error - schema is valid if local typecheck passes
 
 ---
+
+## 2026-01-17 - US-007, US-016 (Dependency Batch)
+
+- Created `apps/web/src/start.ts` with authkitMiddleware for TanStack Start
+- Added `@workos/authkit-tanstack-react-start` dependency
+- Updated `apps/web/AGENTS.md` with WorkOS auth patterns
+- Files changed:
+  - `apps/web/src/start.ts` (new)
+  - `apps/web/package.json`
+  - `apps/web/AGENTS.md`
+  - `bun.lock`
+- **Learnings:**
+  - Package name is `@workos/authkit-tanstack-react-start` (note the `-react-` in name)
+  - US-016 (dependency) must be completed with US-007 since start.ts imports from the package
+  - PRD priority ordering doesn't account for dependency chains - higher priority stories may depend on lower priority ones
+  - `createStart()` exports `startInstance` which TanStack Start uses for SSR middleware
+
+---

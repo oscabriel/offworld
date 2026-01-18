@@ -88,3 +88,19 @@
   - PRD acceptance criteria says `@workos/authkit-tanstack-start` but correct package is `@workos/authkit-tanstack-react-start`
 
 ---
+
+## 2026-01-17 - US-010
+
+- Added AuthKitProvider and ConvexProviderWithAuth to router.tsx
+- Created useAuthFromWorkOS hook to bridge WorkOS AuthKit to Convex auth interface
+- Files changed:
+  - `apps/web/src/router.tsx`
+  - `apps/web/AGENTS.md`
+- **Learnings:**
+  - ConvexProviderWithAuth expects `useAuth` hook returning `{ isLoading, isAuthenticated, fetchAccessToken }`
+  - `fetchAccessToken` must return `Promise<string | null>` (not undefined) - use `?? null` conversion
+  - TanStack Router's `Wrap` option in `createTanStackRouter` is the right place for auth providers
+  - WorkOS `useAuth` returns `{ user, loading }`, `useAccessToken` returns `{ getAccessToken, loading }`
+  - Reference implementation at github.com/workos/template-convex-tanstack-react-start-authkit
+
+---

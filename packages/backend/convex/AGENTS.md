@@ -16,15 +16,19 @@ Convex functions, schema, auth. Reactive backend-as-a-service.
 ## PATTERNS
 
 ```ts
-// Query with auth
+// Query with auth (WorkOS)
 export const myQuery = query({
 	args: {},
 	handler: async (ctx) => {
-		const user = await authComponent.safeGetAuthUser(ctx);
-		if (!user) throw new Error("Unauthorized");
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthorized");
 		return await ctx.db.query("myTable").collect();
 	},
 });
+
+// Get user from WorkOS identity
+import { getAuthUser } from "./auth";
+const user = await getAuthUser(ctx);
 
 // Mutation
 export const create = mutation({
@@ -38,7 +42,8 @@ export const create = mutation({
 ## CONVENTIONS
 
 - Use `v.id("tableName")` for ID references
-- `safeGetAuthUser` returns null if unauthenticated
+- `getAuthUser()` returns user from DB or basic identity info
+- `ctx.auth.getUserIdentity()` returns raw WorkOS claims
 - Export queries/mutations from individual files, not index
 
 ## COMMANDS
@@ -53,6 +58,8 @@ npx convex dashboard # Open Convex dashboard
 
 - Auth via WorkOS JWT validation (not Better Auth)
 - WorkOS requires two JWT issuers: SSO and User Management
-- `ctx.auth.getUserIdentity()` returns WorkOS claims
+- `ctx.auth.getUserIdentity()` returns WorkOS claims, `subject` = user ID
 - Schema changes auto-push in dev mode
 - `_generated/api.ts` exports typed API for frontend
+- Users table has `workosId` field (indexed) for linking to WorkOS identity
+- deviceCode table removed - WorkOS handles device auth flow directly

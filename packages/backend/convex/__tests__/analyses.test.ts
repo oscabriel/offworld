@@ -276,6 +276,7 @@ describe("upsert", () => {
 		// Create a user first
 		await ctx.run(async (ctx) => {
 			await ctx.db.insert("users", {
+				workosId: "workos_test_user",
 				email: "test@example.com",
 				createdAt: new Date().toISOString(),
 			});
@@ -357,6 +358,7 @@ describe("getPushCountToday", () => {
 		// Create a user
 		const userId = await ctx.run(async (ctx) => {
 			const id = await ctx.db.insert("users", {
+				workosId: "workos_test_user_2",
 				email: "test@example.com",
 				createdAt: new Date().toISOString(),
 			});

@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ExploreRouteImport } from './routes/explore'
-import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as RepoRouteRouteImport } from './routes/_repo/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 import { Route as RepoOwnerRepoRouteRouteImport } from './routes/_repo/$owner_.$repo/route'
 import { Route as RepoOwnerRepoIndexRouteImport } from './routes/_repo/$owner_.$repo/index'
 
@@ -34,11 +34,6 @@ const ExploreRoute = ExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CallbackRoute = CallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -51,6 +46,11 @@ const RepoRouteRoute = RepoRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
+  id: '/api/auth/callback',
+  path: '/api/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RepoOwnerRepoRouteRoute = RepoOwnerRepoRouteRouteImport.update({
@@ -67,20 +67,20 @@ const RepoOwnerRepoIndexRoute = RepoOwnerRepoIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/callback': typeof CallbackRoute
   '/explore': typeof ExploreRoute
   '/profile': typeof ProfileRoute
   '/sign-in': typeof SignInRoute
   '/$owner/$repo': typeof RepoOwnerRepoRouteRouteWithChildren
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$owner/$repo/': typeof RepoOwnerRepoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/callback': typeof CallbackRoute
   '/explore': typeof ExploreRoute
   '/profile': typeof ProfileRoute
   '/sign-in': typeof SignInRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$owner/$repo': typeof RepoOwnerRepoIndexRoute
 }
 export interface FileRoutesById {
@@ -88,11 +88,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_repo': typeof RepoRouteRouteWithChildren
   '/admin': typeof AdminRoute
-  '/callback': typeof CallbackRoute
   '/explore': typeof ExploreRoute
   '/profile': typeof ProfileRoute
   '/sign-in': typeof SignInRoute
   '/_repo/$owner_/$repo': typeof RepoOwnerRepoRouteRouteWithChildren
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/_repo/$owner_/$repo/': typeof RepoOwnerRepoIndexRoute
 }
 export interface FileRouteTypes {
@@ -100,31 +100,31 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/callback'
     | '/explore'
     | '/profile'
     | '/sign-in'
     | '/$owner/$repo'
+    | '/api/auth/callback'
     | '/$owner/$repo/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/callback'
     | '/explore'
     | '/profile'
     | '/sign-in'
+    | '/api/auth/callback'
     | '/$owner/$repo'
   id:
     | '__root__'
     | '/'
     | '/_repo'
     | '/admin'
-    | '/callback'
     | '/explore'
     | '/profile'
     | '/sign-in'
     | '/_repo/$owner_/$repo'
+    | '/api/auth/callback'
     | '/_repo/$owner_/$repo/'
   fileRoutesById: FileRoutesById
 }
@@ -132,10 +132,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RepoRouteRoute: typeof RepoRouteRouteWithChildren
   AdminRoute: typeof AdminRoute
-  CallbackRoute: typeof CallbackRoute
   ExploreRoute: typeof ExploreRoute
   ProfileRoute: typeof ProfileRoute
   SignInRoute: typeof SignInRoute
+  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -161,13 +161,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/callback': {
-      id: '/callback'
-      path: '/callback'
-      fullPath: '/callback'
-      preLoaderRoute: typeof CallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -187,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/callback': {
+      id: '/api/auth/callback'
+      path: '/api/auth/callback'
+      fullPath: '/api/auth/callback'
+      preLoaderRoute: typeof ApiAuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_repo/$owner_/$repo': {
@@ -233,10 +233,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RepoRouteRoute: RepoRouteRouteWithChildren,
   AdminRoute: AdminRoute,
-  CallbackRoute: CallbackRoute,
   ExploreRoute: ExploreRoute,
   ProfileRoute: ProfileRoute,
   SignInRoute: SignInRoute,
+  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

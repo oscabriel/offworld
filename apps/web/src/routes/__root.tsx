@@ -2,7 +2,7 @@ import { convexQuery, type ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@offworld/backend/convex/_generated/api";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
 	HeadContent,
 	Outlet,
@@ -13,6 +13,13 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import { getAuth } from "@workos/authkit-tanstack-react-start";
+import {
+	AuthKitProvider,
+	useAccessToken,
+	useAuth,
+} from "@workos/authkit-tanstack-react-start/client";
+import { ConvexProviderWithAuth, useMutation } from "convex/react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { BackgroundImage } from "@/components/layout/background-image";
 import { Toaster } from "@/components/ui/sonner";
@@ -24,9 +31,9 @@ import appCss from "../index.css?url";
 const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
 	const auth = await getAuth();
 	if (!auth.user) {
-		return { userId: null, token: null };
+		return { initialAuth: null, workosId: null, token: null } as const;
 	}
-	return { userId: auth.user.id, token: auth.accessToken };
+	return { initialAuth: auth, workosId: auth.user.id, token: auth.accessToken } as const;
 });
 
 export interface RouterAppContext {
@@ -139,9 +146,9 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		],
 	}),
 
-	component: RootDocument,
+	component: RootComponent,
 	beforeLoad: async (ctx) => {
-		const { userId, token } = await fetchWorkosAuth();
+		const { initialAuth, workosId, token } = await fetchWorkosAuth();
 		if (token) {
 			ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
 		}
@@ -149,35 +156,87 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		await ctx.context.queryClient.ensureQueryData(convexQuery(api.auth.getCurrentUserSafe, {}));
 
 		return {
+			initialAuth,
 			isAuthenticated: !!token,
-			userId,
+			workosId,
 			token,
 		};
 	},
 });
 
-function RootDocument() {
+function useAuthFromWorkOS() {
+	const { user, loading } = useAuth();
+	const { accessToken, getAccessToken } = useAccessToken();
+
+	const fetchAccessToken = useCallback(
+		async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+			if (!accessToken || forceRefreshToken) {
+				return (await getAccessToken()) ?? null;
+			}
+
+			return accessToken;
+		},
+		[accessToken, getAccessToken],
+	);
+
+	return useMemo(
+		() => ({
+			isLoading: loading,
+			isAuthenticated: !!user,
+			fetchAccessToken,
+		}),
+		[loading, user, fetchAccessToken],
+	);
+}
+
+function RootComponent() {
 	const context = useRouteContext({ from: Route.id });
+
 	return (
 		<QueryClientProvider client={context.queryClient}>
-			<html lang="en" className="dark">
-				<head>
-					<HeadContent />
-				</head>
-				<body className="relative flex min-h-screen flex-col">
-					<BackgroundImage />
-					<div className="relative z-10 flex flex-1 flex-col">
-						<Header />
-						<main className="flex flex-1 flex-col">
-							<Outlet />
-						</main>
-						<Footer />
-					</div>
-					<Toaster richColors />
-					<TanStackRouterDevtools position="bottom-left" />
-					<Scripts />
-				</body>
-			</html>
+			<AuthKitProvider initialAuth={context.initialAuth ?? undefined}>
+				<ConvexProviderWithAuth
+					client={context.convexQueryClient.convexClient}
+					useAuth={useAuthFromWorkOS}
+				>
+					<RootDocument token={context.token} />
+				</ConvexProviderWithAuth>
+			</AuthKitProvider>
 		</QueryClientProvider>
+	);
+}
+
+function RootDocument({ token }: { token: string | null }) {
+	const ensureUser = useMutation(api.auth.ensureUser);
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		if (!token) return;
+		void ensureUser({}).then(() => {
+			void queryClient.invalidateQueries({
+				queryKey: convexQuery(api.auth.getCurrentUserSafe, {}).queryKey,
+			});
+		});
+	}, [token, ensureUser, queryClient]);
+
+	return (
+		<html lang="en" className="dark">
+			<head>
+				<HeadContent />
+			</head>
+			<body className="relative flex min-h-screen flex-col">
+				<BackgroundImage />
+				<div className="relative z-10 flex flex-1 flex-col">
+					<Header />
+					<main className="flex flex-1 flex-col">
+						<Outlet />
+					</main>
+					<Footer />
+				</div>
+				<Toaster richColors />
+				<TanStackRouterDevtools position="bottom-left" />
+				<Scripts />
+			</body>
+		</html>
 	);
 }

@@ -125,23 +125,12 @@ export default defineSchema({
 
 	// Users table for auth (referenced by pushLogs)
 	users: defineTable({
+		workosId: v.string(), // WorkOS user ID (JWT subject claim)
 		email: v.string(),
 		name: v.optional(v.string()),
 		image: v.optional(v.string()),
 		createdAt: v.string(),
-	}).index("by_email", ["email"]),
-
-	// Device authorization codes for CLI auth (OAuth 2.0 Device Flow)
-	deviceCode: defineTable({
-		deviceCode: v.string(),
-		userCode: v.string(),
-		userId: v.optional(v.string()),
-		expiresAt: v.number(),
-		status: v.string(), // 'pending' | 'approved' | 'denied'
-		lastPolledAt: v.optional(v.number()),
-		clientId: v.optional(v.string()),
-		scope: v.optional(v.string()),
 	})
-		.index("by_deviceCode", ["deviceCode"])
-		.index("by_userCode", ["userCode"]),
+		.index("by_email", ["email"])
+		.index("by_workosId", ["workosId"]),
 });

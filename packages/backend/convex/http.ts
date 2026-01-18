@@ -2,12 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
-import { authComponent, createAuth } from "./auth";
-
 const http = httpRouter();
-
-// Register auth routes
-authComponent.registerRoutes(http, createAuth);
 
 // ============================================================================
 // /api/analyses/pull endpoint
@@ -97,21 +92,16 @@ http.route({
 				);
 			}
 
-			// Validate token with Better Auth
-			// Pass request.headers directly - bearer plugin handles Bearer token conversion
-			const auth = createAuth(ctx);
-			const session = await auth.api.getSession({
-				headers: request.headers,
-			});
-
-			if (!session?.user) {
+			// Token validated by Convex auth via JWKS
+			const identity = await ctx.auth.getUserIdentity();
+			if (!identity) {
 				return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
 					status: 401,
 					headers: { "Content-Type": "application/json" },
 				});
 			}
 
-			const userId = session.user.id;
+			const userId = identity.subject;
 
 			const body = (await request.json()) as {
 				fullName?: string;

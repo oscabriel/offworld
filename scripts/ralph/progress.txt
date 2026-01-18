@@ -10,7 +10,21 @@
 
 ---
 
-## 2026-01-17 - US-002
+## 2026-01-17 - US-014
+
+- Replaced Convex-based device auth with direct WorkOS API calls
+- Files changed:
+  - `apps/cli/src/handlers/auth.ts`
+- **Learnings:**
+  - WorkOS device auth uses two endpoints: `/user_management/authorize/device` (request code) and `/user_management/authenticate` (poll for tokens)
+  - Grant type for device code: `urn:ietf:params:oauth:grant-type:device_code`
+  - Response includes `verification_uri_complete` with user code already embedded - use this for one-click auth
+  - Error handling: `authorization_pending` = keep polling, `slow_down` = increase interval by 5s
+  - `WORKOS_CLIENT_ID` env var required - use getter function to satisfy TypeScript's control flow analysis
+  - WorkOS returns user info (`user.id`, `user.email`) directly in token response - no separate user fetch needed
+
+---
+
 
 - Removed betterAuth component from convex.config.ts
 - Files changed: `packages/backend/convex/convex.config.ts`

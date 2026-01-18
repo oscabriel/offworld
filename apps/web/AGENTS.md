@@ -43,6 +43,15 @@ loader: async () => {
 	const { user } = await getAuth();
 	return { user };
 };
+
+// Root auth pattern (__root.tsx)
+// Uses createServerFn wrapper around getAuth for SSR token fetching
+const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
+	const auth = await getAuth();
+	if (!auth.user) return { userId: null, token: null };
+	return { userId: auth.user.id, token: auth.accessToken };
+});
+// beforeLoad calls fetchWorkosAuth() and passes token to Convex serverHttpClient
 ```
 
 ## NOTES
@@ -51,3 +60,4 @@ loader: async () => {
 - Convex client initialized in `router.tsx`, not component
 - Dark mode hardcoded in `__root.tsx` (`className="dark"`)
 - Package: `@workos/authkit-tanstack-react-start` (note the `-react-` in name)
+- `getAuth()` returns `UserInfo | NoUserInfo` - check `auth.user` before accessing `accessToken`

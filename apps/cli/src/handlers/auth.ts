@@ -40,7 +40,7 @@ export interface AuthLogoutResult {
 export interface AuthStatusResult {
 	loggedIn: boolean;
 	email?: string;
-	userId?: string;
+	workosId?: string;
 	expiresAt?: string;
 }
 
@@ -66,6 +66,7 @@ interface TokenResponse {
 	};
 	access_token: string;
 	refresh_token: string;
+	expires_at?: number;
 	organizationId?: string;
 }
 
@@ -193,7 +194,11 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 		saveAuthData({
 			token: tokenData.access_token,
 			email: tokenData.user.email,
-			userId: tokenData.user.id,
+			workosId: tokenData.user.id,
+			refreshToken: tokenData.refresh_token,
+			expiresAt: tokenData.expires_at
+				? new Date(tokenData.expires_at * 1000).toISOString()
+				: undefined,
 		});
 
 		p.log.success(`Logged in as ${tokenData.user.email}`);
@@ -267,7 +272,7 @@ export async function authStatusHandler(): Promise<AuthStatusResult> {
 	return {
 		loggedIn: status.isLoggedIn,
 		email: status.email,
-		userId: status.userId,
+		workosId: status.workosId,
 		expiresAt: status.expiresAt,
 	};
 }

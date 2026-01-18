@@ -61,3 +61,5 @@ const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
 - Dark mode hardcoded in `__root.tsx` (`className="dark"`)
 - Package: `@workos/authkit-tanstack-react-start` (note the `-react-` in name)
 - `getAuth()` returns `UserInfo | NoUserInfo` - check `auth.user` before accessing `accessToken`
+- Client-side auth uses `AuthKitProvider` + `ConvexProviderWithAuth` via router's `Wrap` option
+- `useAuthFromWorkOS` hook bridges WorkOS to Convex's expected interface (`isLoading`, `isAuthenticated`, `fetchAccessToken`)

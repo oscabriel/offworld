@@ -231,7 +231,7 @@
         "bun install succeeds"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5.2 + 5.3"
     },
     {

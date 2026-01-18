@@ -175,3 +175,17 @@
   - T3 env uses `z.string().url()` not `z.url()` - corrected in edit
 
 ---
+
+## 2026-01-17 - US-017
+
+- Removed Better Auth packages from web and backend
+- Files changed:
+  - `apps/web/package.json` (removed @convex-dev/better-auth, better-auth)
+  - `packages/backend/package.json` (removed @convex-dev/better-auth, better-auth)
+  - `bun.lock` (updated)
+- **Learnings:**
+  - Packages used `catalog:` version specifier from workspace catalog (bun workspace feature)
+  - No code changes needed - Better Auth imports already removed in prior stories
+  - Lockfile updated automatically, removing 98 lines of Better Auth dependencies
+
+---

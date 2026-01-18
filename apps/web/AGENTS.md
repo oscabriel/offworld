@@ -15,13 +15,12 @@ src/
 
 ## WHERE TO LOOK
 
-| Task          | File                     |
-| ------------- | ------------------------ |
-| Add page      | `src/routes/{name}.tsx`  |
-| Root layout   | `src/routes/__root.tsx`  |
-| Auth client   | `src/lib/auth-client.ts` |
-| Auth server   | `src/lib/auth-server.ts` |
-| Router config | `src/router.tsx`         |
+| Task            | File                     |
+| --------------- | ------------------------ |
+| Add page        | `src/routes/{name}.tsx`  |
+| Root layout     | `src/routes/__root.tsx`  |
+| Start config    | `src/start.ts`           |
+| Router config   | `src/router.tsx`         |
 
 ## CONVENTIONS
 
@@ -38,15 +37,17 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 const { data } = useSuspenseQuery(convexQuery(api.todos.getAll, {}));
 
-// Auth check in route
-beforeLoad: async (ctx) => {
-	const token = await getAuth();
-	ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+// Auth check in route loader (WorkOS)
+import { getAuth } from "@workos/authkit-tanstack-react-start";
+loader: async () => {
+	const { user } = await getAuth();
+	return { user };
 };
 ```
 
 ## NOTES
 
-- SSR auth via `getToken()` server function
+- Auth via WorkOS AuthKit middleware in `start.ts`
 - Convex client initialized in `router.tsx`, not component
 - Dark mode hardcoded in `__root.tsx` (`className="dark"`)
+- Package: `@workos/authkit-tanstack-react-start` (note the `-react-` in name)

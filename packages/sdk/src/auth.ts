@@ -20,7 +20,8 @@ const AUTH_FILE_NAME = "auth.json";
 export interface AuthData {
 	token: string;
 	expiresAt?: string;
-	userId?: string;
+	workosId?: string;
+	refreshToken?: string;
 	email?: string;
 }
 
@@ -28,7 +29,7 @@ export interface AuthData {
 export interface AuthStatus {
 	isLoggedIn: boolean;
 	email?: string;
-	userId?: string;
+	workosId?: string;
 	expiresAt?: string;
 }
 
@@ -205,7 +206,7 @@ export function getAuthStatus(): AuthStatus {
 	return {
 		isLoggedIn: true,
 		email: data.email,
-		userId: data.userId,
+		workosId: data.workosId,
 		expiresAt: data.expiresAt,
 	};
 }

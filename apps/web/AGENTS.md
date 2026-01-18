@@ -9,7 +9,7 @@ src/
 ├── routes/          # TanStack Router pages
 ├── components/      # App components
 │   └── ui/          # shadcn/ui primitives
-├── lib/             # Utilities + auth clients
+├── lib/             # Utilities
 └── router.tsx       # Router + Convex setup
 ```
 
@@ -66,3 +66,4 @@ const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
 - `getSignInUrl()` generates WorkOS hosted auth URL - use with anchor tag, not onClick handler
 - Use `loaderDeps` to pass search params to loader when needed for sign-in redirect handling
 - `useAuth()` from `/client` provides `signOut()` for client-side sign out - use with `window.location.href` redirect after
+- Deleting route files requires manually deleting `routeTree.gen.ts` and running `bun run dev` to regenerate (tsc/typecheck won't regenerate it)

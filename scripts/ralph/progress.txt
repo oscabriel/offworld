@@ -19,3 +19,26 @@
   - WorkOS JWT validation handled entirely by auth.config.ts, not by components
 
 ---
+
+## 2026-01-17 - US-003, US-004, US-005, US-006 (Atomic Batch)
+
+- Updated schema: removed deviceCode table, added workosId to users with index
+- Replaced Better Auth auth.ts with WorkOS-based getAuthUser/ensureUser helpers
+- Updated http.ts push endpoint to use ctx.auth.getUserIdentity()
+- Deleted deviceAuth.ts
+- Files changed:
+  - `packages/backend/convex/schema.ts`
+  - `packages/backend/convex/auth.ts`
+  - `packages/backend/convex/auth.config.ts`
+  - `packages/backend/convex/http.ts`
+  - `packages/backend/convex/deviceAuth.ts` (deleted)
+  - `packages/backend/convex/__tests__/analyses.test.ts`
+  - `packages/backend/convex/AGENTS.md`
+- **Learnings:**
+  - US-002 removing betterAuth component breaks auth.ts/http.ts which depend on it - must be done atomically with US-003-006
+  - auth.config.ts should use placeholder clientId for dev to avoid blocking codegen: `process.env.WORKOS_CLIENT_ID ?? "client_placeholder"`
+  - `identity.subject` from WorkOS JWT is the user ID (workosId)
+  - Test fixtures need updating when schema adds required fields (workosId)
+  - convex codegen env var error is deployment-level, not schema error - schema is valid if local typecheck passes
+
+---

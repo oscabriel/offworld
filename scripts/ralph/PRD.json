@@ -37,7 +37,7 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 1.3 - Breaking change: existing deviceCode data lost"
     },
     {
@@ -52,8 +52,8 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "Phase 1.4 - Replaces old Better Auth helper"
+      "passes": true,
+      "notes": "Phase 1.4 - Replaces old Better Auth helper. Completed with US-003 as dependency."
     },
     {
       "id": "US-005",
@@ -66,8 +66,8 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "Phase 1.5"
+      "passes": true,
+      "notes": "Phase 1.5 - Completed with US-003 as dependency."
     },
     {
       "id": "US-006",
@@ -78,8 +78,8 @@
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "Phase 1.6"
+      "passes": true,
+      "notes": "Phase 1.6 - Completed with US-003 as dependency."
     },
     {
       "id": "US-007",

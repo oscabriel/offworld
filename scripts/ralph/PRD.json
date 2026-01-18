@@ -160,7 +160,7 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 2.6"
     },
     {
@@ -175,7 +175,7 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 2.7"
     },
     {

@@ -60,3 +60,17 @@
   - `createStart()` exports `startInstance` which TanStack Start uses for SSR middleware
 
 ---
+
+## 2026-01-17 - US-008
+
+- Created callback.tsx OAuth handler route for WorkOS
+- Files changed:
+  - `apps/web/src/routes/callback.tsx` (new)
+  - `apps/web/src/routeTree.gen.ts` (auto-regenerated)
+- **Learnings:**
+  - `handleCallbackRoute()` returns a handler function, so use `GET: handleCallbackRoute()` not `GET: handleCallbackRoute`
+  - Route must use `server.handlers` pattern for server-side route handling
+  - TanStack Router auto-regenerates routeTree.gen.ts on build when new route files added
+  - Import from `@workos/authkit-tanstack-react-start` (same package as middleware)
+
+---

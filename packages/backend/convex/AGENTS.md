@@ -7,8 +7,8 @@ Convex functions, schema, auth. Reactive backend-as-a-service.
 | File             | Purpose                                  |
 | ---------------- | ---------------------------------------- |
 | `schema.ts`      | Database schema (todos table)            |
-| `auth.ts`        | Better Auth setup + getCurrentUser query |
-| `auth.config.ts` | Auth provider config                     |
+| `auth.ts`        | WorkOS auth helpers + getCurrentUser query |
+| `auth.config.ts` | WorkOS JWT validation config (customJwt)   |
 | `http.ts`        | HTTP routes (auth endpoints)             |
 | `todos.ts`       | Todo CRUD mutations/queries              |
 | `_generated/`    | Auto-generated (don't edit)              |
@@ -51,6 +51,8 @@ npx convex dashboard # Open Convex dashboard
 
 ## NOTES
 
-- Auth tables managed by Better Auth plugin (users, sessions, accounts)
+- Auth via WorkOS JWT validation (not Better Auth)
+- WorkOS requires two JWT issuers: SSO and User Management
+- `ctx.auth.getUserIdentity()` returns WorkOS claims
 - Schema changes auto-push in dev mode
 - `_generated/api.ts` exports typed API for frontend

@@ -1,0 +1,11 @@
+
+## 2026-01-17 - US-001
+
+- Replaced Better Auth config with WorkOS JWT validation
+- Files changed: `packages/backend/convex/auth.config.ts`
+- **Learnings:**
+  - Two JWT issuers needed: SSO (`https://api.workos.com/`) and User Management (`https://api.workos.com/user_management/${clientId}`)
+  - Both issuers share the same JWKS endpoint: `https://api.workos.com/sso/jwks/${clientId}`
+  - WORKOS_CLIENT_ID must be available at module evaluation time (top-level throw if missing)
+
+---

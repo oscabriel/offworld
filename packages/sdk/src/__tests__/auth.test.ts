@@ -138,7 +138,7 @@ describe("loadAuthData", () => {
 		const authData: AuthData = {
 			token: "test-token",
 			expiresAt: createFutureDate(),
-			userId: "user-123",
+			workosId: "user-123",
 			email: "test@example.com",
 		};
 		addAuthFile(authData);
@@ -160,7 +160,7 @@ describe("loadAuthData", () => {
 	it("returns null when token is missing", () => {
 		const authPath = join(mockMetaRoot, "auth.json");
 		virtualFs[authPath.replace(/\\/g, "/")] = {
-			content: JSON.stringify({ userId: "user-123" }),
+			content: JSON.stringify({ workosId: "user-123" }),
 		};
 
 		const result = loadAuthData();
@@ -360,7 +360,7 @@ describe("getAuthStatus", () => {
 			token: "expired-token",
 			expiresAt: createPastDate(),
 			email: "test@example.com",
-			userId: "user-123",
+			workosId: "user-123",
 		});
 
 		const result = getAuthStatus();
@@ -373,14 +373,14 @@ describe("getAuthStatus", () => {
 			token: "valid-token",
 			expiresAt,
 			email: "test@example.com",
-			userId: "user-123",
+			workosId: "user-123",
 		});
 
 		const result = getAuthStatus();
 		expect(result).toEqual({
 			isLoggedIn: true,
 			email: "test@example.com",
-			userId: "user-123",
+			workosId: "user-123",
 			expiresAt,
 		});
 	});
@@ -395,7 +395,7 @@ describe("getAuthStatus", () => {
 		expect(result).toEqual({
 			isLoggedIn: true,
 			email: "test@example.com",
-			userId: undefined,
+			workosId: undefined,
 			expiresAt: undefined,
 		});
 	});
@@ -403,14 +403,14 @@ describe("getAuthStatus", () => {
 	it("returns isLoggedIn: true without email when email is missing", () => {
 		addAuthFile({
 			token: "valid-token",
-			userId: "user-123",
+			workosId: "user-123",
 		});
 
 		const result = getAuthStatus();
 		expect(result).toEqual({
 			isLoggedIn: true,
 			email: undefined,
-			userId: "user-123",
+			workosId: "user-123",
 			expiresAt: undefined,
 		});
 	});

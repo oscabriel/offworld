@@ -2,9 +2,9 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useAuth } from "@workos/authkit-tanstack-react-start/client";
 import { LogOutIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/profile")({
 	component: ProfileComponent,
@@ -18,14 +18,11 @@ export const Route = createFileRoute("/profile")({
 function ProfileComponent() {
 	const { data: user } = useSuspenseQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
 
+	const { signOut } = useAuth();
+
 	const handleSignOut = async () => {
-		await authClient.signOut({
-			fetchOptions: {
-				onSuccess: () => {
-					window.location.href = "/";
-				},
-			},
-		});
+		await signOut();
+		window.location.href = "/";
 	};
 
 	if (!user) {

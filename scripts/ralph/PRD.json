@@ -1,26 +1,25 @@
 {
-  "branchName": "ralph/workos-auth-migration",
+  "branchName": "ralph/workos-authkit-migration",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Remove Better Auth component from Convex config",
+      "title": "Backend: Replace Better Auth config with WorkOS JWT validation",
       "acceptanceCriteria": [
-        "convex.config.ts has no Better Auth import",
-        "convex.config.ts has no app.use(betterAuth) call",
+        "auth.config.ts uses customJwt provider with WorkOS JWKS endpoint",
+        "Two JWT issuers configured (SSO and User Management)",
+        "WORKOS_CLIENT_ID env var required at runtime",
         "typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "Phase 1.1 - First backend change"
+      "passes": true,
+      "notes": "Phase 1.1 - Foundation for all other auth changes"
     },
     {
       "id": "US-002",
-      "title": "Configure WorkOS JWT validation in Convex",
+      "title": "Backend: Remove betterAuth component from convex.config.ts",
       "acceptanceCriteria": [
-        "auth.config.ts exports customJwt provider config",
-        "WORKOS_CLIENT_ID env var read from process.env",
-        "JWKS URL points to WorkOS endpoint",
-        "Two issuers configured (api.workos.com and user_management)",
+        "convex.config.ts has no betterAuth component import",
+        "defineApp() called with no components",
         "typecheck passes"
       ],
       "priority": 1,
@@ -29,48 +28,41 @@
     },
     {
       "id": "US-003",
-      "title": "Rewrite auth.ts with Convex identity-based auth",
+      "title": "Backend: Update schema - remove deviceCode, add workosId to users",
       "acceptanceCriteria": [
-        "getCurrentUser query returns user by tokenIdentifier",
-        "getCurrentUserSafe query never throws",
-        "getUser helper throws on unauthenticated",
-        "safeGetUser helper returns null on error",
-        "ensureUser mutation upserts user on first login",
-        "requireAdmin helper validates admin emails",
-        "isAdmin query checks admin status",
-        "getUserByToken internalQuery exists for HTTP handlers",
-        "No Better Auth imports remain",
+        "deviceCode table removed from schema.ts",
+        "users table has workosId: v.string() field",
+        "users table has by_workosId index",
+        "npx convex dev succeeds without schema errors",
         "typecheck passes"
       ],
       "priority": 1,
       "passes": false,
-      "notes": "Phase 1.3"
+      "notes": "Phase 1.3 - Breaking change: existing deviceCode data lost"
     },
     {
       "id": "US-004",
-      "title": "Update users table schema for WorkOS",
+      "title": "Backend: Create new auth.ts helper with getAuthUser and ensureUser",
       "acceptanceCriteria": [
-        "users table has tokenIdentifier field (string)",
-        "users table has email field (string)",
-        "users table has optional name field",
-        "users table has optional image field",
-        "users table has createdAt field (string)",
-        "by_tokenIdentifier index exists",
-        "by_email index exists",
-        "deviceCode table removed from schema",
+        "getAuthUser() extracts workosId from ctx.auth.getUserIdentity()",
+        "getAuthUser() queries users table by workosId index",
+        "ensureUser mutation creates user record if not exists",
+        "getCurrentUser query exported",
+        "getCurrentUserSafe query exported",
         "typecheck passes"
       ],
       "priority": 1,
       "passes": false,
-      "notes": "Phase 1.4"
+      "notes": "Phase 1.4 - Replaces old Better Auth helper"
     },
     {
       "id": "US-005",
-      "title": "Remove Better Auth routes from http.ts",
+      "title": "Backend: Update http.ts push endpoint to use WorkOS JWT validation",
       "acceptanceCriteria": [
-        "No authComponent.registerRoutes call",
-        "Push endpoint uses ctx.auth.getUserIdentity()",
-        "Push endpoint calls internal.auth.getUserByToken",
+        "No import from old auth module",
+        "Uses ctx.auth.getUserIdentity() for validation",
+        "Returns 401 if identity is null",
+        "Uses identity.subject as userId",
         "typecheck passes"
       ],
       "priority": 1,
@@ -79,11 +71,11 @@
     },
     {
       "id": "US-006",
-      "title": "Remove Better Auth deps from backend package.json",
+      "title": "Backend: Delete deviceAuth.ts file",
       "acceptanceCriteria": [
-        "@convex-dev/better-auth not in dependencies",
-        "better-auth not in dependencies",
-        "bun install succeeds"
+        "packages/backend/convex/deviceAuth.ts does not exist",
+        "No imports reference deviceAuth",
+        "typecheck passes"
       ],
       "priority": 1,
       "passes": false,
@@ -91,35 +83,24 @@
     },
     {
       "id": "US-007",
-      "title": "Delete deviceAuth.ts",
+      "title": "Web: Create start.ts with authkitMiddleware",
       "acceptanceCriteria": [
-        "packages/backend/convex/deviceAuth.ts does not exist",
-        "No imports of deviceAuth in other files",
+        "apps/web/src/start.ts exists",
+        "Exports startInstance from createStart()",
+        "authkitMiddleware() in requestMiddleware array",
         "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": false,
-      "notes": "Phase 1.7"
-    },
-    {
-      "id": "US-008",
-      "title": "Add WorkOS deps to web package.json",
-      "acceptanceCriteria": [
-        "@workos/authkit-tanstack-react-start in dependencies",
-        "@convex-dev/better-auth removed",
-        "better-auth removed",
-        "bun install succeeds"
       ],
       "priority": 2,
       "passes": false,
       "notes": "Phase 2.1"
     },
     {
-      "id": "US-009",
-      "title": "Create start.ts middleware config",
+      "id": "US-008",
+      "title": "Web: Create callback.tsx OAuth handler route",
       "acceptanceCriteria": [
-        "apps/web/src/start.ts exists",
-        "Exports startInstance with authkitMiddleware",
+        "apps/web/src/routes/callback.tsx exists",
+        "Uses createFileRoute('/callback')",
+        "server.handlers.GET = handleCallbackRoute",
         "typecheck passes"
       ],
       "priority": 2,
@@ -127,11 +108,14 @@
       "notes": "Phase 2.2"
     },
     {
-      "id": "US-010",
-      "title": "Create callback route for WorkOS OAuth",
+      "id": "US-009",
+      "title": "Web: Update __root.tsx to use WorkOS auth",
       "acceptanceCriteria": [
-        "apps/web/src/routes/callback.tsx exists",
-        "Route handles GET via handleCallbackRoute",
+        "No ConvexBetterAuthProvider import",
+        "No authClient import",
+        "Uses getAuth from @workos/authkit-tanstack-start",
+        "fetchWorkosAuth server function returns userId and token",
+        "beforeLoad uses fetchWorkosAuth",
         "typecheck passes"
       ],
       "priority": 2,
@@ -139,13 +123,13 @@
       "notes": "Phase 2.3"
     },
     {
-      "id": "US-011",
-      "title": "Rewrite router.tsx with WorkOS provider",
+      "id": "US-010",
+      "title": "Web: Update router.tsx with AuthKitProvider and useAuthFromWorkOS",
       "acceptanceCriteria": [
-        "AuthKitProvider wraps app",
-        "ConvexProviderWithAuth uses useAuthFromWorkOS bridge",
-        "useAuthFromWorkOS returns isLoading, isAuthenticated, fetchAccessToken",
-        "No Better Auth imports",
+        "Imports AuthKitProvider, useAccessToken, useAuth from @workos/authkit-tanstack-start/client",
+        "Imports ConvexProviderWithAuth from convex/react",
+        "Wrap function wraps children in AuthKitProvider > ConvexProviderWithAuth",
+        "useAuthFromWorkOS hook defined with isLoading, isAuthenticated, fetchAccessToken",
         "typecheck passes"
       ],
       "priority": 2,
@@ -153,14 +137,13 @@
       "notes": "Phase 2.4"
     },
     {
-      "id": "US-012",
-      "title": "Rewrite __root.tsx with WorkOS SSR auth",
+      "id": "US-011",
+      "title": "Web: Update sign-in.tsx to use WorkOS getSignInUrl",
       "acceptanceCriteria": [
-        "fetchWorkosAuth server function calls getAuth()",
-        "beforeLoad sets auth token via serverHttpClient.setAuth",
-        "Prefetches getCurrentUserSafe query",
-        "Returns isAuthenticated, token, userId context",
-        "No Better Auth imports",
+        "No authClient import",
+        "Imports getSignInUrl from @workos/authkit-tanstack-start",
+        "loader returns signInUrl",
+        "Sign in button is anchor tag with href={signInUrl}",
         "typecheck passes"
       ],
       "priority": 2,
@@ -168,14 +151,12 @@
       "notes": "Phase 2.5"
     },
     {
-      "id": "US-013",
-      "title": "Rewrite sign-in.tsx with WorkOS URLs",
+      "id": "US-012",
+      "title": "Web: Update profile.tsx to use WorkOS useAuth",
       "acceptanceCriteria": [
-        "Loader calls getAuth() and getSignInUrl()",
-        "Redirects if already authenticated",
-        "Sign-in button links to WorkOS signInUrl",
-        "GitHub icon displayed",
-        "No Better Auth imports",
+        "No authClient import",
+        "Imports useAuth from @workos/authkit-tanstack-start/client",
+        "Uses signOut() from useAuth hook",
         "typecheck passes"
       ],
       "priority": 2,
@@ -183,13 +164,14 @@
       "notes": "Phase 2.6"
     },
     {
-      "id": "US-014",
-      "title": "Rewrite profile.tsx with WorkOS sign-out",
+      "id": "US-013",
+      "title": "Web: Delete legacy auth files",
       "acceptanceCriteria": [
-        "Loader uses getAuth() for protection",
-        "useAuth hook provides signOut function",
-        "Sign out button calls signOut()",
-        "No Better Auth imports",
+        "apps/web/src/lib/auth-client.ts does not exist",
+        "apps/web/src/lib/auth-server.ts does not exist",
+        "apps/web/src/routes/device.$code.tsx does not exist",
+        "apps/web/src/routes/login.tsx does not exist",
+        "No imports reference deleted files",
         "typecheck passes"
       ],
       "priority": 2,
@@ -197,33 +179,14 @@
       "notes": "Phase 2.7"
     },
     {
-      "id": "US-015",
-      "title": "Delete Better Auth web files",
+      "id": "US-014",
+      "title": "CLI: Update auth.ts to use direct WorkOS device auth API",
       "acceptanceCriteria": [
-        "apps/web/src/lib/auth-client.ts deleted",
-        "apps/web/src/lib/auth-server.ts deleted",
-        "apps/web/src/routes/device.$code.tsx deleted",
-        "apps/web/src/routes/api/auth/$.ts deleted",
-        "apps/web/src/routes/login.tsx deleted",
-        "No broken imports in remaining files",
-        "typecheck passes"
-      ],
-      "priority": 2,
-      "passes": false,
-      "notes": "Phase 2.8"
-    },
-    {
-      "id": "US-016",
-      "title": "Rewrite CLI auth handler with WorkOS Device Auth",
-      "acceptanceCriteria": [
-        "requestDeviceCode() calls WorkOS device authorize endpoint",
-        "pollForToken() calls WorkOS authenticate endpoint",
-        "authLoginHandler displays user_code and verification_uri",
-        "Opens browser automatically",
-        "Polls with interval from response",
-        "Handles authorization_pending, slow_down, access_denied, expired_token",
-        "Saves token via saveAuthData on success",
-        "No Convex or Better Auth imports",
+        "No Convex imports for auth",
+        "Calls WorkOS /user_management/authorize/device endpoint",
+        "Polls /user_management/authenticate with device_code grant",
+        "Handles authorization_pending, slow_down, access_denied, expired_token errors",
+        "Saves access_token, refresh_token, email, userId via saveAuthData",
         "typecheck passes"
       ],
       "priority": 3,
@@ -231,73 +194,97 @@
       "notes": "Phase 3.1"
     },
     {
-      "id": "US-017",
-      "title": "Add ensureUser call on first login",
+      "id": "US-015",
+      "title": "Env: Update server.ts with WorkOS env vars",
       "acceptanceCriteria": [
-        "__root.tsx beforeLoad calls ensureUser mutation when token present",
-        "staleTime: Infinity prevents repeat calls",
+        "GITHUB_CLIENT_ID removed",
+        "GITHUB_CLIENT_SECRET removed",
+        "WORKOS_CLIENT_ID: z.string() added",
+        "WORKOS_API_KEY: z.string() added",
+        "WORKOS_COOKIE_PASSWORD: z.string().min(32) added",
+        "WORKOS_REDIRECT_URI: z.string().url() added",
         "typecheck passes"
       ],
       "priority": 4,
       "passes": false,
-      "notes": "Phase 4 - First login flow"
+      "notes": "Phase 4.3"
+    },
+    {
+      "id": "US-016",
+      "title": "Dependencies: Add @workos/authkit-tanstack-start to web app",
+      "acceptanceCriteria": [
+        "apps/web/package.json has @workos/authkit-tanstack-start dependency",
+        "bun install succeeds"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Phase 5.1"
+    },
+    {
+      "id": "US-017",
+      "title": "Dependencies: Remove Better Auth packages from web and backend",
+      "acceptanceCriteria": [
+        "apps/web/package.json has no @convex-dev/better-auth",
+        "apps/web/package.json has no better-auth",
+        "packages/backend/package.json has no @convex-dev/better-auth",
+        "packages/backend/package.json has no better-auth",
+        "bun install succeeds"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Phase 5.2 + 5.3"
     },
     {
       "id": "US-018",
-      "title": "Set WorkOS environment variables",
+      "title": "Integration: Web sign-in flow works end-to-end",
       "acceptanceCriteria": [
-        "WORKOS_CLIENT_ID set in Convex dashboard",
-        "ADMIN_EMAILS set in Convex dashboard",
-        "WORKOS_CLIENT_ID in .env.local",
-        "WORKOS_API_KEY in .env.local",
-        "WORKOS_COOKIE_PASSWORD in .env.local (32+ chars)",
-        "WORKOS_REDIRECT_URI in .env.local"
+        "Navigate to /sign-in shows sign in button",
+        "Clicking button redirects to WorkOS hosted auth",
+        "After auth, redirects back to /callback",
+        "Callback redirects to home page as authenticated user",
+        "Protected routes accessible"
       ],
-      "priority": 1,
+      "priority": 6,
       "passes": false,
-      "notes": "Prerequisites"
+      "notes": "Verification checklist item"
     },
     {
       "id": "US-019",
-      "title": "Web sign-in flow works end-to-end",
+      "title": "Integration: Web sign-out clears session",
       "acceptanceCriteria": [
-        "Sign in via GitHub redirects to WorkOS",
-        "Callback route handles OAuth response",
-        "User created in Convex on first login",
-        "Profile page shows user info",
-        "Sign out works",
+        "Sign out button on profile page calls signOut()",
+        "After sign out, user redirected to home",
         "Protected routes redirect to sign-in"
       ],
-      "priority": 5,
+      "priority": 6,
       "passes": false,
-      "notes": "Testing - Web"
+      "notes": "Verification checklist item"
     },
     {
       "id": "US-020",
-      "title": "CLI device auth flow works end-to-end",
+      "title": "Integration: CLI device auth flow works end-to-end",
       "acceptanceCriteria": [
-        "ow auth login displays device code and URL",
-        "Browser opens automatically",
-        "Approving in browser completes CLI login",
-        "Token saved to auth file",
+        "ow auth login displays verification URL and user code",
+        "Browser opens to WorkOS verification page",
+        "After approval, CLI receives tokens",
         "ow auth status shows logged-in state",
-        "ow auth logout clears token",
-        "ow push works with new token"
+        "ow push authenticates successfully"
       ],
-      "priority": 5,
+      "priority": 6,
       "passes": false,
-      "notes": "Testing - CLI"
+      "notes": "Verification checklist item"
     },
     {
       "id": "US-021",
-      "title": "Identity linking works",
+      "title": "Integration: Convex validates WorkOS JWTs via JWKS",
       "acceptanceCriteria": [
-        "Same GitHub account via web and CLI = same Convex user",
-        "Different email = different Convex user"
+        "ctx.auth.getUserIdentity() returns identity for valid WorkOS token",
+        "Returns null for invalid/expired tokens",
+        "identity.subject matches WorkOS user ID"
       ],
-      "priority": 5,
+      "priority": 6,
       "passes": false,
-      "notes": "Testing - Identity"
+      "notes": "Verification checklist item"
     }
   ]
 }

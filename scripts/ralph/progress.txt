@@ -104,3 +104,17 @@
   - Reference implementation at github.com/workos/template-convex-tanstack-react-start-authkit
 
 ---
+
+## 2026-01-17 - US-011
+
+- Updated sign-in.tsx to use WorkOS getSignInUrl instead of Better Auth authClient
+- Files changed:
+  - `apps/web/src/routes/sign-in.tsx`
+  - `apps/web/AGENTS.md`
+- **Learnings:**
+  - `getSignInUrl()` is server-side only - use in loader, not component
+  - Use `loaderDeps` to pass search params to loader for redirect handling
+  - Button with anchor tag pattern: `<a href={signInUrl}><Button>` for navigation
+  - Removed GitHub-specific icon since WorkOS handles provider selection on their hosted page
+
+---

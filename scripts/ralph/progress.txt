@@ -164,3 +164,14 @@
   - Route tree plugin only runs during Vite dev/build, not during type checking
 
 ---
+
+## 2026-01-17 - US-015
+
+- Updated T3 env validation to use WorkOS env vars instead of Better Auth
+- Files changed:
+  - `packages/env/src/server.ts`
+- **Learnings:**
+  - PRD mentioned GITHUB_CLIENT_ID/SECRET but actual file had BETTER_AUTH_SECRET/URL - same outcome (remove old auth vars)
+  - T3 env uses `z.string().url()` not `z.url()` - corrected in edit
+
+---

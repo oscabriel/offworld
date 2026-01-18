@@ -65,3 +65,4 @@ const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
 - `useAuthFromWorkOS` hook bridges WorkOS to Convex's expected interface (`isLoading`, `isAuthenticated`, `fetchAccessToken`)
 - `getSignInUrl()` generates WorkOS hosted auth URL - use with anchor tag, not onClick handler
 - Use `loaderDeps` to pass search params to loader when needed for sign-in redirect handling
+- `useAuth()` from `/client` provides `signOut()` for client-side sign out - use with `window.location.href` redirect after

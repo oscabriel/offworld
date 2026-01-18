@@ -15,12 +15,12 @@ src/
 
 ## WHERE TO LOOK
 
-| Task            | File                     |
-| --------------- | ------------------------ |
-| Add page        | `src/routes/{name}.tsx`  |
-| Root layout     | `src/routes/__root.tsx`  |
-| Start config    | `src/start.ts`           |
-| Router config   | `src/router.tsx`         |
+| Task          | File                    |
+| ------------- | ----------------------- |
+| Add page      | `src/routes/{name}.tsx` |
+| Root layout   | `src/routes/__root.tsx` |
+| Start config  | `src/start.ts`          |
+| Router config | `src/router.tsx`        |
 
 ## CONVENTIONS
 
@@ -48,11 +48,22 @@ loader: async () => {
 // Uses createServerFn wrapper around getAuth for SSR token fetching
 const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
 	const auth = await getAuth();
-	if (!auth.user) return { userId: null, token: null };
-	return { userId: auth.user.id, token: auth.accessToken };
+	if (!auth.user) return { initialAuth: null, workosId: null, token: null };
+	return { initialAuth: auth, workosId: auth.user.id, token: auth.accessToken };
 });
 // beforeLoad calls fetchWorkosAuth() and passes token to Convex serverHttpClient
 ```
+
+## ENVIRONMENT
+
+Required env vars for WorkOS auth (see `.env.example`):
+
+| Variable                 | Description                                                          |
+| ------------------------ | -------------------------------------------------------------------- |
+| `WORKOS_CLIENT_ID`       | WorkOS client ID from dashboard                                      |
+| `WORKOS_API_KEY`         | WorkOS API key (sk\_...)                                             |
+| `WORKOS_COOKIE_PASSWORD` | 32+ char random string for cookie encryption                         |
+| `WORKOS_REDIRECT_URI`    | OAuth callback URL (e.g., `http://localhost:3001/api/auth/callback`) |
 
 ## NOTES
 

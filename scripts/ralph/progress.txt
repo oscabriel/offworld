@@ -9,3 +9,13 @@
   - WORKOS_CLIENT_ID must be available at module evaluation time (top-level throw if missing)
 
 ---
+
+## 2026-01-17 - US-002
+
+- Removed betterAuth component from convex.config.ts
+- Files changed: `packages/backend/convex/convex.config.ts`
+- **Learnings:**
+  - defineApp() can be called empty - no components needed for basic Convex auth
+  - WorkOS JWT validation handled entirely by auth.config.ts, not by components
+
+---

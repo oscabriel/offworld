@@ -1,6 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const http = httpRouter();
 
@@ -101,7 +101,8 @@ http.route({
 				});
 			}
 
-			const userId = identity.subject;
+			const workosId = identity.subject;
+			await ctx.runMutation(api.auth.ensureUser, {});
 
 			const body = (await request.json()) as {
 				fullName?: string;
@@ -151,7 +152,7 @@ http.route({
 				commitSha,
 				analyzedAt,
 				version: "0.1.0",
-				userId,
+				workosId,
 			});
 
 			if (!result.success) {

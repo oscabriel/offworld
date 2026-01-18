@@ -275,28 +275,21 @@ describe("upsert", () => {
 
 		// Create a user first
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("users", {
+			await ctx.db.insert("user", {
 				workosId: "workos_test_user",
 				email: "test@example.com",
 				createdAt: new Date().toISOString(),
 			});
 		});
 
-		// Get the actual user ID for mutations
-		const userIdTyped = await ctx.run(async (ctx) => {
-			const user = await ctx.db
-				.query("users")
-				.filter((q) => q.eq(q.field("email"), "test@example.com"))
-				.first();
-			return user!._id;
-		});
+		const workosId = "workos_test_user";
 
 		// Push 3 times (should succeed)
 		for (let i = 0; i < 3; i++) {
 			await ctx.run(async (ctx) => {
 				await ctx.db.insert("pushLogs", {
 					fullName: "tanstack/router",
-					userId: userIdTyped,
+					workosId,
 					pushedAt: new Date().toISOString(),
 					commitSha: `commit${i}`,
 				});
@@ -306,7 +299,7 @@ describe("upsert", () => {
 		// 4th push should be rate limited
 		const result = await ctx.mutation(internal.analyses.upsert, {
 			...sampleAnalysis,
-			userId: userIdTyped,
+			workosId,
 		});
 
 		expect(result.success).toBe(false);
@@ -356,14 +349,15 @@ describe("getPushCountToday", () => {
 		const ctx = t();
 
 		// Create a user
-		const userId = await ctx.run(async (ctx) => {
-			const id = await ctx.db.insert("users", {
+		await ctx.run(async (ctx) => {
+			await ctx.db.insert("user", {
 				workosId: "workos_test_user_2",
 				email: "test@example.com",
 				createdAt: new Date().toISOString(),
 			});
-			return id;
 		});
+
+		const workosId = "workos_test_user_2";
 
 		const now = new Date();
 		const yesterday = new Date(now.getTime() - 25 * 60 * 60 * 1000); // 25 hours ago
@@ -372,7 +366,7 @@ describe("getPushCountToday", () => {
 		await ctx.run(async (ctx) => {
 			await ctx.db.insert("pushLogs", {
 				fullName: "tanstack/router",
-				userId,
+				workosId,
 				pushedAt: yesterday.toISOString(),
 				commitSha: "oldcommit",
 			});
@@ -382,13 +376,13 @@ describe("getPushCountToday", () => {
 		await ctx.run(async (ctx) => {
 			await ctx.db.insert("pushLogs", {
 				fullName: "tanstack/router",
-				userId,
+				workosId,
 				pushedAt: now.toISOString(),
 				commitSha: "commit1",
 			});
 			await ctx.db.insert("pushLogs", {
 				fullName: "tanstack/router",
-				userId,
+				workosId,
 				pushedAt: now.toISOString(),
 				commitSha: "commit2",
 			});
@@ -396,7 +390,7 @@ describe("getPushCountToday", () => {
 
 		const count = await ctx.query(internal.analyses.getPushCountToday, {
 			fullName: "tanstack/router",
-			userId,
+			workosId,
 		});
 
 		expect(count).toBe(2); // Only recent pushes

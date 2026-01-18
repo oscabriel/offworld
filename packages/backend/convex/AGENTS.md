@@ -4,14 +4,14 @@ Convex functions, schema, auth. Reactive backend-as-a-service.
 
 ## FILES
 
-| File             | Purpose                                  |
-| ---------------- | ---------------------------------------- |
-| `schema.ts`      | Database schema (todos table)            |
+| File             | Purpose                                    |
+| ---------------- | ------------------------------------------ |
+| `schema.ts`      | Database schema (todos table)              |
 | `auth.ts`        | WorkOS auth helpers + getCurrentUser query |
 | `auth.config.ts` | WorkOS JWT validation config (customJwt)   |
-| `http.ts`        | HTTP routes (auth endpoints)             |
-| `todos.ts`       | Todo CRUD mutations/queries              |
-| `_generated/`    | Auto-generated (don't edit)              |
+| `http.ts`        | HTTP routes (auth endpoints)               |
+| `todos.ts`       | Todo CRUD mutations/queries                |
+| `_generated/`    | Auto-generated (don't edit)                |
 
 ## PATTERNS
 
@@ -42,7 +42,7 @@ export const create = mutation({
 ## CONVENTIONS
 
 - Use `v.id("tableName")` for ID references
-- `getAuthUser()` returns user from DB or basic identity info
+- `getAuthUser()` returns user from DB or null
 - `ctx.auth.getUserIdentity()` returns raw WorkOS claims
 - Export queries/mutations from individual files, not index
 
@@ -61,5 +61,5 @@ npx convex dashboard # Open Convex dashboard
 - `ctx.auth.getUserIdentity()` returns WorkOS claims, `subject` = user ID
 - Schema changes auto-push in dev mode
 - `_generated/api.ts` exports typed API for frontend
-- Users table has `workosId` field (indexed) for linking to WorkOS identity
+- User table has `workosId` field (indexed) for linking to WorkOS identity
 - deviceCode table removed - WorkOS handles device auth flow directly

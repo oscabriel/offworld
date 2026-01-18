@@ -2,7 +2,6 @@ import { convexQuery, type ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@offworld/backend/convex/_generated/api";
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
 	HeadContent,
@@ -13,18 +12,21 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
+import { getAuth } from "@workos/authkit-tanstack-react-start";
 
 import { BackgroundImage } from "@/components/layout/background-image";
 import { Toaster } from "@/components/ui/sonner";
-import { authClient } from "@/lib/auth-client";
-import { getToken } from "@/lib/auth-server";
 
 import { Footer } from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import appCss from "../index.css?url";
 
-const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-	return await getToken();
+const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
+	const auth = await getAuth();
+	if (!auth.user) {
+		return { userId: null, token: null };
+	}
+	return { userId: auth.user.id, token: auth.accessToken };
 });
 
 export interface RouterAppContext {
@@ -139,7 +141,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 	component: RootDocument,
 	beforeLoad: async (ctx) => {
-		const token = await getAuth();
+		const { userId, token } = await fetchWorkosAuth();
 		if (token) {
 			ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
 		}
@@ -148,6 +150,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 		return {
 			isAuthenticated: !!token,
+			userId,
 			token,
 		};
 	},
@@ -157,30 +160,24 @@ function RootDocument() {
 	const context = useRouteContext({ from: Route.id });
 	return (
 		<QueryClientProvider client={context.queryClient}>
-			<ConvexBetterAuthProvider
-				client={context.convexQueryClient.convexClient}
-				authClient={authClient}
-				initialToken={context.token}
-			>
-				<html lang="en" className="dark">
-					<head>
-						<HeadContent />
-					</head>
-					<body className="relative flex min-h-screen flex-col">
-						<BackgroundImage />
-						<div className="relative z-10 flex flex-1 flex-col">
-							<Header />
-							<main className="flex flex-1 flex-col">
-								<Outlet />
-							</main>
-							<Footer />
-						</div>
-						<Toaster richColors />
-						<TanStackRouterDevtools position="bottom-left" />
-						<Scripts />
-					</body>
-				</html>
-			</ConvexBetterAuthProvider>
+			<html lang="en" className="dark">
+				<head>
+					<HeadContent />
+				</head>
+				<body className="relative flex min-h-screen flex-col">
+					<BackgroundImage />
+					<div className="relative z-10 flex flex-1 flex-col">
+						<Header />
+						<main className="flex flex-1 flex-col">
+							<Outlet />
+						</main>
+						<Footer />
+					</div>
+					<Toaster richColors />
+					<TanStackRouterDevtools position="bottom-left" />
+					<Scripts />
+				</body>
+			</html>
 		</QueryClientProvider>
 	);
 }

@@ -104,8 +104,7 @@ export default defineSchema({
 		isVerified: v.boolean(), // verified by offworld team
 
 		// User who pushed (optional for public analyses)
-		// String ID from Better Auth's internal user table
-		pushedBy: v.optional(v.string()),
+		workosId: v.optional(v.string()),
 	})
 		.index("by_fullName", ["fullName"])
 		.index("by_pullCount", ["pullCount"])
@@ -115,16 +114,14 @@ export default defineSchema({
 	// Push logs for rate limiting
 	pushLogs: defineTable({
 		fullName: v.string(),
-		// String ID from Better Auth's internal user table
-		userId: v.string(),
+		workosId: v.string(),
 		pushedAt: v.string(), // ISO timestamp
 		commitSha: v.string(),
 	})
 		.index("by_repo_date", ["fullName", "pushedAt"])
-		.index("by_user_date", ["userId", "pushedAt"]),
+		.index("by_workos_date", ["workosId", "pushedAt"]),
 
-	// Users table for auth (referenced by pushLogs)
-	users: defineTable({
+	user: defineTable({
 		workosId: v.string(), // WorkOS user ID (JWT subject claim)
 		email: v.string(),
 		name: v.optional(v.string()),

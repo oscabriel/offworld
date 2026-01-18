@@ -8,17 +8,11 @@ export async function getAuthUser(ctx: QueryCtx | MutationCtx) {
 	const workosId = identity.subject;
 
 	const user = await ctx.db
-		.query("users")
+		.query("user")
 		.withIndex("by_workosId", (q) => q.eq("workosId", workosId))
 		.first();
 
-	return (
-		user ?? {
-			workosId,
-			email: identity.email,
-			name: identity.name,
-		}
-	);
+	return user ?? null;
 }
 
 export const ensureUser = mutation({
@@ -29,13 +23,13 @@ export const ensureUser = mutation({
 
 		const workosId = identity.subject;
 		const existing = await ctx.db
-			.query("users")
+			.query("user")
 			.withIndex("by_workosId", (q) => q.eq("workosId", workosId))
 			.first();
 
 		if (existing) return existing._id;
 
-		return await ctx.db.insert("users", {
+		return await ctx.db.insert("user", {
 			workosId,
 			email: identity.email ?? "",
 			name: identity.name,

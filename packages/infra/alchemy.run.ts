@@ -1,5 +1,5 @@
 import alchemy from "alchemy";
-import { TanStackStart } from "alchemy/cloudflare";
+import { Astro, TanStackStart } from "alchemy/cloudflare";
 import { config } from "dotenv";
 
 config({ path: "./.env" });
@@ -19,6 +19,11 @@ export const web = await TanStackStart("web", {
 	},
 });
 
+export const docs = await Astro("docs", {
+	cwd: "../../apps/docs",
+});
+
 console.log(`Web    -> ${web.url}`);
+console.log(`Docs   -> ${docs.url}`);
 
 await app.finalize();

@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { internal } from "../_generated/api";
+import { api } from "../_generated/api";
 import schema from "../schema";
 
 // Use import.meta.glob to load modules for convex-test
@@ -9,7 +9,7 @@ const modules = import.meta.glob("../**/*.ts");
 const t = () => convexTest(schema, modules);
 
 /**
- * Unit tests for Convex functions
+ * Unit tests for Convex analyses functions
  */
 
 // Sample analysis data for testing
@@ -61,11 +61,11 @@ const sampleAnalysis = {
 	version: "0.1.0",
 };
 
-describe("getByRepo", () => {
+describe("pull", () => {
 	it("returns null for missing repo", async () => {
 		const ctx = t();
 
-		const result = await ctx.query(internal.analyses.getByRepo, {
+		const result = await ctx.query(api.analyses.pull, {
 			fullName: "nonexistent/repo",
 		});
 
@@ -84,7 +84,7 @@ describe("getByRepo", () => {
 			});
 		});
 
-		const result = await ctx.query(internal.analyses.getByRepo, {
+		const result = await ctx.query(api.analyses.pull, {
 			fullName: "tanstack/router",
 		});
 
@@ -95,18 +95,18 @@ describe("getByRepo", () => {
 	});
 });
 
-describe("getMeta", () => {
-	it("returns null for missing repo", async () => {
+describe("check", () => {
+	it("returns exists: false for missing repo", async () => {
 		const ctx = t();
 
-		const result = await ctx.query(internal.analyses.getMeta, {
+		const result = await ctx.query(api.analyses.check, {
 			fullName: "nonexistent/repo",
 		});
 
-		expect(result).toBeNull();
+		expect(result.exists).toBe(false);
 	});
 
-	it("returns only commitSha and analyzedAt", async () => {
+	it("returns commitSha and analyzedAt when exists", async () => {
 		const ctx = t();
 
 		await ctx.run(async (ctx) => {
@@ -117,74 +117,65 @@ describe("getMeta", () => {
 			});
 		});
 
-		const result = await ctx.query(internal.analyses.getMeta, {
+		const result = await ctx.query(api.analyses.check, {
 			fullName: "tanstack/router",
 		});
 
-		expect(result).not.toBeNull();
-		expect(result?.commitSha).toBe("abc123def456");
-		expect(result?.analyzedAt).toBe("2026-01-09T10:00:00.000Z");
-		expect(result?.pullCount).toBe(42);
-		// Should NOT contain full analysis data
-		expect((result as unknown as Record<string, unknown>).summary).toBeUndefined();
-		expect((result as unknown as Record<string, unknown>).architecture).toBeUndefined();
+		expect(result.exists).toBe(true);
+		if (result.exists) {
+			expect(result.commitSha).toBe("abc123def456");
+			expect(result.analyzedAt).toBe("2026-01-09T10:00:00.000Z");
+		}
 	});
 });
 
-describe("incrementPullCount", () => {
-	it("increases count by 1", async () => {
+describe("push", () => {
+	it("returns auth_required when not authenticated", async () => {
 		const ctx = t();
 
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
-				pullCount: 5,
-				isVerified: false,
-			});
+		const result = await ctx.mutation(api.analyses.push, {
+			fullName: sampleAnalysis.fullName,
+			summary: sampleAnalysis.summary,
+			architecture: sampleAnalysis.architecture,
+			skill: sampleAnalysis.skill,
+			fileIndex: sampleAnalysis.fileIndex,
+			commitSha: sampleAnalysis.commitSha,
+			analyzedAt: sampleAnalysis.analyzedAt,
 		});
 
-		const result = await ctx.mutation(internal.analyses.incrementPullCount, {
-			fullName: "tanstack/router",
-		});
-
-		expect(result).toBe(true);
-
-		// Verify count was incremented
-		const analysis = await ctx.query(internal.analyses.getByRepo, {
-			fullName: "tanstack/router",
-		});
-		expect(analysis?.pullCount).toBe(6);
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe("auth_required");
+		}
 	});
 
-	it("returns false for missing repo", async () => {
+	it("creates new analysis when authenticated", async () => {
 		const ctx = t();
 
-		const result = await ctx.mutation(internal.analyses.incrementPullCount, {
-			fullName: "nonexistent/repo",
+		// Mock authenticated user
+		const asUser = ctx.withIdentity({
+			subject: "workos_test_user",
+			email: "test@example.com",
 		});
 
-		expect(result).toBe(false);
-	});
-});
-
-describe("upsert", () => {
-	it("creates new analysis when not exists", async () => {
-		const ctx = t();
-
-		const result = await ctx.mutation(internal.analyses.upsert, {
-			...sampleAnalysis,
+		const result = await asUser.mutation(api.analyses.push, {
+			fullName: sampleAnalysis.fullName,
+			summary: sampleAnalysis.summary,
+			architecture: sampleAnalysis.architecture,
+			skill: sampleAnalysis.skill,
+			fileIndex: sampleAnalysis.fileIndex,
+			commitSha: sampleAnalysis.commitSha,
+			analyzedAt: sampleAnalysis.analyzedAt,
 		});
 
 		expect(result.success).toBe(true);
 
 		// Verify analysis was created
-		const analysis = await ctx.query(internal.analyses.getByRepo, {
+		const analysis = await ctx.query(api.analyses.pull, {
 			fullName: "tanstack/router",
 		});
 		expect(analysis).not.toBeNull();
 		expect(analysis?.fullName).toBe("tanstack/router");
-		expect(analysis?.pullCount).toBe(0); // Initial count
-		expect(analysis?.isVerified).toBe(false); // Initial verification
 	});
 
 	it("updates existing analysis when newer", async () => {
@@ -200,24 +191,31 @@ describe("upsert", () => {
 			});
 		});
 
+		// Mock authenticated user
+		const asUser = ctx.withIdentity({
+			subject: "workos_test_user",
+			email: "test@example.com",
+		});
+
 		// Update with newer analysis
-		const result = await ctx.mutation(internal.analyses.upsert, {
-			...sampleAnalysis,
-			analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
-			commitSha: "newsha123",
+		const result = await asUser.mutation(api.analyses.push, {
+			fullName: sampleAnalysis.fullName,
 			summary: "# Updated Summary",
+			architecture: sampleAnalysis.architecture,
+			skill: sampleAnalysis.skill,
+			fileIndex: sampleAnalysis.fileIndex,
+			commitSha: "newsha123",
+			analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
 		});
 
 		expect(result.success).toBe(true);
 
 		// Verify analysis was updated
-		const analysis = await ctx.query(internal.analyses.getByRepo, {
+		const analysis = await ctx.query(api.analyses.pull, {
 			fullName: "tanstack/router",
 		});
 		expect(analysis?.summary).toBe("# Updated Summary");
 		expect(analysis?.commitSha).toBe("newsha123");
-		expect(analysis?.pullCount).toBe(10); // Preserved
-		expect(analysis?.isVerified).toBe(true); // Preserved
 	});
 
 	it("rejects older analysis over newer", async () => {
@@ -233,166 +231,116 @@ describe("upsert", () => {
 			});
 		});
 
+		// Mock authenticated user
+		const asUser = ctx.withIdentity({
+			subject: "workos_test_user",
+			email: "test@example.com",
+		});
+
 		// Try to update with older analysis
-		const result = await ctx.mutation(internal.analyses.upsert, {
-			...sampleAnalysis,
+		const result = await asUser.mutation(api.analyses.push, {
+			fullName: sampleAnalysis.fullName,
+			summary: sampleAnalysis.summary,
+			architecture: sampleAnalysis.architecture,
+			skill: sampleAnalysis.skill,
+			fileIndex: sampleAnalysis.fileIndex,
+			commitSha: sampleAnalysis.commitSha,
 			analyzedAt: "2026-01-09T08:00:00.000Z", // Older
 		});
 
 		expect(result.success).toBe(false);
-		expect(result.error).toBe("conflict");
-		expect(result.message).toContain("newer analysis already exists");
-	});
-
-	it("rejects different analysis for same commit", async () => {
-		const ctx = t();
-
-		// Insert initial analysis
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
-				analyzedAt: "2026-01-09T10:00:00.000Z",
-				commitSha: "samecommit123",
-				pullCount: 0,
-				isVerified: false,
-			});
-		});
-
-		// Try to push different analysis for same commit
-		const result = await ctx.mutation(internal.analyses.upsert, {
-			...sampleAnalysis,
-			analyzedAt: "2026-01-09T11:00:00.000Z", // Different time
-			commitSha: "samecommit123", // Same commit
-		});
-
-		expect(result.success).toBe(false);
-		expect(result.error).toBe("conflict");
-		expect(result.message).toContain("different analysis exists");
+		if (!result.success) {
+			expect(result.error).toBe("conflict");
+		}
 	});
 
 	it("enforces rate limit (3/repo/day)", async () => {
 		const ctx = t();
 
-		// Create a user first
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("user", {
-				workosId: "workos_test_user",
-				email: "test@example.com",
-				createdAt: new Date().toISOString(),
-			});
-		});
-
 		const workosId = "workos_test_user";
 
-		// Push 3 times (should succeed)
-		for (let i = 0; i < 3; i++) {
-			await ctx.run(async (ctx) => {
+		// Add 3 push logs
+		await ctx.run(async (ctx) => {
+			for (let i = 0; i < 3; i++) {
 				await ctx.db.insert("pushLogs", {
 					fullName: "tanstack/router",
 					workosId,
 					pushedAt: new Date().toISOString(),
 					commitSha: `commit${i}`,
 				});
-			});
-		}
+			}
+		});
+
+		// Mock authenticated user
+		const asUser = ctx.withIdentity({
+			subject: workosId,
+			email: "test@example.com",
+		});
 
 		// 4th push should be rate limited
-		const result = await ctx.mutation(internal.analyses.upsert, {
-			...sampleAnalysis,
-			workosId,
+		const result = await asUser.mutation(api.analyses.push, {
+			fullName: sampleAnalysis.fullName,
+			summary: sampleAnalysis.summary,
+			architecture: sampleAnalysis.architecture,
+			skill: sampleAnalysis.skill,
+			fileIndex: sampleAnalysis.fileIndex,
+			commitSha: "newcommit",
+			analyzedAt: new Date().toISOString(),
 		});
 
 		expect(result.success).toBe(false);
-		expect(result.error).toBe("rate_limit");
-		expect(result.message).toContain("3 times per repository per day");
+		if (!result.success) {
+			expect(result.error).toBe("rate_limit");
+		}
 	});
 });
 
-describe("remove", () => {
-	it("deletes existing analysis", async () => {
+describe("get", () => {
+	it("returns full analysis for web app", async () => {
 		const ctx = t();
 
 		await ctx.run(async (ctx) => {
 			await ctx.db.insert("analyses", {
 				...sampleAnalysis,
-				pullCount: 0,
-				isVerified: false,
+				pullCount: 42,
+				isVerified: true,
 			});
 		});
 
-		const result = await ctx.mutation(internal.analyses.remove, {
+		const result = await ctx.query(api.analyses.get, {
 			fullName: "tanstack/router",
 		});
 
-		expect(result).toBe(true);
-
-		// Verify analysis was deleted
-		const analysis = await ctx.query(internal.analyses.getByRepo, {
-			fullName: "tanstack/router",
-		});
-		expect(analysis).toBeNull();
-	});
-
-	it("returns false for missing repo", async () => {
-		const ctx = t();
-
-		const result = await ctx.mutation(internal.analyses.remove, {
-			fullName: "nonexistent/repo",
-		});
-
-		expect(result).toBe(false);
+		expect(result).not.toBeNull();
+		expect(result?.fullName).toBe("tanstack/router");
+		expect(result?.pullCount).toBe(42);
+		expect(result?.isVerified).toBe(true);
 	});
 });
 
-describe("getPushCountToday", () => {
-	it("counts only pushes within 24 hours", async () => {
+describe("list", () => {
+	it("returns analyses sorted by pullCount", async () => {
 		const ctx = t();
 
-		// Create a user
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("user", {
-				workosId: "workos_test_user_2",
-				email: "test@example.com",
-				createdAt: new Date().toISOString(),
+			await ctx.db.insert("analyses", {
+				...sampleAnalysis,
+				fullName: "repo/low",
+				pullCount: 5,
+				isVerified: false,
+			});
+			await ctx.db.insert("analyses", {
+				...sampleAnalysis,
+				fullName: "repo/high",
+				pullCount: 100,
+				isVerified: true,
 			});
 		});
 
-		const workosId = "workos_test_user_2";
+		const result = await ctx.query(api.analyses.list, {});
 
-		const now = new Date();
-		const yesterday = new Date(now.getTime() - 25 * 60 * 60 * 1000); // 25 hours ago
-
-		// Add old push (should not count)
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("pushLogs", {
-				fullName: "tanstack/router",
-				workosId,
-				pushedAt: yesterday.toISOString(),
-				commitSha: "oldcommit",
-			});
-		});
-
-		// Add recent pushes (should count)
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("pushLogs", {
-				fullName: "tanstack/router",
-				workosId,
-				pushedAt: now.toISOString(),
-				commitSha: "commit1",
-			});
-			await ctx.db.insert("pushLogs", {
-				fullName: "tanstack/router",
-				workosId,
-				pushedAt: now.toISOString(),
-				commitSha: "commit2",
-			});
-		});
-
-		const count = await ctx.query(internal.analyses.getPushCountToday, {
-			fullName: "tanstack/router",
-			workosId,
-		});
-
-		expect(count).toBe(2); // Only recent pushes
+		expect(result.length).toBe(2);
+		expect(result[0].fullName).toBe("repo/high");
+		expect(result[1].fullName).toBe("repo/low");
 	});
 });

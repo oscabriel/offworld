@@ -1,14 +1,17 @@
 /**
  * Sync utilities for CLI-Convex communication
+ * Uses ConvexHttpClient for direct type-safe API calls
  */
 
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@offworld/backend/api";
 import type { Architecture, FileIndex, RepoSource, Skill } from "@offworld/types";
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-const DEFAULT_API_BASE = process.env.OW_API_URL ?? "https://offworld.sh";
+const CONVEX_URL = process.env.CONVEX_URL ?? "https://beloved-ferret-55.convex.cloud";
 const GITHUB_API_BASE = "https://api.github.com";
 const MIN_STARS_FOR_PUSH = 5;
 
@@ -82,7 +85,7 @@ export interface AnalysisData {
 	analyzedAt: string;
 }
 
-/** Response from /api/analyses/pull */
+/** Response from pull query */
 export interface PullResponse {
 	fullName: string;
 	summary: string;
@@ -91,25 +94,19 @@ export interface PullResponse {
 	fileIndex: FileIndex;
 	commitSha: string;
 	analyzedAt: string;
-	pullCount: number;
 }
 
-/** Response from /api/analyses/check */
+/** Response from check query */
 export interface CheckResponse {
 	exists: boolean;
 	commitSha?: string;
 	analyzedAt?: string;
 }
 
-/** Response from /api/analyses/push */
+/** Response from push mutation */
 export interface PushResponse {
 	success: boolean;
 	message?: string;
-}
-
-/** Options for sync operations */
-export interface SyncOptions {
-	apiBase?: string;
 }
 
 /** Staleness check result */
@@ -127,49 +124,34 @@ export interface CanPushResult {
 }
 
 // ============================================================================
+// Convex Client
+// ============================================================================
+
+function createClient(token?: string): ConvexHttpClient {
+	const client = new ConvexHttpClient(CONVEX_URL);
+	if (token) client.setAuth(token);
+	return client;
+}
+
+// ============================================================================
 // API Functions
 // ============================================================================
 
 /**
  * Fetches analysis from the remote server
  * @param fullName - Repository full name (owner/repo)
- * @param options - Sync options
  * @returns Analysis data or null if not found
  */
-export async function pullAnalysis(
-	fullName: string,
-	options: SyncOptions = {},
-): Promise<PullResponse | null> {
-	const apiBase = options.apiBase ?? DEFAULT_API_BASE;
-	const url = `${apiBase}/api/analyses/pull`;
-
+export async function pullAnalysis(fullName: string): Promise<PullResponse | null> {
+	const client = createClient();
 	try {
-		const response = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ fullName }),
-		});
-
-		if (response.status === 404) {
-			return null;
-		}
-
-		if (response.status === 400) {
-			const errorData = (await response.json()) as { message?: string };
-			throw new SyncError(errorData.message || "Invalid request");
-		}
-
-		if (!response.ok) {
-			throw new NetworkError(`Failed to pull analysis: ${response.statusText}`, response.status);
-		}
-
-		return (await response.json()) as PullResponse;
+		const result = await client.query(api.analyses.pull, { fullName });
+		if (!result) return null;
+		// Cast to match PullResponse interface (Convex types use any for complex objects)
+		return result as unknown as PullResponse;
 	} catch (error) {
-		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			`Failed to pull analysis: ${error instanceof Error ? error.message : error}`,
 		);
 	}
 }
@@ -178,54 +160,41 @@ export async function pullAnalysis(
  * Pushes analysis to the remote server
  * @param analysis - Analysis data to push
  * @param token - Authentication token
- * @param options - Sync options
  * @returns Push result
  */
-export async function pushAnalysis(
-	analysis: AnalysisData,
-	token: string,
-	options: SyncOptions = {},
-): Promise<PushResponse> {
-	const apiBase = options.apiBase ?? DEFAULT_API_BASE;
-	const url = `${apiBase}/api/analyses/push`;
-
+export async function pushAnalysis(analysis: AnalysisData, token: string): Promise<PushResponse> {
+	const client = createClient(token);
 	try {
-		const response = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${token}`,
-			},
-			body: JSON.stringify(analysis),
+		const result = await client.mutation(api.analyses.push, {
+			fullName: analysis.fullName,
+			summary: analysis.summary,
+			architecture: analysis.architecture,
+			skill: analysis.skill,
+			fileIndex: analysis.fileIndex,
+			commitSha: analysis.commitSha,
+			analyzedAt: analysis.analyzedAt,
 		});
 
-		if (response.status === 401) {
-			throw new AuthenticationError();
+		if (!result.success) {
+			if (result.error === "auth_required") {
+				throw new AuthenticationError();
+			}
+			if (result.error === "rate_limit") {
+				throw new RateLimitError();
+			}
+			if (result.error === "conflict") {
+				throw new ConflictError(
+					"A newer analysis already exists",
+					"remoteCommitSha" in result ? result.remoteCommitSha : undefined,
+				);
+			}
 		}
 
-		if (response.status === 429) {
-			throw new RateLimitError();
-		}
-
-		if (response.status === 409) {
-			const errorData = (await response.json()) as { message?: string; remoteCommitSha?: string };
-			throw new ConflictError(errorData.message, errorData.remoteCommitSha);
-		}
-
-		if (response.status === 400) {
-			const errorData = (await response.json()) as { message?: string };
-			throw new SyncError(errorData.message || "Invalid request");
-		}
-
-		if (!response.ok) {
-			throw new NetworkError(`Failed to push analysis: ${response.statusText}`, response.status);
-		}
-
-		return (await response.json()) as PushResponse;
+		return { success: true };
 	} catch (error) {
 		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			`Failed to push analysis: ${error instanceof Error ? error.message : error}`,
 		);
 	}
 }
@@ -233,38 +202,23 @@ export async function pushAnalysis(
 /**
  * Checks if analysis exists on remote server (lightweight check)
  * @param fullName - Repository full name (owner/repo)
- * @param options - Sync options
  * @returns Check result
  */
-export async function checkRemote(
-	fullName: string,
-	options: SyncOptions = {},
-): Promise<CheckResponse> {
-	const apiBase = options.apiBase ?? DEFAULT_API_BASE;
-	const url = `${apiBase}/api/analyses/check`;
-
+export async function checkRemote(fullName: string): Promise<CheckResponse> {
+	const client = createClient();
 	try {
-		const response = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ fullName }),
-		});
-
-		if (response.status === 404) {
+		const result = await client.query(api.analyses.check, { fullName });
+		if (!result.exists) {
 			return { exists: false };
 		}
-
-		if (!response.ok) {
-			throw new NetworkError(`Failed to check remote: ${response.statusText}`, response.status);
-		}
-
-		return (await response.json()) as CheckResponse;
+		return {
+			exists: true,
+			commitSha: result.commitSha,
+			analyzedAt: result.analyzedAt,
+		};
 	} catch (error) {
-		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to connect to ${apiBase}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			`Failed to check remote: ${error instanceof Error ? error.message : error}`,
 		);
 	}
 }
@@ -273,15 +227,13 @@ export async function checkRemote(
  * Compares local vs remote commit SHA to check staleness
  * @param fullName - Repository full name (owner/repo)
  * @param localCommitSha - Local commit SHA
- * @param options - Sync options
  * @returns Staleness result
  */
 export async function checkStaleness(
 	fullName: string,
 	localCommitSha: string,
-	options: SyncOptions = {},
 ): Promise<StalenessResult> {
-	const remote = await checkRemote(fullName, options);
+	const remote = await checkRemote(fullName);
 
 	if (!remote.exists || !remote.commitSha) {
 		// No remote analysis, not stale (nothing to compare)

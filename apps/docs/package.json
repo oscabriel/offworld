@@ -3,6 +3,9 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"dev": "alchemy dev --app docs",
+		"deploy": "alchemy deploy --app docs",
+		"destroy": "alchemy destroy --app docs",
 		"build": "astro build",
 		"preview": "astro preview",
 		"astro": "astro"

@@ -1,14 +1,9 @@
 import alchemy from "alchemy";
-import { Astro, TanStackStart } from "alchemy/cloudflare";
-import { config } from "dotenv";
+import { TanStackStart } from "alchemy/cloudflare";
 
-config({ path: "./.env" });
-config({ path: "../../apps/web/.env" });
-
-const app = await alchemy("offworld");
+const app = await alchemy("web");
 
 export const web = await TanStackStart("web", {
-	cwd: "../../apps/web",
 	bindings: {
 		VITE_CONVEX_URL: alchemy.env.VITE_CONVEX_URL!,
 		VITE_CONVEX_SITE_URL: alchemy.env.VITE_CONVEX_SITE_URL!,
@@ -19,11 +14,6 @@ export const web = await TanStackStart("web", {
 	},
 });
 
-export const docs = await Astro("docs", {
-	cwd: "../../apps/docs",
-});
-
 console.log(`Web    -> ${web.url}`);
-console.log(`Docs   -> ${docs.url}`);
 
 await app.finalize();

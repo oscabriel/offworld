@@ -43,15 +43,17 @@ Your app will connect to the Convex cloud backend automatically.
 
 ## Deployment (Cloudflare via Alchemy)
 
-All apps are deployed together via Alchemy from `packages/infra`:
+Each app has its own Alchemy configuration:
 
 ```bash
-cd packages/infra && bun run deploy   # Deploy web + docs to Cloudflare
-cd packages/infra && bun run destroy  # Tear down deployment
-cd packages/infra && bun run dev      # Run web + docs dev servers locally
-```
+# Web app
+cd apps/web && bun run deploy   # Deploy web to Cloudflare
+cd apps/web && bun run destroy  # Tear down web deployment
 
-For more details, see the guide on [Deploying to Cloudflare with Alchemy](https://www.better-t-stack.dev/docs/guides/cloudflare-alchemy).
+# Docs
+cd apps/docs && bun run deploy  # Deploy docs to Cloudflare
+cd apps/docs && bun run destroy # Tear down docs deployment
+```
 
 ## Project Structure
 
@@ -72,5 +74,6 @@ offworld/
 - `bun run dev:setup`: Setup and configure your Convex project
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run check`: Run Oxlint and Oxfmt
-- `cd packages/infra && bun run dev`: Start web + docs dev servers (via Alchemy)
+- `cd apps/web && bun run deploy`: Deploy web app to Cloudflare
+- `cd apps/docs && bun run deploy`: Deploy docs to Cloudflare
 - `cd apps/docs && bun run build`: Build documentation site

@@ -15,7 +15,7 @@
 	"devDependencies": {
 		"@offworld/config": "workspace:*",
 		"@offworld/infra": "workspace:*",
-		"@types/node": "^25.0.9",
+		"@types/node": "catalog:",
 		"typescript": "catalog:"
 	}
 }

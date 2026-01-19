@@ -17,10 +17,10 @@
 	"dependencies": {
 		"@offworld/sdk": "workspace:*",
 		"@offworld/types": "workspace:*",
-		"@opencode-ai/plugin": "^1.1.23"
+		"@opencode-ai/plugin": "^1.1.25"
 	},
 	"devDependencies": {
-		"@types/node": "^25.0.9",
+		"@types/node": "catalog:",
 		"tsdown": "catalog:",
 		"typescript": "catalog:"
 	}

@@ -7,7 +7,7 @@
 		"dev": "bun run --watch src/index.ts"
 	},
 	"dependencies": {
-		"@opentui/core": "^0.1.73"
+		"@opentui/core": "^0.1.74"
 	},
 	"devDependencies": {
 		"@types/bun": "1.3.6"

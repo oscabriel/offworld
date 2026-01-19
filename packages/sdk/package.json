@@ -20,13 +20,13 @@
 		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke"
 	},
 	"dependencies": {
-		"@anthropic-ai/claude-agent-sdk": "^0.2.7",
+		"@anthropic-ai/claude-agent-sdk": "^0.2.12",
 		"@offworld/types": "workspace:*",
-		"@opencode-ai/sdk": "^1.1.23",
+		"@opencode-ai/sdk": "^1.1.25",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"@types/node": "^25.0.9",
+		"@types/node": "catalog:",
 		"tsdown": "catalog:",
 		"typescript": "catalog:",
 		"vitest": "catalog:"

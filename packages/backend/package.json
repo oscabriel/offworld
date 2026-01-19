@@ -19,7 +19,7 @@
 	"devDependencies": {
 		"@edge-runtime/vm": "catalog:",
 		"@offworld/config": "workspace:*",
-		"@types/node": "^25.0.9",
+		"@types/node": "catalog:",
 		"convex-test": "catalog:",
 		"typescript": "catalog:",
 		"vitest": "catalog:"

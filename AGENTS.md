@@ -78,7 +78,7 @@ bun run typecheck        # TypeScript check
 - Convex in `packages/backend/convex/` not root (monorepo pattern)
 - Web app uses Convex + TanStack Query integration via `@convex-dev/react-query`
 - Auth SSR: token fetched in `__root.tsx` beforeLoad, passed to ConvexBetterAuthProvider
-- Deploy: `cd apps/web && bun run deploy` (uses Alchemy)
+- Deploy: `cd packages/infra && bun run deploy` (uses Alchemy)
 
 ## TYPES PACKAGE (`@offworld/types`)
 

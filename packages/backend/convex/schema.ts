@@ -64,11 +64,12 @@ const keyFileSkillSchema = v.object({
 const skillSchema = v.object({
 	name: v.string(),
 	description: v.string(),
-	allowedTools: v.array(v.string()),
-	repositoryStructure: v.array(repositoryStructureSchema),
-	keyFiles: v.array(keyFileSkillSchema),
-	searchStrategies: v.array(v.string()),
-	whenToUse: v.array(v.string()),
+	// Optional fields for AI-only approach (see packages/types SkillSchema)
+	allowedTools: v.optional(v.array(v.string())),
+	repositoryStructure: v.optional(v.array(repositoryStructureSchema)),
+	keyFiles: v.optional(v.array(keyFileSkillSchema)),
+	searchStrategies: v.optional(v.array(v.string())),
+	whenToUse: v.optional(v.array(v.string())),
 });
 
 // File index entry schema

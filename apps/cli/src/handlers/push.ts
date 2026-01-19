@@ -43,30 +43,58 @@ export interface PushResult {
 // Helper Functions
 // ============================================================================
 
+/**
+ * Load local analysis from the new AI-only format.
+ * New format has: SKILL.md + meta.json
+ * Creates placeholder objects for architecture/fileIndex/skill to satisfy API contract.
+ */
 function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | null {
-	const summaryPath = join(skillDir, "references", "summary.md");
-	const architecturePath = join(metaDir, "architecture.json");
-	const fileIndexPath = join(metaDir, "file-index.json");
-	const skillPath = join(metaDir, "skill.json");
+	const skillMdPath = join(skillDir, "SKILL.md");
 	const metaPath = join(metaDir, "meta.json");
 
-	const requiredFiles = [summaryPath, architecturePath, fileIndexPath, skillPath, metaPath];
-
-	for (const file of requiredFiles) {
-		if (!existsSync(file)) {
-			return null;
-		}
+	// Check required files for new format
+	if (!existsSync(skillMdPath) || !existsSync(metaPath)) {
+		return null;
 	}
 
 	try {
-		const summary = readFileSync(summaryPath, "utf-8");
-		const architecture = JSON.parse(readFileSync(architecturePath, "utf-8")) as Architecture;
-		const fileIndex = JSON.parse(readFileSync(fileIndexPath, "utf-8")) as FileIndex;
-		const skill = JSON.parse(readFileSync(skillPath, "utf-8")) as Skill;
+		const skillContent = readFileSync(skillMdPath, "utf-8");
 		const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as {
 			commitSha: string;
 			analyzedAt: string;
 		};
+
+		// Extract name and description from SKILL.md frontmatter
+		const frontmatterMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
+		let name = "unknown";
+		let description = "";
+
+		if (frontmatterMatch?.[1]) {
+			const frontmatter = frontmatterMatch[1];
+			const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
+			const descMatch = frontmatter.match(/^description:\s*(.+)$/m);
+			if (nameMatch?.[1]) name = nameMatch[1].trim();
+			if (descMatch?.[1]) description = descMatch[1].trim();
+		}
+
+		// Create placeholder objects for API compatibility
+		const architecture: Architecture = {
+			projectType: "library",
+			entities: [],
+			relationships: [],
+			keyFiles: [],
+			patterns: {},
+		};
+
+		const fileIndex: FileIndex = [];
+
+		const skill: Skill = {
+			name,
+			description,
+		};
+
+		// Use SKILL.md content as summary
+		const summary = skillContent;
 
 		return {
 			fullName: "",

@@ -16,7 +16,7 @@ bun run typecheck        # TypeScript type checking
 bun run test             # Run all tests via vitest (NOT `bun test`)
 
 # Deployment (from packages/infra)
-cd packages/infra && bun run deploy   # Deploy to Cloudflare
+cd packages/infra && bun run deploy   # Deploy web + docs to Cloudflare
 cd packages/infra && bun run destroy  # Tear down deployment
 ```
 

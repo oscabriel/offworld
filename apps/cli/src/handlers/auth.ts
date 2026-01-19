@@ -13,14 +13,7 @@ import { createSpinner } from "../utils/spinner";
 // ============================================================================
 
 const WORKOS_API = "https://api.workos.com";
-
-function getWorkosClientId(): string {
-	const clientId = process.env.WORKOS_CLIENT_ID;
-	if (!clientId) {
-		throw new Error("WORKOS_CLIENT_ID environment variable is required");
-	}
-	return clientId;
-}
+const WORKOS_CLIENT_ID = "client_01KFAD76KZRNWY7J2XN5PYESAH";
 
 // ============================================================================
 // Handler Types
@@ -83,7 +76,7 @@ async function requestDeviceCode(): Promise<DeviceAuthResponse> {
 	const response = await fetch(`${WORKOS_API}/user_management/authorize/device`, {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		body: new URLSearchParams({ client_id: getWorkosClientId() }),
+		body: new URLSearchParams({ client_id: WORKOS_CLIENT_ID }),
 	});
 
 	if (!response.ok) {
@@ -108,7 +101,7 @@ async function pollForTokens(
 			body: new URLSearchParams({
 				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
 				device_code: deviceCode,
-				client_id: getWorkosClientId(),
+				client_id: WORKOS_CLIENT_ID,
 			}),
 		});
 

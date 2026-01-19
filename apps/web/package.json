@@ -3,6 +3,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
+		"dev": "alchemy dev --app web",
+		"deploy": "alchemy deploy --app web",
+		"destroy": "alchemy destroy --app web",
 		"build": "vite build",
 		"serve": "vite preview",
 		"typecheck": "tsc --noEmit",

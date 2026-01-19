@@ -32,7 +32,8 @@ export const ensureUser = mutation({
 		return await ctx.db.insert("user", {
 			workosId,
 			email: identity.email ?? "",
-			name: identity.name,
+			name: identity.name ?? undefined,
+			image: identity.pictureUrl ?? undefined,
 			createdAt: new Date().toISOString(),
 		});
 	},

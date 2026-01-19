@@ -33,7 +33,11 @@ const fetchWorkosAuth = createServerFn({ method: "GET" }).handler(async () => {
 	if (!auth.user) {
 		return { initialAuth: null, workosId: null, token: null } as const;
 	}
-	return { initialAuth: auth, workosId: auth.user.id, token: auth.accessToken } as const;
+	return {
+		initialAuth: auth,
+		workosId: auth.user.id,
+		token: auth.accessToken,
+	} as const;
 });
 
 export interface RouterAppContext {

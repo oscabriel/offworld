@@ -1,10 +1,9 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 /**
  * Analyses Convex Functions
- * Internal functions for analysis management
- * Public queries for web app
+ * Public queries/mutations for CLI and web app
  */
 
 // ============================================================================
@@ -55,26 +54,13 @@ export const list = query({
 });
 
 // ============================================================================
-// Query Functions
+// Public CLI Functions
 // ============================================================================
 
 /**
- * Get analysis by repository fullName
+ * Fetch analysis for CLI pull (no pull count tracking)
  */
-export const getByRepo = internalQuery({
-	args: { fullName: v.string() },
-	handler: async (ctx, args) => {
-		return await ctx.db
-			.query("analyses")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
-	},
-});
-
-/**
- * Get analysis metadata only (for lightweight checks)
- */
-export const getMeta = internalQuery({
+export const pull = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
 		const analysis = await ctx.db
@@ -82,44 +68,24 @@ export const getMeta = internalQuery({
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 
-		if (!analysis) {
-			return null;
-		}
+		if (!analysis) return null;
 
 		return {
+			fullName: analysis.fullName,
+			summary: analysis.summary,
+			architecture: analysis.architecture,
+			skill: analysis.skill,
+			fileIndex: analysis.fileIndex,
 			commitSha: analysis.commitSha,
 			analyzedAt: analysis.analyzedAt,
-			pullCount: analysis.pullCount,
 		};
 	},
 });
 
 /**
- * Get push count for a repo in the last 24 hours (rate limiting)
+ * Lightweight existence check for CLI
  */
-export const getPushCountToday = internalQuery({
-	args: { fullName: v.string(), workosId: v.string() },
-	handler: async (ctx, args) => {
-		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-		const pushes = await ctx.db
-			.query("pushLogs")
-			.withIndex("by_repo_date", (q) => q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo))
-			.filter((q) => q.eq(q.field("workosId"), args.workosId))
-			.collect();
-
-		return pushes.length;
-	},
-});
-
-// ============================================================================
-// Mutation Functions
-// ============================================================================
-
-/**
- * Increment pull count for an analysis
- */
-export const incrementPullCount = internalMutation({
+export const check = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
 		const analysis = await ctx.db
@@ -127,66 +93,71 @@ export const incrementPullCount = internalMutation({
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 
-		if (!analysis) {
-			return false;
-		}
+		if (!analysis) return { exists: false as const };
 
-		await ctx.db.patch(analysis._id, {
-			pullCount: analysis.pullCount + 1,
-		});
-
-		return true;
+		return {
+			exists: true as const,
+			commitSha: analysis.commitSha,
+			analyzedAt: analysis.analyzedAt,
+		};
 	},
 });
 
 /**
- * Create or update an analysis
- * Enforces rate limiting and conflict resolution
+ * Push analysis from CLI - auth required, returns structured result
  */
-export const upsert = internalMutation({
+export const push = mutation({
 	args: {
 		fullName: v.string(),
-		provider: v.string(),
 		summary: v.string(),
-		architecture: v.any(), // Complex nested object
+		architecture: v.any(),
 		skill: v.any(),
 		fileIndex: v.any(),
 		commitSha: v.string(),
 		analyzedAt: v.string(),
-		version: v.string(),
-		workosId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const { workosId, ...analysisData } = args;
+		// Auth check
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return { success: false, error: "auth_required" } as const;
+		}
+		const workosId = identity.subject;
 
-		// Check for existing analysis
+		// Ensure user exists (inline from auth.ts ensureUser)
+		const existingUser = await ctx.db
+			.query("user")
+			.withIndex("by_workosId", (q) => q.eq("workosId", workosId))
+			.first();
+
+		if (!existingUser) {
+			await ctx.db.insert("user", {
+				workosId,
+				email: identity.email ?? "",
+				name: identity.name ?? undefined,
+				image: identity.pictureUrl ?? undefined,
+				createdAt: new Date().toISOString(),
+			});
+		}
+
+		// Rate limit check (3 pushes per repo per day per user)
+		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+		const recentPushes = await ctx.db
+			.query("pushLogs")
+			.withIndex("by_repo_date", (q) => q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo))
+			.filter((q) => q.eq(q.field("workosId"), workosId))
+			.collect();
+
+		if (recentPushes.length >= 3) {
+			return { success: false, error: "rate_limit" } as const;
+		}
+
+		// Conflict check
 		const existing = await ctx.db
 			.query("analyses")
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 
-		// Rate limit check (3 pushes per repo per day per user)
-		if (workosId) {
-			const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-			const recentPushes = await ctx.db
-				.query("pushLogs")
-				.withIndex("by_repo_date", (q) =>
-					q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo),
-				)
-				.filter((q) => q.eq(q.field("workosId"), workosId))
-				.collect();
-
-			if (recentPushes.length >= 3) {
-				return {
-					success: false,
-					error: "rate_limit",
-					message: "You can only push 3 times per repository per day",
-				};
-			}
-		}
-
-		// Conflict check - reject if pushing older analysis over newer
 		if (existing) {
 			const existingDate = new Date(existing.analyzedAt);
 			const newDate = new Date(args.analyzedAt);
@@ -195,69 +166,38 @@ export const upsert = internalMutation({
 				return {
 					success: false,
 					error: "conflict",
-					message: "A newer analysis already exists",
 					remoteCommitSha: existing.commitSha,
-				};
-			}
-
-			// Reject different analysis for same commit (without explicit override)
-			if (existing.commitSha === args.commitSha && existing.analyzedAt !== args.analyzedAt) {
-				return {
-					success: false,
-					error: "conflict",
-					message: "A different analysis exists for this commit",
-					remoteCommitSha: existing.commitSha,
-				};
+				} as const;
 			}
 		}
 
-		// Perform upsert
+		// Upsert
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				...analysisData,
-				pullCount: existing.pullCount, // Preserve pull count
-				isVerified: existing.isVerified, // Preserve verification
-				workosId: workosId ?? existing.workosId,
+				...args,
+				provider: "github",
+				version: "0.1.0",
+				workosId,
 			});
 		} else {
 			await ctx.db.insert("analyses", {
-				...analysisData,
+				...args,
+				provider: "github",
+				version: "0.1.0",
 				pullCount: 0,
 				isVerified: false,
 				workosId,
 			});
 		}
 
-		// Log the push
-		if (workosId) {
-			await ctx.db.insert("pushLogs", {
-				fullName: args.fullName,
-				workosId,
-				pushedAt: new Date().toISOString(),
-				commitSha: args.commitSha,
-			});
-		}
+		// Log push
+		await ctx.db.insert("pushLogs", {
+			fullName: args.fullName,
+			workosId,
+			pushedAt: new Date().toISOString(),
+			commitSha: args.commitSha,
+		});
 
-		return { success: true };
-	},
-});
-
-/**
- * Delete an analysis (admin only)
- */
-export const remove = internalMutation({
-	args: { fullName: v.string() },
-	handler: async (ctx, args) => {
-		const analysis = await ctx.db
-			.query("analyses")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
-
-		if (!analysis) {
-			return false;
-		}
-
-		await ctx.db.delete(analysis._id);
-		return true;
+		return { success: true } as const;
 	},
 });

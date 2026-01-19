@@ -171,7 +171,7 @@ declare module '@tanstack/react-router' {
     '/_repo': {
       id: '/_repo'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof RepoRouteRouteImport
       parentRoute: typeof rootRouteImport
     }

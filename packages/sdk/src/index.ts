@@ -97,7 +97,6 @@ export {
 	type PullResponse,
 	type CheckResponse,
 	type PushResponse,
-	type SyncOptions,
 	type StalenessResult,
 	type CanPushResult,
 } from "./sync.js";

@@ -1,0 +1,19 @@
+## 2026-01-21 - US-001
+
+- Implemented global-only init handler by removing project linking logic
+- Files changed:
+  - apps/cli/src/handlers/init.ts: Removed setupProjectLinks() function, OffworldProjectConfig interface
+  - apps/cli/src/handlers/init.ts: Updated InitOptions to add force, model, repoRoot, agents options; removed skipProjectLink
+  - apps/cli/src/handlers/init.ts: Updated InitResult to remove projectLinked field
+  - apps/cli/src/handlers/init.ts: Added config detection logic that suggests 'ow project init' when in a git repo
+  - apps/cli/src/handlers/init.ts: Added --force flag handling to allow reconfiguration
+  - apps/cli/src/handlers/init.ts: Removed project linking calls at the end of initHandler
+  - apps/cli/src/index.ts: Updated init router to support new flags: --model, --repo-root, --agents
+  - scripts/ralph/PRD.json: Marked US-001 as passes: true
+
+- **Learnings:**
+  - The detectProjectRoot function still exists and is used for config detection logic (detecting if we're in a git repo)
+  - Model flag format is "provider/model" which matches opencode CLI pattern
+  - The initHandler now parses options.model to extract provider and model separately
+  - The --agents flag accepts comma-separated agent names
+  - Clean separation between global init (ow init) and project init (ow project init) enforced by detection logic

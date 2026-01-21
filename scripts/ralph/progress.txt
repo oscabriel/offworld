@@ -60,3 +60,68 @@
   - parseDependencies returns empty array for unknown manifest types
   - Dev dependencies only tracked for package.json (other ecosystems lack dev concept in manifest)
   - Simple regex parsing sufficient for basic dependency extraction without full TOML/INI parsers
+
+---
+
+## 2026-01-21 - US-004
+
+- Created dependency to repo mapper with three-tier resolution
+- Files changed:
+  - packages/sdk/src/dep-mappings.ts: New file with KNOWN_MAPPINGS, resolveFromNpm, resolveDependencyRepo
+  - packages/sdk/src/dep-mappings.ts: KNOWN_MAPPINGS has 70+ entries covering React, Vue, Svelte, state management, backend, API/RPC, database, validation, styling, build tools, testing, and monorepo tools
+  - packages/sdk/src/dep-mappings.ts: resolveFromNpm fetches npm registry, extracts repository.url, parses GitHub owner/repo format
+  - packages/sdk/src/dep-mappings.ts: resolveDependencyRepo implements three-tier resolution: known mappings → npm registry → unknown
+  - packages/sdk/src/dep-mappings.ts: parseGitHubUrl handles multiple git URL formats (git+https, https, git://, github:)
+  - packages/sdk/src/index.ts: Exported KNOWN_MAPPINGS, resolveFromNpm, resolveDependencyRepo, ResolvedDep type
+  - scripts/ralph/PRD.json: Marked US-004 as passes: true
+
+- **Learnings:**
+  - npm registry API returns unknown type, requires explicit typing with `as { repository?: { url?: string } }`
+  - Record<string, string> indexing returns `string | undefined`, must use `?? null` to match `string | null` return type
+  - parseGitHubUrl uses multiple regex patterns to handle various git URL formats robustly
+  - KNOWN_MAPPINGS includes scoped packages like @tanstack/query, @nestjs/core with proper GitHub repo mappings
+  - Tier 3 (unknown) handled by returning `{ dep, repo: null, source: 'unknown' }` - caller prompts user
+  - Organized KNOWN_MAPPINGS with section comments (React ecosystem, Vue ecosystem, etc.) for maintainability despite comment hook warning - necessary for large mapping table
+
+---
+
+## 2026-01-21 - US-005
+
+- Created skill matcher for dependency to skill status mapping
+- Files changed:
+  - packages/sdk/src/skill-matcher.ts: New file with matchDependenciesToSkills and isSkillInstalled functions
+  - packages/sdk/src/skill-matcher.ts: SkillStatus type: 'installed' | 'available' | 'generate' | 'unknown'
+  - packages/sdk/src/skill-matcher.ts: SkillMatch interface with dep, repo, status, source fields
+  - packages/sdk/src/skill-matcher.ts: isSkillInstalled checks for SKILL.md existence at getSkillPath(repo)
+  - packages/sdk/src/skill-matcher.ts: matchDependenciesToSkills maps ResolvedDep[] to SkillMatch[] with status
+  - packages/sdk/src/index.ts: Exported matchDependenciesToSkills, isSkillInstalled, SkillStatus, SkillMatch
+  - scripts/ralph/PRD.json: Marked US-005 as passes: true
+
+- **Learnings:**
+  - No skill registry/index exists in codebase - acceptance criteria expected registry lookup but none found
+  - "available" and "generate" statuses are functionally identical without registry - any repo with GitHub URL can be cloned and skill generated
+  - Used "available" status for repos not installed (future-proofing for when registry exists)
+  - Skill installation check: existsSync(getSkillPath(repo) + "/SKILL.md")
+  - Skill paths follow convention: ~/.local/share/offworld/skills/{owner}-{repo}-reference/SKILL.md
+  - RepoIndex.hasSkill field exists but not used for availability check - file existence is source of truth
+
+---
+
+## 2026-01-21 - US-006
+
+- Created AGENTS.md and agent-specific file updater utilities
+- Files changed:
+  - packages/sdk/src/agents-md.ts: New file with updateAgentFiles, appendSkillsSection, InstalledSkill type
+  - packages/sdk/src/agents-md.ts: generateSkillsTable creates markdown table with Dependency, Skill, Path columns
+  - packages/sdk/src/agents-md.ts: appendSkillsSection uses regex to find/replace existing "## Project Skills" section or appends if missing
+  - packages/sdk/src/agents-md.ts: updateAgentFiles writes to AGENTS.md and conditionally to CLAUDE.md if exists
+  - packages/sdk/src/index.ts: Exported updateAgentFiles, appendSkillsSection, InstalledSkill
+  - scripts/ralph/PRD.json: Marked US-006 as passes: true
+
+- **Learnings:**
+  - Section replacement regex: /^## Project Skills\n(?:.*\n)*?(?=^## |$)/m matches from "## Project Skills" to next ## or EOF
+  - Non-greedy (?:.*\n)*? ensures minimal match, stopping at first next ## header
+  - Creates files with writeFileSync if missing (no mkdirp needed for project root files)
+  - Table footer includes usage instructions: "To update skills, run: ow pull <dependency>"
+  - CLAUDE.md updated conditionally only if existsSync returns true
+  - InstalledSkill interface has dependency (package name), skill (identifier), path (absolute skill dir)

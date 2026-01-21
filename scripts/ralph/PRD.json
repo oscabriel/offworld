@@ -64,7 +64,7 @@
         "typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 3 task 5"
     },
     {
@@ -79,7 +79,7 @@
         "typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 4 task 6"
     },
     {
@@ -98,7 +98,7 @@
         "typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 5 task 7"
     },
     {

@@ -126,7 +126,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		// Step 1: Check authentication
 		let token: string;
 		try {
-			token = getToken();
+			token = await getToken();
 		} catch (err) {
 			if (err instanceof NotLoggedInError || err instanceof TokenExpiredError) {
 				p.log.error(err.message);

@@ -17,6 +17,7 @@ import {
 	authLogoutHandler,
 	authStatusHandler,
 	initHandler,
+	projectInitHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -244,6 +245,38 @@ export const router = os.router({
 				agents: input.agents,
 			});
 		}),
+
+	project: os.router({
+		init: os
+			.input(
+				z.object({
+					all: z.boolean().default(false).describe("Select all detected dependencies"),
+					deps: z.string().optional().describe("Comma-separated deps to include (skip selection)"),
+					skip: z.string().optional().describe("Comma-separated deps to exclude"),
+					generate: z.boolean().default(false).describe("Generate skills for deps without existing ones"),
+					dryRun: z
+						.boolean()
+						.default(false)
+						.describe("Show what would be done without doing it")
+						.meta({ alias: "dry-run" }),
+					yes: z.boolean().default(false).describe("Skip confirmations").meta({ alias: "y" }),
+				}),
+			)
+			.meta({
+				description: "Scan manifest, install skills, update AGENTS.md",
+				default: true,
+			})
+			.handler(async ({ input }) => {
+				return projectInitHandler({
+					all: input.all,
+					deps: input.deps,
+					skip: input.skip,
+					generate: input.generate,
+					dryRun: input.dryRun,
+					yes: input.yes,
+				});
+			}),
+	}),
 });
 
 export function createOwCli() {

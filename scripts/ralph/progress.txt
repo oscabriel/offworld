@@ -179,3 +179,19 @@
 
 ---
 
+## 2026-01-21 - US-009
+
+- Removed final deprecated project config references
+- Files changed:
+  - packages/types/src/schemas.ts: Removed skipProjectLink field from InitOptions interface
+  - scripts/ralph/PRD.json: Marked US-009 as passes: true
+
+- **Learnings:**
+  - OffworldProjectConfig, setupProjectLinks, projectLinked already removed in US-001
+  - Only remaining reference was skipProjectLink in InitOptions (unused testing flag)
+  - All deprecated project config code removed - only references left are in docs/plans/PRD/progress.txt
+  - Typecheck and CLI tests pass after cleanup
+  - SDK tests have pre-existing failures unrelated to this change (vi.stubGlobal, virtual FS mocking issues)
+
+---
+

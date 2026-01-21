@@ -194,7 +194,14 @@ vi.mock("../config.js", () => ({
 	getRepoPath: vi.fn((fullName: string, provider: string) => {
 		return join(mockRepoRoot, provider, fullName);
 	}),
-	getMetaRoot: vi.fn(() => mockMetaRoot),
+	getSkillPath: vi.fn((fullName: string) => {
+		const [owner, repo] = fullName.split("/");
+		return join(mockMetaRoot, "skills", `${owner}-${repo}-reference`);
+	}),
+	getMetaPath: vi.fn((fullName: string) => {
+		const [owner, repo] = fullName.split("/");
+		return join(mockMetaRoot, "meta", `${owner}-${repo}`);
+	}),
 }));
 
 // Index state
@@ -614,8 +621,10 @@ describe("removeRepo", () => {
 	beforeEach(() => {
 		indexEntries[mockIndexEntry.qualifiedName] = { ...mockIndexEntry };
 		addVirtualPath(mockIndexEntry.localPath, true);
-		const analysisPath = join(mockMetaRoot, "skills", "tanstack-router-reference");
-		addVirtualPath(analysisPath, true);
+		const skillPath = join(mockMetaRoot, "skills", "tanstack-router-reference");
+		const metaPath = join(mockMetaRoot, "meta", "tanstack-router");
+		addVirtualPath(skillPath, true);
+		addVirtualPath(metaPath, true);
 	});
 
 	it("removes repo directory", async () => {
@@ -629,12 +638,23 @@ describe("removeRepo", () => {
 		});
 	});
 
-	it("removes analysis directory", async () => {
+	it("removes skill directory", async () => {
 		const { rmSync } = await import("node:fs");
 
 		await removeRepo("github:tanstack/router");
 
 		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("skills"), {
+			recursive: true,
+			force: true,
+		});
+	});
+
+	it("removes meta directory", async () => {
+		const { rmSync } = await import("node:fs");
+
+		await removeRepo("github:tanstack/router");
+
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("meta"), {
 			recursive: true,
 			force: true,
 		});
@@ -658,6 +678,38 @@ describe("removeRepo", () => {
 		const result = await removeRepo("github:tanstack/router");
 
 		expect(result).toBe(true);
+	});
+
+	it("with skillOnly keeps repo directory", async () => {
+		const { rmSync } = await import("node:fs");
+
+		await removeRepo("github:tanstack/router", { skillOnly: true });
+
+		expect(rmSync).not.toHaveBeenCalledWith(mockIndexEntry.localPath, expect.anything());
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("skills"), {
+			recursive: true,
+			force: true,
+		});
+	});
+
+	it("with repoOnly keeps skill files", async () => {
+		const { rmSync } = await import("node:fs");
+
+		await removeRepo("github:tanstack/router", { repoOnly: true });
+
+		expect(rmSync).toHaveBeenCalledWith(mockIndexEntry.localPath, {
+			recursive: true,
+			force: true,
+		});
+		expect(rmSync).not.toHaveBeenCalledWith(expect.stringContaining("skills"), expect.anything());
+	});
+
+	it("with skillOnly updates hasSkill in index instead of removing", async () => {
+		const { updateIndex } = await import("../index-manager.js");
+
+		await removeRepo("github:tanstack/router", { skillOnly: true });
+
+		expect(updateIndex).toHaveBeenCalledWith(expect.objectContaining({ hasSkill: false }));
 	});
 });
 

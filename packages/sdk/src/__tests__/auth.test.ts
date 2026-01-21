@@ -229,35 +229,35 @@ describe("clearAuthData", () => {
 // ============================================================================
 
 describe("getToken", () => {
-	it("throws NotLoggedInError when not logged in", () => {
-		expect(() => getToken()).toThrow(NotLoggedInError);
+	it("throws NotLoggedInError when not logged in", async () => {
+		await expect(getToken()).rejects.toThrow(NotLoggedInError);
 	});
 
-	it("throws TokenExpiredError when token is expired", () => {
+	it("throws TokenExpiredError when token is expired and no refresh token", async () => {
 		addAuthFile({
 			token: "expired-token",
 			expiresAt: createPastDate(),
 		});
 
-		expect(() => getToken()).toThrow(TokenExpiredError);
+		await expect(getToken()).rejects.toThrow(TokenExpiredError);
 	});
 
-	it("returns token when valid and not expired", () => {
+	it("returns token when valid and not expired", async () => {
 		addAuthFile({
 			token: "valid-token",
 			expiresAt: createFutureDate(),
 		});
 
-		const result = getToken();
+		const result = await getToken();
 		expect(result).toBe("valid-token");
 	});
 
-	it("returns token when expiresAt is missing (no expiration)", () => {
+	it("returns token when expiresAt is missing (no expiration)", async () => {
 		addAuthFile({
 			token: "no-expiry-token",
 		});
 
-		const result = getToken();
+		const result = await getToken();
 		expect(result).toBe("no-expiry-token");
 	});
 });
@@ -267,37 +267,37 @@ describe("getToken", () => {
 // ============================================================================
 
 describe("getTokenOrNull", () => {
-	it("returns null when not logged in", () => {
-		const result = getTokenOrNull();
+	it("returns null when not logged in", async () => {
+		const result = await getTokenOrNull();
 		expect(result).toBeNull();
 	});
 
-	it("returns null when token is expired", () => {
+	it("returns null when token is expired", async () => {
 		addAuthFile({
 			token: "expired-token",
 			expiresAt: createPastDate(),
 		});
 
-		const result = getTokenOrNull();
+		const result = await getTokenOrNull();
 		expect(result).toBeNull();
 	});
 
-	it("returns token when valid", () => {
+	it("returns token when valid", async () => {
 		addAuthFile({
 			token: "valid-token",
 			expiresAt: createFutureDate(),
 		});
 
-		const result = getTokenOrNull();
+		const result = await getTokenOrNull();
 		expect(result).toBe("valid-token");
 	});
 
-	it("returns token when expiresAt is missing", () => {
+	it("returns token when expiresAt is missing", async () => {
 		addAuthFile({
 			token: "no-expiry-token",
 		});
 
-		const result = getTokenOrNull();
+		const result = await getTokenOrNull();
 		expect(result).toBe("no-expiry-token");
 	});
 });
@@ -307,37 +307,37 @@ describe("getTokenOrNull", () => {
 // ============================================================================
 
 describe("isLoggedIn", () => {
-	it("returns false when not logged in", () => {
-		const result = isLoggedIn();
+	it("returns false when not logged in", async () => {
+		const result = await isLoggedIn();
 		expect(result).toBe(false);
 	});
 
-	it("returns false when token is expired", () => {
+	it("returns false when token is expired", async () => {
 		addAuthFile({
 			token: "expired-token",
 			expiresAt: createPastDate(),
 		});
 
-		const result = isLoggedIn();
+		const result = await isLoggedIn();
 		expect(result).toBe(false);
 	});
 
-	it("returns true when valid token exists", () => {
+	it("returns true when valid token exists", async () => {
 		addAuthFile({
 			token: "valid-token",
 			expiresAt: createFutureDate(),
 		});
 
-		const result = isLoggedIn();
+		const result = await isLoggedIn();
 		expect(result).toBe(true);
 	});
 
-	it("returns true when token has no expiration", () => {
+	it("returns true when token has no expiration", async () => {
 		addAuthFile({
 			token: "no-expiry-token",
 		});
 
-		const result = isLoggedIn();
+		const result = await isLoggedIn();
 		expect(result).toBe(true);
 	});
 });

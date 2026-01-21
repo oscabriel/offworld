@@ -7,7 +7,7 @@ import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
-import { getMetaRoot, getRepoPath, loadConfig } from "./config.js";
+import { getRepoPath, getMetaPath, getSkillPath, loadConfig } from "./config.js";
 import { getIndexEntry, listIndexedRepos, removeFromIndex, updateIndex } from "./index-manager.js";
 
 // ============================================================================
@@ -133,13 +133,15 @@ export async function cloneRepo(
 	}
 
 	const commitSha = getCommitSha(repoPath);
+	const skillPath = getSkillPath(source.fullName);
+	const hasExistingSkill = existsSync(join(skillPath, "SKILL.md"));
 
 	const indexEntry: RepoIndexEntry = {
 		fullName: source.fullName,
 		qualifiedName: source.qualifiedName,
 		localPath: repoPath,
 		commitSha,
-		hasSkill: false,
+		hasSkill: hasExistingSkill,
 	};
 	updateIndex(indexEntry);
 
@@ -248,8 +250,10 @@ export async function updateRepo(qualifiedName: string): Promise<UpdateResult> {
 // ============================================================================
 
 export interface RemoveOptions {
-	/** Keep skill files in skill directories */
-	keepSkill?: boolean;
+	/** Only remove skill files (keep cloned repo) */
+	skillOnly?: boolean;
+	/** Only remove cloned repo (keep skill files) */
+	repoOnly?: boolean;
 }
 
 /**
@@ -268,54 +272,46 @@ export async function removeRepo(
 		return false;
 	}
 
-	// Remove repo directory
-	if (existsSync(entry.localPath)) {
+	const { skillOnly = false, repoOnly = false } = options;
+	const removeRepoFiles = !skillOnly;
+	const removeSkillFiles = !repoOnly;
+
+	if (removeRepoFiles && existsSync(entry.localPath)) {
 		rmSync(entry.localPath, { recursive: true, force: true });
 	}
 
-	const analysisPath = join(
-		getMetaRoot(),
-		"skills",
-		getAnalysisPathFromQualifiedName(qualifiedName),
-	);
-	if (existsSync(analysisPath)) {
-		rmSync(analysisPath, { recursive: true, force: true });
+	if (removeSkillFiles) {
+		const skillPath = getSkillPath(entry.fullName);
+		if (existsSync(skillPath)) {
+			rmSync(skillPath, { recursive: true, force: true });
+		}
+
+		const metaPath = getMetaPath(entry.fullName);
+		if (existsSync(metaPath)) {
+			rmSync(metaPath, { recursive: true, force: true });
+		}
+
+		if (entry.hasSkill) {
+			removeAgentSymlinks(entry.fullName);
+		}
 	}
 
-	// Optionally remove skill files
-	if (!options.keepSkill && entry.hasSkill) {
-		removeSkillFiles(entry.fullName);
+	if (removeRepoFiles) {
+		removeFromIndex(qualifiedName);
+	} else if (removeSkillFiles) {
+		updateIndex({ ...entry, hasSkill: false });
 	}
-
-	// Remove from index
-	removeFromIndex(qualifiedName);
 
 	return true;
 }
 
-function getAnalysisPathFromQualifiedName(qualifiedName: string): string {
-	if (qualifiedName.startsWith("local:")) {
-		const hash = qualifiedName.replace("local:", "");
-		return `local-${hash}-reference`;
-	}
-
-	const [_provider, fullName] = qualifiedName.split(":");
-	const [owner, repo] = fullName?.split("/") ?? [];
-	return `${owner}-${repo}-reference`;
-}
-
-function removeSkillFiles(repoName: string): void {
+function removeAgentSymlinks(repoName: string): void {
 	const config = loadConfig();
 	const { getAllAgentConfigs } = require("./agents.js");
 	const { expandTilde } = require("./paths.js");
 	const { toSkillDirName } = require("./config.js");
 
 	const skillDirName = toSkillDirName(repoName);
-
-	const mainSkillDir = join(getMetaRoot(), "skills", skillDirName);
-	if (existsSync(mainSkillDir)) {
-		rmSync(mainSkillDir, { recursive: true, force: true });
-	}
 
 	const configuredAgents = config.agents ?? [];
 	for (const agentName of configuredAgents) {
@@ -327,6 +323,26 @@ function removeSkillFiles(repoName: string): void {
 			}
 		}
 	}
+}
+
+export function removeSkillByName(repoName: string): boolean {
+	const skillPath = getSkillPath(repoName);
+	const metaPath = getMetaPath(repoName);
+	let removed = false;
+
+	if (existsSync(skillPath)) {
+		rmSync(skillPath, { recursive: true, force: true });
+		removed = true;
+	}
+
+	if (existsSync(metaPath)) {
+		rmSync(metaPath, { recursive: true, force: true });
+		removed = true;
+	}
+
+	removeAgentSymlinks(repoName);
+
+	return removed;
 }
 
 // ============================================================================

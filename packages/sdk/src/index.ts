@@ -130,3 +130,10 @@ export {
 	type ManifestType,
 	type Dependency,
 } from "./manifest.js";
+
+export {
+	KNOWN_MAPPINGS,
+	resolveFromNpm,
+	resolveDependencyRepo,
+	type ResolvedDep,
+} from "./dep-mappings.js";

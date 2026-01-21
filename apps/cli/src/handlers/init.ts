@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve, join, dirname } from "node:path";
 import {
@@ -17,21 +17,21 @@ import { authLoginHandler } from "./auth.js";
 
 export interface InitOptions {
 	yes?: boolean;
+	/** Reconfigure even if config exists */
+	force?: boolean;
 	/** Skip auth check (useful for testing) */
 	skipAuth?: boolean;
-	/** Skip project linking (useful for testing) */
-	skipProjectLink?: boolean;
+	/** AI provider and model (e.g., opencode/claude-sonnet-4-5) */
+	model?: string;
+	/** Where to clone repos */
+	repoRoot?: string;
+	/** Comma-separated agents */
+	agents?: string;
 }
 
 export interface InitResult {
 	success: boolean;
 	configPath: string;
-	projectLinked?: boolean;
-}
-
-interface OffworldProjectConfig {
-	$version: string;
-	skills: Record<string, { qualifiedName: string }>;
 }
 
 const PROVIDER_OPTIONS = [
@@ -119,81 +119,6 @@ function detectProjectRoot(): string | null {
 	return null;
 }
 
-async function setupProjectLinks(projectRoot: string): Promise<boolean> {
-	const projectConfigPath = join(projectRoot, ".offworld", "project.json");
-	const offworldDir = join(projectRoot, ".offworld");
-
-	let projectConfig: OffworldProjectConfig = { $version: "1", skills: {} };
-
-	if (existsSync(projectConfigPath)) {
-		try {
-			const content = readFileSync(projectConfigPath, "utf-8");
-			projectConfig = JSON.parse(content) as OffworldProjectConfig;
-		} catch {
-			p.log.warn("Existing .offworld/project.json found, but may need updates");
-		}
-	}
-
-	const packageJsonPath = join(projectRoot, "package.json");
-	if (!existsSync(packageJsonPath)) {
-		p.log.info("No package.json found in project root");
-		return false;
-	}
-
-	const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
-	const dependencies = packageJson.dependencies || {};
-	const devDependencies = packageJson.devDependencies || {};
-	const allDeps = { ...dependencies, ...devDependencies };
-
-	const allAgentConfigs = getAllAgentConfigs();
-
-	const skills = projectConfig.skills;
-	let linkedCount = 0;
-
-	p.log.info(`Found ${Object.keys(allDeps).length} dependencies in package.json`);
-
-	for (const agentConfig of allAgentConfigs) {
-		const projectSkillDir = join(offworldDir, "skills", agentConfig.name);
-		mkdirSync(projectSkillDir, { recursive: true });
-
-		for (const [depName, repoInfo] of Object.entries(skills)) {
-			const qualifiedName = repoInfo.qualifiedName;
-			const parts = qualifiedName.split(":");
-
-			if (parts.length !== 2) continue;
-
-			const ownerRepo = parts[1];
-
-			if (!ownerRepo) continue;
-
-			const [owner, repo] = ownerRepo.split("/");
-			const skillDirName = `${owner}-${repo}-reference`;
-			const skillSourcePath = join(getMetaRoot(), "skills", skillDirName);
-			const skillTargetPath = join(projectSkillDir, skillDirName);
-
-			if (existsSync(skillSourcePath)) {
-				try {
-					mkdirSync(join(skillTargetPath, ".."), { recursive: true });
-					symlinkSync(skillSourcePath, skillTargetPath, "dir");
-					linkedCount++;
-				} catch {
-					p.log.warn(`Failed to link ${depName} for ${agentConfig.name}`);
-				}
-			}
-		}
-	}
-
-	try {
-		mkdirSync(offworldDir, { recursive: true });
-		writeFileSync(projectConfigPath, JSON.stringify(projectConfig, null, 2), "utf-8");
-		p.log.success(`Project links configured: ${linkedCount} skills linked`);
-		return true;
-	} catch {
-		p.log.error("Failed to save project config");
-		return false;
-	}
-}
-
 export async function initHandler(options: InitOptions = {}): Promise<InitResult> {
 	const configPath = getConfigPath();
 	const existingConfig = loadConfig();
@@ -217,59 +142,85 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		}
 	}
 
-	if (configExists && !options.yes) {
-		p.log.info(`Existing config found at ${configPath}`);
-		const shouldContinue = await p.confirm({
-			message: "Overwrite existing configuration?",
-			initialValue: false,
+	if (configExists) {
+		if (!options.force) {
+			if (projectRoot) {
+				p.log.warn(`Global config already exists at ${configPath}`);
+				p.log.info("");
+				p.log.info("Did you mean to run project setup? Use:");
+				p.log.info("  ow project init");
+				p.log.info("");
+				p.log.info("To reconfigure global settings, use:");
+				p.log.info("  ow init --force");
+				p.outro("");
+				return { success: false, configPath };
+			}
+			p.log.warn("Already configured. Use --force to reconfigure.");
+			p.outro("");
+			return { success: false, configPath };
+		}
+		p.log.info("Reconfiguring global settings...");
+	}
+
+	let repoRoot: string;
+	if (options.repoRoot) {
+		repoRoot = collapseTilde(expandTilde(options.repoRoot));
+	} else {
+		const repoRootResult = await p.text({
+			message: "Where should repositories be cloned?",
+			placeholder: "~/ow",
+			initialValue: existingConfig.repoRoot,
+			validate: validatePath,
 		});
 
-		if (p.isCancel(shouldContinue) || !shouldContinue) {
+		if (p.isCancel(repoRootResult)) {
 			p.outro("Setup cancelled");
 			return { success: false, configPath };
 		}
+
+		repoRoot = collapseTilde(expandTilde(repoRootResult));
 	}
 
-	const repoRootResult = await p.text({
-		message: "Where should repositories be cloned?",
-		placeholder: "~/ow",
-		initialValue: existingConfig.repoRoot,
-		validate: validatePath,
-	});
+	let provider: string;
+	let model: string;
 
-	if (p.isCancel(repoRootResult)) {
-		p.outro("Setup cancelled");
-		return { success: false, configPath };
+	if (options.model) {
+		const parts = options.model.split("/");
+		if (parts.length !== 2) {
+			p.log.error(`Invalid model format. Expected 'provider/model', got '${options.model}'`);
+			p.outro("Setup failed");
+			return { success: false, configPath };
+		}
+		provider = parts[0]!;
+		model = parts[1]!;
+	} else {
+		const providerResult = await p.select({
+			message: "Select your AI provider for analysis",
+			options: [...PROVIDER_OPTIONS],
+			initialValue: existingConfig.ai?.provider ?? "anthropic",
+		});
+
+		if (p.isCancel(providerResult)) {
+			p.outro("Setup cancelled");
+			return { success: false, configPath };
+		}
+
+		provider = providerResult as string;
+
+		const modelOptions = MODEL_OPTIONS[provider] ?? MODEL_OPTIONS.anthropic!;
+		const modelResult = await p.select({
+			message: "Select your default model",
+			options: modelOptions,
+			initialValue: existingConfig.ai?.model,
+		});
+
+		if (p.isCancel(modelResult)) {
+			p.outro("Setup cancelled");
+			return { success: false, configPath };
+		}
+
+		model = modelResult as string;
 	}
-
-	const repoRoot = collapseTilde(expandTilde(repoRootResult));
-
-	const providerResult = await p.select({
-		message: "Select your AI provider for analysis",
-		options: [...PROVIDER_OPTIONS],
-		initialValue: existingConfig.ai?.provider ?? "anthropic",
-	});
-
-	if (p.isCancel(providerResult)) {
-		p.outro("Setup cancelled");
-		return { success: false, configPath };
-	}
-
-	const provider = providerResult as string;
-
-	const modelOptions = MODEL_OPTIONS[provider] ?? MODEL_OPTIONS.anthropic!;
-	const modelResult = await p.select({
-		message: "Select your default model",
-		options: modelOptions,
-		initialValue: existingConfig.ai?.model,
-	});
-
-	if (p.isCancel(modelResult)) {
-		p.outro("Setup cancelled");
-		return { success: false, configPath };
-	}
-
-	const model = modelResult as string;
 
 	const detectedAgents = detectInstalledAgents();
 	const allAgentConfigs = getAllAgentConfigs();
@@ -287,24 +238,38 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		hint: config.globalSkillsDir,
 	}));
 
-	const initialAgents =
-		existingConfig.agents && existingConfig.agents.length > 0
-			? existingConfig.agents
-			: detectedAgents;
+	let agents: Agent[];
+	if (options.agents) {
+		const agentNames = options.agents.split(",").map((a) => a.trim());
+		const validAgents = allAgentConfigs
+			.filter((c) => agentNames.includes(c.name))
+			.map((c) => c.name);
+		if (validAgents.length === 0) {
+			p.log.error("No valid agent names provided");
+			p.outro("Setup failed");
+			return { success: false, configPath };
+		}
+		agents = validAgents as Agent[];
+	} else {
+		const initialAgents =
+			existingConfig.agents && existingConfig.agents.length > 0
+				? existingConfig.agents
+				: detectedAgents;
 
-	const agentsResult = await p.multiselect({
-		message: "Select agents to install skills to",
-		options: agentOptions,
-		initialValues: initialAgents,
-		required: false,
-	});
+		const agentsResult = await p.multiselect({
+			message: "Select agents to install skills to",
+			options: agentOptions,
+			initialValues: initialAgents,
+			required: false,
+		});
 
-	if (p.isCancel(agentsResult)) {
-		p.outro("Setup cancelled");
-		return { success: false, configPath };
+		if (p.isCancel(agentsResult)) {
+			p.outro("Setup cancelled");
+			return { success: false, configPath };
+		}
+
+		agents = agentsResult as Agent[];
 	}
-
-	const agents = agentsResult as Agent[];
 
 	const newConfig: Partial<Config> = {
 		repoRoot,
@@ -322,16 +287,6 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.info(`  State root: ${getStateRoot()}`);
 		p.log.info(`  AI: ${provider}/${model}`);
 		p.log.info(`  Agents: ${agents.join(", ")}`);
-
-		if (projectRoot && !options.skipProjectLink) {
-			p.log.info(`\nDetected project at: ${projectRoot}`);
-			const linked = await setupProjectLinks(projectRoot);
-			return {
-				success: true,
-				configPath,
-				projectLinked: linked,
-			};
-		}
 
 		p.outro("Setup complete. Run 'ow pull <repo>' to get started.");
 		return { success: true, configPath };

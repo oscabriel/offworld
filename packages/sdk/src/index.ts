@@ -49,6 +49,7 @@ export {
 	cloneRepo,
 	updateRepo,
 	removeRepo,
+	removeSkillByName,
 	listRepos,
 	isRepoCloned,
 	getClonedRepoPath,
@@ -104,6 +105,7 @@ export {
 	getTokenOrNull,
 	isLoggedIn,
 	getAuthStatus,
+	refreshAccessToken,
 	type AuthData,
 	type AuthStatus,
 } from "./auth.js";
@@ -123,3 +125,26 @@ export {
 	getAllAgentConfigs,
 	type AgentConfig,
 } from "./agents.js";
+
+export {
+	detectManifestType,
+	parseDependencies,
+	type ManifestType,
+	type Dependency,
+} from "./manifest.js";
+
+export {
+	KNOWN_MAPPINGS,
+	resolveFromNpm,
+	resolveDependencyRepo,
+	type ResolvedDep,
+} from "./dep-mappings.js";
+
+export {
+	matchDependenciesToSkills,
+	isSkillInstalled,
+	type SkillStatus,
+	type SkillMatch,
+} from "./skill-matcher.js";
+
+export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";

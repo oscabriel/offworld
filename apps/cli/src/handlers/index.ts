@@ -29,3 +29,4 @@ export {
 	type AuthStatusResult,
 } from "./auth.js";
 export { initHandler, type InitOptions, type InitResult } from "./init.js";
+export { projectInitHandler, type ProjectInitOptions, type ProjectInitResult } from "./project.js";

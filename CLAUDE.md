@@ -51,3 +51,16 @@ Turborepo monorepo with Bun package manager:
 - **Linting/Formatting**: Oxlint + Oxfmt (NOT ESLint/Prettier). Run `bun run check`.
 - **TypeScript**: Strict mode. No unused variables or parameters.
 - **Components**: shadcn/ui components in `apps/web/src/components/ui/`. Custom components in `apps/web/src/components/`.
+
+## Project Skills
+
+Skills installed for this project's dependencies:
+
+| Dependency | Skill                | Path                                                                            |
+| ---------- | -------------------- | ------------------------------------------------------------------------------- |
+| zod        | colinhacks-zod       | /Users/oscargabriel/.local/share/offworld/skills/colinhacks-zod-reference       |
+| typescript | microsoft-TypeScript | /Users/oscargabriel/.local/share/offworld/skills/microsoft-TypeScript-reference |
+| vitest     | vitest-dev-vitest    | /Users/oscargabriel/.local/share/offworld/skills/vitest-dev-vitest-reference    |
+
+To update skills, run: `ow pull <dependency>`
+To regenerate all: `ow project init --all --generate`

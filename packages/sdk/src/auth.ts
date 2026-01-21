@@ -53,6 +53,32 @@ export class TokenExpiredError extends AuthError {
 }
 
 // ============================================================================
+// JWT Utilities
+// ============================================================================
+
+/**
+ * Extracts expiration timestamp from JWT access token
+ * @param token - JWT access token
+ * @returns ISO string of expiration date, or undefined if extraction fails
+ */
+function extractJwtExpiration(token: string): string | undefined {
+	try {
+		const parts = token.split(".");
+		if (parts.length !== 3) return undefined;
+
+		const payload = parts[1];
+		if (!payload) return undefined;
+
+		const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf-8"));
+		if (typeof decoded.exp !== "number") return undefined;
+
+		return new Date(decoded.exp * 1000).toISOString();
+	} catch {
+		return undefined;
+	}
+}
+
+// ============================================================================
 // Path Utilities
 // ============================================================================
 
@@ -137,21 +163,52 @@ export function clearAuthData(): boolean {
 
 /**
  * Gets the current authentication token
+ * Auto-refreshes if token expires within 1 minute
  * @throws NotLoggedInError if not logged in
- * @throws TokenExpiredError if token is expired
+ * @throws TokenExpiredError if token is expired and refresh fails
  */
-export function getToken(): string {
+export async function getToken(): Promise<string> {
 	const data = loadAuthData();
 
 	if (!data) {
 		throw new NotLoggedInError();
 	}
 
-	// Check if token is expired
-	if (data.expiresAt) {
-		const expiresAt = new Date(data.expiresAt);
-		if (expiresAt <= new Date()) {
+	let expiresAtStr = data.expiresAt;
+	if (!expiresAtStr) {
+		expiresAtStr = extractJwtExpiration(data.token);
+		if (expiresAtStr) {
+			data.expiresAt = expiresAtStr;
+			saveAuthData(data);
+		}
+	}
+
+	if (expiresAtStr) {
+		const expiresAt = new Date(expiresAtStr);
+		const now = new Date();
+		const oneMinute = 60 * 1000;
+
+		if (expiresAt <= now) {
+			if (data.refreshToken) {
+				try {
+					const refreshed = await refreshAccessToken();
+					return refreshed.token;
+				} catch {
+					throw new TokenExpiredError();
+				}
+			}
 			throw new TokenExpiredError();
+		}
+
+		if (expiresAt.getTime() - now.getTime() < oneMinute) {
+			if (data.refreshToken) {
+				try {
+					const refreshed = await refreshAccessToken();
+					return refreshed.token;
+				} catch {
+					return data.token;
+				}
+			}
 		}
 	}
 
@@ -162,9 +219,9 @@ export function getToken(): string {
  * Gets the current authentication token, or null if not logged in
  * Does not throw errors
  */
-export function getTokenOrNull(): string | null {
+export async function getTokenOrNull(): Promise<string | null> {
 	try {
-		return getToken();
+		return await getToken();
 	} catch {
 		return null;
 	}
@@ -173,8 +230,8 @@ export function getTokenOrNull(): string | null {
 /**
  * Checks if user is logged in with valid token
  */
-export function isLoggedIn(): boolean {
-	return getTokenOrNull() !== null;
+export async function isLoggedIn(): Promise<boolean> {
+	return (await getTokenOrNull()) !== null;
 }
 
 // ============================================================================
@@ -205,4 +262,81 @@ export function getAuthStatus(): AuthStatus {
 		workosId: data.workosId,
 		expiresAt: data.expiresAt,
 	};
+}
+
+// ============================================================================
+// Token Refresh Functions
+// ============================================================================
+
+const WORKOS_API = "https://api.workos.com";
+
+function getWorkosClientId(): string {
+	return process.env.WORKOS_CLIENT_ID || "";
+}
+
+interface RefreshTokenResponse {
+	user: {
+		id: string;
+		email: string;
+		firstName?: string;
+		lastName?: string;
+	};
+	access_token: string;
+	refresh_token: string;
+	expires_at?: number;
+}
+
+/**
+ * Refreshes the access token using the stored refresh token
+ * @returns New auth data with refreshed token
+ * @throws AuthError if refresh fails
+ */
+export async function refreshAccessToken(): Promise<AuthData> {
+	const data = loadAuthData();
+
+	if (!data?.refreshToken) {
+		throw new AuthError("No refresh token available. Please log in again.");
+	}
+
+	const clientId = getWorkosClientId();
+	if (!clientId) {
+		throw new AuthError("WORKOS_CLIENT_ID not configured");
+	}
+
+	try {
+		const response = await fetch(`${WORKOS_API}/user_management/authenticate`, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({
+				grant_type: "refresh_token",
+				refresh_token: data.refreshToken,
+				client_id: clientId,
+			}),
+		});
+
+		if (!response.ok) {
+			const error = await response.text();
+			throw new AuthError(`Token refresh failed: ${error}`);
+		}
+
+		const tokenData = (await response.json()) as RefreshTokenResponse;
+
+		const newAuthData: AuthData = {
+			token: tokenData.access_token,
+			email: tokenData.user.email,
+			workosId: tokenData.user.id,
+			refreshToken: tokenData.refresh_token,
+			expiresAt: tokenData.expires_at
+				? new Date(tokenData.expires_at * 1000).toISOString()
+				: extractJwtExpiration(tokenData.access_token),
+		};
+
+		saveAuthData(newAuthData);
+		return newAuthData;
+	} catch (error) {
+		if (error instanceof AuthError) throw error;
+		throw new AuthError(
+			`Failed to refresh token: ${error instanceof Error ? error.message : "Unknown error"}`,
+		);
+	}
 }

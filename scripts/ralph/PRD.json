@@ -123,7 +123,7 @@
         "typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Phase 6 task 8"
     },
     {

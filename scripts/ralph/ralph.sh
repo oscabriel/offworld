@@ -93,7 +93,7 @@ run_iteration() {
     echo -e "${BLUE}Running claude...${NC}"
     echo ""
 
-    opencode run -m anthropic/claude-opus-4-5 "$prompt"
+    opencode run -m anthropic/glm-4.7-free "$prompt"
 
     echo ""
 

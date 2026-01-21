@@ -144,3 +144,9 @@ export {
 	type SkillStatus,
 	type SkillMatch,
 } from "./skill-matcher.js";
+
+export {
+	updateAgentFiles,
+	appendSkillsSection,
+	type InstalledSkill,
+} from "./agents-md.js";

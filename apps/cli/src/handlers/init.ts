@@ -1,29 +1,37 @@
 import * as p from "@clack/prompts";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import { resolve, join, dirname } from "node:path";
 import {
 	loadConfig,
 	saveConfig,
 	getConfigPath,
+	getMetaRoot,
+	getStateRoot,
 	detectInstalledAgents,
 	getAllAgentConfigs,
+	getAuthStatus,
 } from "@offworld/sdk";
-import type { Agent } from "@offworld/types";
+import type { Config, Agent } from "@offworld/types";
+import { authLoginHandler } from "./auth.js";
 
 export interface InitOptions {
 	yes?: boolean;
+	/** Skip auth check (useful for testing) */
+	skipAuth?: boolean;
+	/** Skip project linking (useful for testing) */
+	skipProjectLink?: boolean;
 }
 
 export interface InitResult {
 	success: boolean;
 	configPath: string;
-	config?: {
-		repoRoot: string;
-		metaRoot: string;
-		ai: { provider: string; model: string };
-		agents: Agent[];
-	};
+	projectLinked?: boolean;
+}
+
+interface OffworldProjectConfig {
+	$version: string;
+	skills: Record<string, { qualifiedName: string }>;
 }
 
 const PROVIDER_OPTIONS = [
@@ -95,12 +103,119 @@ function validatePath(value: string): string | undefined {
 	return undefined;
 }
 
+function detectProjectRoot(): string | null {
+	let currentDir = process.cwd();
+	while (currentDir !== homedir()) {
+		const packageJsonPath = join(currentDir, "package.json");
+		if (existsSync(packageJsonPath)) {
+			return currentDir;
+		}
+		const parent = dirname(currentDir);
+		if (parent === currentDir) {
+			break;
+		}
+		currentDir = parent;
+	}
+	return null;
+}
+
+async function setupProjectLinks(projectRoot: string): Promise<boolean> {
+	const projectConfigPath = join(projectRoot, ".offworld", "project.json");
+	const offworldDir = join(projectRoot, ".offworld");
+
+	let projectConfig: OffworldProjectConfig = { $version: "1", skills: {} };
+
+	if (existsSync(projectConfigPath)) {
+		try {
+			const content = readFileSync(projectConfigPath, "utf-8");
+			projectConfig = JSON.parse(content) as OffworldProjectConfig;
+		} catch {
+			p.log.warn("Existing .offworld/project.json found, but may need updates");
+		}
+	}
+
+	const packageJsonPath = join(projectRoot, "package.json");
+	if (!existsSync(packageJsonPath)) {
+		p.log.info("No package.json found in project root");
+		return false;
+	}
+
+	const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+	const dependencies = packageJson.dependencies || {};
+	const devDependencies = packageJson.devDependencies || {};
+	const allDeps = { ...dependencies, ...devDependencies };
+
+	const allAgentConfigs = getAllAgentConfigs();
+
+	const skills = projectConfig.skills;
+	let linkedCount = 0;
+
+	p.log.info(`Found ${Object.keys(allDeps).length} dependencies in package.json`);
+
+	for (const agentConfig of allAgentConfigs) {
+		const projectSkillDir = join(offworldDir, "skills", agentConfig.name);
+		mkdirSync(projectSkillDir, { recursive: true });
+
+		for (const [depName, repoInfo] of Object.entries(skills)) {
+			const qualifiedName = repoInfo.qualifiedName;
+			const parts = qualifiedName.split(":");
+
+			if (parts.length !== 2) continue;
+
+			const ownerRepo = parts[1];
+
+			if (!ownerRepo) continue;
+
+			const [owner, repo] = ownerRepo.split("/");
+			const skillDirName = `${owner}-${repo}-reference`;
+			const skillSourcePath = join(getMetaRoot(), "skills", skillDirName);
+			const skillTargetPath = join(projectSkillDir, skillDirName);
+
+			if (existsSync(skillSourcePath)) {
+				try {
+					mkdirSync(join(skillTargetPath, ".."), { recursive: true });
+					symlinkSync(skillSourcePath, skillTargetPath, "dir");
+					linkedCount++;
+				} catch {
+					p.log.warn(`Failed to link ${depName} for ${agentConfig.name}`);
+				}
+			}
+		}
+	}
+
+	try {
+		mkdirSync(offworldDir, { recursive: true });
+		writeFileSync(projectConfigPath, JSON.stringify(projectConfig, null, 2), "utf-8");
+		p.log.success(`Project links configured: ${linkedCount} skills linked`);
+		return true;
+	} catch {
+		p.log.error("Failed to save project config");
+		return false;
+	}
+}
+
 export async function initHandler(options: InitOptions = {}): Promise<InitResult> {
 	const configPath = getConfigPath();
 	const existingConfig = loadConfig();
 	const configExists = existsSync(configPath);
+	const projectRoot = detectProjectRoot();
 
 	p.intro("ow init");
+
+	if (!options.skipAuth) {
+		const authStatus = getAuthStatus();
+		if (!authStatus.isLoggedIn) {
+			p.log.info("You are not logged in");
+			const shouldLogin = await p.confirm({
+				message: "Do you want to log in now?",
+				initialValue: true,
+			});
+
+			if (!p.isCancel(shouldLogin) && shouldLogin) {
+				await authLoginHandler();
+			}
+		}
+	}
 
 	if (configExists && !options.yes) {
 		p.log.info(`Existing config found at ${configPath}`);
@@ -129,20 +244,6 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 	const repoRoot = collapseTilde(expandTilde(repoRootResult));
 
-	const metaRootResult = await p.text({
-		message: "Where should analysis metadata be stored?",
-		placeholder: "~/.config/offworld",
-		initialValue: existingConfig.metaRoot,
-		validate: validatePath,
-	});
-
-	if (p.isCancel(metaRootResult)) {
-		p.outro("Setup cancelled");
-		return { success: false, configPath };
-	}
-
-	const metaRoot = collapseTilde(expandTilde(metaRootResult));
-
 	const providerResult = await p.select({
 		message: "Select your AI provider for analysis",
 		options: [...PROVIDER_OPTIONS],
@@ -170,7 +271,6 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 	const model = modelResult as string;
 
-	// Agent selection with auto-detection
 	const detectedAgents = detectInstalledAgents();
 	const allAgentConfigs = getAllAgentConfigs();
 
@@ -181,14 +281,12 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.info(`Detected agents: ${detectedNames}`);
 	}
 
-	// Build options from registry
 	const agentOptions = allAgentConfigs.map((config) => ({
 		value: config.name,
 		label: config.displayName,
 		hint: config.globalSkillsDir,
 	}));
 
-	// Use existing config if set, otherwise use detected agents
 	const initialAgents =
 		existingConfig.agents && existingConfig.agents.length > 0
 			? existingConfig.agents
@@ -208,9 +306,8 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 	const agents = agentsResult as Agent[];
 
-	const newConfig = {
+	const newConfig: Partial<Config> = {
 		repoRoot,
-		metaRoot,
 		ai: { provider, model },
 		agents,
 	};
@@ -221,17 +318,23 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.success("Configuration saved!");
 		p.log.info(`  Config file: ${configPath}`);
 		p.log.info(`  Repo root: ${repoRoot}`);
-		p.log.info(`  Meta root: ${metaRoot}`);
+		p.log.info(`  Meta root: ${getMetaRoot()}`);
+		p.log.info(`  State root: ${getStateRoot()}`);
 		p.log.info(`  AI: ${provider}/${model}`);
 		p.log.info(`  Agents: ${agents.join(", ")}`);
 
-		p.outro("Setup complete. Run 'ow pull <repo>' to get started.");
+		if (projectRoot && !options.skipProjectLink) {
+			p.log.info(`\nDetected project at: ${projectRoot}`);
+			const linked = await setupProjectLinks(projectRoot);
+			return {
+				success: true,
+				configPath,
+				projectLinked: linked,
+			};
+		}
 
-		return {
-			success: true,
-			configPath,
-			config: newConfig,
-		};
+		p.outro("Setup complete. Run 'ow pull <repo>' to get started.");
+		return { success: true, configPath };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
 		p.log.error(`Failed to save configuration: ${message}`);

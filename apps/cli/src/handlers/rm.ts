@@ -3,27 +3,18 @@
  */
 
 import * as p from "@clack/prompts";
-import { parseRepoInput, removeRepo, getIndexEntry, getMetaRoot } from "@offworld/sdk";
+import {
+	parseRepoInput,
+	removeRepo,
+	getIndexEntry,
+	getMetaRoot,
+	getAllAgentConfigs,
+	expandTilde,
+	toSkillDirName,
+} from "@offworld/sdk";
 import { existsSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
-
-/**
- * Agent skill directory paths (must match generate.ts)
- */
-const AGENT_SKILL_DIRS: Record<string, string> = {
-	opencode: "~/.config/opencode/skill",
-	"claude-code": "~/.claude/skills",
-	codex: "~/.codex/skills",
-};
-
-function expandTilde(path: string): string {
-	if (path.startsWith("~/")) {
-		return join(homedir(), path.slice(2));
-	}
-	return path;
-}
 
 export interface RmOptions {
 	repo: string;
@@ -42,14 +33,6 @@ export interface RmResult {
 	message?: string;
 }
 
-function toSkillDirName(repoName: string): string {
-	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/");
-		return `${owner}-${repo}-reference`;
-	}
-	return `${repoName}-reference`;
-}
-
 function getAffectedPaths(qualifiedName: string): {
 	repoPath?: string;
 	skillPath?: string;
@@ -65,11 +48,9 @@ function getAffectedPaths(qualifiedName: string): {
 
 	const skillPath = join(getMetaRoot(), "skills", skillDirName);
 
-	// Check all possible agent symlink paths (not just configured ones)
-	// This ensures cleanup works even if config changed
 	const symlinkPaths: string[] = [];
-	for (const agentSkillBase of Object.values(AGENT_SKILL_DIRS)) {
-		const agentSkillPath = expandTilde(join(agentSkillBase, skillDirName));
+	for (const agentConfig of getAllAgentConfigs()) {
+		const agentSkillPath = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
 		if (existsSync(agentSkillPath)) {
 			symlinkPaths.push(agentSkillPath);
 		}

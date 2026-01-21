@@ -241,7 +241,9 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 	let agents: Agent[];
 	if (options.agents) {
 		const agentNames = options.agents.split(",").map((a) => a.trim());
-		const validAgents = allAgentConfigs.filter((c) => agentNames.includes(c.name)).map((c) => c.name);
+		const validAgents = allAgentConfigs
+			.filter((c) => agentNames.includes(c.name))
+			.map((c) => c.name);
 		if (validAgents.length === 0) {
 			p.log.error("No valid agent names provided");
 			p.outro("Setup failed");

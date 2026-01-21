@@ -74,6 +74,7 @@ offworld/
 - `bun run dev:setup`: Setup and configure your Convex project
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run check`: Run Oxlint and Oxfmt
+- `cd apps/cli && bun run dev:run <command>`: Run CLI with local .env (dev only)
 - `cd apps/web && bun run deploy`: Deploy web app to Cloudflare
 - `cd apps/docs && bun run deploy`: Deploy docs to Cloudflare
 - `cd apps/docs && bun run build`: Build documentation site

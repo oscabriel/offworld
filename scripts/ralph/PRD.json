@@ -1,162 +1,162 @@
 {
-  "branchName": "ralph/project-init",
-  "userStories": [
-    {
-      "id": "US-001",
-      "title": "Split init handler - global only",
-      "acceptanceCriteria": [
-        "initHandler() in apps/cli/src/handlers/init.ts only handles global config setup",
-        "setupProjectLinks() function removed from init.ts",
-        "OffworldProjectConfig interface removed",
-        "If config exists + cwd is git repo: logs suggestion to use 'ow project init'",
-        "If config exists + not in git repo: logs 'use --force to reconfigure'",
-        "--force flag added and allows reconfiguration when config exists",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 1 task 1"
-    },
-    {
-      "id": "US-002",
-      "title": "Create project command group",
-      "acceptanceCriteria": [
-        "apps/cli/src/handlers/project.ts exists with projectInitHandler export",
-        "projectInitHandler accepts options: all, deps, skip, generate, dryRun, yes",
-        "apps/cli/src/handlers/index.ts exports projectInitHandler",
-        "apps/cli/src/index.ts has 'project' command group with 'init' subcommand",
-        "'ow project init --help' shows all options",
-        "typecheck passes"
-      ],
-      "priority": 1,
-      "passes": true,
-      "notes": "Phase 1 tasks 2-3"
-    },
-    {
-      "id": "US-003",
-      "title": "Create manifest scanner",
-      "acceptanceCriteria": [
-        "packages/sdk/src/manifest.ts exists",
-        "detectManifestType(dir) returns 'npm' | 'python' | 'rust' | 'go' | 'unknown'",
-        "parseDependencies(dir) returns array of {name, version, dev} objects",
-        "Parses package.json dependencies and devDependencies",
-        "Parses pyproject.toml [project.dependencies]",
-        "Parses Cargo.toml [dependencies]",
-        "Parses go.mod require statements",
-        "Parses requirements.txt lines",
-        "packages/sdk/src/index.ts exports manifest module",
-        "typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Phase 2 task 4"
-    },
-    {
-      "id": "US-004",
-      "title": "Create dependency to repo mapper",
-      "acceptanceCriteria": [
-        "packages/sdk/src/dep-mappings.ts exists",
-        "KNOWN_MAPPINGS constant has 50+ entries for popular packages",
-        "resolveFromNpm(packageName) fetches registry.npmjs.org and extracts repo",
-        "resolveDependencyRepo(dep) tries KNOWN_MAPPINGS first, then npm fallback",
-        "Returns { dep, repo, source: 'known' | 'npm' | 'unknown' }",
-        "packages/sdk/src/index.ts exports dep-mappings module",
-        "typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Phase 3 task 5"
-    },
-    {
-      "id": "US-005",
-      "title": "Create skill matcher",
-      "acceptanceCriteria": [
-        "matchDependenciesToSkills function exists in SDK",
-        "Accepts array of resolved deps with repo info",
-        "Returns array with status: 'installed' | 'available' | 'generate' | 'unknown'",
-        "Checks local skill directory for installed skills",
-        "Checks skill registry/index for available skills",
-        "typecheck passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "Phase 4 task 6"
-    },
-    {
-      "id": "US-006",
-      "title": "Create AGENTS.md updater",
-      "acceptanceCriteria": [
-        "packages/sdk/src/agents-md.ts exists",
-        "updateAgentFiles(projectRoot, skills) function exported",
-        "appendSkillsSection(filePath, skills) function exported",
-        "Creates AGENTS.md if missing",
-        "Appends '## Project Skills' section with markdown table",
-        "Table has columns: Dependency, Skill, Path",
-        "If section exists, replaces content between '## Project Skills' and next ##",
-        "Also updates CLAUDE.md if it exists in projectRoot",
-        "packages/sdk/src/index.ts exports agents-md module",
-        "typecheck passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "Phase 5 task 7"
-    },
-    {
-      "id": "US-007",
-      "title": "Wire up project init handler",
-      "acceptanceCriteria": [
-        "projectInitHandler checks global config exists, errors if missing",
-        "Detects project root via git or cwd",
-        "Calls parseDependencies to scan manifest",
-        "Calls resolveDependencyRepo for each dependency",
-        "Calls matchDependenciesToSkills to get availability",
-        "Shows interactive checklist when no --all or --deps flag",
-        "--all flag selects all dependencies",
-        "--deps flag accepts comma-separated list",
-        "--skip flag excludes specified deps",
-        "Installs selected skills via existing pullHandler",
-        "--generate flag triggers skill generation for missing",
-        "Calls updateAgentFiles to write AGENTS.md",
-        "--dry-run shows actions without executing",
-        "--yes skips confirmations",
-        "Prints summary of installed skills",
-        "typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "Phase 6 task 8"
-    },
-    {
-      "id": "US-008",
-      "title": "Create agent onboarding docs",
-      "acceptanceCriteria": [
-        "apps/docs/src/content/docs/setup-prompt.md exists",
-        "Contains quick copy-paste prompt section",
-        "Contains detailed agent instructions section",
-        "Documents autonomous setup: ow project init --all --generate --yes",
-        "Documents interactive setup: ow project init",
-        "Documents dry-run: ow project init --dry-run",
-        "Documents what gets created (skill paths, AGENTS.md section)",
-        "Documents that no project config files are created",
-        "typecheck passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "Phase 7 task 9"
-    },
-    {
-      "id": "US-009",
-      "title": "Remove deprecated project config",
-      "acceptanceCriteria": [
-        "No references to .offworld/project.json in codebase",
-        "OffworldProjectConfig interface deleted",
-        "setupProjectLinks function deleted",
-        "Any tests referencing project config updated or removed",
-        "typecheck passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "Phase 8 task 10"
-    }
-  ]
+	"branchName": "ralph/project-init",
+	"userStories": [
+		{
+			"id": "US-001",
+			"title": "Split init handler - global only",
+			"acceptanceCriteria": [
+				"initHandler() in apps/cli/src/handlers/init.ts only handles global config setup",
+				"setupProjectLinks() function removed from init.ts",
+				"OffworldProjectConfig interface removed",
+				"If config exists + cwd is git repo: logs suggestion to use 'ow project init'",
+				"If config exists + not in git repo: logs 'use --force to reconfigure'",
+				"--force flag added and allows reconfiguration when config exists",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 1 task 1"
+		},
+		{
+			"id": "US-002",
+			"title": "Create project command group",
+			"acceptanceCriteria": [
+				"apps/cli/src/handlers/project.ts exists with projectInitHandler export",
+				"projectInitHandler accepts options: all, deps, skip, generate, dryRun, yes",
+				"apps/cli/src/handlers/index.ts exports projectInitHandler",
+				"apps/cli/src/index.ts has 'project' command group with 'init' subcommand",
+				"'ow project init --help' shows all options",
+				"typecheck passes"
+			],
+			"priority": 1,
+			"passes": true,
+			"notes": "Phase 1 tasks 2-3"
+		},
+		{
+			"id": "US-003",
+			"title": "Create manifest scanner",
+			"acceptanceCriteria": [
+				"packages/sdk/src/manifest.ts exists",
+				"detectManifestType(dir) returns 'npm' | 'python' | 'rust' | 'go' | 'unknown'",
+				"parseDependencies(dir) returns array of {name, version, dev} objects",
+				"Parses package.json dependencies and devDependencies",
+				"Parses pyproject.toml [project.dependencies]",
+				"Parses Cargo.toml [dependencies]",
+				"Parses go.mod require statements",
+				"Parses requirements.txt lines",
+				"packages/sdk/src/index.ts exports manifest module",
+				"typecheck passes"
+			],
+			"priority": 2,
+			"passes": true,
+			"notes": "Phase 2 task 4"
+		},
+		{
+			"id": "US-004",
+			"title": "Create dependency to repo mapper",
+			"acceptanceCriteria": [
+				"packages/sdk/src/dep-mappings.ts exists",
+				"KNOWN_MAPPINGS constant has 50+ entries for popular packages",
+				"resolveFromNpm(packageName) fetches registry.npmjs.org and extracts repo",
+				"resolveDependencyRepo(dep) tries KNOWN_MAPPINGS first, then npm fallback",
+				"Returns { dep, repo, source: 'known' | 'npm' | 'unknown' }",
+				"packages/sdk/src/index.ts exports dep-mappings module",
+				"typecheck passes"
+			],
+			"priority": 2,
+			"passes": true,
+			"notes": "Phase 3 task 5"
+		},
+		{
+			"id": "US-005",
+			"title": "Create skill matcher",
+			"acceptanceCriteria": [
+				"matchDependenciesToSkills function exists in SDK",
+				"Accepts array of resolved deps with repo info",
+				"Returns array with status: 'installed' | 'available' | 'generate' | 'unknown'",
+				"Checks local skill directory for installed skills",
+				"Checks skill registry/index for available skills",
+				"typecheck passes"
+			],
+			"priority": 3,
+			"passes": true,
+			"notes": "Phase 4 task 6"
+		},
+		{
+			"id": "US-006",
+			"title": "Create AGENTS.md updater",
+			"acceptanceCriteria": [
+				"packages/sdk/src/agents-md.ts exists",
+				"updateAgentFiles(projectRoot, skills) function exported",
+				"appendSkillsSection(filePath, skills) function exported",
+				"Creates AGENTS.md if missing",
+				"Appends '## Project Skills' section with markdown table",
+				"Table has columns: Dependency, Skill, Path",
+				"If section exists, replaces content between '## Project Skills' and next ##",
+				"Also updates CLAUDE.md if it exists in projectRoot",
+				"packages/sdk/src/index.ts exports agents-md module",
+				"typecheck passes"
+			],
+			"priority": 3,
+			"passes": true,
+			"notes": "Phase 5 task 7"
+		},
+		{
+			"id": "US-007",
+			"title": "Wire up project init handler",
+			"acceptanceCriteria": [
+				"projectInitHandler checks global config exists, errors if missing",
+				"Detects project root via git or cwd",
+				"Calls parseDependencies to scan manifest",
+				"Calls resolveDependencyRepo for each dependency",
+				"Calls matchDependenciesToSkills to get availability",
+				"Shows interactive checklist when no --all or --deps flag",
+				"--all flag selects all dependencies",
+				"--deps flag accepts comma-separated list",
+				"--skip flag excludes specified deps",
+				"Installs selected skills via existing pullHandler",
+				"--generate flag triggers skill generation for missing",
+				"Calls updateAgentFiles to write AGENTS.md",
+				"--dry-run shows actions without executing",
+				"--yes skips confirmations",
+				"Prints summary of installed skills",
+				"typecheck passes"
+			],
+			"priority": 4,
+			"passes": true,
+			"notes": "Phase 6 task 8"
+		},
+		{
+			"id": "US-008",
+			"title": "Create agent onboarding docs",
+			"acceptanceCriteria": [
+				"apps/docs/src/content/docs/setup-prompt.md exists",
+				"Contains quick copy-paste prompt section",
+				"Contains detailed agent instructions section",
+				"Documents autonomous setup: ow project init --all --generate --yes",
+				"Documents interactive setup: ow project init",
+				"Documents dry-run: ow project init --dry-run",
+				"Documents what gets created (skill paths, AGENTS.md section)",
+				"Documents that no project config files are created",
+				"typecheck passes"
+			],
+			"priority": 5,
+			"passes": true,
+			"notes": "Phase 7 task 9"
+		},
+		{
+			"id": "US-009",
+			"title": "Remove deprecated project config",
+			"acceptanceCriteria": [
+				"No references to .offworld/project.json in codebase",
+				"OffworldProjectConfig interface deleted",
+				"setupProjectLinks function deleted",
+				"Any tests referencing project config updated or removed",
+				"typecheck passes"
+			],
+			"priority": 5,
+			"passes": true,
+			"notes": "Phase 8 task 10"
+		}
+	]
 }

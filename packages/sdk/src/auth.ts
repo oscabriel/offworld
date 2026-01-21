@@ -2,15 +2,9 @@
  * Authentication utilities for offworld CLI
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { getMetaRoot } from "./config.js";
-
-// ============================================================================
-// Configuration
-// ============================================================================
-
-const AUTH_FILE_NAME = "auth.json";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { dirname } from "node:path";
+import { Paths } from "./paths";
 
 // ============================================================================
 // Types
@@ -63,10 +57,11 @@ export class TokenExpiredError extends AuthError {
 // ============================================================================
 
 /**
- * Returns the auth file path (~/.ow/auth.json)
+ * Returns the auth file path using XDG Base Directory spec
+ * Location: ~/.local/share/offworld/auth.json
  */
 export function getAuthPath(): string {
-	return join(getMetaRoot(), AUTH_FILE_NAME);
+	return Paths.authFile;
 }
 
 // ============================================================================
@@ -74,7 +69,7 @@ export function getAuthPath(): string {
 // ============================================================================
 
 /**
- * Saves authentication data to ~/.ow/auth.json
+ * Saves authentication data to ~/.local/share/offworld/auth.json
  * Creates directory if it doesn't exist
  */
 export function saveAuthData(data: AuthData): void {
@@ -88,10 +83,11 @@ export function saveAuthData(data: AuthData): void {
 
 	// Write auth data
 	writeFileSync(authPath, JSON.stringify(data, null, 2), "utf-8");
+	chmodSync(authPath, 0o600);
 }
 
 /**
- * Loads authentication data from ~/.ow/auth.json
+ * Loads authentication data from ~/.local/share/offworld/auth.json
  * Returns null if file doesn't exist or is invalid
  */
 export function loadAuthData(): AuthData | null {

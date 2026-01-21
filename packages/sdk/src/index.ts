@@ -8,16 +8,11 @@ export {
 	type FileRole,
 } from "@offworld/types";
 
-export {
-	VERSION,
-	DEFAULT_IGNORE_PATTERNS,
-	SUPPORTED_LANGUAGES,
-	SUPPORTED_EXTENSIONS,
-	type SupportedLanguage,
-} from "./constants.js";
+export { VERSION, DEFAULT_IGNORE_PATTERNS } from "./constants.js";
 
 export {
 	getMetaRoot,
+	getStateRoot,
 	getRepoRoot,
 	getRepoPath,
 	getAnalysisPath,
@@ -26,7 +21,11 @@ export {
 	getConfigPath,
 	loadConfig,
 	saveConfig,
+	toSkillDirName,
+	toMetaDirName,
 } from "./config.js";
+
+export { expandTilde, Paths } from "./paths.js";
 
 export {
 	parseRepoInput,
@@ -35,14 +34,6 @@ export {
 	PathNotFoundError,
 	NotGitRepoError,
 } from "./repo-source.js";
-
-export {
-	isBinaryBuffer,
-	hashBuffer,
-	loadGitignorePatterns,
-	loadGitignorePatternsSimple,
-	type GitignorePattern,
-} from "./util.js";
 
 export {
 	getIndexPath,
@@ -130,6 +121,5 @@ export {
 	detectInstalledAgents,
 	getAgentConfig,
 	getAllAgentConfigs,
-	expandTilde,
 	type AgentConfig,
 } from "./agents.js";

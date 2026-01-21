@@ -7,6 +7,7 @@ import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { basename } from "node:path";
 import type { GitProvider, LocalRepoSource, RemoteRepoSource, RepoSource } from "@offworld/types";
+import { expandTilde } from "./paths.js";
 
 // Custom error types for specific failure modes
 export class RepoSourceError extends Error {
@@ -139,8 +140,8 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
  * Validates that the path exists and contains a .git directory
  */
 function parseLocalPath(input: string): LocalRepoSource {
-	// Resolve to absolute path
-	const absolutePath = resolve(input);
+	// Expand ~ and resolve to absolute path
+	const absolutePath = resolve(expandTilde(input));
 
 	// Check if path exists
 	if (!existsSync(absolutePath)) {

@@ -11,7 +11,13 @@ import type { Architecture, FileIndex, RepoSource, Skill } from "@offworld/types
 // Configuration
 // ============================================================================
 
-const CONVEX_URL = process.env.CONVEX_URL ?? "https://beloved-ferret-55.convex.cloud";
+// CONVEX_URL can be injected at build time (production) or runtime (dev)
+// For local dev, it's loaded from .env via CLI's env-loader
+// Using a getter to ensure it's evaluated AFTER env is loaded, not at module init
+function getConvexUrl(): string {
+	return process.env.CONVEX_URL || "";
+}
+
 const GITHUB_API_BASE = "https://api.github.com";
 const MIN_STARS_FOR_PUSH = 5;
 
@@ -128,7 +134,14 @@ export interface CanPushResult {
 // ============================================================================
 
 function createClient(token?: string): ConvexHttpClient {
-	const client = new ConvexHttpClient(CONVEX_URL);
+	const convexUrl = getConvexUrl();
+	if (!convexUrl) {
+		throw new SyncError(
+			"CONVEX_URL not configured. " +
+				"For local development, ensure apps/cli/.env contains CONVEX_URL=your_convex_url",
+		);
+	}
+	const client = new ConvexHttpClient(convexUrl);
 	if (token) client.setAuth(token);
 	return client;
 }

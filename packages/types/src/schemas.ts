@@ -20,10 +20,7 @@ export const AgentSchema = z.enum([
 
 export const ConfigSchema = z.object({
 	repoRoot: z.string().default("~/ow"),
-	metaRoot: z.string().default("~/.config/offworld"),
-	skillDir: z.string().default("~/.config/opencode/skill"),
 	defaultShallow: z.boolean().default(true),
-	autoAnalyze: z.boolean().default(true),
 	ai: AIConfigSchema.default({ provider: "opencode", model: "claude-opus-4-5" }),
 	/** Agents to create skill symlinks for. Auto-detected if empty. */
 	agents: z.array(AgentSchema).default([]),
@@ -196,3 +193,14 @@ export const RepoIndexSchema = z.object({
 	version: z.string().default("1"),
 	repos: z.record(z.string(), RepoIndexEntrySchema),
 });
+
+/**
+ * Options for ow init command
+ */
+export interface InitOptions {
+	yes?: boolean;
+	/** Skip auth check (useful for testing) */
+	skipAuth?: boolean;
+	/** Skip project linking (useful for testing) */
+	skipProjectLink?: boolean;
+}

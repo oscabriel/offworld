@@ -125,3 +125,31 @@
   - Table footer includes usage instructions: "To update skills, run: ow pull <dependency>"
   - CLAUDE.md updated conditionally only if existsSync returns true
   - InstalledSkill interface has dependency (package name), skill (identifier), path (absolute skill dir)
+
+---
+
+## 2026-01-21 - US-007
+
+- Wired up project init handler with full integration
+- Files changed:
+  - apps/cli/src/handlers/project.ts: Replaced placeholder with complete implementation
+  - apps/cli/src/handlers/project.ts: Imported parseDependencies, resolveDependencyRepo, matchDependenciesToSkills, updateAgentFiles, pullHandler
+  - apps/cli/src/handlers/project.ts: Added detectProjectRoot() function (git-based)
+  - apps/cli/src/handlers/project.ts: Implemented dependency scanning, repo resolution, skill matching
+  - apps/cli/src/handlers/project.ts: Implemented interactive checklist (p.multiselect) when not using --all or --deps
+  - apps/cli/src/handlers/project.ts: Implemented skill installation loop using pullHandler
+  - apps/cli/src/handlers/project.ts: Implemented AGENTS.md update via updateAgentFiles
+  - apps/cli/src/handlers/project.ts: Supports --all, --deps, --skip, --generate, --dry-run, --yes flags
+  - scripts/ralph/PRD.json: Marked US-007 as passes: true
+
+- **Learnings:**
+  - detectProjectRoot walks up from cwd looking for .git directory (stops at homedir)
+  - pullHandler accepts force flag which enables regeneration when true
+  - p.multiselect returns array of selected values, requires type casting to SkillMatch[]
+  - p.isCancel checks if user cancelled prompt (Ctrl+C)
+  - Skill installation is sequential (not parallel) to avoid cloning conflicts
+  - getSkillPath returns absolute path to skill directory (used to populate InstalledSkill.path)
+  - Error handling wraps each skill install in try-catch to prevent one failure from blocking others
+  - Summary reports both successful installs and failures via separate counters
+
+---

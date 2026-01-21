@@ -14,16 +14,7 @@ import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
 
 // Valid config keys (supports dot notation for nested keys)
-const VALID_KEYS = [
-	"repoRoot",
-	"metaRoot",
-	"skillDir",
-	"defaultShallow",
-	"autoAnalyze",
-	"agents",
-	"ai.provider",
-	"ai.model",
-] as const;
+const VALID_KEYS = ["repoRoot", "defaultShallow", "agents", "ai.provider", "ai.model"] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
 
 function isValidKey(key: string): key is ConfigKey {
@@ -91,8 +82,7 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 	// Parse value based on key type
 	let parsedValue: string | boolean | Agent[];
 
-	if (key === "defaultShallow" || key === "autoAnalyze") {
-		// Boolean values
+	if (key === "defaultShallow") {
 		if (value === "true" || value === "1") {
 			parsedValue = true;
 		} else if (value === "false" || value === "0") {

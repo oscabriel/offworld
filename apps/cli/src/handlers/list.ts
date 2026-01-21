@@ -116,7 +116,7 @@ export async function listHandler(options: ListOptions): Promise<ListResult> {
 	// Convert entries to list items with staleness check
 	const items: RepoListItem[] = [];
 	for (const entry of entries) {
-		const item = await entryToListItem(entry, true);
+		const item = await entryToListItem(entry, stale);
 		items.push(item);
 	}
 

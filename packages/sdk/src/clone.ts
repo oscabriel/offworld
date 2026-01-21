@@ -2,8 +2,7 @@
  * Git clone and repository management utilities
  */
 
-import { existsSync, rmSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
@@ -123,13 +122,15 @@ export async function cloneRepo(
 		}
 	}
 
-	const parentDir = dirname(repoPath);
-	await mkdir(parentDir, { recursive: true });
-
-	if (options.sparse) {
-		await cloneSparse(source.cloneUrl, repoPath, options);
-	} else {
-		await cloneStandard(source.cloneUrl, repoPath, options);
+	try {
+		if (options.sparse) {
+			await cloneSparse(source.cloneUrl, repoPath, options);
+		} else {
+			await cloneStandard(source.cloneUrl, repoPath, options);
+		}
+	} catch (err) {
+		cleanupEmptyParentDirs(repoPath);
+		throw err;
 	}
 
 	const commitSha = getCommitSha(repoPath);
@@ -146,6 +147,13 @@ export async function cloneRepo(
 	updateIndex(indexEntry);
 
 	return repoPath;
+}
+
+function cleanupEmptyParentDirs(repoPath: string): void {
+	const ownerDir = dirname(repoPath);
+	if (existsSync(ownerDir) && readdirSync(ownerDir).length === 0) {
+		rmSync(ownerDir, { recursive: true, force: true });
+	}
 }
 
 async function cloneStandard(

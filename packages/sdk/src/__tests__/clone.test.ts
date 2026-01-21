@@ -73,9 +73,22 @@ vi.mock("node:fs", () => ({
 		const normalized = normalizePath(path);
 		return normalized in virtualFs;
 	}),
+	readdirSync: vi.fn((path: string) => {
+		const normalized = normalizePath(path);
+		const entries: string[] = [];
+		for (const key of Object.keys(virtualFs)) {
+			if (key.startsWith(normalized + "/")) {
+				const relative = key.slice(normalized.length + 1);
+				const firstSegment = relative.split("/")[0];
+				if (firstSegment && !entries.includes(firstSegment)) {
+					entries.push(firstSegment);
+				}
+			}
+		}
+		return entries;
+	}),
 	rmSync: vi.fn((path: string, _options?: { recursive?: boolean; force?: boolean }) => {
 		const normalized = normalizePath(path);
-		// Remove all paths starting with this path
 		for (const key of Object.keys(virtualFs)) {
 			if (key === normalized || key.startsWith(normalized + "/")) {
 				delete virtualFs[key];
@@ -104,7 +117,13 @@ vi.mock("node:child_process", () => ({
 		switch (gitCommand) {
 			case "clone": {
 				const config = gitConfig.clone ?? defaultGitConfig.clone;
+				const destPath = args[args.length - 1];
 				if (!config?.shouldSucceed) {
+					if (destPath) {
+						const normalized = normalizePath(destPath);
+						const parentDir = normalized.substring(0, normalized.lastIndexOf("/"));
+						virtualFs[parentDir] = { content: "", isDirectory: true };
+					}
 					const error = new Error(config?.errorMessage ?? "Clone failed") as Error & {
 						status: number;
 						stderr: string;
@@ -113,7 +132,6 @@ vi.mock("node:child_process", () => ({
 					error.stderr = config?.errorMessage ?? "fatal: repository not found";
 					throw error;
 				}
-				const destPath = args[args.length - 1];
 				if (destPath) {
 					const normalized = normalizePath(destPath);
 					virtualFs[normalized] = { content: "", isDirectory: true };
@@ -324,14 +342,6 @@ describe("cloneRepo", () => {
 		await expect(cloneRepo(mockSource)).rejects.toThrow(RepoExistsError);
 	});
 
-	it("creates parent directories if missing", async () => {
-		const { mkdir } = await import("node:fs/promises");
-
-		await cloneRepo(mockSource);
-
-		expect(mkdir).toHaveBeenCalledWith(expect.any(String), { recursive: true });
-	});
-
 	it("updates index after successful clone", async () => {
 		const { updateIndex } = await import("../index-manager.js");
 
@@ -474,7 +484,6 @@ describe("cloneRepo", () => {
 		});
 	});
 
-	// Tests for partial clone failures and cleanup behavior
 	describe("partial clone failures and cleanup", () => {
 		it("does not leave partial state in index on clone failure", async () => {
 			configureGitMock({
@@ -483,8 +492,20 @@ describe("cloneRepo", () => {
 
 			await expect(cloneRepo(mockSource)).rejects.toThrow(GitError);
 
-			// Index should not be updated on failure
 			expect(indexEntries[mockSource.qualifiedName]).toBeUndefined();
+		});
+
+		it("cleans up empty owner directory on clone failure", async () => {
+			const { rmSync } = await import("node:fs");
+
+			configureGitMock({
+				clone: { shouldSucceed: false, errorMessage: "fatal: repository not found" },
+			});
+
+			await expect(cloneRepo(mockSource)).rejects.toThrow(GitError);
+
+			const ownerDir = join(mockRepoRoot, "github", "tanstack");
+			expect(rmSync).toHaveBeenCalledWith(ownerDir, { recursive: true, force: true });
 		});
 
 		it("index contains correct commit SHA after successful clone", async () => {

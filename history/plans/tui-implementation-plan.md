@@ -8,25 +8,31 @@
 
 ## Overview
 
-**Goal:** Interactive terminal UI for managing local clones, analyses, and skills - launched with `ow` (no args).
+**Goal:** Interactive terminal UI for managing indexed clones and installed skills. Launches only via `ow` (no args) in a TTY; no standalone `ow tui` command.
 
 **Design Inspiration:**
 
 - **lazygit**: Panel-based layout, vim keybindings, status bar with keybind hints
 - **btop**: Section headers, colored status indicators, responsive design
 
-**Framework:** OpenTUI (React reconciler with Yoga layout)
+**Framework:** OpenTUI React (`@opentui/react` on `@opentui/core`). Pure terminal UI, Node runtime, no browser surface.
+
+**Data Sources:**
+
+- Repo index via `@offworld/sdk` (`listRepos()` -> `RepoIndexEntry[]`)
+- Skills + meta from `getSkillPath(fullName)` and `getMetaPath(fullName)`
 
 ---
 
 ## Key Decisions
 
-| Decision         | Choice                    | Rationale                        |
-| ---------------- | ------------------------- | -------------------------------- |
-| TUI entry point  | Integrated into `ow` CLI  | Single entry point is cleaner UX |
-| Long-running ops | Spinner + disable actions | Clear feedback without blocking  |
-| Selection mode   | Single selection (V1)     | Keep V1 simple                   |
-| Theme            | Dark only (Nord-inspired) | Matches btop/lazygit aesthetic   |
+| Decision        | Choice                                  | Rationale                            |
+| --------------- | --------------------------------------- | ------------------------------------ |
+| TUI entry point | `ow` (no args + TTY)                    | Single entry point, no extra command |
+| Renderer        | `@opentui/react` + `@opentui/core`      | Component ergonomics, native TUI     |
+| Data model      | `RepoIndexEntry` from `@offworld/types` | Matches existing CLI + SDK           |
+| Actions         | SDK functions (no CLI subprocess)       | Predictable behavior, easier testing |
+| Theme           | Dark only (Nord-inspired)               | Matches btop/lazygit aesthetic       |
 
 ---
 
@@ -38,7 +44,7 @@ ow --help       # Shows CLI help
 ow pull <repo>  # Direct CLI command
 ```
 
-The TUI becomes the "home screen" for Offworld - a local repo/skill manager.
+The TUI is the "home screen" for Offworld. When args are present or the output is non-TTY, the standard CLI runs.
 
 ---
 
@@ -49,15 +55,19 @@ The TUI becomes the "home screen" for Offworld - a local repo/skill manager.
 ```
 apps/tui/
 ├── src/
-│   ├── index.ts              # Entry: createCliRenderer + App mount
-│   ├── App.tsx               # Root layout + global keyboard handler
+│   ├── index.tsx              # createCliRenderer + createRoot + launchTui
+│   ├── App.tsx                # Root layout + global keyboard handler
+│   ├── actions/
+│   │   ├── pull.ts            # SDK-backed pull flow
+│   │   ├── generate.ts        # SDK-backed generate flow
+│   │   └── remove.ts          # SDK-backed remove flow
 │   ├── components/
-│   │   ├── Layout.tsx        # 3-panel layout wrapper
-│   │   ├── Header.tsx        # ASCII logo + version
-│   │   ├── StatusBar.tsx     # Keybind hints footer
+│   │   ├── Layout.tsx         # 3-panel layout wrapper
+│   │   ├── Header.tsx         # ASCII logo + version
+│   │   ├── StatusBar.tsx      # Keybind hints footer
 │   │   ├── Sidebar/
-│   │   │   ├── RepoTree.tsx  # Provider > Owner > Repo tree
-│   │   │   └── TreeItem.tsx  # Individual tree node
+│   │   │   ├── RepoTree.tsx   # Provider > Owner > Repo tree
+│   │   │   └── TreeItem.tsx   # Individual tree node
 │   │   ├── MainPanel/
 │   │   │   ├── RepoDetail.tsx     # Selected repo info
 │   │   │   ├── SkillPreview.tsx   # SKILL.md content viewer
@@ -70,17 +80,31 @@ apps/tui/
 │   │       ├── Panel.tsx          # Bordered panel wrapper
 │   │       ├── StatusBadge.tsx    # Analyzed/Stale/None indicator
 │   │       └── Spinner.tsx        # Loading indicator
-│   ├── hooks/
-│   │   ├── useRepos.ts       # Load repos from ~/.ow/
-│   │   ├── useAnalysis.ts    # Load analysis for selected repo
-│   │   ├── useActions.ts     # pull/generate/remove operations
-│   │   └── useFocus.ts       # Panel focus management
 │   ├── store/
-│   │   └── state.ts          # Zustand store for app state
-│   ├── types.ts              # TUI-specific types
-│   └── theme.ts              # Color palette + border styles
+│   │   └── state.ts           # Zustand store for app state
+│   ├── types.ts               # TUI-specific types
+│   ├── utils/
+│   │   ├── repo.ts            # Qualified name parsing helpers
+│   │   └── time.ts            # Relative time formatting
+│   └── theme.ts               # Color palette + border styles
 ├── package.json
 └── tsconfig.json
+```
+
+### Data Model
+
+`RepoIndexEntry` is the source of truth; TUI derives view-specific fields.
+
+```ts
+// types.ts
+import type { RepoIndexEntry } from "@offworld/types";
+
+export interface TuiRepo extends RepoIndexEntry {
+	analyzed: boolean;
+	isStale: boolean;
+	exists: boolean;
+	analysisStatus: "analyzed" | "stale" | "none";
+}
 ```
 
 ---
@@ -95,38 +119,39 @@ apps/tui/
 ├──────────────────────┬──────────────────────────────────────────┤
 │  REPOS               │  tanstack/router                         │
 │  ──────────────────  │  ─────────────────────────────────────── │
-│  ▾ github            │  Status: ● Analyzed 2h ago               │
-│    ▸ tanstack        │  Commit: a1b2c3d4                        │
-│      ● router      ← │  Path:   ~/ow/github/tanstack/router     │
-│      ○ query         │                                          │
-│    ▸ vercel          │  ┌─ SKILL.md ─────────────────────────┐  │
-│      ⚠ ai            │  │ ---                                │  │
-│  ▾ gitlab            │  │ name: tanstack-router-reference    │  │
-│    ▸ inkscape        │  │ description: Consult cloned...     │  │
-│      ● inkscape      │  │ ---                                │  │
-│                      │  │                                    │  │
-│                      │  │ # TanStack Router Source Reference │  │
-│                      │  │                                    │  │
-│                      │  │ ## Repository Structure            │  │
-│                      │  └────────────────────────────────────┘  │
+│  ▾ github            │  Status: ● Analyzed                       │
+│    ▸ tanstack        │  Analyzed: 2026-01-07                      │
+│      ● router      ← │  Commit: a1b2c3d4                          │
+│      ○ query         │  Path:   ~/ow/github/tanstack/router       │
+│    ▸ vercel          │                                            │
+│      ⚠ ai            │  ┌─ SKILL.md ─────────────────────────┐    │
+│  ▾ gitlab            │  │ ---                                │    │
+│    ▸ inkscape        │  │ name: tanstack-router-reference    │    │
+│      ● inkscape      │  │ description: Consult cloned...     │    │
+│                      │  │ ---                                │    │
+│                      │  │                                    │    │
+│                      │  │ # TanStack Router Source Reference │    │
+│                      │  │                                    │    │
+│                      │  │ ## Repository Structure            │    │
+│                      │  └────────────────────────────────────┘    │
 ├──────────────────────┴──────────────────────────────────────────┤
-│  [p]ull  [g]enerate  [r]emove  [/]search  [?]help  [q]uit      │
+│  [p]ull  [g]enerate  [r]emove  [/]search  [?]help  [q]uit       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Status Indicators
 
-| Symbol | Color                 | Meaning                          |
-| ------ | --------------------- | -------------------------------- |
-| `●`    | Green (`#a3be8c`)     | Analyzed, up-to-date             |
-| `⚠`    | Yellow (`#ebcb8b`)    | Analyzed, stale (commits behind) |
-| `○`    | Dim white (`#4c566a`) | Not analyzed                     |
-| `▸`    | Default               | Collapsed group                  |
-| `▾`    | Default               | Expanded group                   |
+| Symbol | Color                 | Meaning                                  |
+| ------ | --------------------- | ---------------------------------------- |
+| `●`    | Green (`#a3be8c`)     | Skill installed, commit matches          |
+| `⚠`    | Yellow (`#ebcb8b`)    | Skill installed, commit mismatch (stale) |
+| `○`    | Dim white (`#4c566a`) | No skill installed                       |
+| `▸`    | Default               | Collapsed group                          |
+| `▾`    | Default               | Expanded group                           |
 
 ### Color Palette (Nord-inspired)
 
-```typescript
+```ts
 // theme.ts
 export const colors = {
 	// Backgrounds
@@ -164,26 +189,29 @@ export const borders = {
 ### 1. App.tsx (Root)
 
 ```tsx
-import { useState } from "react";
 import { useKeyboard } from "@opentui/react";
+import { colors } from "./theme";
 import { useStore } from "./store/state";
 import { Header } from "./components/Header";
 import { Layout } from "./components/Layout";
-import { Sidebar } from "./components/Sidebar/RepoTree";
-import { MainPanel } from "./components/MainPanel/RepoDetail";
+import { RepoTree } from "./components/Sidebar/RepoTree";
+import { RepoDetail } from "./components/MainPanel/RepoDetail";
 import { StatusBar } from "./components/StatusBar";
 import { HelpModal } from "./components/Modals/HelpModal";
 import { ActionMenu } from "./components/Modals/ActionMenu";
 
 export const App = () => {
-	const { activePanel, setActivePanel, modal, setModal } = useStore();
+	const { activePanel, setActivePanel, modal, setModal, selectedRepo } = useStore();
 
 	useKeyboard((e) => {
-		if (modal) return; // Let modal handle keys
+		if (modal) return;
 
 		switch (e.name) {
 			case "tab":
 				setActivePanel(activePanel === "sidebar" ? "main" : "sidebar");
+				break;
+			case "return":
+				if (selectedRepo) setModal("action");
 				break;
 			case "?":
 				setModal("help");
@@ -197,8 +225,8 @@ export const App = () => {
 		<box flexDirection="column" flexGrow={1} backgroundColor={colors.bg}>
 			<Header />
 			<Layout>
-				<Sidebar focused={activePanel === "sidebar"} />
-				<MainPanel focused={activePanel === "main"} />
+				<RepoTree focused={activePanel === "sidebar"} />
+				<RepoDetail focused={activePanel === "main"} />
 			</Layout>
 			<StatusBar />
 			{modal === "help" && <HelpModal onClose={() => setModal(null)} />}
@@ -247,6 +275,8 @@ import { useKeyboard } from "@opentui/react";
 import { useStore } from "../../store/state";
 import { TreeItem } from "./TreeItem";
 import { Panel } from "../shared/Panel";
+import type { TuiRepo } from "../../types";
+import { splitQualifiedName } from "../../utils/repo";
 
 interface TreeNode {
 	id: string;
@@ -255,7 +285,6 @@ interface TreeNode {
 	expanded?: boolean;
 	children?: TreeNode[];
 	status?: "analyzed" | "stale" | "none";
-	commitsBehind?: number;
 }
 
 export const RepoTree = ({ focused }: { focused: boolean }) => {
@@ -279,21 +308,25 @@ export const RepoTree = ({ focused }: { focused: boolean }) => {
 				break;
 			case "l":
 			case "right":
-			case "return":
+			case "return": {
 				const item = flatList[cursor];
+				if (!item) return;
 				if (item.type === "repo") {
 					selectRepo(item.id);
 				} else {
 					toggleExpanded(item.id);
 				}
 				break;
+			}
 			case "h":
-			case "left":
+			case "left": {
 				const current = flatList[cursor];
+				if (!current) return;
 				if (current.type !== "provider") {
 					toggleExpanded(current.id);
 				}
 				break;
+			}
 			case "g":
 				if (e.repeated) setCursor(0); // gg
 				break;
@@ -321,19 +354,18 @@ export const RepoTree = ({ focused }: { focused: boolean }) => {
 };
 
 // Transform flat repo list to tree structure
-function buildTree(repos: RepoInfo[]): TreeNode[] {
+function buildTree(repos: TuiRepo[]): TreeNode[] {
 	const providers: Record<string, Record<string, TreeNode[]>> = {};
 
 	for (const repo of repos) {
-		const [provider, owner, name] = parseQualifiedName(repo.qualifiedName);
+		const { provider, owner, name } = splitQualifiedName(repo.qualifiedName, repo.fullName);
 		providers[provider] ??= {};
 		providers[provider][owner] ??= [];
 		providers[provider][owner].push({
 			id: repo.qualifiedName,
 			type: "repo",
 			name,
-			status: repo.analyzed ? (repo.stale ? "stale" : "analyzed") : "none",
-			commitsBehind: repo.commitsBehind,
+			status: repo.analysisStatus,
 		});
 	}
 
@@ -354,6 +386,7 @@ function buildTree(repos: RepoInfo[]): TreeNode[] {
 ### 4. TreeItem.tsx
 
 ```tsx
+import { TextAttributes } from "@opentui/core";
 import { colors } from "../../theme";
 
 interface TreeItemProps {
@@ -403,7 +436,7 @@ import { Panel } from "../shared/Panel";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SkillPreview } from "./SkillPreview";
 import { colors } from "../../theme";
-import { formatRelative } from "../../utils";
+import { formatRelative } from "../../utils/time";
 
 export const RepoDetail = ({ focused }: { focused: boolean }) => {
 	const { selectedRepo, repos } = useStore();
@@ -422,12 +455,9 @@ export const RepoDetail = ({ focused }: { focused: boolean }) => {
 	return (
 		<Panel title={repo.fullName} focused={focused}>
 			<box flexDirection="column" flexGrow={1}>
-				{/* Header info */}
 				<box marginBottom={1}>
-					<StatusBadge status={repo.analyzed ? (repo.stale ? "stale" : "analyzed") : "none"} />
-					{repo.commitsBehind && (
-						<text fg={colors.warning}> ({repo.commitsBehind} commits behind)</text>
-					)}
+					<StatusBadge status={repo.analysisStatus} />
+					{!repo.exists && <text fg={colors.error}> (missing on disk)</text>}
 				</box>
 
 				{repo.analyzedAt && (
@@ -436,7 +466,6 @@ export const RepoDetail = ({ focused }: { focused: boolean }) => {
 				{repo.commitSha && <text fg={colors.fgDim}>Commit: {repo.commitSha.slice(0, 8)}</text>}
 				<text fg={colors.fgDim}>Path: {repo.localPath}</text>
 
-				{/* Skill preview */}
 				<box marginTop={2} flexGrow={1}>
 					<SkillPreview repo={repo} />
 				</box>
@@ -450,20 +479,26 @@ export const RepoDetail = ({ focused }: { focused: boolean }) => {
 
 ```tsx
 import { useState, useEffect } from "react";
-import { getAnalysisPath } from "@offworld/sdk";
+import { readFile } from "node:fs/promises";
+import { getSkillPath } from "@offworld/sdk";
+import type { TuiRepo } from "../../types";
 import { colors } from "../../theme";
 
-export const SkillPreview = ({ repo }: { repo: RepoInfo }) => {
+export const SkillPreview = ({ repo }: { repo: TuiRepo }) => {
 	const [content, setContent] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
 		const loadSkill = async () => {
+			if (!repo.hasSkill) {
+				setContent(null);
+				return;
+			}
+
 			setLoading(true);
 			try {
-				const analysisPath = getAnalysisPath(repo.qualifiedName);
-				const skillPath = `${analysisPath}/SKILL.md`;
-				const text = await Bun.file(skillPath).text();
+				const skillPath = `${getSkillPath(repo.fullName)}/SKILL.md`;
+				const text = await readFile(skillPath, "utf-8");
 				setContent(text);
 			} catch {
 				setContent(null);
@@ -472,7 +507,7 @@ export const SkillPreview = ({ repo }: { repo: RepoInfo }) => {
 			}
 		};
 		loadSkill();
-	}, [repo.qualifiedName]);
+	}, [repo.fullName, repo.hasSkill]);
 
 	if (loading) {
 		return <text fg={colors.fgDim}>Loading...</text>;
@@ -488,7 +523,7 @@ export const SkillPreview = ({ repo }: { repo: RepoInfo }) => {
 				justifyContent="center"
 				flexGrow={1}
 			>
-				<text fg={colors.fgDim}>No skill file generated</text>
+				<text fg={colors.fgDim}>No skill file installed</text>
 			</box>
 		);
 	}
@@ -521,7 +556,7 @@ export const ActionMenu = ({ onClose }: ActionMenuProps) => {
 	const { selectedRepo, executeAction, loading } = useStore();
 
 	const options = [
-		{ name: "Pull", description: "Clone/sync and get analysis", value: "pull", key: "p" },
+		{ name: "Pull", description: "Update repo + refresh analysis", value: "pull", key: "p" },
 		{ name: "Generate", description: "Force local AI analysis", value: "generate", key: "g" },
 		{ name: "Remove", description: "Delete repo and analysis", value: "remove", key: "r" },
 	];
@@ -646,15 +681,20 @@ export const Header = () => (
 
 ### Zustand Store
 
-```typescript
+```ts
 // store/state.ts
 import { create } from "zustand";
-import { listRepos, getAnalysisPath } from "@offworld/sdk";
-import type { RepoInfo } from "@offworld/types";
+import { listRepos, getCommitSha } from "@offworld/sdk";
+import type { RepoIndexEntry } from "@offworld/types";
+import { existsSync } from "node:fs";
+import { pullRepo } from "../actions/pull";
+import { generateRepo } from "../actions/generate";
+import { removeRepo } from "../actions/remove";
+import type { TuiRepo } from "../types";
 
 interface TUIState {
 	// Data
-	repos: RepoInfo[];
+	repos: TuiRepo[];
 	selectedRepo: string | null;
 	expandedNodes: Set<string>;
 
@@ -678,7 +718,7 @@ export const useStore = create<TUIState>((set, get) => ({
 	// Initial state
 	repos: [],
 	selectedRepo: null,
-	expandedNodes: new Set(["github"]), // Default expand github
+	expandedNodes: new Set(["github"]),
 	activePanel: "sidebar",
 	modal: null,
 	loading: false,
@@ -688,12 +728,11 @@ export const useStore = create<TUIState>((set, get) => ({
 	loadRepos: async () => {
 		set({ loading: true, error: null });
 		try {
-			const repos = await listRepos();
-			// Enrich with analysis metadata
-			const enriched = await Promise.all(repos.map(enrichRepo));
-			set({ repos: enriched, loading: false });
-		} catch (e) {
-			set({ error: e.message, loading: false });
+			const entries = listRepos();
+			const repos = entries.map(deriveRepo);
+			set({ repos, loading: false });
+		} catch (error) {
+			set({ error: error instanceof Error ? error.message : "Unknown error", loading: false });
 		}
 	},
 
@@ -717,54 +756,81 @@ export const useStore = create<TUIState>((set, get) => ({
 	clearError: () => set({ error: null }),
 
 	executeAction: async (action) => {
-		const { selectedRepo, loadRepos } = get();
+		const { selectedRepo, repos, loadRepos } = get();
 		if (!selectedRepo) return;
+
+		const repo = repos.find((entry) => entry.qualifiedName === selectedRepo);
+		if (!repo) return;
 
 		set({ loading: true, error: null });
 		try {
-			const { execa } = await import("execa");
-			const [provider, owner, repo] = selectedRepo.split(/[:\/]/);
-			const fullName = `${owner}/${repo}`;
-
 			switch (action) {
 				case "pull":
-					await execa("ow", ["pull", fullName]);
+					await pullRepo(repo);
 					break;
 				case "generate":
-					await execa("ow", ["generate", fullName, "--force"]);
+					await generateRepo(repo);
 					break;
 				case "remove":
-					await execa("ow", ["rm", fullName, "-y"]);
+					await removeRepo(repo);
 					break;
 			}
-
-			await loadRepos(); // Refresh
-		} catch (e) {
-			set({ error: e.message });
+			await loadRepos();
+		} catch (error) {
+			set({ error: error instanceof Error ? error.message : "Unknown error" });
 		} finally {
 			set({ loading: false });
 		}
 	},
 }));
 
-// Helper to enrich repo with analysis metadata
-async function enrichRepo(repo: RepoInfo): Promise<RepoInfo> {
-	try {
-		const analysisPath = getAnalysisPath(repo.qualifiedName);
-		const metaPath = `${analysisPath}/meta.json`;
-		const meta = await Bun.file(metaPath).json();
-		return {
-			...repo,
-			analyzed: true,
-			analyzedAt: meta.analyzedAt,
-			commitSha: meta.commitSha,
-			// TODO: check staleness against current HEAD
-		};
-	} catch {
-		return { ...repo, analyzed: false };
+function deriveRepo(entry: RepoIndexEntry): TuiRepo {
+	const exists = existsSync(entry.localPath);
+	const analyzed = entry.hasSkill || !!entry.analyzedAt;
+	let isStale = false;
+
+	if (exists && analyzed && entry.commitSha) {
+		try {
+			const currentSha = getCommitSha(entry.localPath);
+			isStale = currentSha !== entry.commitSha;
+		} catch {
+			isStale = false;
+		}
 	}
+
+	const analysisStatus = analyzed ? (isStale ? "stale" : "analyzed") : "none";
+
+	return {
+		...entry,
+		exists,
+		analyzed,
+		isStale,
+		analysisStatus,
+	};
 }
 ```
+
+---
+
+## Action Flows (SDK-backed)
+
+### Pull
+
+- Update repo (`updateRepo`) and get current commit SHA
+- If skill already installed and commit matches, no-op
+- For remote repos, try `checkRemote` + `pullAnalysis` when SHAs match
+- Fallback: generate locally via `generateSkillWithAI`
+- Install skill (`installSkill`) + update index (`updateIndex`)
+
+### Generate
+
+- Generate locally via `generateSkillWithAI`
+- Install skill (`installSkill`) + update index (`updateIndex`)
+
+### Remove
+
+- Remove repo + skill via `removeRepo` (no CLI subprocess)
+- Update UI state after removal
 
 ---
 
@@ -806,7 +872,6 @@ async function enrichRepo(repo: RepoInfo): Promise<RepoInfo> {
 | `p`     | Pull selected repo |
 | `g`     | Generate analysis  |
 | `r`     | Remove repo        |
-| `o`     | Open in editor     |
 | `Enter` | Open action menu   |
 
 ---
@@ -815,16 +880,19 @@ async function enrichRepo(repo: RepoInfo): Promise<RepoInfo> {
 
 ### Entry Point Modification
 
-```typescript
+```ts
 // apps/cli/src/cli.ts
-import { createOwCli } from "./index";
+import { loadDevEnv } from "./env-loader.js";
+import { createOwCli } from "./index.js";
+
+loadDevEnv();
 
 const args = process.argv.slice(2);
 
 // Launch TUI if no args and in TTY
 if (args.length === 0 && process.stdout.isTTY) {
-	const { launchTUI } = await import("@offworld/tui");
-	await launchTUI();
+	const { launchTui } = await import("@offworld/tui");
+	await launchTui();
 } else {
 	createOwCli().run();
 }
@@ -832,21 +900,21 @@ if (args.length === 0 && process.stdout.isTTY) {
 
 ### TUI Entry
 
-```typescript
-// apps/tui/src/index.ts
-import { createCliRenderer } from "@opentui/core"
-import { createRoot } from "@opentui/react"
-import { App } from "./App"
-import { useStore } from "./store/state"
+```ts
+// apps/tui/src/index.tsx
+import { createCliRenderer } from "@opentui/core";
+import { createRoot } from "@opentui/react";
+import { App } from "./App";
+import { useStore } from "./store/state";
 
-export async function launchTUI() {
-  const renderer = await createCliRenderer({ exitOnCtrlC: true })
+export async function launchTui() {
+	const renderer = await createCliRenderer({ exitOnCtrlC: true });
 
-  // Load initial data
-  await useStore.getState().loadRepos()
+	// Load initial data
+	await useStore.getState().loadRepos();
 
-  // Mount React app
-  createRoot(renderer).render(<App />)
+	// Mount React app
+	createRoot(renderer).render(<App />);
 }
 ```
 
@@ -858,16 +926,19 @@ export async function launchTUI() {
 {
 	"name": "@offworld/tui",
 	"version": "0.1.0",
+	"private": true,
 	"type": "module",
-	"main": "src/index.ts",
+	"module": "src/index.tsx",
+	"scripts": {
+		"dev": "bun run --watch src/index.tsx"
+	},
 	"dependencies": {
 		"@offworld/sdk": "workspace:*",
 		"@offworld/types": "workspace:*",
-		"@opentui/core": "^0.1.0",
-		"@opentui/react": "^0.1.0",
+		"@opentui/core": "^0.1.74",
+		"@opentui/react": "^0.1.74",
 		"react": "^19.0.0",
-		"zustand": "^5.0.0",
-		"execa": "^9.6.1"
+		"zustand": "^5.0.0"
 	},
 	"devDependencies": {
 		"@types/react": "^19.0.0",
@@ -885,7 +956,7 @@ export async function launchTUI() {
 
 **Tasks:**
 
-- [ ] Set up `apps/tui/` with OpenTUI React
+- [ ] Convert `apps/tui/` to OpenTUI React entry (`index.tsx` + `launchTui`)
 - [ ] Create `theme.ts` with colors/borders
 - [ ] Build `Panel` component (bordered box with title)
 - [ ] Build `Header` with ASCIIFont logo
@@ -893,19 +964,18 @@ export async function launchTUI() {
 - [ ] Create 3-panel `Layout` component
 - [ ] Wire up global keyboard handler
 
-**Deliverable:** Empty layout with panels, header, statusbar renders correctly
+**Deliverable:** Empty layout with panels, header, status bar renders correctly
 
 ### Phase 2: Data Layer
 
 **Tasks:**
 
 - [ ] Create Zustand store for state
-- [ ] Implement `useRepos` hook (SDK integration)
-- [ ] Implement `useAnalysis` hook (load analysis files)
-- [ ] Build repo tree data structure
+- [ ] Load repos from `listRepos()` and derive `TuiRepo`
+- [ ] Compute staleness via `getCommitSha`
 - [ ] Add loading/error states
 
-**Deliverable:** TUI loads and displays repo list from `~/.ow/`
+**Deliverable:** TUI loads and displays indexed repos
 
 ### Phase 3: Sidebar Navigation
 
@@ -938,7 +1008,7 @@ export async function launchTUI() {
 - [ ] Build `ActionMenu` modal
 - [ ] Build `ConfirmDialog` modal
 - [ ] Build `HelpModal` with full keybind reference
-- [ ] Implement `executeAction` in store (pull/generate/remove)
+- [ ] Implement SDK-backed action flows (pull/generate/remove)
 - [ ] Add spinner for async operations
 - [ ] Handle errors with user feedback
 
@@ -960,8 +1030,8 @@ export async function launchTUI() {
 
 ## Success Criteria
 
-- [ ] TUI launches in <500ms
-- [ ] All repos visible and navigable
+- [ ] TUI launches without noticeable delay
+- [ ] All indexed repos visible and navigable
 - [ ] Pull/Generate/Remove work from TUI
 - [ ] SKILL.md preview renders correctly
 - [ ] No crashes on edge cases (empty state, missing files)

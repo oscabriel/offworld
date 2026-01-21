@@ -223,13 +223,26 @@ export const router = os.router({
 		.input(
 			z.object({
 				yes: z.boolean().default(false).describe("Skip confirmation prompts").meta({ alias: "y" }),
+				force: z
+					.boolean()
+					.default(false)
+					.describe("Reconfigure even if config exists"),
+				model: z.string().optional().describe("AI provider and model (e.g., opencode/claude-sonnet-4-5)"),
+				repoRoot: z.string().optional().describe("Where to clone repos").meta({ alias: "repo-root" }),
+				agents: z.string().optional().describe("Comma-separated agents"),
 			}),
 		)
 		.meta({
 			description: "Initialize configuration with interactive setup",
 		})
 		.handler(async ({ input }) => {
-			return initHandler({ yes: input.yes });
+			return initHandler({
+				yes: input.yes,
+				force: input.force,
+				model: input.model,
+				repoRoot: input.repoRoot,
+				agents: input.agents,
+			});
 		}),
 });
 

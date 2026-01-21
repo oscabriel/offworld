@@ -36,7 +36,6 @@
 		"clean:vite": "turbo -F web clean:vite"
 	},
 	"dependencies": {
-		"@offworld/env": "workspace:*",
 		"dotenv": "^17.2.3",
 		"zod": "^4.3.5"
 	},

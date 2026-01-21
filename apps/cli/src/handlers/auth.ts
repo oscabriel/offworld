@@ -13,7 +13,13 @@ import { createSpinner } from "../utils/spinner";
 // ============================================================================
 
 const WORKOS_API = "https://api.workos.com";
-const WORKOS_CLIENT_ID = "client_01KFAD76KZRNWY7J2XN5PYESAH";
+
+// WORKOS_CLIENT_ID can be injected at build time (production) or runtime (dev)
+// For local dev, it's loaded from .env via CLI's env-loader
+// Using a getter to ensure it's evaluated AFTER env is loaded, not at module init
+function getWorkosClientId(): string {
+	return process.env.WORKOS_CLIENT_ID || "";
+}
 
 // ============================================================================
 // Handler Types
@@ -76,7 +82,7 @@ async function requestDeviceCode(): Promise<DeviceAuthResponse> {
 	const response = await fetch(`${WORKOS_API}/user_management/authorize/device`, {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
-		body: new URLSearchParams({ client_id: WORKOS_CLIENT_ID }),
+		body: new URLSearchParams({ client_id: getWorkosClientId() }),
 	});
 
 	if (!response.ok) {
@@ -101,7 +107,7 @@ async function pollForTokens(
 			body: new URLSearchParams({
 				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
 				device_code: deviceCode,
-				client_id: WORKOS_CLIENT_ID,
+				client_id: getWorkosClientId(),
 			}),
 		});
 
@@ -140,6 +146,15 @@ function sleep(ms: number): Promise<void> {
 // ============================================================================
 
 export async function authLoginHandler(): Promise<AuthLoginResult> {
+	// Validate env vars are loaded
+	if (!getWorkosClientId()) {
+		p.log.error("WORKOS_CLIENT_ID not configured.");
+		p.log.info("For local development, create apps/cli/.env with:");
+		p.log.info("  WORKOS_CLIENT_ID=your_client_id");
+		p.log.info("  CONVEX_URL=your_convex_url");
+		return { success: false, message: "WORKOS_CLIENT_ID not configured" };
+	}
+
 	const s = createSpinner();
 
 	const currentStatus = getAuthStatus();

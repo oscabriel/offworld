@@ -8,9 +8,10 @@
 import { mkdirSync, writeFileSync, lstatSync, unlinkSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, toSkillDirName, toMetaDirName } from "./config.js";
 import { getCommitSha } from "./clone.js";
-import { agents, expandTilde } from "./agents.js";
+import { agents } from "./agents.js";
+import { expandTilde, Paths } from "./paths.js";
 
 // ============================================================================
 // Types
@@ -251,35 +252,6 @@ export async function generateSkillWithAI(
 // ============================================================================
 
 /**
- * Convert owner/repo format to skill directory name.
- * Collapses owner==repo (e.g., better-auth/better-auth -> better-auth-reference)
- */
-function toSkillDirName(repoName: string): string {
-	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/") as [string, string];
-		if (owner === repo) {
-			return `${repo}-reference`;
-		}
-		return `${owner}-${repo}-reference`;
-	}
-	return `${repoName}-reference`;
-}
-
-/**
- * Convert owner/repo format to meta directory name.
- */
-function toMetaDirName(repoName: string): string {
-	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/") as [string, string];
-		if (owner === repo) {
-			return repo;
-		}
-		return `${owner}-${repo}`;
-	}
-	return repoName;
-}
-
-/**
  * Ensure a symlink exists, removing any existing file/directory at the path
  */
 function ensureSymlink(target: string, linkPath: string): void {
@@ -305,8 +277,8 @@ function ensureSymlink(target: string, linkPath: string): void {
  * Install a generated skill to the filesystem.
  *
  * Creates:
- * - ~/.config/offworld/skills/{name}-reference/SKILL.md
- * - ~/.config/offworld/meta/{name}/meta.json
+ * - ~/.local/share/offworld/skills/{name}-reference/SKILL.md
+ * - ~/.local/share/offworld/meta/{name}/meta.json
  * - Symlinks to agent skill directories based on config.agents
  *
  * @param repoName - Qualified name (e.g., "tanstack/query" or "my-local-repo")
@@ -319,11 +291,11 @@ export function installSkill(repoName: string, skillContent: string, meta: Insta
 	const metaDirName = toMetaDirName(repoName);
 
 	// Skill directory (agent-facing)
-	const skillDir = expandTilde(join(config.metaRoot, "skills", skillDirName));
+	const skillDir = join(Paths.data, "skills", skillDirName);
 	mkdirSync(skillDir, { recursive: true });
 
 	// Meta directory (internal)
-	const metaDir = expandTilde(join(config.metaRoot, "meta", metaDirName));
+	const metaDir = join(Paths.data, "meta", metaDirName);
 	mkdirSync(metaDir, { recursive: true });
 
 	// Write SKILL.md

@@ -47,7 +47,8 @@
 		"oxlint": "^1.39.0",
 		"turbo": "^2.7.5",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.17"
+		"vitest": "^4.0.17",
+		"xdg-basedir": "^5.1.0"
 	},
 	"packageManager": "bun@1.3.5"
 }

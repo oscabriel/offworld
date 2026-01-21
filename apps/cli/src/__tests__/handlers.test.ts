@@ -54,6 +54,15 @@ vi.mock("@offworld/sdk", () => ({
 	loadAuthData: vi.fn(),
 	canPushToWeb: vi.fn(),
 	pushAnalysis: vi.fn(),
+	getAllAgentConfigs: vi.fn(() => []),
+	expandTilde: vi.fn((path: string) => path),
+	toSkillDirName: vi.fn((repoName: string) => {
+		if (repoName.includes("/")) {
+			const [owner, repo] = repoName.split("/");
+			return `${owner}-${repo}-reference`;
+		}
+		return `${repoName}-reference`;
+	}),
 	RepoExistsError: class RepoExistsError extends Error {},
 }));
 
@@ -112,10 +121,7 @@ describe("CLI handlers", () => {
 
 	const defaultConfig: Config = {
 		repoRoot: "~/ow",
-		metaRoot: "~/.config/offworld",
-		skillDir: "~/.config/opencode/skill",
 		defaultShallow: true,
-		autoAnalyze: true,
 		ai: { provider: "opencode", model: "claude-opus-4-5" },
 		agents: ["opencode"],
 	};
@@ -193,9 +199,9 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 
@@ -225,9 +231,9 @@ describe("CLI handlers", () => {
 				commitSha: "def456",
 			});
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 
@@ -247,9 +253,9 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 
@@ -269,9 +275,9 @@ describe("CLI handlers", () => {
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGenerateSkillWithAI.mockResolvedValue({
@@ -295,9 +301,9 @@ describe("CLI handlers", () => {
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "xyz9999" });
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGenerateSkillWithAI.mockResolvedValue({
@@ -324,9 +330,9 @@ describe("CLI handlers", () => {
 			});
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockExistsSync.mockReturnValue(true);
@@ -348,7 +354,7 @@ describe("CLI handlers", () => {
 		it("handles local repos without cloning", async () => {
 			mockParseRepoInput.mockReturnValue(mockLocalSource);
 			mockGetMetaRoot.mockReturnValue("/home/user/.ow");
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/myrepo");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/myrepo");
 			mockGetCommitSha.mockReturnValue("xyz789");
 			mockGenerateSkillWithAI.mockResolvedValue({
 				skillContent: "# Skill\n...",
@@ -389,9 +395,9 @@ describe("CLI handlers", () => {
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("def456");
@@ -414,9 +420,9 @@ describe("CLI handlers", () => {
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
@@ -443,9 +449,9 @@ describe("CLI handlers", () => {
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
-				"/home/user/.config/offworld/skills/tanstack-router-reference",
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
-			mockGetMetaPath.mockReturnValue("/home/user/.config/offworld/meta/tanstack-router");
+			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");

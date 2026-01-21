@@ -107,7 +107,7 @@ vi.mock("node:fs", () => ({
 }));
 
 vi.mock("../config.js", () => ({
-	getMetaRoot: vi.fn(() => "/home/user/.ow"),
+	getStateRoot: vi.fn(() => "/home/user/.local/state/offworld"),
 }));
 
 vi.mock("../constants.js", () => ({
@@ -130,8 +130,8 @@ describe("index-manager.ts", () => {
 	const mockWriteFileSync = writeFileSync as ReturnType<typeof vi.fn>;
 	const mockMkdirSync = mkdirSync as ReturnType<typeof vi.fn>;
 
-	const metaRoot = "/home/user/.ow";
-	const indexPath = join(metaRoot, "index.json").replace(/\\/g, "/");
+	const stateRoot = "/home/user/.local/state/offworld";
+	const indexPath = join(stateRoot, "index.json").replace(/\\/g, "/");
 
 	const sampleEntry: RepoIndexEntry = {
 		fullName: "tanstack/router",
@@ -162,9 +162,9 @@ describe("index-manager.ts", () => {
 	// getIndexPath tests
 	// =========================================================================
 	describe("getIndexPath", () => {
-		it("returns path to ~/.ow/index.json", () => {
+		it("returns path to ~/.local/state/offworld/index.json", () => {
 			const result = getIndexPath();
-			expect(result).toBe("/home/user/.ow/index.json");
+			expect(result).toBe("/home/user/.local/state/offworld/index.json");
 		});
 	});
 
@@ -291,7 +291,7 @@ describe("index-manager.ts", () => {
 	describe("saveIndex", () => {
 		it("writes valid JSON", () => {
 			// Pre-create the directory
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
@@ -308,11 +308,11 @@ describe("index-manager.ts", () => {
 
 			saveIndex(sampleIndex);
 
-			expect(mockMkdirSync).toHaveBeenCalledWith(metaRoot, { recursive: true });
+			expect(mockMkdirSync).toHaveBeenCalledWith(stateRoot, { recursive: true });
 		});
 
 		it("does not create directory if it already exists", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
@@ -320,19 +320,19 @@ describe("index-manager.ts", () => {
 		});
 
 		it("writes to correct path", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
 			expect(mockWriteFileSync).toHaveBeenCalledWith(
-				"/home/user/.ow/index.json",
+				"/home/user/.local/state/offworld/index.json",
 				expect.any(String),
 				"utf-8",
 			);
 		});
 
 		it("verifies actual file content after save", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
@@ -345,7 +345,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("formats JSON with indentation", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 
 			saveIndex(sampleIndex);
 
@@ -371,7 +371,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("updates existing repo entry", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const updatedEntry: RepoIndexEntry = {
@@ -401,7 +401,7 @@ describe("index-manager.ts", () => {
 					},
 				},
 			};
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 			addVirtualFile(indexPath, JSON.stringify(existingIndex));
 
 			updateIndex(sampleEntry);
@@ -417,7 +417,7 @@ describe("index-manager.ts", () => {
 
 			updateIndex(sampleEntry);
 
-			expect(mockMkdirSync).toHaveBeenCalledWith(metaRoot, { recursive: true });
+			expect(mockMkdirSync).toHaveBeenCalledWith(stateRoot, { recursive: true });
 		});
 	});
 
@@ -426,7 +426,7 @@ describe("index-manager.ts", () => {
 	// =========================================================================
 	describe("removeFromIndex", () => {
 		it("removes existing entry and returns true", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = removeFromIndex("github:tanstack/router");
@@ -438,7 +438,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns false if entry not found", () => {
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
 
 			const result = removeFromIndex("github:nonexistent/repo");
@@ -467,7 +467,7 @@ describe("index-manager.ts", () => {
 					},
 				},
 			};
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 			addVirtualFile(indexPath, JSON.stringify(multiIndex));
 
 			removeFromIndex("github:tanstack/router");
@@ -592,7 +592,7 @@ describe("index-manager.ts", () => {
 				version: "0.0.1", // old version
 				repos: {},
 			};
-			addVirtualFile(metaRoot, "", { isDirectory: true });
+			addVirtualFile(stateRoot, "", { isDirectory: true });
 			addVirtualFile(indexPath, JSON.stringify(oldIndex));
 
 			updateIndex(sampleEntry);

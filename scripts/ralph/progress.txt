@@ -17,3 +17,46 @@
   - The initHandler now parses options.model to extract provider and model separately
   - The --agents flag accepts comma-separated agent names
   - Clean separation between global init (ow init) and project init (ow project init) enforced by detection logic
+
+---
+
+## 2026-01-21 - US-002
+
+- Created project command group with placeholder init handler
+- Files changed:
+  - apps/cli/src/handlers/project.ts: New file with projectInitHandler that accepts all, deps, skip, generate, dryRun, yes options
+  - apps/cli/src/handlers/project.ts: Handler checks global config exists and errors with helpful message if missing
+  - apps/cli/src/handlers/project.ts: Placeholder implementation with TODOs for manifest scanning, dep resolution, skill matching, and AGENTS.md updates
+  - apps/cli/src/handlers/index.ts: Exported projectInitHandler with ProjectInitOptions and ProjectInitResult types
+  - apps/cli/src/index.ts: Added project router with init subcommand
+  - apps/cli/src/index.ts: Configured all CLI flags (all, deps, skip, generate, dryRun, yes) with proper types and descriptions
+  - scripts/ralph/PRD.json: Marked US-002 as passes: true
+
+- **Learnings:**
+  - trpc-cli router uses os.router() for command groups (auth, config, project)
+  - Interface property docstrings are necessary for trpc-cli to generate CLI help text
+  - Used _options prefix to suppress unused parameter warning during placeholder implementation
+  - TODO comments are acceptable for marking incomplete features in placeholder handlers
+  - Handler validates global config before proceeding, providing user-friendly error messages
+
+---
+
+## 2026-01-21 - US-003
+
+- Created manifest scanner for multiple package ecosystems
+- Files changed:
+  - packages/sdk/src/manifest.ts: New file with detectManifestType and parseDependencies functions
+  - packages/sdk/src/manifest.ts: Parses package.json (dependencies + devDependencies)
+  - packages/sdk/src/manifest.ts: Parses pyproject.toml [project.dependencies] via regex
+  - packages/sdk/src/manifest.ts: Parses Cargo.toml [dependencies] with simple and table syntax
+  - packages/sdk/src/manifest.ts: Parses go.mod require statements (block and single-line)
+  - packages/sdk/src/manifest.ts: Parses requirements.txt line-by-line
+  - packages/sdk/src/index.ts: Exported detectManifestType, parseDependencies, ManifestType, Dependency
+  - scripts/ralph/PRD.json: Marked US-003 as passes: true
+
+- **Learnings:**
+  - Regex captures return optional groups - must check match?.[1] before accessing
+  - TypeScript strict null checks require explicit undefined handling for array access
+  - parseDependencies returns empty array for unknown manifest types
+  - Dev dependencies only tracked for package.json (other ecosystems lack dev concept in manifest)
+  - Simple regex parsing sufficient for basic dependency extraction without full TOML/INI parsers

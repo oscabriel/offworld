@@ -123,3 +123,10 @@ export {
 	getAllAgentConfigs,
 	type AgentConfig,
 } from "./agents.js";
+
+export {
+	detectManifestType,
+	parseDependencies,
+	type ManifestType,
+	type Dependency,
+} from "./manifest.js";

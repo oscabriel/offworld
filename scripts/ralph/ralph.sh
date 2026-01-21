@@ -89,11 +89,11 @@ run_iteration() {
     # Read prompt
     local prompt=$(cat "$PROMPT_FILE")
 
-    # Run claude
-    echo -e "${BLUE}Running claude...${NC}"
+    # Run opencode
+    echo -e "${BLUE}Running opencode...${NC}"
     echo ""
 
-    opencode run -m anthropic/glm-4.7-free "$prompt"
+    opencode run -m anthropic/claude-sonnet-4-5 "$prompt"
 
     echo ""
 

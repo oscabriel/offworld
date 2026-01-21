@@ -75,6 +75,27 @@ interface AuthErrorResponse {
 }
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+function extractJwtExpiration(token: string): string | undefined {
+	try {
+		const parts = token.split(".");
+		if (parts.length !== 3) return undefined;
+
+		const payload = parts[1];
+		if (!payload) return undefined;
+
+		const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf-8"));
+		if (typeof decoded.exp !== "number") return undefined;
+
+		return new Date(decoded.exp * 1000).toISOString();
+	} catch {
+		return undefined;
+	}
+}
+
+// ============================================================================
 // WorkOS API Functions
 // ============================================================================
 
@@ -199,14 +220,16 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 
 		s.stop("Login successful!");
 
+		const expiresAt = tokenData.expires_at
+			? new Date(tokenData.expires_at * 1000).toISOString()
+			: extractJwtExpiration(tokenData.access_token);
+
 		saveAuthData({
 			token: tokenData.access_token,
 			email: tokenData.user.email,
 			workosId: tokenData.user.id,
 			refreshToken: tokenData.refresh_token,
-			expiresAt: tokenData.expires_at
-				? new Date(tokenData.expires_at * 1000).toISOString()
-				: undefined,
+			expiresAt,
 		});
 
 		p.log.success(`Logged in as ${tokenData.user.email}`);

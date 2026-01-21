@@ -17,6 +17,7 @@ import {
 	authLogoutHandler,
 	authStatusHandler,
 	initHandler,
+	projectInitHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -122,7 +123,8 @@ export const router = os.router({
 			z.object({
 				repo: z.string().describe("Repository to remove"),
 				yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
-				keepSkill: z.boolean().default(false).describe("Keep installed skill files"),
+				skillOnly: z.boolean().default(false).describe("Only remove skill files (keep repo)"),
+				repoOnly: z.boolean().default(false).describe("Only remove cloned repo (keep skill)"),
 				dryRun: z.boolean().default(false).describe("Show what would be done"),
 			}),
 		)
@@ -134,7 +136,8 @@ export const router = os.router({
 			return rmHandler({
 				repo: input.repo,
 				yes: input.yes,
-				keepSkill: input.keepSkill,
+				skillOnly: input.skillOnly,
+				repoOnly: input.repoOnly,
 				dryRun: input.dryRun,
 			});
 		}),
@@ -223,14 +226,66 @@ export const router = os.router({
 		.input(
 			z.object({
 				yes: z.boolean().default(false).describe("Skip confirmation prompts").meta({ alias: "y" }),
+				force: z.boolean().default(false).describe("Reconfigure even if config exists"),
+				model: z
+					.string()
+					.optional()
+					.describe("AI provider and model (e.g., opencode/claude-sonnet-4-5)"),
+				repoRoot: z
+					.string()
+					.optional()
+					.describe("Where to clone repos")
+					.meta({ alias: "repo-root" }),
+				agents: z.string().optional().describe("Comma-separated agents"),
 			}),
 		)
 		.meta({
 			description: "Initialize configuration with interactive setup",
 		})
 		.handler(async ({ input }) => {
-			return initHandler({ yes: input.yes });
+			return initHandler({
+				yes: input.yes,
+				force: input.force,
+				model: input.model,
+				repoRoot: input.repoRoot,
+				agents: input.agents,
+			});
 		}),
+
+	project: os.router({
+		init: os
+			.input(
+				z.object({
+					all: z.boolean().default(false).describe("Select all detected dependencies"),
+					deps: z.string().optional().describe("Comma-separated deps to include (skip selection)"),
+					skip: z.string().optional().describe("Comma-separated deps to exclude"),
+					generate: z
+						.boolean()
+						.default(false)
+						.describe("Generate skills for deps without existing ones"),
+					dryRun: z
+						.boolean()
+						.default(false)
+						.describe("Show what would be done without doing it")
+						.meta({ alias: "dry-run" }),
+					yes: z.boolean().default(false).describe("Skip confirmations").meta({ alias: "y" }),
+				}),
+			)
+			.meta({
+				description: "Scan manifest, install skills, update AGENTS.md",
+				default: true,
+			})
+			.handler(async ({ input }) => {
+				return projectInitHandler({
+					all: input.all,
+					deps: input.deps,
+					skip: input.skip,
+					generate: input.generate,
+					dryRun: input.dryRun,
+					yes: input.yes,
+				});
+			}),
+	}),
 });
 
 export function createOwCli() {

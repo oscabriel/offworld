@@ -574,15 +574,42 @@ describe("CLI handlers", () => {
 			expect(mockRemoveRepo).not.toHaveBeenCalled();
 		});
 
-		it("calls removeRepo with keepSkill option", async () => {
+		it("calls removeRepo with repoOnly option", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockExistsSync.mockReturnValue(true);
 			mockRemoveRepo.mockResolvedValue(true);
 
-			await rmHandler({ repo: "tanstack/router", yes: true, keepSkill: true });
+			await rmHandler({ repo: "tanstack/router", yes: true, repoOnly: true });
 
-			expect(mockRemoveRepo).toHaveBeenCalledWith("github:tanstack/router", { keepSkill: true });
+			expect(mockRemoveRepo).toHaveBeenCalledWith("github:tanstack/router", {
+				skillOnly: false,
+				repoOnly: true,
+			});
+		});
+
+		it("calls removeRepo with skillOnly option", async () => {
+			mockParseRepoInput.mockReturnValue(mockGitHubSource);
+			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockExistsSync.mockReturnValue(true);
+			mockRemoveRepo.mockResolvedValue(true);
+
+			await rmHandler({ repo: "tanstack/router", yes: true, skillOnly: true });
+
+			expect(mockRemoveRepo).toHaveBeenCalledWith("github:tanstack/router", {
+				skillOnly: true,
+				repoOnly: false,
+			});
+		});
+
+		it("returns error when both skillOnly and repoOnly are set", async () => {
+			mockParseRepoInput.mockReturnValue(mockGitHubSource);
+			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+
+			const result = await rmHandler({ repo: "tanstack/router", yes: true, skillOnly: true, repoOnly: true });
+
+			expect(result.success).toBe(false);
+			expect(result.message).toBe("Invalid options");
 		});
 
 		it("returns error if repo not in index", async () => {

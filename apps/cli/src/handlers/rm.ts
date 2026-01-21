@@ -6,8 +6,10 @@ import * as p from "@clack/prompts";
 import {
 	parseRepoInput,
 	removeRepo,
+	removeSkillByName,
 	getIndexEntry,
-	getMetaRoot,
+	getSkillPath,
+	getMetaPath,
 	getAllAgentConfigs,
 	expandTilde,
 	toSkillDirName,
@@ -19,7 +21,8 @@ import { createSpinner } from "../utils/spinner";
 export interface RmOptions {
 	repo: string;
 	yes?: boolean;
-	keepSkill?: boolean;
+	skillOnly?: boolean;
+	repoOnly?: boolean;
 	dryRun?: boolean;
 }
 
@@ -33,20 +36,19 @@ export interface RmResult {
 	message?: string;
 }
 
-function getAffectedPaths(qualifiedName: string): {
+function getAffectedPathsFromIndex(qualifiedName: string): {
 	repoPath?: string;
 	skillPath?: string;
 	symlinkPaths: string[];
-} {
+} | null {
 	const entry = getIndexEntry(qualifiedName);
 	if (!entry) {
-		return { symlinkPaths: [] };
+		return null;
 	}
 
 	const repoPath = entry.localPath;
 	const skillDirName = toSkillDirName(entry.fullName);
-
-	const skillPath = join(getMetaRoot(), "skills", skillDirName);
+	const skillPath = getSkillPath(entry.fullName);
 
 	const symlinkPaths: string[] = [];
 	for (const agentConfig of getAllAgentConfigs()) {
@@ -63,20 +65,49 @@ function getAffectedPaths(qualifiedName: string): {
 	};
 }
 
-/**
- * Remove command handler
- */
+function getSkillPathsFromName(repoName: string): {
+	skillPath?: string;
+	metaPath?: string;
+	symlinkPaths: string[];
+} {
+	const skillDirName = toSkillDirName(repoName);
+	const skillPath = getSkillPath(repoName);
+	const metaPath = getMetaPath(repoName);
+
+	const symlinkPaths: string[] = [];
+	for (const agentConfig of getAllAgentConfigs()) {
+		const agentSkillPath = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
+		if (existsSync(agentSkillPath)) {
+			symlinkPaths.push(agentSkillPath);
+		}
+	}
+
+	return {
+		skillPath: existsSync(skillPath) ? skillPath : undefined,
+		metaPath: existsSync(metaPath) ? metaPath : undefined,
+		symlinkPaths,
+	};
+}
+
 export async function rmHandler(options: RmOptions): Promise<RmResult> {
-	const { repo, yes = false, keepSkill = false, dryRun = false } = options;
+	const { repo, yes = false, skillOnly = false, repoOnly = false, dryRun = false } = options;
 
 	try {
-		// Parse repo input
 		const source = parseRepoInput(repo);
 		const qualifiedName = source.qualifiedName;
+		const repoName = source.type === "remote" ? source.fullName : source.name;
 
-		// Check if repo is in index
+		if (skillOnly && repoOnly) {
+			p.log.error("Cannot use --skill-only and --repo-only together");
+			return {
+				success: false,
+				message: "Invalid options",
+			};
+		}
+
 		const entry = getIndexEntry(qualifiedName);
-		if (!entry) {
+
+		if (!entry && !skillOnly) {
 			p.log.warn(`Repository not found in index: ${repo}`);
 			return {
 				success: false,
@@ -84,19 +115,22 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 			};
 		}
 
-		// Get affected paths
-		const affected = getAffectedPaths(qualifiedName);
+		if (skillOnly && !entry) {
+			return handleSkillOnlyRemoval(repoName, yes, dryRun);
+		}
+
+		const affected = getAffectedPathsFromIndex(qualifiedName)!;
 
 		if (dryRun || !yes) {
 			p.log.info("The following will be removed:");
 
-			if (affected.repoPath) {
+			if (!skillOnly && affected.repoPath) {
 				console.log(`  Repository: ${affected.repoPath}`);
 			}
-			if (!keepSkill && affected.skillPath) {
+			if (!repoOnly && affected.skillPath) {
 				console.log(`  Skill: ${affected.skillPath}`);
 			}
-			if (!keepSkill && affected.symlinkPaths.length > 0) {
+			if (!repoOnly && affected.symlinkPaths.length > 0) {
 				for (const symlinkPath of affected.symlinkPaths) {
 					console.log(`  Symlink: ${symlinkPath}`);
 				}
@@ -104,7 +138,6 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 			console.log("");
 		}
 
-		// Dry run - exit without deleting
 		if (dryRun) {
 			p.log.info("Dry run - no files were deleted.");
 			return {
@@ -113,10 +146,10 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 			};
 		}
 
-		// Confirm deletion
 		if (!yes) {
+			const what = skillOnly ? "skill files" : repoOnly ? "repository" : entry!.fullName;
 			const confirm = await p.confirm({
-				message: `Are you sure you want to remove ${entry.fullName}?`,
+				message: `Are you sure you want to remove ${what}?`,
 			});
 
 			if (p.isCancel(confirm) || !confirm) {
@@ -128,15 +161,16 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 			}
 		}
 
-		// Perform removal
 		const s = createSpinner();
-		s.start("Removing repository...");
+		const action = skillOnly ? "Removing skill files..." : repoOnly ? "Removing repository..." : "Removing...";
+		s.start(action);
 
-		const removed = await removeRepo(qualifiedName, { keepSkill });
+		const removed = await removeRepo(qualifiedName, { skillOnly, repoOnly });
 
 		if (removed) {
-			s.stop("Repository removed");
-			p.log.success(`Removed: ${entry.fullName}`);
+			const doneMsg = skillOnly ? "Skill files removed" : repoOnly ? "Repository removed" : "Removed";
+			s.stop(doneMsg);
+			p.log.success(`Removed: ${entry!.fullName}`);
 
 			return {
 				success: true,
@@ -155,6 +189,78 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 		return {
 			success: false,
 			message,
+		};
+	}
+}
+
+async function handleSkillOnlyRemoval(
+	repoName: string,
+	yes: boolean,
+	dryRun: boolean,
+): Promise<RmResult> {
+	const affected = getSkillPathsFromName(repoName);
+
+	if (!affected.skillPath && !affected.metaPath && affected.symlinkPaths.length === 0) {
+		p.log.warn(`No skill files found for: ${repoName}`);
+		return {
+			success: false,
+			message: "No skill files found",
+		};
+	}
+
+	if (dryRun || !yes) {
+		p.log.info("The following will be removed:");
+		if (affected.skillPath) {
+			console.log(`  Skill: ${affected.skillPath}`);
+		}
+		if (affected.metaPath) {
+			console.log(`  Meta: ${affected.metaPath}`);
+		}
+		for (const symlinkPath of affected.symlinkPaths) {
+			console.log(`  Symlink: ${symlinkPath}`);
+		}
+		console.log("");
+	}
+
+	if (dryRun) {
+		p.log.info("Dry run - no files were deleted.");
+		return {
+			success: true,
+			removed: { skillPath: affected.skillPath, symlinkPaths: affected.symlinkPaths },
+		};
+	}
+
+	if (!yes) {
+		const confirm = await p.confirm({
+			message: `Are you sure you want to remove skill files for ${repoName}?`,
+		});
+
+		if (p.isCancel(confirm) || !confirm) {
+			p.log.info("Aborted.");
+			return {
+				success: false,
+				message: "Aborted by user",
+			};
+		}
+	}
+
+	const s = createSpinner();
+	s.start("Removing skill files...");
+
+	const removed = removeSkillByName(repoName);
+
+	if (removed) {
+		s.stop("Skill files removed");
+		p.log.success(`Removed skill files for: ${repoName}`);
+		return {
+			success: true,
+			removed: { skillPath: affected.skillPath, symlinkPaths: affected.symlinkPaths },
+		};
+	} else {
+		s.stop("Failed to remove");
+		return {
+			success: false,
+			message: "Failed to remove skill files",
 		};
 	}
 }

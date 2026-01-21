@@ -153,3 +153,29 @@
   - Summary reports both successful installs and failures via separate counters
 
 ---
+## 2026-01-20 - US-008
+
+- Created agent onboarding documentation with copy-paste setup prompts
+- Files changed:
+  - apps/docs/src/content/docs/setup-prompt.md: New documentation file
+  - apps/docs/src/content/docs/setup-prompt.md: Quick copy-paste prompt section for users
+  - apps/docs/src/content/docs/setup-prompt.md: Detailed agent instructions with prerequisites, global init, project init
+  - apps/docs/src/content/docs/setup-prompt.md: Autonomous setup examples using --all --generate --yes flags
+  - apps/docs/src/content/docs/setup-prompt.md: Interactive setup examples using interactive prompts
+  - apps/docs/src/content/docs/setup-prompt.md: Dry-run examples using --dry-run flag
+  - apps/docs/src/content/docs/setup-prompt.md: Documents what gets created (skill paths, symlinks, AGENTS.md updates)
+  - apps/docs/src/content/docs/setup-prompt.md: Documents no-config-file policy
+  - apps/docs/src/content/docs/setup-prompt.md: Example AGENTS.md output format
+  - scripts/ralph/PRD.json: Marked US-008 as passes: true
+
+- **Learnings:**
+  - Astro Starlight docs use frontmatter with title and description for metadata
+  - Three-tier setup flow: CLI check → global config → project init
+  - Autonomous agent flow uses: which/install → config check → project init with --all --generate --yes
+  - Documentation should include both quick prompts and detailed instructions for different agent capabilities
+  - Example agent output helps users know what to expect from successful setup
+  - AGENTS.md section format documented to help users understand what gets written
+  - No project config files policy is a key differentiator - needs emphasis in docs
+
+---
+

@@ -137,3 +137,10 @@ export {
 	resolveDependencyRepo,
 	type ResolvedDep,
 } from "./dep-mappings.js";
+
+export {
+	matchDependenciesToSkills,
+	isSkillInstalled,
+	type SkillStatus,
+	type SkillMatch,
+} from "./skill-matcher.js";

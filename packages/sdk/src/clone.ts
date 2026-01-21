@@ -5,7 +5,7 @@
 import { existsSync, rmSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
 import { getMetaRoot, getRepoPath, loadConfig } from "./config.js";
 import { getIndexEntry, listIndexedRepos, removeFromIndex, updateIndex } from "./index-manager.js";
@@ -67,13 +67,9 @@ export interface CloneOptions {
 // Git Command Execution
 // ============================================================================
 
-/**
- * Execute a git command and return stdout
- */
 function execGit(args: string[], cwd?: string): string {
-	const command = `git ${args.join(" ")}`;
 	try {
-		const result = execSync(command, {
+		const result = execFileSync("git", args, {
 			cwd,
 			encoding: "utf-8",
 			stdio: ["pipe", "pipe", "pipe"],
@@ -86,7 +82,7 @@ function execGit(args: string[], cwd?: string): string {
 				? err.stderr
 				: err.stderr.toString()
 			: err.message || "Unknown error";
-		throw new GitError(stderr.trim(), command, err.status ?? null);
+		throw new GitError(stderr.trim(), `git ${args.join(" ")}`, err.status ?? null);
 	}
 }
 
@@ -308,24 +304,27 @@ function getAnalysisPathFromQualifiedName(qualifiedName: string): string {
 	return `${owner}-${repo}-reference`;
 }
 
-/**
- * Remove skill files from skill directories
- */
 function removeSkillFiles(repoName: string): void {
 	const config = loadConfig();
-	const skillDirs = [
-		join(config.skillDir, repoName),
-		join(getMetaRoot().replace(".ow", ".claude"), "skills", repoName),
-	];
+	const { getAllAgentConfigs } = require("./agents.js");
+	const { expandTilde } = require("./paths.js");
+	const { toSkillDirName } = require("./config.js");
 
-	for (const skillDir of skillDirs) {
-		// Expand ~ in skillDir
-		const expanded = skillDir.startsWith("~/")
-			? join(process.env.HOME || "", skillDir.slice(2))
-			: skillDir;
+	const skillDirName = toSkillDirName(repoName);
 
-		if (existsSync(expanded)) {
-			rmSync(expanded, { recursive: true, force: true });
+	const mainSkillDir = join(getMetaRoot(), "skills", skillDirName);
+	if (existsSync(mainSkillDir)) {
+		rmSync(mainSkillDir, { recursive: true, force: true });
+	}
+
+	const configuredAgents = config.agents ?? [];
+	for (const agentName of configuredAgents) {
+		const agentConfig = getAllAgentConfigs().find((c: { name: string }) => c.name === agentName);
+		if (agentConfig) {
+			const agentSkillPath = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
+			if (existsSync(agentSkillPath)) {
+				rmSync(agentSkillPath, { recursive: true, force: true });
+			}
 		}
 	}
 }

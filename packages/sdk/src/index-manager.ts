@@ -1,7 +1,7 @@
 /**
  * Index manager for global repo index
  *
- * Manages ~/.ow/index.json which tracks all cloned repositories
+ * Manages ~/.local/state/offworld/index.json which tracks all cloned repositories
  * and their analysis status.
  */
 
@@ -9,18 +9,18 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { RepoIndexSchema } from "@offworld/types";
 import type { RepoIndex, RepoIndexEntry } from "@offworld/types";
-import { getMetaRoot } from "./config.js";
+import { getStateRoot } from "./config.js";
 import { VERSION } from "./constants.js";
 
 /**
- * Returns the path to the global index file (~/.ow/index.json)
+ * Returns path to the global index file (~/.local/state/offworld/index.json)
  */
 export function getIndexPath(): string {
-	return join(getMetaRoot(), "index.json");
+	return join(getStateRoot(), "index.json");
 }
 
 /**
- * Reads the global repo index from ~/.ow/index.json
+ * Reads the global repo index from ~/.local/state/offworld/index.json
  * Returns empty index if file doesn't exist or is invalid
  */
 export function getIndex(): RepoIndex {
@@ -41,7 +41,7 @@ export function getIndex(): RepoIndex {
 }
 
 /**
- * Saves the repo index to ~/.ow/index.json
+ * Saves repo index to ~/.local/state/offworld/index.json
  * Creates directory if it doesn't exist
  */
 export function saveIndex(index: RepoIndex): void {

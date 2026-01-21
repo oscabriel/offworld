@@ -6,9 +6,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { homedir } from "node:os";
 import type { Agent } from "@offworld/types";
+import { expandTilde } from "./paths";
 
 // ============================================================================
 // Types
@@ -25,20 +24,6 @@ export interface AgentConfig {
 	globalSkillsDir: string;
 	/** Check if this agent is installed on the system */
 	detectInstalled: () => boolean;
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-/**
- * Expand ~ to user's home directory
- */
-export function expandTilde(path: string): string {
-	if (path.startsWith("~/")) {
-		return join(homedir(), path.slice(2));
-	}
-	return path;
 }
 
 // ============================================================================

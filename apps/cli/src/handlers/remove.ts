@@ -162,13 +162,21 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 		}
 
 		const s = createSpinner();
-		const action = skillOnly ? "Removing skill files..." : repoOnly ? "Removing repository..." : "Removing...";
+		const action = skillOnly
+			? "Removing skill files..."
+			: repoOnly
+				? "Removing repository..."
+				: "Removing...";
 		s.start(action);
 
 		const removed = await removeRepo(qualifiedName, { skillOnly, repoOnly });
 
 		if (removed) {
-			const doneMsg = skillOnly ? "Skill files removed" : repoOnly ? "Repository removed" : "Removed";
+			const doneMsg = skillOnly
+				? "Skill files removed"
+				: repoOnly
+					? "Repository removed"
+					: "Removed";
 			s.stop(doneMsg);
 			p.log.success(`Removed: ${entry!.fullName}`);
 

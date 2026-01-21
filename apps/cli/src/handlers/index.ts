@@ -2,7 +2,7 @@ export { pullHandler, type PullOptions, type PullResult } from "./pull.js";
 export { generateHandler, type GenerateOptions, type GenerateResult } from "./generate.js";
 export { listHandler, type ListOptions, type ListResult, type RepoListItem } from "./list.js";
 export { pushHandler, type PushOptions, type PushResult } from "./push.js";
-export { rmHandler, type RmOptions, type RmResult } from "./rm.js";
+export { rmHandler, type RmOptions, type RmResult } from "./remove.js";
 export {
 	configShowHandler,
 	configSetHandler,

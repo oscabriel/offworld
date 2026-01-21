@@ -118,7 +118,7 @@ export const router = os.router({
 			});
 		}),
 
-	rm: os
+	remove: os
 		.input(
 			z.object({
 				repo: z.string().describe("Repository to remove"),
@@ -130,7 +130,7 @@ export const router = os.router({
 		)
 		.meta({
 			description: "Remove a cloned repository and its analysis",
-			aliases: { command: ["remove"] },
+			aliases: { command: ["rm"] },
 		})
 		.handler(async ({ input }) => {
 			return rmHandler({

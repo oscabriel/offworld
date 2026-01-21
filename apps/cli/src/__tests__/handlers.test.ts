@@ -94,7 +94,7 @@ import type { RemoteRepoSource, LocalRepoSource, Config, RepoIndexEntry } from "
 import { pullHandler } from "../handlers/pull.js";
 import { generateHandler } from "../handlers/generate.js";
 import { listHandler } from "../handlers/list.js";
-import { rmHandler } from "../handlers/rm.js";
+import { rmHandler } from "../handlers/remove.js";
 
 describe("CLI handlers", () => {
 	const mockParseRepoInput = parseRepoInput as ReturnType<typeof vi.fn>;
@@ -606,7 +606,12 @@ describe("CLI handlers", () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 
-			const result = await rmHandler({ repo: "tanstack/router", yes: true, skillOnly: true, repoOnly: true });
+			const result = await rmHandler({
+				repo: "tanstack/router",
+				yes: true,
+				skillOnly: true,
+				repoOnly: true,
+			});
 
 			expect(result.success).toBe(false);
 			expect(result.message).toBe("Invalid options");

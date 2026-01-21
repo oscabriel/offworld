@@ -68,3 +68,16 @@ bun run typecheck        # TypeScript check
 - Web app uses Convex + TanStack Query integration via `@convex-dev/react-query`
 - Auth SSR: token fetched in `__root.tsx` beforeLoad, passed to ConvexBetterAuthProvider
 - Deploy: `cd packages/infra && bun run deploy` (uses Alchemy)
+
+## Project Skills
+
+Skills installed for this project's dependencies:
+
+| Dependency | Skill                | Path                                                                            |
+| ---------- | -------------------- | ------------------------------------------------------------------------------- |
+| zod        | colinhacks-zod       | /Users/oscargabriel/.local/share/offworld/skills/colinhacks-zod-reference       |
+| typescript | microsoft-TypeScript | /Users/oscargabriel/.local/share/offworld/skills/microsoft-TypeScript-reference |
+| vitest     | vitest-dev-vitest    | /Users/oscargabriel/.local/share/offworld/skills/vitest-dev-vitest-reference    |
+
+To update skills, run: `ow pull <dependency>`
+To regenerate all: `ow project init --all --generate`

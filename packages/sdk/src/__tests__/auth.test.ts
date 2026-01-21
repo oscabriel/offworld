@@ -12,7 +12,7 @@ import { homedir } from "node:os";
 
 // Virtual file system state
 const virtualFs: Record<string, { content: string }> = {};
-const mockMetaRoot = join(homedir(), ".ow");
+const mockAuthDir = join(homedir(), ".local", "share", "offworld");
 
 // Mock node:fs
 vi.mock("node:fs", () => ({
@@ -36,6 +36,7 @@ vi.mock("node:fs", () => ({
 		const normalized = path.replace(/\\/g, "/");
 		virtualFs[normalized] = { content };
 	}),
+	chmodSync: vi.fn(),
 	mkdirSync: vi.fn(),
 	unlinkSync: vi.fn((path: string) => {
 		const normalized = path.replace(/\\/g, "/");
@@ -48,11 +49,6 @@ vi.mock("node:fs", () => ({
 		}
 		delete virtualFs[normalized];
 	}),
-}));
-
-// Mock config.ts to return predictable paths
-vi.mock("../config.js", () => ({
-	getMetaRoot: () => join(homedir(), ".ow"),
 }));
 
 // Import after mocking
@@ -95,7 +91,7 @@ afterEach(() => {
 // ============================================================================
 
 function addAuthFile(data: AuthData): void {
-	const authPath = join(mockMetaRoot, "auth.json");
+	const authPath = join(mockAuthDir, "auth.json");
 	virtualFs[authPath.replace(/\\/g, "/")] = {
 		content: JSON.stringify(data),
 	};
@@ -118,9 +114,9 @@ function createPastDate(): string {
 // ============================================================================
 
 describe("getAuthPath", () => {
-	it("returns correct path based on metaRoot", () => {
+	it("returns path under XDG data dir", () => {
 		const result = getAuthPath();
-		expect(result).toBe(join(mockMetaRoot, "auth.json"));
+		expect(result).toBe(join(mockAuthDir, "auth.json"));
 	});
 });
 
@@ -148,7 +144,7 @@ describe("loadAuthData", () => {
 	});
 
 	it("returns null when file contains invalid JSON", () => {
-		const authPath = join(mockMetaRoot, "auth.json");
+		const authPath = join(mockAuthDir, "auth.json");
 		virtualFs[authPath.replace(/\\/g, "/")] = {
 			content: "not valid json {{{",
 		};
@@ -158,7 +154,7 @@ describe("loadAuthData", () => {
 	});
 
 	it("returns null when token is missing", () => {
-		const authPath = join(mockMetaRoot, "auth.json");
+		const authPath = join(mockAuthDir, "auth.json");
 		virtualFs[authPath.replace(/\\/g, "/")] = {
 			content: JSON.stringify({ workosId: "user-123" }),
 		};
@@ -168,7 +164,7 @@ describe("loadAuthData", () => {
 	});
 
 	it("returns null when token is not a string", () => {
-		const authPath = join(mockMetaRoot, "auth.json");
+		const authPath = join(mockAuthDir, "auth.json");
 		virtualFs[authPath.replace(/\\/g, "/")] = {
 			content: JSON.stringify({ token: 12345 }),
 		};
@@ -191,7 +187,7 @@ describe("saveAuthData", () => {
 
 		saveAuthData(authData);
 
-		const authPath = join(mockMetaRoot, "auth.json");
+		const authPath = join(mockAuthDir, "auth.json");
 		const saved = virtualFs[authPath.replace(/\\/g, "/")];
 		expect(saved).toBeDefined();
 		expect(JSON.parse(saved!.content)).toEqual(authData);
@@ -203,7 +199,8 @@ describe("saveAuthData", () => {
 
 		saveAuthData(authData);
 
-		expect(fs.mkdirSync).toHaveBeenCalledWith(mockMetaRoot, { recursive: true });
+		expect(fs.mkdirSync).toHaveBeenCalledWith(mockAuthDir, { recursive: true });
+		expect(fs.chmodSync).toHaveBeenCalledWith(join(mockAuthDir, "auth.json"), 0o600);
 	});
 });
 

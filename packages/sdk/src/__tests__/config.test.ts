@@ -149,7 +149,7 @@ describe("config.ts", () => {
 
 		it("expands ~ to home directory", () => {
 			const result = getMetaRoot();
-			expect(result).toBe(join(home, ".config", "offworld"));
+			expect(result).toBe(join(home, ".local", "share", "offworld"));
 		});
 	});
 
@@ -170,10 +170,7 @@ describe("config.ts", () => {
 		it("returns custom path when configured", () => {
 			const config = {
 				repoRoot: "/custom/repos",
-				metaRoot: "~/.config/offworld",
-				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
-				autoAnalyze: true,
 				ai: { provider: "opencode", model: "claude-opus-4-5" },
 				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
 			};
@@ -184,10 +181,7 @@ describe("config.ts", () => {
 		it("expands tilde in custom path", () => {
 			const config = {
 				repoRoot: "~/custom/repos",
-				metaRoot: "~/.config/offworld",
-				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
-				autoAnalyze: true,
 				ai: { provider: "opencode", model: "claude-opus-4-5" },
 				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
 			};
@@ -218,10 +212,7 @@ describe("config.ts", () => {
 		it("uses custom repoRoot from config", () => {
 			const config = {
 				repoRoot: "/data/repos",
-				metaRoot: "~/.config/offworld",
-				skillDir: "~/.config/opencode/skill",
 				defaultShallow: true,
-				autoAnalyze: true,
 				ai: { provider: "opencode", model: "claude-opus-4-5" },
 				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
 			};
@@ -241,11 +232,14 @@ describe("config.ts", () => {
 	describe("getSkillPath", () => {
 		it("returns {meta}/skills/owner-repo-reference for owner/repo", () => {
 			const result = getSkillPath("tanstack/router");
-			expect(result).toBe(join(home, ".config", "offworld", "skills", "tanstack-router-reference"));
+			expect(result).toBe(
+				join(home, ".local", "share", "offworld", "skills", "tanstack-router-reference"),
+			);
 		});
 
-		it("throws error for invalid fullName format", () => {
-			expect(() => getSkillPath("invalid")).toThrow("Invalid fullName format");
+		it("handles single name (no slash) gracefully", () => {
+			const result = getSkillPath("invalid");
+			expect(result).toBe(join(home, ".local", "share", "offworld", "skills", "invalid-reference"));
 		});
 	});
 
@@ -255,11 +249,12 @@ describe("config.ts", () => {
 	describe("getMetaPath", () => {
 		it("returns {meta}/meta/owner-repo for owner/repo", () => {
 			const result = getMetaPath("tanstack/router");
-			expect(result).toBe(join(home, ".config", "offworld", "meta", "tanstack-router"));
+			expect(result).toBe(join(home, ".local", "share", "offworld", "meta", "tanstack-router"));
 		});
 
-		it("throws error for invalid fullName format", () => {
-			expect(() => getMetaPath("invalid")).toThrow("Invalid fullName format");
+		it("handles single name (no slash) gracefully", () => {
+			const result = getMetaPath("invalid");
+			expect(result).toBe(join(home, ".local", "share", "offworld", "meta", "invalid"));
 		});
 	});
 
@@ -291,29 +286,20 @@ describe("config.ts", () => {
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("~/ow");
-			expect(result.metaRoot).toBe("~/.config/offworld");
-			expect(result.skillDir).toBe("~/.config/opencode/skill");
 			expect(result.defaultShallow).toBe(true);
-			expect(result.autoAnalyze).toBe(true);
 		});
 
 		it("parses existing config file correctly", () => {
 			const existingConfig = {
 				repoRoot: "/custom/path",
-				metaRoot: "/custom/meta",
-				skillDir: "/custom/skill",
 				defaultShallow: false,
-				autoAnalyze: false,
 			};
 			addVirtualFile(configPath, JSON.stringify(existingConfig));
 
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("/custom/path");
-			expect(result.metaRoot).toBe("/custom/meta");
-			expect(result.skillDir).toBe("/custom/skill");
 			expect(result.defaultShallow).toBe(false);
-			expect(result.autoAnalyze).toBe(false);
 		});
 
 		it("applies defaults for missing fields in config file", () => {
@@ -325,7 +311,6 @@ describe("config.ts", () => {
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("/custom/path");
-			expect(result.metaRoot).toBe("~/.config/offworld");
 			expect(result.defaultShallow).toBe(true);
 		});
 
@@ -442,10 +427,7 @@ describe("config.ts", () => {
 		it("merges with existing config", () => {
 			const existingConfig = {
 				repoRoot: "/old/path",
-				metaRoot: "/old/meta",
-				skillDir: "/old/skill",
 				defaultShallow: true,
-				autoAnalyze: true,
 			};
 			addVirtualFile(configDir, "", { isDirectory: true });
 			addVirtualFile(configPath, JSON.stringify(existingConfig));
@@ -455,8 +437,7 @@ describe("config.ts", () => {
 			expect(mockWriteFileSync).toHaveBeenCalled();
 			const writtenContent = JSON.parse(mockWriteFileSync.mock.calls[0]![1] as string);
 			expect(writtenContent.repoRoot).toBe("/new/path");
-			expect(writtenContent.metaRoot).toBe("/old/meta"); // preserved
-			expect(writtenContent.skillDir).toBe("/old/skill"); // preserved
+			expect(writtenContent.defaultShallow).toBe(true);
 		});
 
 		it("writes valid JSON", () => {
@@ -471,7 +452,7 @@ describe("config.ts", () => {
 			const result = saveConfig({ repoRoot: "/test/path" });
 
 			expect(result.repoRoot).toBe("/test/path");
-			expect(result.metaRoot).toBe("~/.config/offworld");
+			expect(result.defaultShallow).toBe(true);
 		});
 
 		it("writes config with correct encoding", () => {

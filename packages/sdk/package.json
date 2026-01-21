@@ -25,6 +25,7 @@
 		"@offworld/types": "workspace:*",
 		"@opencode-ai/sdk": "^1.1.25",
 		"convex": "catalog:",
+		"xdg-basedir": "^5.1.0",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

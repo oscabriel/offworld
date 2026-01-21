@@ -49,6 +49,7 @@ export {
 	cloneRepo,
 	updateRepo,
 	removeRepo,
+	removeSkillByName,
 	listRepos,
 	isRepoCloned,
 	getClonedRepoPath,
@@ -104,6 +105,7 @@ export {
 	getTokenOrNull,
 	isLoggedIn,
 	getAuthStatus,
+	refreshAccessToken,
 	type AuthData,
 	type AuthStatus,
 } from "./auth.js";
@@ -145,8 +147,4 @@ export {
 	type SkillMatch,
 } from "./skill-matcher.js";
 
-export {
-	updateAgentFiles,
-	appendSkillsSection,
-	type InstalledSkill,
-} from "./agents-md.js";
+export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";

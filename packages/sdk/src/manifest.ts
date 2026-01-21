@@ -85,9 +85,7 @@ function parsePyprojectToml(path: string): Dependency[] {
 		const deps: Dependency[] = [];
 
 		// Simple regex-based parsing for [project.dependencies]
-		const depsSection = content.match(
-			/\[project\.dependencies\]([\s\S]*?)(?=\[|$)/,
-		);
+		const depsSection = content.match(/\[project\.dependencies\]([\s\S]*?)(?=\[|$)/);
 		if (!depsSection?.[1]) return [];
 
 		const lines = depsSection[1].split("\n");
@@ -122,9 +120,7 @@ function parseCargoToml(path: string): Dependency[] {
 		const lines = depsSection[1].split("\n");
 		for (const line of lines) {
 			const simpleMatch = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/);
-			const tableMatch = line.match(
-				/^([a-zA-Z0-9_-]+)\s*=\s*{.*version\s*=\s*"([^"]+)"/,
-			);
+			const tableMatch = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*{.*version\s*=\s*"([^"]+)"/);
 
 			if (simpleMatch?.[1] && simpleMatch[2]) {
 				deps.push({ name: simpleMatch[1], version: simpleMatch[2], dev: false });

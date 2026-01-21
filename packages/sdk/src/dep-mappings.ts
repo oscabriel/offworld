@@ -144,9 +144,7 @@ function parseGitHubUrl(url: string): string | null {
  * Fallback to npm registry to extract repository.url.
  * Returns null if package not found, no repo field, or not a GitHub repo.
  */
-export async function resolveFromNpm(
-	packageName: string,
-): Promise<string | null> {
+export async function resolveFromNpm(packageName: string): Promise<string | null> {
 	try {
 		const res = await fetch(`https://registry.npmjs.org/${packageName}`);
 		if (!res.ok) return null;
@@ -169,9 +167,7 @@ export async function resolveFromNpm(
  * 2. Query npm registry
  * 3. Return unknown (caller prompts user)
  */
-export async function resolveDependencyRepo(
-	dep: string,
-): Promise<ResolvedDep> {
+export async function resolveDependencyRepo(dep: string): Promise<ResolvedDep> {
 	// Tier 1: Known mappings
 	if (dep in KNOWN_MAPPINGS) {
 		return { dep, repo: KNOWN_MAPPINGS[dep] ?? null, source: "known" };

@@ -201,6 +201,4 @@ export interface InitOptions {
 	yes?: boolean;
 	/** Skip auth check (useful for testing) */
 	skipAuth?: boolean;
-	/** Skip project linking (useful for testing) */
-	skipProjectLink?: boolean;
 }

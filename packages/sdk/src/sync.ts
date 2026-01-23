@@ -160,7 +160,9 @@ export async function pullAnalysis(fullName: string): Promise<PullResponse | nul
 	try {
 		const result = await client.query(api.analyses.pull, { fullName });
 		if (!result) return null;
-		// Cast to match PullResponse interface (Convex types use any for complex objects)
+
+		client.mutation(api.analyses.recordPull, { fullName }).catch(() => {});
+
 		return result as unknown as PullResponse;
 	} catch (error) {
 		throw new NetworkError(

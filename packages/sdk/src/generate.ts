@@ -48,20 +48,51 @@ export interface InstallSkillMeta {
 // Skill Generation
 // ============================================================================
 
-const SKILL_GENERATION_PROMPT = `You are an expert at analyzing open source codebases and producing skill files for AI coding agents.
+const SKILL_GENERATION_PROMPT = `You are an expert at analyzing open source libraries and producing skill files for AI coding agents.
 
-Your task is to explore this codebase thoroughly and generate a comprehensive SKILL.md file that will help AI agents understand how to work with this library/framework.
+## PRIMARY GOAL
 
-## Instructions
+Generate a SKILL.md that helps developers USE this library effectively. This is NOT a contribution guide - it's a usage reference for developers consuming this library in their own projects.
 
-1. Use the available tools (Read, Grep, Glob) to explore the codebase:
-   - Start with package.json or similar config files to understand the project
-   - Look at README.md for high-level documentation
-   - Explore src/ or lib/ directories for main source code
-   - Check for examples/ or docs/ directories
-   - Find the main entry points and public API
+## CRITICAL RULES
 
-2. Generate a SKILL.md file with the following structure:
+1. **USER PERSPECTIVE ONLY**: Write for developers who will npm/pip/cargo install this library and use it in THEIR code.
+   - DO NOT include: how to contribute, internal test commands, repo-specific policies
+   - DO NOT include: "never mock in tests" or similar internal dev guidelines
+   - DO NOT include: commands like "npx hereby", "just ready", "bun test" that run the library's own tests
+   - DO include: how to install, import, configure, and use the public API
+
+2. **QUICK REFERENCES**: Include a "Quick References" section with paths to key entry points in the repo:
+   - Paths must be relative from repo root (e.g., \`src/index.ts\`, \`docs/api.md\`)
+   - Include: main entry point, type definitions, README, key docs
+   - DO NOT include absolute paths or user-specific paths
+   - Keep to 3-5 most important files that help users understand the library
+
+3. **PUBLIC API FOCUS**: Document what users import and call, not internal implementation details.
+   - Entry points: what to import from the package
+   - Configuration: how to set up/initialize
+   - Core methods/functions: the main API surface
+   - Types: key TypeScript interfaces users need
+
+4. **MONOREPO AWARENESS**: Many libraries are monorepos with multiple packages:
+   - Check for \`packages/\`, \`apps/\`, \`crates/\`, or \`libs/\` directories
+   - Check root package.json for \`workspaces\` field
+   - If monorepo: document the package structure and key packages users would install
+   - Use full paths from repo root (e.g., \`packages/core/src/index.ts\`)
+   - Identify which packages are publishable vs internal
+
+## EXPLORATION STEPS
+
+Use Read, Grep, Glob tools to explore:
+1. Root package.json / Cargo.toml - check for workspaces/monorepo config
+2. Check for \`packages/\`, \`apps/\`, \`crates/\` directories
+3. README.md - official usage documentation
+4. For monorepos: explore each publishable package's entry point
+5. docs/ or website/ - find documentation
+6. examples/ - real usage patterns
+7. TypeScript definitions (.d.ts) - public API surface
+
+## OUTPUT FORMAT
 
 \`\`\`markdown
 ---
@@ -72,56 +103,80 @@ allowed-tools: [Read, Grep, Glob]
 
 # {Library Name}
 
-{2-3 sentence overview of what this library does}
+{2-3 sentence overview of what this library does and its key value proposition}
 
-**See also:** [summary.md](references/summary.md) | [architecture.md](references/architecture.md)
+## Quick References
+
+| File | Purpose |
+|------|---------|
+| \`packages/{pkg}/src/index.ts\` | Main entry point (monorepo example) |
+| \`src/index.ts\` | Main entry point (single-package example) |
+| \`README.md\` | Documentation |
+
+(For monorepos, include paths to key publishable packages)
+
+## Packages (for monorepos only)
+
+| Package | npm name | Description |
+|---------|----------|-------------|
+| \`packages/core\` | \`@scope/core\` | Core functionality |
+| \`packages/react\` | \`@scope/react\` | React bindings |
+
+(OMIT this section for single-package repos)
 
 ## When to Use
 
-- {Scenario 1 - when should an agent reach for this skill}
-- {Scenario 2}
-- {Scenario 3}
-- {Scenario 4}
-- {Scenario 5}
+- {Practical scenario where a developer would reach for this library}
+- {Another real-world use case}
+- {Problem this library solves}
+
+## Installation
+
+\`\`\`bash
+# Single package
+npm install {package-name}
+
+# Monorepo (show key packages)
+npm install @scope/core @scope/react
+\`\`\`
 
 ## Best Practices
 
-1. {Best practice 1}
-2. {Best practice 2}
-3. {Best practice 3}
+1. {Actionable best practice for USERS of this library}
+2. {Common mistake to avoid when using this library}
+3. {Performance or correctness tip}
 
 ## Common Patterns
 
-**{Pattern Name 1}:**
-1. {Step 1}
-2. {Step 2}
+**{Pattern Name}:**
+\`\`\`{language}
+{Minimal working code example}
+\`\`\`
 
-**{Pattern Name 2}:**
-1. {Step 1}
-2. {Step 2}
-
-## Key Files & Directories
-
-| Path | Purpose |
-|------|---------|
-| \`{path1}\` | {description} |
-| \`{path2}\` | {description} |
+**{Another Pattern}:**
+\`\`\`{language}
+{Another code example}
+\`\`\`
 
 ## API Quick Reference
 
 | Export | Type | Description |
 |--------|------|-------------|
-| \`{export1}\` | {function/class/const} | {brief description} |
-| \`{export2}\` | {function/class/const} | {brief description} |
+| \`{main export}\` | {type} | {what it does} |
+| \`{another export}\` | {type} | {what it does} |
+
+{Add more sections as appropriate for the library: Configuration, Types, CLI Commands (if user-facing), etc.}
 \`\`\`
 
-3. Focus on practical, actionable information that helps agents:
-   - Understand WHEN to use this library
-   - Know WHERE to look for specific functionality
-   - Follow BEST PRACTICES when writing code
-   - Use COMMON PATTERNS correctly
+## QUALITY CHECKLIST
 
-4. Be accurate - only include information you've verified by reading the actual source code.
+Before outputting, verify:
+- [ ] Every code example is something a USER would write, not a contributor
+- [ ] No internal test commands or contribution workflows
+- [ ] Quick References paths are relative from repo root (no absolute/user paths)
+- [ ] Best practices are for using the library, not developing it
+- [ ] If monorepo: Packages section lists publishable packages with npm names
+- [ ] If monorepo: paths include package directory (e.g., \`packages/core/src/index.ts\`)
 
 Now explore the codebase and generate the SKILL.md content.
 
@@ -132,9 +187,7 @@ name: ...
 (the complete markdown content)
 </skill_output>
 
-Output ONLY the skill content inside the tags. No explanations before or after the tags.
-
-REMINDER: Your response MUST contain <skill_output>...</skill_output> tags with valid YAML frontmatter.`;
+Output ONLY the skill content inside the tags. No explanations before or after the tags.`;
 
 /**
  * Extract the actual SKILL.md content from AI response.

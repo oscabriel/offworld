@@ -148,3 +148,13 @@ export {
 } from "./skill-matcher.js";
 
 export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";
+
+export {
+	listProviders,
+	getProvider,
+	listProvidersWithModels,
+	validateProviderModel,
+	type ProviderInfo,
+	type ModelInfo,
+	type ProviderWithModels,
+} from "./models.js";

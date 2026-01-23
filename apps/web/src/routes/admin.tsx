@@ -26,7 +26,7 @@ function AdminPage() {
 
 	return (
 		<div className="relative flex flex-1 flex-col">
-			<div className="container mx-auto max-w-7xl flex-1 px-5 py-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+			<div className="container mx-auto max-w-7xl flex-1 px-5 pb-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-8">
 					<h1 className="font-serif text-5xl tracking-tight">Admin</h1>
 

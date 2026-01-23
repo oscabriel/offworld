@@ -30,7 +30,7 @@ function ProfileComponent() {
 	}
 
 	return (
-		<div className="flex flex-1 items-center justify-center p-8">
+		<div className="flex flex-1 items-center justify-center px-8 pb-8">
 			<div className="w-full max-w-md space-y-8">
 				<h1 className="text-center font-serif text-5xl font-normal">Profile</h1>
 

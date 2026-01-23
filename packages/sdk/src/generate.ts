@@ -214,8 +214,9 @@ export async function generateSkillWithAI(
 	const { provider, model, onDebug, onStream } = options;
 	const config = loadConfig();
 
-	const aiProvider = provider ?? config.ai?.provider;
-	const aiModel = model ?? config.ai?.model;
+	const [configProvider, configModel] = config.defaultModel?.split("/") ?? [];
+	const aiProvider = provider ?? configProvider;
+	const aiModel = model ?? configModel;
 
 	onDebug?.(`Starting AI skill generation for ${repoName}`);
 	onDebug?.(`Repo path: ${repoPath}`);

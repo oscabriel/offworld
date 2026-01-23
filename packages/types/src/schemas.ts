@@ -1,10 +1,5 @@
 import { z } from "zod";
 
-export const AIConfigSchema = z.object({
-	provider: z.string().default("opencode"),
-	model: z.string().default("claude-opus-4-5"),
-});
-
 /**
  * Supported AI coding agents for skill symlinks.
  * Each agent has a different skill directory location - see packages/sdk/src/agents.ts for registry.
@@ -21,7 +16,8 @@ export const AgentSchema = z.enum([
 export const ConfigSchema = z.object({
 	repoRoot: z.string().default("~/ow"),
 	defaultShallow: z.boolean().default(true),
-	ai: AIConfigSchema.default({ provider: "opencode", model: "claude-opus-4-5" }),
+	/** Default model in provider/model format (e.g., anthropic/claude-sonnet-4-20250514) */
+	defaultModel: z.string().default("anthropic/claude-sonnet-4-20250514"),
 	/** Agents to create skill symlinks for. Auto-detected if empty. */
 	agents: z.array(AgentSchema).default([]),
 });

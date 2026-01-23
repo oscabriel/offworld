@@ -1,6 +1,6 @@
-# Offworld
+# Offworld CLI
 
-> **WORK IN PROGRESS** — Not yet published to npm. Expect breaking changes.
+> **WORK IN PROGRESS** — Not yet published. Expect breaking changes.
 
 **Generate AI agent skills for your entire dependency stack with one command.**
 
@@ -69,10 +69,21 @@ Offworld doubles as a git clone manager. When generating skills, it clones each 
 
 These clones serve two purposes:
 
-- **AI reads them** to generate accurate, up-to-date skills
-- **You can browse them** anytime for reference
+- **Agent reads them** to generate accurate, up-to-date skills
+- **You can browse them** anytime for reference or to contribute
 
-Commands like `ow pull`, `ow rm`, and `ow list` manage both the cloned repos and their generated skills.
+The `ow repo` namespace provides full control over your cloned repositories:
+
+| Command            | Description                                           |
+| ------------------ | ----------------------------------------------------- |
+| `ow repo list`     | List all managed repos (alias: `ow repo ls`)          |
+| `ow repo update`   | Pull latest changes (`--all`, `--stale`, `--pattern`) |
+| `ow repo status`   | Show summary: total repos, disk usage, stale count    |
+| `ow repo prune`    | Clean up stale index entries and orphaned dirs        |
+| `ow repo gc`       | Garbage collect old/unused repos                      |
+| `ow repo discover` | Find and index existing repos in your repoRoot        |
+
+All commands support `--dry-run` to preview changes before applying.
 
 ## Supported Agents
 
@@ -142,9 +153,8 @@ Browse and search community skills, download pre-generated skills, share your ow
 
 ## Links
 
-- **Website**: [offworld.sh](https://offworld.sh)
-- **CLI Docs**: [offworld.sh/cli](https://offworld.sh/cli)
-- **GitHub**: [github.com/oscabriel/offworld](https://github.com/oscabriel/offworld)
+- **Web App**: [offworld.sh](https://offworld.sh)
+- **CLI Docs**: [docs.offworld.sh/cli](https://docs.offworld.sh/cli)
 
 ## License
 

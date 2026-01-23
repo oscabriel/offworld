@@ -22,24 +22,26 @@ offworld/
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add CLI command | `apps/cli/src/handlers/` | Handler + route in `index.ts` |
-| Add SDK function | `packages/sdk/src/` | Export from `index.ts` |
-| Add Zod schema | `packages/types/src/schemas.ts` | Export type from `types.ts` |
-| Add Convex function | `packages/backend/convex/` | Query/mutation/action |
-| Add web route | `apps/web/src/routes/` | TanStack Router file-based |
-| Add web component | `apps/web/src/components/` | shadcn/ui + Tailwind |
-| Add agent support | `packages/sdk/src/agents.ts` | Agent registry |
+| Task                | Location                        | Notes                         |
+| ------------------- | ------------------------------- | ----------------------------- |
+| Add CLI command     | `apps/cli/src/handlers/`        | Handler + route in `index.ts` |
+| Add SDK function    | `packages/sdk/src/`             | Export from `index.ts`        |
+| Add Zod schema      | `packages/types/src/schemas.ts` | Export type from `types.ts`   |
+| Add Convex function | `packages/backend/convex/`      | Query/mutation/action         |
+| Add web route       | `apps/web/src/routes/`          | TanStack Router file-based    |
+| Add web component   | `apps/web/src/components/`      | shadcn/ui + Tailwind          |
+| Add agent support   | `packages/sdk/src/agents.ts`    | Agent registry                |
 
 ## KEY FILES
 
 ### CLI (`apps/cli/`)
+
 - `src/cli.ts` — Entry point
 - `src/index.ts` — Router definition (trpc-cli + @orpc/server)
 - `src/handlers/*.ts` — Command implementations
 
 ### SDK (`packages/sdk/`)
+
 - `src/config.ts` — Config load/save, path utilities
 - `src/clone.ts` — Git clone/update/remove
 - `src/generate.ts` — AI skill generation
@@ -51,12 +53,14 @@ offworld/
 - `src/agents-md.ts` — AGENTS.md skill table generation
 
 ### Backend (`packages/backend/convex/`)
+
 - `schema.ts` — Tables: analyses, pushLogs, user
 - `analyses.ts` — CRUD for skill analyses
 - `admin.ts` — Admin functions
 - `github.ts` — GitHub API queries
 
 ### Web (`apps/web/`)
+
 - `src/routes/index.tsx` — Landing page
 - `src/routes/explore.tsx` — Browse skills
 - `src/routes/_github/$owner_.$repo/` — Repo detail page
@@ -88,29 +92,30 @@ bun run test             # Run tests
 
 ## CLI COMMANDS
 
-| Command | Handler | Description |
-|---------|---------|-------------|
-| `ow pull <repo>` | `pull.ts` | Clone + generate/fetch skill |
-| `ow generate <repo>` | `generate.ts` | Force local AI generation |
-| `ow push <repo>` | `push.ts` | Upload to offworld.sh |
-| `ow list` | `list.ts` | List managed repos |
-| `ow rm <repo>` | `remove.ts` | Remove repo + skill |
-| `ow init` | `init.ts` | Interactive global setup |
-| `ow project init` | `project.ts` | Scan deps, install skills |
-| `ow config *` | `config.ts` | Config management |
-| `ow auth *` | `auth.ts` | WorkOS authentication |
+| Command              | Handler       | Description                  |
+| -------------------- | ------------- | ---------------------------- |
+| `ow pull <repo>`     | `pull.ts`     | Clone + generate/fetch skill |
+| `ow generate <repo>` | `generate.ts` | Force local AI generation    |
+| `ow push <repo>`     | `push.ts`     | Upload to offworld.sh        |
+| `ow list`            | `list.ts`     | List managed repos           |
+| `ow rm <repo>`       | `remove.ts`   | Remove repo + skill          |
+| `ow init`            | `init.ts`     | Interactive global setup     |
+| `ow project init`    | `project.ts`  | Scan deps, install skills    |
+| `ow config *`        | `config.ts`   | Config management            |
+| `ow auth *`          | `auth.ts`     | WorkOS authentication        |
 
 ## DATA PATHS
 
-| Purpose | Location |
-|---------|----------|
-| Config | `~/.config/offworld/config.json` |
-| Skills | `~/.local/share/offworld/skills/` |
-| Cloned repos | `~/ow/` (configurable) |
+| Purpose      | Location                          |
+| ------------ | --------------------------------- |
+| Config       | `~/.config/offworld/config.json`  |
+| Skills       | `~/.local/share/offworld/skills/` |
+| Cloned repos | `~/ow/` (configurable)            |
 
 ## AGENTS SUPPORTED
 
 Skills are symlinked to:
+
 - OpenCode: `~/.config/opencode/skill/`
 - Claude Code: `~/.claude/skills/`
 - Codex: `~/.codex/skills/`
@@ -141,11 +146,11 @@ Skills are symlinked to:
 
 Skills installed for this project's dependencies:
 
-| Dependency | Skill | Path |
-|------------|-------|------|
-| zod | colinhacks-zod | ~/.local/share/offworld/skills/colinhacks-zod-reference |
+| Dependency | Skill                | Path                                                          |
+| ---------- | -------------------- | ------------------------------------------------------------- |
+| zod        | colinhacks-zod       | ~/.local/share/offworld/skills/colinhacks-zod-reference       |
 | typescript | microsoft-TypeScript | ~/.local/share/offworld/skills/microsoft-TypeScript-reference |
-| vitest | vitest-dev-vitest | ~/.local/share/offworld/skills/vitest-dev-vitest-reference |
+| vitest     | vitest-dev-vitest    | ~/.local/share/offworld/skills/vitest-dev-vitest-reference    |
 
 To update skills: `ow pull <dependency>`
 To regenerate all: `ow project init --all --generate`

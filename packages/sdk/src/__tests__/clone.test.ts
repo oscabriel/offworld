@@ -105,7 +105,96 @@ vi.mock("node:fs/promises", () => ({
 	}),
 }));
 
+function createMockSpawn(gitCommand: string, args: string[]) {
+	// biome-ignore lint/suspicious/noExplicitAny: test mock
+	const listeners: Record<string, ((...args: any[]) => void)[]> = {};
+	const stdout = {
+		on: (event: string, cb: (data: Buffer) => void) => {
+			if (!listeners[`stdout:${event}`]) listeners[`stdout:${event}`] = [];
+			listeners[`stdout:${event}`]!.push(cb);
+		},
+	};
+	const stderr = {
+		on: (event: string, cb: (data: Buffer) => void) => {
+			if (!listeners[`stderr:${event}`]) listeners[`stderr:${event}`] = [];
+			listeners[`stderr:${event}`]!.push(cb);
+		},
+	};
+
+	const proc = {
+		stdout,
+		stderr,
+		on: (event: string, cb: (...args: unknown[]) => void) => {
+			if (!listeners[event]) listeners[event] = [];
+			listeners[event].push(cb);
+
+			if (event === "close") {
+				setImmediate(() => {
+					let shouldSucceed = true;
+					let errorMessage = "";
+
+					switch (gitCommand) {
+						case "clone": {
+							const config = gitConfig.clone ?? defaultGitConfig.clone;
+							shouldSucceed = config?.shouldSucceed ?? true;
+							errorMessage = config?.errorMessage ?? "fatal: repository not found";
+							const destPath = args[args.length - 1];
+							if (destPath) {
+								const normalized = normalizePath(destPath);
+								const parentDir = normalized.substring(0, normalized.lastIndexOf("/"));
+								virtualFs[parentDir] = { content: "", isDirectory: true };
+								if (shouldSucceed) {
+									virtualFs[normalized] = { content: "", isDirectory: true };
+									virtualFs[join(normalized, ".git").replace(/\\/g, "/")] = {
+										content: "",
+										isDirectory: true,
+									};
+								}
+							}
+							break;
+						}
+						case "fetch": {
+							const config = gitConfig.fetch ?? defaultGitConfig.fetch;
+							shouldSucceed = config?.shouldSucceed ?? true;
+							errorMessage = config?.errorMessage ?? "fatal: unable to access";
+							break;
+						}
+						case "pull": {
+							const config = gitConfig.pull ?? defaultGitConfig.pull;
+							shouldSucceed = config?.shouldSucceed ?? true;
+							errorMessage = config?.errorMessage ?? "error: pull failed";
+							break;
+						}
+						case "sparse-checkout":
+						case "checkout":
+							shouldSucceed = true;
+							break;
+					}
+
+					if (!shouldSucceed) {
+						for (const listener of listeners["stderr:data"] ?? []) {
+							listener(Buffer.from(errorMessage));
+						}
+					}
+
+					for (const listener of listeners["close"] ?? []) {
+						listener(shouldSucceed ? 0 : 128);
+					}
+				});
+			}
+		},
+	};
+
+	return proc;
+}
+
 vi.mock("node:child_process", () => ({
+	spawn: vi.fn((command: string, args: string[], _options?: { cwd?: string }) => {
+		if (command !== "git") {
+			throw new Error(`Expected git command, got: ${command}`);
+		}
+		return createMockSpawn(args[0] ?? "", args.slice(1));
+	}),
 	execFileSync: vi.fn((command: string, args: string[], options?: { cwd?: string }) => {
 		if (command !== "git") {
 			throw new Error(`Expected git command, got: ${command}`);
@@ -300,11 +389,11 @@ afterEach(() => {
 
 describe("cloneRepo", () => {
 	it("calls git clone with correct URL", async () => {
-		const { execFileSync } = await import("node:child_process");
+		const { spawn } = await import("node:child_process");
 
 		await cloneRepo(mockSource);
 
-		expect(execFileSync).toHaveBeenCalledWith(
+		expect(spawn).toHaveBeenCalledWith(
 			"git",
 			expect.arrayContaining(["clone", "https://github.com/tanstack/router.git"]),
 			expect.any(Object),
@@ -312,11 +401,11 @@ describe("cloneRepo", () => {
 	});
 
 	it("uses --depth 1 when shallow=true", async () => {
-		const { execFileSync } = await import("node:child_process");
+		const { spawn } = await import("node:child_process");
 
 		await cloneRepo(mockSource, { shallow: true });
 
-		expect(execFileSync).toHaveBeenCalledWith(
+		expect(spawn).toHaveBeenCalledWith(
 			"git",
 			expect.arrayContaining(["--depth", "1"]),
 			expect.any(Object),
@@ -324,11 +413,11 @@ describe("cloneRepo", () => {
 	});
 
 	it("uses --branch flag when branch specified", async () => {
-		const { execFileSync } = await import("node:child_process");
+		const { spawn } = await import("node:child_process");
 
 		await cloneRepo(mockSource, { branch: "develop" });
 
-		expect(execFileSync).toHaveBeenCalledWith(
+		expect(spawn).toHaveBeenCalledWith(
 			"git",
 			expect.arrayContaining(["--branch", "develop"]),
 			expect.any(Object),
@@ -359,12 +448,12 @@ describe("cloneRepo", () => {
 		const repoPath = join(mockRepoRoot, "github", "tanstack/router");
 		addVirtualPath(repoPath, true);
 		const { rmSync } = await import("node:fs");
-		const { execFileSync } = await import("node:child_process");
+		const { spawn } = await import("node:child_process");
 
 		await cloneRepo(mockSource, { force: true });
 
 		expect(rmSync).toHaveBeenCalledWith(expect.any(String), { recursive: true, force: true });
-		expect(execFileSync).toHaveBeenCalledWith(
+		expect(spawn).toHaveBeenCalledWith(
 			"git",
 			expect.arrayContaining(["clone"]),
 			expect.any(Object),
@@ -373,21 +462,21 @@ describe("cloneRepo", () => {
 
 	describe("sparse checkout", () => {
 		it("uses sparse checkout flags when sparse=true", async () => {
-			const { execFileSync } = await import("node:child_process");
+			const { spawn } = await import("node:child_process");
 
 			await cloneRepo(mockSource, { sparse: true });
 
-			expect(execFileSync).toHaveBeenCalledWith(
+			expect(spawn).toHaveBeenCalledWith(
 				"git",
 				expect.arrayContaining(["--filter=blob:none"]),
 				expect.any(Object),
 			);
-			expect(execFileSync).toHaveBeenCalledWith(
+			expect(spawn).toHaveBeenCalledWith(
 				"git",
 				expect.arrayContaining(["--no-checkout"]),
 				expect.any(Object),
 			);
-			expect(execFileSync).toHaveBeenCalledWith(
+			expect(spawn).toHaveBeenCalledWith(
 				"git",
 				expect.arrayContaining(["--sparse"]),
 				expect.any(Object),
@@ -395,11 +484,11 @@ describe("cloneRepo", () => {
 		});
 
 		it("sets sparse-checkout directories after clone", async () => {
-			const { execFileSync } = await import("node:child_process");
+			const { spawn } = await import("node:child_process");
 
 			await cloneRepo(mockSource, { sparse: true });
 
-			expect(execFileSync).toHaveBeenCalledWith(
+			expect(spawn).toHaveBeenCalledWith(
 				"git",
 				expect.arrayContaining(["sparse-checkout", "set"]),
 				expect.any(Object),
@@ -407,11 +496,11 @@ describe("cloneRepo", () => {
 		});
 
 		it("runs checkout after setting sparse-checkout", async () => {
-			const { execFileSync } = await import("node:child_process");
+			const { spawn } = await import("node:child_process");
 
 			await cloneRepo(mockSource, { sparse: true });
 
-			const calls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls.map(
+			const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls.map(
 				(c) => c[1] as string[],
 			);
 			const sparseSetIdx = calls.findIndex(
@@ -426,16 +515,16 @@ describe("cloneRepo", () => {
 		});
 
 		it("combines sparse with shallow clone", async () => {
-			const { execFileSync } = await import("node:child_process");
+			const { spawn } = await import("node:child_process");
 
 			await cloneRepo(mockSource, { sparse: true, shallow: true });
 
-			expect(execFileSync).toHaveBeenCalledWith(
+			expect(spawn).toHaveBeenCalledWith(
 				"git",
 				expect.arrayContaining(["--depth", "1"]),
 				expect.any(Object),
 			);
-			expect(execFileSync).toHaveBeenCalledWith(
+			expect(spawn).toHaveBeenCalledWith(
 				"git",
 				expect.arrayContaining(["--sparse"]),
 				expect.any(Object),
@@ -533,11 +622,11 @@ describe("updateRepo", () => {
 	});
 
 	it("calls git fetch then git pull", async () => {
-		const { execFileSync } = await import("node:child_process");
+		const { spawn } = await import("node:child_process");
 
 		await updateRepo("github:tanstack/router");
 
-		const calls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls;
+		const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls;
 		const fetchCall = calls.find((call) => (call[1] as string[]).includes("fetch"));
 		const pullCall = calls.find((call) => (call[1] as string[]).includes("pull"));
 

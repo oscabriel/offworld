@@ -11,6 +11,11 @@ import {
 	detectInstalledAgents,
 	getAllAgentConfigs,
 	getAuthStatus,
+	listProviders,
+	getProvider,
+	validateProviderModel,
+	type ProviderInfo,
+	type ModelInfo,
 } from "@offworld/sdk";
 import type { Config, Agent } from "@offworld/types";
 import { authLoginHandler } from "./auth.js";
@@ -34,52 +39,8 @@ export interface InitResult {
 	configPath: string;
 }
 
-const PROVIDER_OPTIONS = [
-	{
-		value: "opencode",
-		label: "OpenCode Zen (Recommended)",
-		hint: "Curated models, no extra keys needed",
-	},
-	{ value: "anthropic", label: "Anthropic", hint: "Direct API - Claude models" },
-	{ value: "openai", label: "OpenAI", hint: "Direct API - GPT/o-series" },
-] as const;
-
-const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string; hint?: string }>> = {
-	opencode: [
-		// Claude models via Zen
-		{ value: "claude-opus-4-5", label: "Claude Opus 4.5", hint: "most capable" },
-		{ value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", hint: "balanced" },
-		{ value: "claude-sonnet-4", label: "Claude Sonnet 4" },
-		{ value: "claude-haiku-4-5", label: "Claude Haiku 4.5", hint: "fast" },
-		// GPT models via Zen
-		{ value: "gpt-5.2-codex", label: "GPT 5.2 Codex", hint: "latest" },
-		{ value: "gpt-5.1-codex", label: "GPT 5.1 Codex" },
-		{ value: "gpt-5-codex", label: "GPT 5 Codex" },
-		// Other models via Zen
-		{ value: "gemini-3-pro", label: "Gemini 3 Pro" },
-		{ value: "qwen3-coder", label: "Qwen3 Coder 480B" },
-		{ value: "kimi-k2", label: "Kimi K2" },
-		{ value: "glm-4.7-free", label: "GLM 4.7", hint: "free" },
-		{ value: "grok-code", label: "Grok Code Fast 1", hint: "free" },
-	],
-	anthropic: [
-		{ value: "claude-opus-4-5", label: "Claude Opus 4.5", hint: "most capable" },
-		{ value: "claude-sonnet-4-5-20250929", label: "Claude Sonnet 4.5", hint: "balanced" },
-		{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
-		{ value: "claude-opus-4-20250514", label: "Claude Opus 4" },
-		{ value: "claude-haiku-4-5-20250929", label: "Claude Haiku 4.5", hint: "fast" },
-		{ value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
-	],
-	openai: [
-		{ value: "gpt-5.2", label: "GPT 5.2", hint: "latest" },
-		{ value: "gpt-5.1-codex", label: "GPT 5.1 Codex" },
-		{ value: "gpt-5.1", label: "GPT 5.1" },
-		{ value: "gpt-5", label: "GPT 5" },
-		{ value: "gpt-4o", label: "GPT-4o", hint: "balanced" },
-		{ value: "o3", label: "o3", hint: "reasoning" },
-		{ value: "o3-mini", label: "o3-mini", hint: "fast reasoning" },
-	],
-};
+const DEFAULT_PROVIDER = "anthropic";
+const MAX_SELECT_ITEMS = 15;
 
 function expandTilde(path: string): string {
 	if (path.startsWith("~/")) {
@@ -128,7 +89,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 	p.intro("ow init");
 
 	if (!options.skipAuth) {
-		const authStatus = getAuthStatus();
+		const authStatus = await getAuthStatus();
 		if (!authStatus.isLoggedIn) {
 			p.log.info("You are not logged in");
 			const shouldLogin = await p.confirm({
@@ -193,11 +154,48 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		}
 		provider = parts[0]!;
 		model = parts[1]!;
+
+		const validation = await validateProviderModel(provider, model);
+		if (!validation.valid) {
+			p.log.error(validation.error!);
+			p.outro("Setup failed");
+			return { success: false, configPath };
+		}
 	} else {
+		const spin = p.spinner();
+		spin.start("Fetching available providers...");
+
+		let providers;
+		try {
+			providers = await listProviders();
+		} catch (err) {
+			spin.stop("Failed to fetch providers");
+			p.log.error(err instanceof Error ? err.message : "Network error");
+			p.outro("Setup failed");
+			return { success: false, configPath };
+		}
+
+		spin.stop("Loaded providers from models.dev");
+
+		const priorityProviders = ["opencode", "anthropic", "openai", "google"];
+		const sortedProviders = [
+			...providers.filter((p: ProviderInfo) => priorityProviders.includes(p.id)),
+			...providers
+				.filter((p: ProviderInfo) => !priorityProviders.includes(p.id))
+				.sort((a: ProviderInfo, b: ProviderInfo) => a.name.localeCompare(b.name)),
+		];
+
+		const providerOptions = sortedProviders.map((prov: ProviderInfo) => ({
+			value: prov.id,
+			label: prov.name,
+		}));
+
+		const currentProvider = existingConfig.defaultModel?.split("/")[0];
 		const providerResult = await p.select({
-			message: "Select your AI provider for analysis",
-			options: [...PROVIDER_OPTIONS],
-			initialValue: existingConfig.ai?.provider ?? "anthropic",
+			message: "Select your AI provider",
+			options: providerOptions,
+			initialValue: currentProvider ?? DEFAULT_PROVIDER,
+			maxItems: MAX_SELECT_ITEMS,
 		});
 
 		if (p.isCancel(providerResult)) {
@@ -207,11 +205,28 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 		provider = providerResult as string;
 
-		const modelOptions = MODEL_OPTIONS[provider] ?? MODEL_OPTIONS.anthropic!;
+		spin.start("Fetching models...");
+		const providerData = await getProvider(provider);
+		spin.stop(`Loaded ${providerData?.models.length ?? 0} models`);
+
+		if (!providerData || providerData.models.length === 0) {
+			p.log.error(`No models found for provider "${provider}"`);
+			p.outro("Setup failed");
+			return { success: false, configPath };
+		}
+
+		const modelOptions = providerData.models.map((m: ModelInfo) => ({
+			value: m.id,
+			label: m.name,
+			hint: m.reasoning ? "reasoning" : m.status === "beta" ? "beta" : undefined,
+		}));
+
+		const currentModel = existingConfig.defaultModel?.split("/")[1];
 		const modelResult = await p.select({
 			message: "Select your default model",
 			options: modelOptions,
-			initialValue: existingConfig.ai?.model,
+			initialValue: currentModel,
+			maxItems: MAX_SELECT_ITEMS,
 		});
 
 		if (p.isCancel(modelResult)) {
@@ -271,9 +286,10 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		agents = agentsResult as Agent[];
 	}
 
+	const defaultModel = `${provider}/${model}`;
 	const newConfig: Partial<Config> = {
 		repoRoot,
-		ai: { provider, model },
+		defaultModel,
 		agents,
 	};
 
@@ -285,7 +301,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.info(`  Repo root: ${repoRoot}`);
 		p.log.info(`  Meta root: ${getMetaRoot()}`);
 		p.log.info(`  State root: ${getStateRoot()}`);
-		p.log.info(`  AI: ${provider}/${model}`);
+		p.log.info(`  Model: ${defaultModel}`);
 		p.log.info(`  Agents: ${agents.join(", ")}`);
 
 		p.outro("Setup complete. Run 'ow pull <repo>' to get started.");

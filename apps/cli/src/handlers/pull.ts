@@ -7,24 +7,20 @@ import {
 	getCommitSha,
 	parseRepoInput,
 	pullAnalysis,
-	pushAnalysis,
 	checkRemote,
-	canPushToWeb,
 	loadConfig,
 	loadAuthData,
-	getSkillPath,
 	getMetaPath,
 	updateIndex,
 	getIndexEntry,
 	RepoExistsError,
 	generateSkillWithAI,
 	installSkill as installSkillToFS,
-	type AnalysisData,
 } from "@offworld/sdk";
 import type { RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createSpinner, type SpinnerLike } from "../utils/spinner";
+import { createSpinner } from "../utils/spinner";
 
 export interface PullOptions {
 	repo: string;
@@ -33,9 +29,7 @@ export interface PullOptions {
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
-	/** AI provider ID (e.g., "anthropic", "openai"). Overrides config. */
-	provider?: string;
-	/** AI model ID. Overrides config. */
+	/** Model override in provider/model format (e.g., "anthropic/claude-sonnet-4-20250514") */
 	model?: string;
 }
 
@@ -81,64 +75,6 @@ function hasValidCache(source: RepoSource, currentSha: string): boolean {
 	return meta?.commitSha?.slice(0, 7) === currentSha.slice(0, 7);
 }
 
-type RemoteSource = Extract<RepoSource, { type: "remote" }>;
-
-async function tryUploadAnalysis(
-	source: RemoteSource,
-	commitSha: string,
-	analyzedAt: string,
-	verbose: boolean,
-	spinner: SpinnerLike,
-): Promise<void> {
-	const authData = loadAuthData();
-	if (!authData?.token) {
-		verboseLog("Skipping upload: not authenticated", verbose);
-		return;
-	}
-
-	const canPush = await canPushToWeb(source);
-	if (!canPush.allowed) {
-		verboseLog(`Skipping upload: ${canPush.reason}`, verbose);
-		return;
-	}
-
-	const skillDir = getSkillPath(source.fullName);
-
-	try {
-		const skillContent = readFileSync(join(skillDir, "SKILL.md"), "utf-8");
-
-		// Simplified analysis data for new format
-		const analysisData: AnalysisData = {
-			fullName: source.fullName,
-			summary: skillContent,
-			architecture: {
-				projectType: "library",
-				entities: [],
-				relationships: [],
-				keyFiles: [],
-				patterns: {},
-			},
-			skill: {
-				name: source.fullName,
-				description: "",
-				quickPaths: [],
-				searchPatterns: [],
-				whenToUse: [],
-			},
-			fileIndex: [],
-			commitSha,
-			analyzedAt,
-		};
-
-		spinner.start("Uploading to offworld.sh...");
-		await pushAnalysis(analysisData, authData.token);
-		spinner.stop("Uploaded to offworld.sh");
-	} catch (err) {
-		verboseLog(`Upload failed: ${err instanceof Error ? err.message : "Unknown"}`, verbose);
-		spinner.stop("Upload failed (continuing)");
-	}
-}
-
 /**
  * Save remote analysis to local filesystem.
  * Remote analysis comes with pre-generated skill/summary content.
@@ -153,17 +89,18 @@ function saveRemoteAnalysis(
 	installSkillToFS(repoName, summary, meta);
 }
 
+function parseModelFlag(model?: string): { provider?: string; model?: string } {
+	if (!model) return {};
+	const parts = model.split("/");
+	if (parts.length === 2) {
+		return { provider: parts[0], model: parts[1] };
+	}
+	return { model };
+}
+
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const {
-		repo,
-		shallow = true,
-		sparse = false,
-		branch,
-		force = false,
-		verbose = false,
-		provider,
-		model,
-	} = options;
+	const { repo, shallow = true, sparse = false, branch, force = false, verbose = false } = options;
+	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
 
 	const s = createSpinner();
@@ -255,41 +192,57 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					const currentShaNorm = currentSha.slice(0, 7);
 
 					if (remoteShaNorm === currentShaNorm) {
-						verboseLog(`Remote SHA matches (${remoteShaNorm}), downloading...`, verbose);
-						s.message("Downloading remote analysis...");
+						verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
+						s.stop("Remote skill found");
 
-						const remoteAnalysis = await pullAnalysis(source.fullName);
+						const previewUrl = `https://offworld.sh/${source.fullName}`;
+						p.log.info(`Preview: ${previewUrl}`);
 
-						if (remoteAnalysis) {
-							s.stop("Downloaded remote analysis");
+						const useRemote = await p.confirm({
+							message: "Download this skill from offworld.sh?",
+							initialValue: true,
+						});
 
-							// Save the remote analysis locally
-							saveRemoteAnalysis(
-								source.fullName,
-								remoteAnalysis.summary,
-								remoteAnalysis.commitSha,
-								remoteAnalysis.analyzedAt ?? new Date().toISOString(),
-							);
+						if (p.isCancel(useRemote)) {
+							throw new Error("Operation cancelled");
+						}
 
-							// Update index
-							const entry = getIndexEntry(source.qualifiedName);
-							if (entry) {
-								updateIndex({
-									...entry,
-									analyzedAt: remoteAnalysis.analyzedAt,
-									commitSha: remoteAnalysis.commitSha,
-									hasSkill: true,
-								});
+						if (!useRemote) {
+							p.log.info("Skipping remote skill, generating locally...");
+						} else {
+							s.start("Downloading remote skill...");
+							const remoteAnalysis = await pullAnalysis(source.fullName);
+
+							if (remoteAnalysis) {
+								s.stop("Downloaded remote skill");
+
+								saveRemoteAnalysis(
+									source.fullName,
+									remoteAnalysis.summary,
+									remoteAnalysis.commitSha,
+									remoteAnalysis.analyzedAt ?? new Date().toISOString(),
+								);
+
+								const entry = getIndexEntry(source.qualifiedName);
+								if (entry) {
+									updateIndex({
+										...entry,
+										analyzedAt: remoteAnalysis.analyzedAt,
+										commitSha: remoteAnalysis.commitSha,
+										hasSkill: true,
+									});
+								}
+
+								p.log.success(`Skill installed for: ${qualifiedName}`);
+
+								return {
+									success: true,
+									repoPath,
+									analysisSource: "remote",
+									skillInstalled: true,
+								};
 							}
-
-							p.log.success(`Skill installed for: ${qualifiedName}`);
-
-							return {
-								success: true,
-								repoPath,
-								analysisSource: "remote",
-								skillInstalled: true,
-							};
+							s.stop("Remote download failed, generating locally...");
 						}
 					} else {
 						verboseLog(
@@ -302,7 +255,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					s.stop("No remote analysis found");
 				}
 			} catch (err) {
-				// Graceful fallback - continue to local generation
 				verboseLog(
 					`Remote check failed: ${err instanceof Error ? err.message : "Unknown"}`,
 					verbose,
@@ -353,11 +305,16 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				});
 			}
 
-			if (source.type === "remote") {
-				await tryUploadAnalysis(source, analysisCommitSha, analyzedAt, verbose, s);
-			}
-
 			p.log.success(`Skill installed for: ${qualifiedName}`);
+
+			if (source.type === "remote") {
+				const authData = loadAuthData();
+				if (authData?.token) {
+					p.log.info(
+						`Run 'ow push --repo ${source.fullName}' to share this skill to https://offworld.sh.`,
+					);
+				}
+			}
 
 			return {
 				success: true,
@@ -372,13 +329,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const errMessage = err instanceof Error ? err.message : "Unknown error";
 			p.log.error(`Failed to generate skill: ${errMessage}`);
 
-			return {
-				success: true,
-				repoPath,
-				analysisSource: "local",
-				skillInstalled: false,
-				message: `Repository cloned but skill generation failed: ${errMessage}`,
-			};
+			// Local generation failure should be a hard failure (exit 1)
+			throw new Error(`Skill generation failed: ${errMessage}`);
 		}
 	} catch (error) {
 		s.stop("Failed");

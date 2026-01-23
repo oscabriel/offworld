@@ -23,9 +23,9 @@ function HomeComponent() {
 
 			<RecentlyIndexedCarousel analyses={analyses ?? []} />
 
-			<div className="border-primary/10 relative border-b py-32">
-				<div className="container mx-auto max-w-7xl px-4 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-					<div className="grid gap-16 md:grid-cols-2 md:gap-20">
+			<div className="border-primary/10 relative border-b py-34">
+				<div className="container mx-auto max-w-7xl px-5 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+					<div className="grid gap-13 md:grid-cols-2 md:gap-21">
 						<InfoSection />
 						<HowItWorks />
 					</div>

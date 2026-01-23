@@ -34,7 +34,7 @@ function ProfileComponent() {
 			<div className="w-full max-w-md space-y-8">
 				<h1 className="text-center font-serif text-5xl font-normal">Profile</h1>
 
-				<div className="border-border bg-card space-y-4 rounded-lg border p-6">
+				<div className="border-border bg-card space-y-5 border p-5">
 					<div className="space-y-1">
 						<p className="text-muted-foreground text-sm">Name</p>
 						<p className="font-serif text-lg">{user.name || "Not set"}</p>

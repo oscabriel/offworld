@@ -18,7 +18,7 @@ export function ContentCard({ title, children, variant = "default" }: ContentCar
 		variant === "error" ? "bg-card" : variant === "warning" ? "bg-yellow-500/5" : "bg-card";
 
 	return (
-		<div className={`space-y-6 border ${borderColor} ${bgColor} p-8`}>
+		<div className={`space-y-5 border ${borderColor} ${bgColor} p-8`}>
 			{title && (
 				<h2 className="text-muted-foreground font-mono text-sm tracking-[0.3em] uppercase">
 					{title}

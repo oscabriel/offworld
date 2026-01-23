@@ -53,24 +53,24 @@ export function AnalysisTable() {
 	if (!analyses) return null;
 
 	return (
-		<Card className="border-primary/10 border p-0 shadow-none">
+		<Card className="border-primary/10 border p-0">
 			<div className="overflow-x-auto">
 				<table className="w-full">
 					<thead>
 						<tr className="border-primary/10 border-b">
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 								Repository
 							</th>
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 								Pull Count
 							</th>
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 								Analyzed
 							</th>
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 								Version
 							</th>
-							<th className="text-muted-foreground px-4 py-3 text-right font-mono text-xs">
+							<th className="text-muted-foreground px-5 py-3 text-right font-mono text-xs">
 								Actions
 							</th>
 						</tr>
@@ -78,22 +78,22 @@ export function AnalysisTable() {
 					<tbody>
 						{analyses.map((analysis) => (
 							<tr key={analysis._id} className="border-primary/5 border-b last:border-0">
-								<td className="px-4 py-3">
+								<td className="px-5 py-3">
 									<div className="flex items-center gap-2">
 										<span className="font-serif">{analysis.fullName}</span>
 										{analysis.isVerified && <BadgeCheck className="h-4 w-4 text-blue-500" />}
 									</div>
 								</td>
-								<td className="px-4 py-3 font-mono text-sm">
+								<td className="px-5 py-3 font-mono text-sm">
 									{analysis.pullCount.toLocaleString()}
 								</td>
-								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">
+								<td className="text-muted-foreground px-5 py-3 font-mono text-sm">
 									{formatDate(analysis.analyzedAt)}
 								</td>
-								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">
+								<td className="text-muted-foreground px-5 py-3 font-mono text-sm">
 									{analysis.version}
 								</td>
-								<td className="px-4 py-3 text-right">
+								<td className="px-5 py-3 text-right">
 									<div className="flex justify-end gap-2">
 										<Button
 											variant="outline"

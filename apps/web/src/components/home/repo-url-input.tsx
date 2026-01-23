@@ -62,12 +62,12 @@ export function RepoUrlInput({
 	const isHero = variant === "hero";
 
 	return (
-		<div className={isHero ? "w-full" : "space-y-4"}>
+		<div className={isHero ? "w-full" : "space-y-5"}>
 			<Label
 				htmlFor="repo-url"
 				className={
 					isHero
-						? "text-muted-foreground mb-4 block text-center font-mono text-base tracking-[0.3em] uppercase"
+						? "text-muted-foreground mb-5 block text-center font-mono text-base tracking-[0.3em] uppercase"
 						: "text-muted-foreground block font-mono text-sm tracking-wide uppercase"
 				}
 			>
@@ -80,24 +80,24 @@ export function RepoUrlInput({
 					value={repoUrl}
 					onChange={(e) => {
 						setRepoUrl(e.target.value);
-						setError(""); // Clear error on input change
+						setError("");
 					}}
 					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
-					className="border-primary/20 bg-background/50 text-foreground focus-visible:border-primary focus-visible:bg-background h-auto flex-1 rounded-none border-2 px-4 py-3 font-mono text-base backdrop-blur-sm transition-all duration-300 focus-visible:ring-0 sm:px-6 sm:py-4 sm:text-xl"
+					className="border-primary/20 bg-background/50 text-foreground focus-visible:border-primary focus-visible:bg-background h-auto flex-1 border-2 px-5 py-3 font-mono text-base backdrop-blur-sm transition-all duration-300 focus-visible:ring-0 sm:px-5 sm:py-3 sm:text-base"
 				/>
 				<Button
 					onClick={handleAnalyze}
 					disabled={!repoUrl}
 					size="lg"
-					className="border-primary bg-primary text-primary-foreground hover:bg-background hover:text-primary h-auto rounded-none border-2 px-6 py-3 font-mono text-base transition-all duration-300 disabled:cursor-not-allowed sm:px-10 sm:py-4 sm:text-lg"
+					className="border-primary bg-primary text-primary-foreground hover:bg-background hover:text-primary h-auto border-2 px-8 py-3 font-mono text-base transition-all duration-300 disabled:cursor-not-allowed sm:px-8 sm:py-3 sm:text-base"
 				>
 					{buttonText}
 				</Button>
 			</div>
 			{error && (
-				<div className="mt-3 border-2 border-red-500/20 bg-red-500/10 p-3">
-					<p className="font-mono text-sm text-red-600 dark:text-red-400">{error}</p>
+				<div className="border-destructive/40 bg-destructive/10 mt-3 border-2 p-3">
+					<p className="text-destructive font-mono text-sm">{error}</p>
 				</div>
 			)}
 		</div>

@@ -14,6 +14,7 @@ import {
 	listProviders,
 	getProvider,
 	validateProviderModel,
+	discoverRepos,
 	type ProviderInfo,
 	type ModelInfo,
 } from "@offworld/sdk";
@@ -303,13 +304,39 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.info(`  State root: ${getStateRoot()}`);
 		p.log.info(`  Model: ${defaultModel}`);
 		p.log.info(`  Agents: ${agents.join(", ")}`);
-
-		p.outro("Setup complete. Run 'ow pull <repo>' to get started.");
-		return { success: true, configPath };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error";
 		p.log.error(`Failed to save configuration: ${message}`);
 		p.outro("Setup failed");
 		return { success: false, configPath };
 	}
+
+	const expandedRepoRoot = expandTilde(repoRoot);
+	if (existsSync(expandedRepoRoot)) {
+		const previewResult = await discoverRepos({ repoRoot: expandedRepoRoot, dryRun: true });
+
+		if (previewResult.discovered.length > 0) {
+			p.log.info("");
+			p.log.info(`Found ${previewResult.discovered.length} existing repos in ${repoRoot}`);
+
+			let shouldDiscover = options.yes;
+			if (!options.yes) {
+				const confirmDiscover = await p.confirm({
+					message: "Add them to your index? (they will be marked as not analyzed)",
+					initialValue: true,
+				});
+				if (!p.isCancel(confirmDiscover)) {
+					shouldDiscover = confirmDiscover;
+				}
+			}
+
+			if (shouldDiscover) {
+				const result = await discoverRepos({ repoRoot: expandedRepoRoot });
+				p.log.success(`Added ${result.discovered.length} repos to index`);
+			}
+		}
+	}
+
+	p.outro("Setup complete. Run 'ow pull <repo>' to get started.");
+	return { success: true, configPath };
 }

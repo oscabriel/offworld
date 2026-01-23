@@ -4,7 +4,7 @@
 
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
 import { getRepoPath, getMetaPath, getSkillPath, loadConfig, toSkillDirName } from "./config.js";
 import { getIndexEntry, listIndexedRepos, removeFromIndex, updateIndex } from "./index-manager.js";
@@ -85,6 +85,38 @@ function execGit(args: string[], cwd?: string): string {
 			: err.message || "Unknown error";
 		throw new GitError(stderr.trim(), `git ${args.join(" ")}`, err.status ?? null);
 	}
+}
+
+function execGitAsync(args: string[], cwd?: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const proc = spawn("git", args, {
+			cwd,
+			stdio: ["ignore", "pipe", "pipe"],
+			env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+		});
+
+		let stdout = "";
+		let stderr = "";
+
+		proc.stdout.on("data", (data: Buffer) => {
+			stdout += data.toString();
+		});
+		proc.stderr.on("data", (data: Buffer) => {
+			stderr += data.toString();
+		});
+
+		proc.on("close", (code) => {
+			if (code === 0) {
+				resolve(stdout.trim());
+			} else {
+				reject(new GitError(stderr.trim() || "Unknown error", `git ${args.join(" ")}`, code));
+			}
+		});
+
+		proc.on("error", (err) => {
+			reject(new GitError(err.message, `git ${args.join(" ")}`, null));
+		});
+	});
 }
 
 /**
@@ -174,7 +206,7 @@ async function cloneStandard(
 	}
 
 	args.push(cloneUrl, repoPath);
-	execGit(args);
+	await execGitAsync(args);
 }
 
 async function cloneSparse(
@@ -193,10 +225,10 @@ async function cloneSparse(
 	}
 
 	args.push(cloneUrl, repoPath);
-	execGit(args);
+	await execGitAsync(args);
 
-	execGit(["sparse-checkout", "set", ...SPARSE_CHECKOUT_DIRS], repoPath);
-	execGit(["checkout"], repoPath);
+	await execGitAsync(["sparse-checkout", "set", ...SPARSE_CHECKOUT_DIRS], repoPath);
+	await execGitAsync(["checkout"], repoPath);
 }
 
 // ============================================================================
@@ -235,9 +267,8 @@ export async function updateRepo(qualifiedName: string): Promise<UpdateResult> {
 	// Get current SHA before update
 	const previousSha = getCommitSha(repoPath);
 
-	// Fetch and pull
-	execGit(["fetch"], repoPath);
-	execGit(["pull"], repoPath);
+	await execGitAsync(["fetch"], repoPath);
+	await execGitAsync(["pull", "--ff-only"], repoPath);
 
 	// Get new SHA after update
 	const currentSha = getCommitSha(repoPath);

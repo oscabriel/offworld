@@ -150,6 +150,24 @@ export {
 export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";
 
 export {
+	getRepoStatus,
+	updateAllRepos,
+	pruneRepos,
+	gcRepos,
+	discoverRepos,
+	type RepoStatusSummary,
+	type RepoStatusOptions,
+	type UpdateAllOptions,
+	type UpdateAllResult,
+	type PruneOptions,
+	type PruneResult,
+	type GcOptions,
+	type GcResult,
+	type DiscoverOptions,
+	type DiscoverResult,
+} from "./repo-manager.js";
+
+export {
 	listProviders,
 	getProvider,
 	listProvidersWithModels,

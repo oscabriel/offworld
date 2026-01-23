@@ -347,12 +347,12 @@ describe("isLoggedIn", () => {
 // ============================================================================
 
 describe("getAuthStatus", () => {
-	it("returns isLoggedIn: false when not logged in", () => {
-		const result = getAuthStatus();
+	it("returns isLoggedIn: false when not logged in", async () => {
+		const result = await getAuthStatus();
 		expect(result).toEqual({ isLoggedIn: false });
 	});
 
-	it("returns isLoggedIn: false when token is expired", () => {
+	it("returns isLoggedIn: false when token is expired and no refresh token", async () => {
 		addAuthFile({
 			token: "expired-token",
 			expiresAt: createPastDate(),
@@ -360,11 +360,11 @@ describe("getAuthStatus", () => {
 			workosId: "user-123",
 		});
 
-		const result = getAuthStatus();
+		const result = await getAuthStatus();
 		expect(result).toEqual({ isLoggedIn: false });
 	});
 
-	it("returns full status when valid token exists", () => {
+	it("returns full status when valid token exists", async () => {
 		const expiresAt = createFutureDate();
 		addAuthFile({
 			token: "valid-token",
@@ -373,7 +373,7 @@ describe("getAuthStatus", () => {
 			workosId: "user-123",
 		});
 
-		const result = getAuthStatus();
+		const result = await getAuthStatus();
 		expect(result).toEqual({
 			isLoggedIn: true,
 			email: "test@example.com",
@@ -382,13 +382,13 @@ describe("getAuthStatus", () => {
 		});
 	});
 
-	it("returns status without expiresAt when missing", () => {
+	it("returns status without expiresAt when missing", async () => {
 		addAuthFile({
 			token: "valid-token",
 			email: "test@example.com",
 		});
 
-		const result = getAuthStatus();
+		const result = await getAuthStatus();
 		expect(result).toEqual({
 			isLoggedIn: true,
 			email: "test@example.com",
@@ -397,13 +397,13 @@ describe("getAuthStatus", () => {
 		});
 	});
 
-	it("returns isLoggedIn: true without email when email is missing", () => {
+	it("returns isLoggedIn: true without email when email is missing", async () => {
 		addAuthFile({
 			token: "valid-token",
 			workosId: "user-123",
 		});
 
-		const result = getAuthStatus();
+		const result = await getAuthStatus();
 		expect(result).toEqual({
 			isLoggedIn: true,
 			email: undefined,

@@ -178,7 +178,7 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 
 	const s = createSpinner();
 
-	const currentStatus = getAuthStatus();
+	const currentStatus = await getAuthStatus();
 	if (currentStatus.isLoggedIn) {
 		p.log.info(`Already logged in as ${currentStatus.email || "unknown user"}`);
 		const shouldRelogin = await p.confirm({
@@ -250,7 +250,7 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
  * Clears stored session token
  */
 export async function authLogoutHandler(): Promise<AuthLogoutResult> {
-	const status = getAuthStatus();
+	const status = await getAuthStatus();
 
 	if (!status.isLoggedIn) {
 		p.log.info("Not currently logged in");
@@ -286,7 +286,7 @@ export async function authLogoutHandler(): Promise<AuthLogoutResult> {
  * Shows current authentication status
  */
 export async function authStatusHandler(): Promise<AuthStatusResult> {
-	const status = getAuthStatus();
+	const status = await getAuthStatus();
 
 	if (status.isLoggedIn) {
 		p.log.info(`Logged in as: ${status.email || "unknown"}`);

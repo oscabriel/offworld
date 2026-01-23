@@ -17,14 +17,14 @@ export function UserTable() {
 	if (!users) return null;
 
 	return (
-		<Card className="border-primary/10 border p-0 shadow-none">
+		<Card className="border-primary/10 border p-0">
 			<div className="overflow-x-auto">
 				<table className="w-full">
 					<thead>
 						<tr className="border-primary/10 border-b">
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">User</th>
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">Email</th>
-							<th className="text-muted-foreground px-4 py-3 text-left font-mono text-xs">
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">User</th>
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">Email</th>
+							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 								Joined
 							</th>
 						</tr>
@@ -32,20 +32,16 @@ export function UserTable() {
 					<tbody>
 						{users.map((user) => (
 							<tr key={user._id} className="border-primary/5 border-b last:border-0">
-								<td className="px-4 py-3">
+								<td className="px-5 py-3">
 									<div className="flex items-center gap-3">
 										{user.image && (
-											<img
-												src={user.image}
-												alt={user.name ?? "User"}
-												className="h-8 w-8 rounded-full"
-											/>
+											<img src={user.image} alt={user.name ?? "User"} className="h-8 w-8" />
 										)}
 										<span className="font-serif">{user.name ?? "—"}</span>
 									</div>
 								</td>
-								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">{user.email}</td>
-								<td className="text-muted-foreground px-4 py-3 font-mono text-sm">
+								<td className="text-muted-foreground px-5 py-3 font-mono text-sm">{user.email}</td>
+								<td className="text-muted-foreground px-5 py-3 font-mono text-sm">
 									{formatDate(user.createdAt)}
 								</td>
 							</tr>

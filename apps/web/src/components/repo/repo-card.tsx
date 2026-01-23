@@ -21,22 +21,22 @@ export function RepoCard({ fullName, pullCount }: RepoCardProps) {
 
 	return (
 		<Link to="/$owner/$repo" params={{ owner, repo }} className="block h-full">
-			<Card className="group border-primary/10 bg-card hover:border-primary/30 flex h-full min-h-48 w-full flex-col gap-4 border py-4 shadow-none transition-colors">
-				<CardHeader className="gap-0 px-4 py-0 pt-4">
+			<Card className="group border-primary/10 bg-card hover:border-primary/50 flex h-full min-h-48 w-full flex-col gap-5 border py-5 transition-all duration-200 hover:-translate-y-0.5">
+				<CardHeader className="gap-0 px-5 py-0 pt-5">
 					<div className="flex items-start justify-between gap-2">
 						<CardTitle className="group-hover:text-primary font-serif text-xl font-semibold">
 							{fullName}
 						</CardTitle>
 						<Badge
 							variant="secondary"
-							className="shrink-0 rounded-none border-0 bg-green-500/10 font-mono text-xs text-green-600"
+							className="shrink-0 border-0 bg-green-500/10 font-mono text-xs text-green-600"
 						>
-							Indexed
+							Skill Available
 						</Badge>
 					</div>
 				</CardHeader>
 
-				<CardContent className="mt-auto flex flex-wrap items-center gap-4 px-4 py-0 pb-4">
+				<CardContent className="mt-auto flex flex-wrap items-center gap-5 px-5 py-0 pb-5">
 					<span className="text-muted-foreground flex items-center gap-1 font-mono text-xs">
 						<DownloadIcon className="size-3" />
 						{formatPullCount(pullCount)}

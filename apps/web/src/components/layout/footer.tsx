@@ -6,9 +6,8 @@ import { Link } from "@tanstack/react-router";
 export function Footer() {
 	const { data: user } = useQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
 	return (
-		<div className="border-primary/10 bg-background/30 relative border-y py-16 backdrop-blur-sm">
-			<div className="relative container mx-auto flex max-w-7xl flex-col items-center justify-between gap-16 px-4 lg:max-w-5xl lg:flex-row lg:items-end xl:max-w-6xl 2xl:max-w-7xl">
-				{/* Left - Brand */}
+		<div className="border-primary/10 bg-background/30 relative border-y py-21 backdrop-blur-sm">
+			<div className="relative container mx-auto flex max-w-7xl flex-col items-center justify-between gap-21 px-5 lg:max-w-5xl lg:flex-row lg:items-end xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="flex shrink-0 items-end">
 					<Link
 						to="/"
@@ -18,8 +17,7 @@ export function Footer() {
 					</Link>
 				</div>
 
-				{/* Middle - Links */}
-				<div className="flex flex-row items-center gap-20 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:items-end">
+				<div className="flex flex-row items-center gap-21 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:items-end">
 					<div className="space-y-2 text-center lg:text-left">
 						<h3 className="text-muted-foreground font-mono text-xs tracking-wider uppercase">
 							Navigate
@@ -88,9 +86,8 @@ export function Footer() {
 					</div>
 				</div>
 
-				{/* Right - Tagline & Copyright */}
-				<div className="flex shrink-0 flex-col items-center justify-between gap-4 self-stretch text-center lg:items-end lg:text-right">
-					<p className="text-primary font-serif text-2xl italic">"Explore distant code."</p>
+				<div className="flex shrink-0 flex-col items-center justify-between gap-5 self-stretch text-center lg:items-end lg:text-right">
+					<p className="text-primary font-serif text-2xl italic">"Explore distant worlds."</p>
 					<a
 						href="https://oscargabriel.dev"
 						target="_blank"

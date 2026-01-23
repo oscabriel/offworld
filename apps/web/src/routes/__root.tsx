@@ -60,7 +60,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				name: "description",
-				content: "Explore distant code.",
+				content: "One command. Every dependency. Every agent.",
 			},
 			// OpenGraph meta tags
 			{
@@ -69,7 +69,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				property: "og:description",
-				content: "Explore distant code.",
+				content: "One command. Every dependency. Every agent.",
 			},
 			{
 				property: "og:image",
@@ -94,7 +94,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				name: "twitter:description",
-				content: "Explore distant code.",
+				content: "One command. Every dependency. Every agent.",
 			},
 			{
 				name: "twitter:image",

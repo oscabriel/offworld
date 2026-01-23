@@ -19,9 +19,9 @@ export default function UserMenu() {
 		return (
 			<Link
 				to="/sign-in"
-				className="border-input bg-background ring-offset-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium whitespace-nowrap shadow-xs transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+				className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 border px-5 py-2 font-mono text-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
 			>
-				<span className="font-serif text-base font-semibold">Sign In</span>
+				Sign In
 			</Link>
 		);
 	}
@@ -31,9 +31,9 @@ export default function UserMenu() {
 	return (
 		<a
 			href="/profile"
-			className="border-input bg-background ring-offset-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium whitespace-nowrap shadow-xs transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+			className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 border px-5 font-mono text-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
 		>
-			<span className="font-serif text-base font-semibold">{firstName}</span>
+			{firstName}
 		</a>
 	);
 }

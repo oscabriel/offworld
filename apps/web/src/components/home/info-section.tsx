@@ -1,19 +1,18 @@
 export function InfoSection() {
 	return (
-		<div className="space-y-6">
+		<div className="space-y-5">
 			<h3 className="text-primary font-mono text-sm tracking-[0.3em] uppercase">
 				What is Offworld?
 			</h3>
-			<div className="text-foreground/80 space-y-4 font-serif text-lg leading-relaxed">
+			<div className="text-muted-foreground space-y-5 font-serif text-lg leading-relaxed">
 				<p>
-					When you're blocked by an open source library, you typically have to either ask for help
-					from maintainers and wait, or spend hours deciphering the project just to change a few
-					lines of code.
+					You add 40 npm packages. Your AI has never seen half of them. It hallucinates old APIs,
+					suggests deprecated patterns, or just asks you to paste the docs.
 				</p>
 				<p>
-					Offworld provides deep codebase analysis, architecture breakdowns, github issue summaries,
-					and conversational code exploration, so you can get unblocked quickly and feel empowered
-					to provide meaningful contributions to your favorite projects.
+					Offworld fixes that. Point it at a repo, it generates a skill file. Run it on your
+					project, it skills your entire dependency tree. Works with Claude Code, Cursor, OpenCode,
+					and others.
 				</p>
 			</div>
 		</div>

@@ -21,11 +21,11 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 	if (analyses.length === 0) return null;
 
 	return (
-		<div className="border-primary/10 bg-background/30 relative border-y py-16 backdrop-blur-sm">
-			<div className="container mx-auto px-4 md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+		<div className="border-primary/10 bg-background/30 relative border-y py-21 backdrop-blur-sm">
+			<div className="container mx-auto px-5 md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="mb-8 flex items-baseline justify-between">
 					<h2 className="text-muted-foreground font-mono text-sm tracking-[0.3em] uppercase">
-						Recently Indexed
+						Recently Generated
 					</h2>
 					<Link
 						to="/explore"
@@ -43,7 +43,7 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 						}}
 						className="w-full"
 					>
-						<CarouselContent className="-ml-2">
+						<CarouselContent className="-ml-2 pt-1 pb-1">
 							{analyses.slice(0, 10).map((analysis) => (
 								<CarouselItem
 									key={analysis.fullName}
@@ -53,8 +53,8 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 								</CarouselItem>
 							))}
 						</CarouselContent>
-						<CarouselPrevious className="bg-background/80 md:bg-background/90 lg:bg-background -left-12 backdrop-blur-sm" />
-						<CarouselNext className="bg-background/80 md:bg-background/90 lg:bg-background -right-12 backdrop-blur-sm" />
+						<CarouselPrevious className="bg-background/80 md:bg-background/90 lg:bg-background -left-13 backdrop-blur-sm" />
+						<CarouselNext className="bg-background/80 md:bg-background/90 lg:bg-background -right-13 backdrop-blur-sm" />
 					</Carousel>
 				</div>
 			</div>

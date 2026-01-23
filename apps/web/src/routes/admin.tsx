@@ -26,15 +26,15 @@ function AdminPage() {
 
 	return (
 		<div className="relative flex flex-1 flex-col">
-			<div className="container mx-auto max-w-7xl flex-1 px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+			<div className="container mx-auto max-w-7xl flex-1 px-5 py-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-8">
 					<h1 className="font-serif text-5xl tracking-tight">Admin</h1>
 
-					<div className="border-primary/10 flex gap-4 border-b">
+					<div className="border-primary/10 flex gap-5 border-b">
 						<button
 							type="button"
 							onClick={() => setActiveTab("analyses")}
-							className={`px-4 py-2 font-mono text-sm ${
+							className={`px-5 py-2 font-mono text-sm ${
 								activeTab === "analyses"
 									? "border-primary text-primary border-b-2"
 									: "text-muted-foreground hover:text-foreground"
@@ -45,7 +45,7 @@ function AdminPage() {
 						<button
 							type="button"
 							onClick={() => setActiveTab("users")}
-							className={`px-4 py-2 font-mono text-sm ${
+							className={`px-5 py-2 font-mono text-sm ${
 								activeTab === "users"
 									? "border-primary text-primary border-b-2"
 									: "text-muted-foreground hover:text-foreground"

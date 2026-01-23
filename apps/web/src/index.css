@@ -3,18 +3,14 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@font-face {
-	font-family: "Not Jam Third Dimension";
-	src: url("/not-jam-third-dimension.woff2") format("woff2");
-	font-weight: normal;
-	font-style: normal;
-	font-display: swap;
-}
-
 @theme {
 	--font-serif: "Sorts Mill Goudy", serif;
 	--font-mono: "Geist Mono", monospace;
-	--font-special: "Not Jam Third Dimension", "Sorts Mill Goudy", serif;
+
+	/* Fibonacci spacing tokens (extend default scale) */
+	--spacing-13: 3.25rem;
+	--spacing-21: 5.25rem;
+	--spacing-34: 8.5rem;
 }
 
 :root {
@@ -53,27 +49,7 @@
 	--font-sans: sans-serif;
 	--font-serif: "Sorts Mill Goudy", serif;
 	--font-mono: "Geist Mono", monospace;
-	--font-special: "Not Jam Third Dimension", "Sorts Mill Goudy", serif;
 	--radius: 0rem;
-	--shadow-x: 0rem;
-	--shadow-y: 0.125rem;
-	--shadow-blur: 0.5rem;
-	--shadow-spread: 0.125rem;
-	--shadow-opacity: 0.1;
-	--shadow-color: #000000;
-	--shadow-2xs: 0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.05);
-	--shadow-xs: 0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.05);
-	--shadow-sm:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.1), 0rem 1px 2px -0.875px hsl(0 0% 0% / 0.1);
-	--shadow:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.1), 0rem 1px 2px -0.875px hsl(0 0% 0% / 0.1);
-	--shadow-md:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.1), 0rem 2px 4px -0.875px hsl(0 0% 0% / 0.1);
-	--shadow-lg:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.1), 0rem 4px 6px -0.875px hsl(0 0% 0% / 0.1);
-	--shadow-xl:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.1), 0rem 8px 10px -0.875px hsl(0 0% 0% / 0.1);
-	--shadow-2xl: 0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.25);
 	--tracking-normal: 0em;
 	--spacing: 0.25rem;
 }
@@ -114,27 +90,7 @@
 	--font-sans: sans-serif;
 	--font-serif: "Sorts Mill Goudy", serif;
 	--font-mono: "Geist Mono", monospace;
-	--font-special: "Not Jam Third Dimension", "Sorts Mill Goudy", serif;
 	--radius: 0rem;
-	--shadow-x: 0rem;
-	--shadow-y: 0.125rem;
-	--shadow-blur: 0.5rem;
-	--shadow-spread: 0.125rem;
-	--shadow-opacity: 0.25;
-	--shadow-color: #000000;
-	--shadow-2xs: 0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.13);
-	--shadow-xs: 0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.13);
-	--shadow-sm:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.25), 0rem 1px 2px -0.875px hsl(0 0% 0% / 0.25);
-	--shadow:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.25), 0rem 1px 2px -0.875px hsl(0 0% 0% / 0.25);
-	--shadow-md:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.25), 0rem 2px 4px -0.875px hsl(0 0% 0% / 0.25);
-	--shadow-lg:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.25), 0rem 4px 6px -0.875px hsl(0 0% 0% / 0.25);
-	--shadow-xl:
-		0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.25), 0rem 8px 10px -0.875px hsl(0 0% 0% / 0.25);
-	--shadow-2xl: 0rem 0.125rem 0.5rem 0.125rem hsl(0 0% 0% / 0.63);
 }
 
 @theme inline {
@@ -174,21 +130,11 @@
 	--font-sans: var(--font-sans);
 	--font-mono: var(--font-mono);
 	--font-serif: var(--font-serif);
-	--font-special: var(--font-special);
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
 	--radius-xl: calc(var(--radius) + 4px);
-
-	--shadow-2xs: var(--shadow-2xs);
-	--shadow-xs: var(--shadow-xs);
-	--shadow-sm: var(--shadow-sm);
-	--shadow: var(--shadow);
-	--shadow-md: var(--shadow-md);
-	--shadow-lg: var(--shadow-lg);
-	--shadow-xl: var(--shadow-xl);
-	--shadow-2xl: var(--shadow-2xl);
 }
 
 @layer base {
@@ -247,23 +193,23 @@
 }
 
 .prose :where(p):not(:where([class~="not-prose"] *)) {
-	@apply my-4 leading-7;
+	@apply my-5 leading-7;
 }
 
 .prose :where(h1):not(:where([class~="not-prose"] *)) {
-	@apply mt-6 mb-4 text-2xl font-bold tracking-tight;
+	@apply mt-8 mb-5 text-2xl font-bold tracking-tight;
 }
 
 .prose :where(h2):not(:where([class~="not-prose"] *)) {
-	@apply mt-5 mb-3 text-xl font-semibold tracking-tight;
+	@apply mt-8 mb-3 text-xl font-semibold tracking-tight;
 }
 
 .prose :where(h3):not(:where([class~="not-prose"] *)) {
-	@apply mt-4 mb-2 text-lg font-semibold;
+	@apply mt-5 mb-2 text-lg font-semibold;
 }
 
 .prose :where(ul, ol):not(:where([class~="not-prose"] *)) {
-	@apply my-4 list-inside space-y-2;
+	@apply my-5 list-inside space-y-2;
 }
 
 .prose :where(ul):not(:where([class~="not-prose"] *)) {
@@ -287,11 +233,11 @@
 }
 
 .prose :where(code):not(:where([class~="not-prose"] *)) {
-	@apply bg-muted rounded px-1.5 py-0.5 font-mono text-sm;
+	@apply bg-muted px-1.5 py-0.5 font-mono text-sm;
 }
 
 .prose :where(pre):not(:where([class~="not-prose"] *)) {
-	@apply bg-muted my-4 overflow-x-auto rounded-lg p-4;
+	@apply bg-muted my-5 overflow-x-auto p-5;
 }
 
 .prose :where(pre code):not(:where([class~="not-prose"] *)) {
@@ -299,7 +245,7 @@
 }
 
 .prose :where(blockquote):not(:where([class~="not-prose"] *)) {
-	@apply border-primary/30 text-muted-foreground my-4 border-l-4 pl-4 italic;
+	@apply border-primary/30 text-muted-foreground my-5 border-l-4 pl-5 italic;
 }
 
 .prose :where(a):not(:where([class~="not-prose"] *)) {

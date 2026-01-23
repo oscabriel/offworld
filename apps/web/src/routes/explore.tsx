@@ -21,10 +21,10 @@ function ExploreComponent() {
 
 	return (
 		<div className="relative flex flex-1 flex-col">
-			<div className="container mx-auto max-w-7xl flex-1 px-4 py-24 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-				<div className="space-y-14">
-					<div className="space-y-6">
-						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Explore Repositories</h1>
+			<div className="container mx-auto max-w-7xl flex-1 px-5 py-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+				<div className="space-y-13">
+					<div className="space-y-5">
+						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Browse Skills</h1>
 					</div>
 
 					<div>
@@ -33,18 +33,18 @@ function ExploreComponent() {
 							buttonText="Search"
 							onError={setError}
 						/>
-						{error && <p className="mt-2 font-mono text-sm text-red-500">{error}</p>}
+						{error && <p className="text-destructive mt-2 font-mono text-sm">{error}</p>}
 					</div>
 
 					<div className="space-y-8">
 						{!analyses || analyses.length === 0 ? (
-							<Card className="border-primary/10 rounded-none p-12 text-center shadow-none">
+							<Card className="border-primary/10 p-13 text-center">
 								<p className="text-muted-foreground font-serif text-lg">
-									No repositories have been analyzed yet. Be the first!
+									No skills have been generated yet. Be the first!
 								</p>
 							</Card>
 						) : (
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+							<div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 								{analyses.map((analysis) => (
 									<RepoCard
 										key={analysis.fullName}

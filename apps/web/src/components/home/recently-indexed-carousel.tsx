@@ -21,15 +21,15 @@ export function RecentlyIndexedCarousel({ analyses }: RecentlyIndexedCarouselPro
 	if (analyses.length === 0) return null;
 
 	return (
-		<div className="border-primary/10 bg-background/30 relative border-y py-21 backdrop-blur-sm">
+		<div className="border-primary/10 bg-background/30 relative border-y py-13 backdrop-blur-sm">
 			<div className="container mx-auto px-5 md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="mb-8 flex items-baseline justify-between">
-					<h2 className="text-muted-foreground font-mono text-sm tracking-[0.3em] uppercase">
-						Recently Generated
+					<h2 className="text-primary font-serif text-2xl tracking-tight md:text-3xl">
+						Recently Pushed
 					</h2>
 					<Link
 						to="/explore"
-						className="text-primary font-mono text-xs tracking-wider uppercase hover:underline"
+						className="text-primary font-mono text-sm tracking-wider uppercase hover:underline"
 					>
 						View All →
 					</Link>

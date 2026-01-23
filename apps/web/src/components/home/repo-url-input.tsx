@@ -84,13 +84,13 @@ export function RepoUrlInput({
 					}}
 					onKeyDown={handleKeyDown}
 					placeholder={placeholder}
-					className="border-primary/20 bg-background/50 text-foreground focus-visible:border-primary focus-visible:bg-background h-auto flex-1 border-2 px-5 py-3 font-mono text-base backdrop-blur-sm transition-all duration-300 focus-visible:ring-0 sm:px-5 sm:py-3 sm:text-base"
+					className="border-primary/20 bg-background/50 text-foreground focus-visible:border-primary focus-visible:bg-background h-auto flex-1 border-2 px-5 py-4 font-mono !text-lg backdrop-blur-sm transition-all duration-300 focus-visible:ring-0 sm:px-5 sm:py-4 md:!text-lg"
 				/>
 				<Button
 					onClick={handleAnalyze}
 					disabled={!repoUrl}
 					size="lg"
-					className="border-primary bg-primary text-primary-foreground hover:bg-background hover:text-primary h-auto border-2 px-8 py-3 font-mono text-base transition-all duration-300 disabled:cursor-not-allowed sm:px-8 sm:py-3 sm:text-base"
+					className="border-primary bg-primary text-primary-foreground hover:bg-background hover:text-primary h-auto border-2 px-8 py-4 font-mono text-lg transition-all duration-300 disabled:cursor-not-allowed sm:px-8 sm:py-4 sm:text-lg"
 				>
 					{buttonText}
 				</Button>

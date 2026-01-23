@@ -1,7 +1,7 @@
 import { DownloadIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/repo/status-badge";
 
 interface RepoCardProps {
 	fullName: string;
@@ -27,12 +27,7 @@ export function RepoCard({ fullName, pullCount }: RepoCardProps) {
 						<CardTitle className="group-hover:text-primary font-serif text-xl font-semibold">
 							{fullName}
 						</CardTitle>
-						<Badge
-							variant="secondary"
-							className="shrink-0 border-0 bg-green-500/10 font-mono text-xs text-green-600"
-						>
-							Skill Available
-						</Badge>
+						<StatusBadge status="indexed" variant="compact" />
 					</div>
 				</CardHeader>
 

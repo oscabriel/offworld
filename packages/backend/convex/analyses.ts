@@ -201,3 +201,22 @@ export const push = mutation({
 		return { success: true } as const;
 	},
 });
+
+/**
+ * Record a pull event - increments pullCount for display on repo pages
+ */
+export const recordPull = mutation({
+	args: { fullName: v.string() },
+	handler: async (ctx, args) => {
+		const analysis = await ctx.db
+			.query("analyses")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (analysis) {
+			await ctx.db.patch(analysis._id, {
+				pullCount: analysis.pullCount + 1,
+			});
+		}
+	},
+});

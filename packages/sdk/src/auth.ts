@@ -238,20 +238,29 @@ export async function isLoggedIn(): Promise<boolean> {
 // Status Functions
 // ============================================================================
 
-/**
- * Gets the current authentication status
- */
-export function getAuthStatus(): AuthStatus {
+export async function getAuthStatus(): Promise<AuthStatus> {
 	const data = loadAuthData();
 
 	if (!data) {
 		return { isLoggedIn: false };
 	}
 
-	// Check if expired
 	if (data.expiresAt) {
 		const expiresAt = new Date(data.expiresAt);
 		if (expiresAt <= new Date()) {
+			if (data.refreshToken) {
+				try {
+					const refreshed = await refreshAccessToken();
+					return {
+						isLoggedIn: true,
+						email: refreshed.email,
+						workosId: refreshed.workosId,
+						expiresAt: refreshed.expiresAt,
+					};
+				} catch {
+					return { isLoggedIn: false };
+				}
+			}
 			return { isLoggedIn: false };
 		}
 	}

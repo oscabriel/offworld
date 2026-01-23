@@ -34,9 +34,7 @@ export const Route = createFileRoute("/_github/$owner")({
 function OwnerPage() {
 	const { owner } = Route.useParams();
 
-	const { data: allAnalyses } = useQuery(
-		convexQuery(api.analyses.list, { limit: 200 }),
-	);
+	const { data: allAnalyses } = useQuery(convexQuery(api.analyses.list, { limit: 200 }));
 
 	const indexedRepoNames = new Set(
 		allAnalyses
@@ -91,10 +89,10 @@ function OwnerPage() {
 		return (
 			<div className="container mx-auto max-w-7xl px-5 pb-13 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="flex items-start gap-8">
-					<div className="size-21 shrink-0 animate-pulse border border-primary/10 bg-muted" />
+					<div className="border-primary/10 bg-muted size-21 shrink-0 animate-pulse border" />
 					<div className="space-y-3">
-						<div className="h-13 w-48 animate-pulse bg-muted" />
-						<div className="h-5 w-64 animate-pulse bg-muted" />
+						<div className="bg-muted h-13 w-48 animate-pulse" />
+						<div className="bg-muted h-5 w-64 animate-pulse" />
 					</div>
 				</div>
 			</div>
@@ -104,8 +102,8 @@ function OwnerPage() {
 	if (error || !ownerInfo) {
 		return (
 			<div className="container mx-auto max-w-7xl px-5 pb-13 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-				<div className="border border-destructive/20 bg-destructive/5 p-8">
-					<h1 className="font-serif text-2xl text-destructive">Error</h1>
+				<div className="border-destructive/20 bg-destructive/5 border p-8">
+					<h1 className="text-destructive font-serif text-2xl">Error</h1>
 					<p className="text-muted-foreground mt-2 font-mono">{error ?? "Owner not found"}</p>
 				</div>
 			</div>
@@ -119,7 +117,7 @@ function OwnerPage() {
 					<img
 						src={ownerInfo.avatarUrl}
 						alt={ownerInfo.name}
-						className="size-21 shrink-0 border border-primary/10"
+						className="border-primary/10 size-21 shrink-0 border"
 					/>
 					<div className="space-y-2">
 						<h1 className="font-serif text-5xl tracking-tight">{ownerInfo.name}</h1>
@@ -154,11 +152,11 @@ function OwnerPage() {
 										key={repo.fullName}
 										to="/$owner/$repo"
 										params={{ owner: repo.owner, repo: repo.name }}
-										className="group flex min-h-34 flex-col justify-between border border-primary/10 bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30"
+										className="group border-primary/10 bg-card hover:border-primary/30 flex min-h-34 flex-col justify-between border p-5 transition-all duration-200 hover:-translate-y-0.5"
 									>
 										<div className="space-y-2">
 											<div className="flex items-start justify-between gap-3">
-												<h3 className="font-mono font-semibold group-hover:text-primary">
+												<h3 className="group-hover:text-primary font-mono font-semibold">
 													{repo.name}
 												</h3>
 												{isIndexed && <StatusBadge status="indexed" variant="compact" />}

@@ -20,36 +20,32 @@ export function OwnerHeader({ ownerInfo }: OwnerHeaderProps) {
 			<img
 				src={ownerInfo.avatarUrl}
 				alt={ownerInfo.name}
-				className="h-32 w-32 border-2 border-primary/20"
+				className="border-primary/20 h-32 w-32 border-2"
 			/>
 			<div className="flex-1 space-y-3">
 				<h1 className="font-serif text-5xl tracking-tight">{ownerInfo.name}</h1>
 				<div className="flex flex-wrap items-center gap-4">
-					<span className="font-mono text-muted-foreground text-sm">
-						@{ownerInfo.login}
-					</span>
-					<span className="font-mono text-muted-foreground text-sm capitalize">
+					<span className="text-muted-foreground font-mono text-sm">@{ownerInfo.login}</span>
+					<span className="text-muted-foreground font-mono text-sm capitalize">
 						{ownerInfo.type}
 					</span>
-					<span className="font-mono text-muted-foreground text-sm">
+					<span className="text-muted-foreground font-mono text-sm">
 						{ownerInfo.publicRepos} public repos
 					</span>
 					{ownerInfo.followers !== undefined && (
-						<span className="font-mono text-muted-foreground text-sm">
+						<span className="text-muted-foreground font-mono text-sm">
 							{ownerInfo.followers.toLocaleString()} followers
 						</span>
 					)}
 				</div>
 				{ownerInfo.bio && (
-					<p className="max-w-2xl font-serif text-lg text-muted-foreground">
-						{ownerInfo.bio}
-					</p>
+					<p className="text-muted-foreground max-w-2xl font-serif text-lg">{ownerInfo.bio}</p>
 				)}
 				<a
 					href={ownerInfo.htmlUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-block font-mono text-primary underline hover:no-underline"
+					className="text-primary inline-block font-mono underline hover:no-underline"
 				>
 					View on GitHub →
 				</a>

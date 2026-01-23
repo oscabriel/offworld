@@ -12,10 +12,7 @@ export function HeroSection() {
 	}, []);
 
 	return (
-		<div
-			ref={heroRef}
-			className="relative flex flex-col items-center justify-center px-5 pb-13"
-		>
+		<div ref={heroRef} className="relative flex flex-col items-center justify-center px-5 pb-13">
 			<div
 				className={`mx-auto flex w-full max-w-4xl flex-col items-center transition-all duration-1000 ${
 					isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"

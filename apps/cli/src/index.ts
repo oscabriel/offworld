@@ -28,8 +28,8 @@ export const router = os.router({
 			z.object({
 				repo: z
 					.string()
-					.describe("Repository (owner/repo, URL, or local path)")
-					.meta({ alias: "r" }),
+					.describe("repo")
+					.meta({ positional: true }),
 				shallow: z
 					.boolean()
 					.default(true)
@@ -93,8 +93,8 @@ export const router = os.router({
 			z.object({
 				repo: z
 					.string()
-					.describe("Repository (owner/repo, URL, or local path)")
-					.meta({ alias: "r" }),
+					.describe("repo")
+					.meta({ positional: true }),
 				force: z
 					.boolean()
 					.default(false)
@@ -122,7 +122,7 @@ export const router = os.router({
 	push: os
 		.input(
 			z.object({
-				repo: z.string().describe("Repository (owner/repo)").meta({ alias: "r" }),
+				repo: z.string().describe("repo").meta({ positional: true }),
 			}),
 		)
 		.meta({
@@ -137,7 +137,7 @@ export const router = os.router({
 	remove: os
 		.input(
 			z.object({
-				repo: z.string().describe("Repository to remove").meta({ alias: "r" }),
+				repo: z.string().describe("repo").meta({ positional: true }),
 				yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
 				skillOnly: z.boolean().default(false).describe("Only remove skill files (keep repo)"),
 				repoOnly: z.boolean().default(false).describe("Only remove cloned repo (keep skill)"),

@@ -311,7 +311,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				const authData = loadAuthData();
 				if (authData?.token) {
 					p.log.info(
-						`Run 'ow push --repo ${source.fullName}' to share this skill to https://offworld.sh.`,
+						`Run 'ow push ${source.fullName}' to share this skill to https://offworld.sh.`,
 					);
 				}
 			}

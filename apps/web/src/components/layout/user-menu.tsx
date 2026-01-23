@@ -19,7 +19,7 @@ export default function UserMenu() {
 		return (
 			<Link
 				to="/sign-in"
-				className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 items-center justify-center gap-2 border px-5 py-2 font-mono text-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+				className="bg-primary text-background hover:bg-primary/90 focus-visible:ring-ring inline-flex h-10 items-center justify-center gap-2 px-5 py-2 font-mono text-base transition-colors focus-visible:ring-1 focus-visible:outline-none"
 			>
 				Sign In
 			</Link>

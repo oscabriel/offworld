@@ -26,7 +26,10 @@ export const router = os.router({
 	pull: os
 		.input(
 			z.object({
-				repo: z.string().describe("Repository (owner/repo, URL, or local path)"),
+				repo: z
+					.string()
+					.describe("Repository (owner/repo, URL, or local path)")
+					.meta({ alias: "r" }),
 				shallow: z
 					.boolean()
 					.default(true)
@@ -37,26 +40,27 @@ export const router = os.router({
 					.default(false)
 					.describe("Use sparse checkout (only src/, lib/, packages/, docs/)"),
 				branch: z.string().optional().describe("Branch to clone"),
-				force: z.boolean().default(false).describe("Force re-analysis"),
-				verbose: z.boolean().default(false).describe("Show detailed output").meta({ alias: "v" }),
-				provider: z.string().optional().describe("AI provider (e.g., anthropic, openai)"),
-				model: z.string().optional().describe("AI model override"),
+				force: z.boolean().default(false).describe("Force re-analysis").meta({ alias: "f" }),
+				verbose: z.boolean().default(false).describe("Show detailed output"),
+				model: z
+					.string()
+					.optional()
+					.describe("Model override (provider/model)")
+					.meta({ alias: "m" }),
 			}),
 		)
 		.meta({
 			description: "Clone a repository and fetch or generate its analysis",
-			default: true,
 			negateBooleans: true,
 		})
 		.handler(async ({ input }) => {
-			return pullHandler({
+			await pullHandler({
 				repo: input.repo,
 				shallow: input.shallow,
 				sparse: input.sparse,
 				branch: input.branch,
 				force: input.force,
 				verbose: input.verbose,
-				provider: input.provider,
 				model: input.model,
 			});
 		}),
@@ -74,20 +78,33 @@ export const router = os.router({
 			aliases: { command: ["ls"] },
 		})
 		.handler(async ({ input }) => {
-			return listHandler({
+			const result = await listHandler({
 				json: input.json,
 				paths: input.paths,
 				stale: input.stale,
 			});
+			if (input.json) {
+				console.log(JSON.stringify(result.repos, null, 2));
+			}
 		}),
 
 	generate: os
 		.input(
 			z.object({
-				repo: z.string().describe("Repository (owner/repo, URL, or local path)"),
-				force: z.boolean().default(false).describe("Force even if remote exists"),
-				provider: z.string().optional().describe("AI provider (e.g., anthropic, openai)"),
-				model: z.string().optional().describe("AI model override"),
+				repo: z
+					.string()
+					.describe("Repository (owner/repo, URL, or local path)")
+					.meta({ alias: "r" }),
+				force: z
+					.boolean()
+					.default(false)
+					.describe("Force even if remote exists")
+					.meta({ alias: "f" }),
+				model: z
+					.string()
+					.optional()
+					.describe("Model override (provider/model)")
+					.meta({ alias: "m" }),
 			}),
 		)
 		.meta({
@@ -95,10 +112,9 @@ export const router = os.router({
 			aliases: { command: ["gen"] },
 		})
 		.handler(async ({ input }) => {
-			return generateHandler({
+			await generateHandler({
 				repo: input.repo,
 				force: input.force,
-				provider: input.provider,
 				model: input.model,
 			});
 		}),
@@ -106,14 +122,14 @@ export const router = os.router({
 	push: os
 		.input(
 			z.object({
-				repo: z.string().describe("Repository (owner/repo)"),
+				repo: z.string().describe("Repository (owner/repo)").meta({ alias: "r" }),
 			}),
 		)
 		.meta({
 			description: "Push local analysis to offworld.sh",
 		})
 		.handler(async ({ input }) => {
-			return pushHandler({
+			await pushHandler({
 				repo: input.repo,
 			});
 		}),
@@ -121,11 +137,11 @@ export const router = os.router({
 	remove: os
 		.input(
 			z.object({
-				repo: z.string().describe("Repository to remove"),
+				repo: z.string().describe("Repository to remove").meta({ alias: "r" }),
 				yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
 				skillOnly: z.boolean().default(false).describe("Only remove skill files (keep repo)"),
 				repoOnly: z.boolean().default(false).describe("Only remove cloned repo (keep skill)"),
-				dryRun: z.boolean().default(false).describe("Show what would be done"),
+				dryRun: z.boolean().default(false).describe("Show what would be done").meta({ alias: "d" }),
 			}),
 		)
 		.meta({
@@ -133,7 +149,7 @@ export const router = os.router({
 			aliases: { command: ["rm"] },
 		})
 		.handler(async ({ input }) => {
-			return rmHandler({
+			await rmHandler({
 				repo: input.repo,
 				yes: input.yes,
 				skillOnly: input.skillOnly,
@@ -147,21 +163,21 @@ export const router = os.router({
 			.input(z.object({}))
 			.meta({ description: "Login to offworld.sh" })
 			.handler(async () => {
-				return authLoginHandler();
+				await authLoginHandler();
 			}),
 
 		logout: os
 			.input(z.object({}))
 			.meta({ description: "Logout from offworld.sh" })
 			.handler(async () => {
-				return authLogoutHandler();
+				await authLogoutHandler();
 			}),
 
 		status: os
 			.input(z.object({}))
 			.meta({ description: "Show authentication status" })
 			.handler(async () => {
-				return authStatusHandler();
+				await authStatusHandler();
 			}),
 	}),
 
@@ -174,51 +190,63 @@ export const router = os.router({
 			)
 			.meta({ description: "Show all config settings", default: true })
 			.handler(async ({ input }) => {
-				return configShowHandler({ json: input.json });
+				await configShowHandler({ json: input.json });
 			}),
 
 		set: os
 			.input(
 				z.object({
-					key: z.string().describe("Config key"),
-					value: z.string().describe("Config value"),
+					key: z.string().describe("key").meta({ positional: true }),
+					value: z.string().describe("value").meta({ positional: true }),
 				}),
 			)
-			.meta({ description: "Set a config value" })
+			.meta({
+				description: `Set a config value
+
+Valid keys:
+  repoRoot        (string)  Where to clone repos (e.g., ~/ow)
+  defaultShallow  (boolean) Use shallow clone by default (true/false)
+  defaultModel    (string)  AI provider/model (e.g., anthropic/claude-sonnet-4-20250514)
+  agents          (list)    Comma-separated agents (e.g., opencode,claude-code)`,
+			})
 			.handler(async ({ input }) => {
-				return configSetHandler({ key: input.key, value: input.value });
+				await configSetHandler({ key: input.key, value: input.value });
 			}),
 
 		get: os
 			.input(
 				z.object({
-					key: z.string().describe("Config key"),
+					key: z.string().describe("key").meta({ positional: true }),
 				}),
 			)
-			.meta({ description: "Get a config value" })
+			.meta({
+				description: `Get a config value
+
+Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
+			})
 			.handler(async ({ input }) => {
-				return configGetHandler({ key: input.key });
+				await configGetHandler({ key: input.key });
 			}),
 
 		reset: os
 			.input(z.object({}))
 			.meta({ description: "Reset config to defaults" })
 			.handler(async () => {
-				return configResetHandler();
+				await configResetHandler();
 			}),
 
 		path: os
 			.input(z.object({}))
 			.meta({ description: "Show config file location" })
 			.handler(async () => {
-				return configPathHandler();
+				await configPathHandler();
 			}),
 
 		agents: os
 			.input(z.object({}))
 			.meta({ description: "Interactively select agents for skill installation" })
 			.handler(async () => {
-				return configAgentsHandler();
+				await configAgentsHandler();
 			}),
 	}),
 
@@ -226,24 +254,25 @@ export const router = os.router({
 		.input(
 			z.object({
 				yes: z.boolean().default(false).describe("Skip confirmation prompts").meta({ alias: "y" }),
-				force: z.boolean().default(false).describe("Reconfigure even if config exists"),
+				force: z
+					.boolean()
+					.default(false)
+					.describe("Reconfigure even if config exists")
+					.meta({ alias: "f" }),
 				model: z
 					.string()
 					.optional()
-					.describe("AI provider and model (e.g., opencode/claude-sonnet-4-5)"),
-				repoRoot: z
-					.string()
-					.optional()
-					.describe("Where to clone repos")
-					.meta({ alias: "repo-root" }),
-				agents: z.string().optional().describe("Comma-separated agents"),
+					.describe("AI provider/model (e.g., anthropic/claude-sonnet-4-20250514)")
+					.meta({ alias: "m" }),
+				repoRoot: z.string().optional().describe("Where to clone repos"),
+				agents: z.string().optional().describe("Comma-separated agents").meta({ alias: "a" }),
 			}),
 		)
 		.meta({
 			description: "Initialize configuration with interactive setup",
 		})
 		.handler(async ({ input }) => {
-			return initHandler({
+			await initHandler({
 				yes: input.yes,
 				force: input.force,
 				model: input.model,
@@ -262,12 +291,13 @@ export const router = os.router({
 					generate: z
 						.boolean()
 						.default(false)
-						.describe("Generate skills for deps without existing ones"),
+						.describe("Generate skills for deps without existing ones")
+						.meta({ alias: "g" }),
 					dryRun: z
 						.boolean()
 						.default(false)
 						.describe("Show what would be done without doing it")
-						.meta({ alias: "dry-run" }),
+						.meta({ alias: "d" }),
 					yes: z.boolean().default(false).describe("Skip confirmations").meta({ alias: "y" }),
 				}),
 			)
@@ -276,7 +306,7 @@ export const router = os.router({
 				default: true,
 			})
 			.handler(async ({ input }) => {
-				return projectInitHandler({
+				await projectInitHandler({
 					all: input.all,
 					deps: input.deps,
 					skip: input.skip,
@@ -288,8 +318,42 @@ export const router = os.router({
 	}),
 });
 
+const stripSecondaryDescription = (help: string) =>
+	help
+		.split("\n")
+		.filter((line) => !line.startsWith("Available subcommands:"))
+		.join("\n");
+
+const stripDefaultCommandHelp = (help: string) => {
+	const firstUsageIndex = help.indexOf("Usage:");
+	if (firstUsageIndex === -1) return help.trimEnd();
+	const secondUsageIndex = help.indexOf("Usage:", firstUsageIndex + 1);
+	if (secondUsageIndex === -1) return help.trimEnd();
+	return help.slice(0, secondUsageIndex).trimEnd();
+};
+
+const normalizeRootHelp = (help: string) =>
+	stripDefaultCommandHelp(stripSecondaryDescription(help));
+
 export function createOwCli() {
-	return createCli({
+	const cli = createCli({
 		router: router as any,
+		description: "Offworld CLI - Repository analysis and skill generation for AI coding agents",
 	} as any);
+
+	const buildProgram: typeof cli.buildProgram = (runParams) => {
+		const program = cli.buildProgram(runParams);
+		const originalHelpInformation = program.helpInformation.bind(program);
+		program.helpInformation = () => normalizeRootHelp(originalHelpInformation());
+		return program;
+	};
+
+	const run: typeof cli.run = (runParams, program) =>
+		cli.run(runParams, program ?? buildProgram(runParams));
+
+	return {
+		...cli,
+		buildProgram,
+		run,
+	};
 }

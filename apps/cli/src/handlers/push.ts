@@ -243,7 +243,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			if (result.success) {
 				s.stop("Analysis uploaded!");
 				p.log.success(`Successfully pushed analysis for ${source.fullName}`);
-				p.log.info(`View at: https://offworld.sh/repo/${source.owner}/${source.repo}`);
+				p.log.info(`View at: https://offworld.sh/${source.owner}/${source.repo}`);
 				return {
 					success: true,
 					message: "Analysis pushed successfully",

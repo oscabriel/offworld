@@ -150,10 +150,62 @@ async function getOpenCodeSDK(): Promise<{
 	}
 }
 
-/**
- * Stream a prompt to OpenCode and return raw text response.
- * No JSON parsing - just returns whatever the AI produces.
- */
+interface ToolRunningState {
+	status: "running";
+	title?: string;
+	input?: unknown;
+}
+
+function formatToolMessage(tool: string | undefined, state: ToolRunningState): string | null {
+	if (state.title) {
+		return state.title;
+	}
+
+	if (!tool) {
+		return null;
+	}
+
+	const input = state.input as Record<string, unknown> | undefined;
+	if (!input) {
+		return `Running ${tool}...`;
+	}
+
+	switch (tool) {
+		case "read": {
+			const path = input.filePath ?? input.path;
+			if (typeof path === "string") {
+				const filename = path.split("/").pop();
+				return `Reading ${filename}...`;
+			}
+			return "Reading file...";
+		}
+		case "glob": {
+			const pattern = input.pattern;
+			if (typeof pattern === "string") {
+				return `Globbing ${pattern}...`;
+			}
+			return "Searching files...";
+		}
+		case "grep": {
+			const pattern = input.pattern;
+			if (typeof pattern === "string") {
+				const truncated = pattern.length > 30 ? `${pattern.slice(0, 30)}...` : pattern;
+				return `Searching for "${truncated}"...`;
+			}
+			return "Searching content...";
+		}
+		case "list": {
+			const path = input.path;
+			if (typeof path === "string") {
+				return `Listing ${path}...`;
+			}
+			return "Listing directory...";
+		}
+		default:
+			return `Running ${tool}...`;
+	}
+}
+
 export async function streamPrompt(options: StreamPromptOptions): Promise<StreamPromptResult> {
 	const {
 		prompt,
@@ -320,8 +372,8 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			},
 		});
 
-		const textAccumulator = new TextAccumulator();
-		debug("Waiting for response...");
+	const textAccumulator = new TextAccumulator();
+	debug("Waiting for response...");
 
 		let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -335,10 +387,19 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 
 				switch (parsed.type) {
 					case "message.part.updated": {
+						if (parsed.toolPart?.state) {
+							const { state, tool } = parsed.toolPart;
+							if (state.status === "running") {
+								const message = formatToolMessage(tool, state);
+								if (message) {
+									debug(message);
+								}
+							}
+						}
 						if (parsed.textPart) {
 							const delta = textAccumulator.accumulatePart(parsed.textPart);
 							if (!textAccumulator.hasReceivedText) {
-								debug("Receiving response...");
+								debug("Writing skill...");
 							}
 							if (delta) {
 								stream(delta);

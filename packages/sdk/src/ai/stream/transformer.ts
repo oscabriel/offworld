@@ -9,6 +9,7 @@ import {
 	SessionErrorPropsSchema,
 	SessionErrorSchema,
 	type TextPart,
+	type ToolPart,
 	type SessionErrorPayload,
 	type MessagePartUpdatedProps,
 	type SessionIdleProps,
@@ -27,7 +28,7 @@ export interface RawStreamEvent {
  * Result of parsing a stream event
  */
 export type ParsedEventResult =
-	| { type: "message.part.updated"; props: MessagePartUpdatedProps; textPart: TextPart | null }
+	| { type: "message.part.updated"; props: MessagePartUpdatedProps; textPart: TextPart | null; toolPart: ToolPart | null }
 	| { type: "session.idle"; props: SessionIdleProps }
 	| { type: "session.error"; props: SessionErrorProps; error: SessionErrorPayload | null }
 	| { type: "unknown"; rawType: string };
@@ -45,7 +46,8 @@ export function parseStreamEvent(event: RawStreamEvent): ParsedEventResult {
 			}
 			const props = propsResult.data;
 			const textPart = props.part.type === "text" ? props.part : null;
-			return { type: "message.part.updated", props, textPart };
+			const toolPart = props.part.type === "tool" ? props.part : null;
+			return { type: "message.part.updated", props, textPart, toolPart };
 		}
 
 		case "session.idle": {

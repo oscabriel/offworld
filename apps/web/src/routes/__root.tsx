@@ -232,7 +232,7 @@ function RootDocument({ token }: { token: string | null }) {
 				<BackgroundImage />
 				<div className="relative z-10 flex flex-1 flex-col">
 					<Header />
-					<main className="flex flex-1 flex-col">
+					<main className="flex flex-1 flex-col pt-34">
 						<Outlet />
 					</main>
 					<Footer />

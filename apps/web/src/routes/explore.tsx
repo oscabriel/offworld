@@ -21,7 +21,7 @@ function ExploreComponent() {
 
 	return (
 		<div className="relative flex flex-1 flex-col">
-			<div className="container mx-auto max-w-7xl flex-1 px-5 py-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+			<div className="container mx-auto max-w-7xl flex-1 px-5 pb-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-13">
 					<div className="space-y-5">
 						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Browse Skills</h1>
@@ -29,7 +29,7 @@ function ExploreComponent() {
 
 					<div>
 						<RepoUrlInput
-							labelText="Search for a repository"
+							labelText="Search for any public repo"
 							buttonText="Search"
 							onError={setError}
 						/>

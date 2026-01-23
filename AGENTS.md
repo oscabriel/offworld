@@ -1,53 +1,76 @@
 ## OVERVIEW
 
-Turborepo monorepo: React web app (TanStack Start + Convex + Better Auth), TUI app, Astro docs. Cloudflare deployment via Alchemy.
+**Offworld** — AI skill generator for coding agents. Scans dependencies, generates skills via AI, distributes to 6+ agents.
 
-Production code. Must be maintainable.
-
-This codebase will outlive you. Every shortcut you take becomes
-someone else's burden. Every hack compounds into technical debt
-that slows the whole team down.
-
-You are not just writing code. You are shaping the future of this
-project. The patterns you establish will be copied. The corners
-you cut will be cut again.
-
-Fight entropy. Leave the codebase better than you found it.
+Turborepo monorepo: CLI (`ow`), web app (offworld.sh), docs, TUI.
 
 ## STRUCTURE
 
 ```
 offworld/
 ├── apps/
-│   ├── web/         # React + TanStack Start + Vite (main app)
+│   ├── cli/         # CLI (offworld / ow command)
+│   ├── web/         # Web app - TanStack Start + Convex + WorkOS
 │   ├── docs/        # Astro Starlight documentation
 │   └── tui/         # OpenTUI terminal app
 ├── packages/
-│   ├── backend/     # Convex functions + schema + auth
-│   ├── config/      # Shared tsconfig
-│   ├── env/         # T3 env validation (server + web)
-│   └── infra/       # Alchemy Cloudflare deployment
+│   ├── sdk/         # Core logic (clone, generate, sync, agents)
+│   ├── types/       # Zod schemas + TypeScript types
+│   ├── backend/     # Convex functions + schema
+│   └── config/      # Shared tsconfig
 ```
 
 ## WHERE TO LOOK
 
-| Task             | Location                          | Notes                              |
-| ---------------- | --------------------------------- | ---------------------------------- |
-| Add route        | `apps/web/src/routes/`            | TanStack Router file-based routing |
-| Add API endpoint | `packages/backend/convex/`        | Convex query/mutation              |
-| Add UI component | `apps/web/src/components/`        | shadcn/ui + Tailwind               |
-| Add shared UI    | `apps/web/src/components/ui/`     | shadcn primitives                  |
-| Auth config      | `packages/backend/convex/auth.ts` | Better Auth + Convex               |
-| Env vars         | `packages/env/src/`               | server.ts or web.ts                |
-| Deploy config    | `packages/infra/alchemy.run.ts`   | Cloudflare Workers                 |
+| Task | Location | Notes |
+|------|----------|-------|
+| Add CLI command | `apps/cli/src/handlers/` | Handler + route in `index.ts` |
+| Add SDK function | `packages/sdk/src/` | Export from `index.ts` |
+| Add Zod schema | `packages/types/src/schemas.ts` | Export type from `types.ts` |
+| Add Convex function | `packages/backend/convex/` | Query/mutation/action |
+| Add web route | `apps/web/src/routes/` | TanStack Router file-based |
+| Add web component | `apps/web/src/components/` | shadcn/ui + Tailwind |
+| Add agent support | `packages/sdk/src/agents.ts` | Agent registry |
+
+## KEY FILES
+
+### CLI (`apps/cli/`)
+- `src/cli.ts` — Entry point
+- `src/index.ts` — Router definition (trpc-cli + @orpc/server)
+- `src/handlers/*.ts` — Command implementations
+
+### SDK (`packages/sdk/`)
+- `src/config.ts` — Config load/save, path utilities
+- `src/clone.ts` — Git clone/update/remove
+- `src/generate.ts` — AI skill generation
+- `src/agents.ts` — Agent registry (6 agents)
+- `src/sync.ts` — Convex client for push/pull
+- `src/auth.ts` — WorkOS token management
+- `src/repo-source.ts` — Parse repo input (URL, owner/repo, local)
+- `src/manifest.ts` — Dependency parsing (package.json, etc.)
+- `src/agents-md.ts` — AGENTS.md skill table generation
+
+### Backend (`packages/backend/convex/`)
+- `schema.ts` — Tables: analyses, pushLogs, user
+- `analyses.ts` — CRUD for skill analyses
+- `admin.ts` — Admin functions
+- `github.ts` — GitHub API queries
+
+### Web (`apps/web/`)
+- `src/routes/index.tsx` — Landing page
+- `src/routes/explore.tsx` — Browse skills
+- `src/routes/_github/$owner_.$repo/` — Repo detail page
+- `src/routes/admin.tsx` — Admin dashboard
+- `src/components/home/` — Landing page components
+- `src/components/repo/` — Repo display components
 
 ## CONVENTIONS
 
 - **Linting**: Oxlint + Oxfmt (NOT eslint/prettier)
 - **Package manager**: Bun
-- **Imports**: Path alias `@/` → `apps/web/src/`
-- **TypeScript**: Strict, no unused vars/params
-- **Env vars**: T3 env validation, VITE\_ prefix for client
+- **Imports**: `@/` → `apps/web/src/` (web only)
+- **TypeScript**: Strict mode
+- **Schemas**: Zod in `packages/types`, infer types
 
 ## COMMANDS
 
@@ -56,28 +79,73 @@ bun install              # Install deps
 bun run dev              # Start all apps
 bun run dev:web          # Web app only
 bun run dev:server       # Convex backend only
-bun run dev:setup        # Initial Convex setup
 bun run build            # Build all
+bun run build:cli        # Build CLI + link globally
 bun run check            # Oxlint + Oxfmt
 bun run typecheck        # TypeScript check
+bun run test             # Run tests
+```
+
+## CLI COMMANDS
+
+| Command | Handler | Description |
+|---------|---------|-------------|
+| `ow pull <repo>` | `pull.ts` | Clone + generate/fetch skill |
+| `ow generate <repo>` | `generate.ts` | Force local AI generation |
+| `ow push <repo>` | `push.ts` | Upload to offworld.sh |
+| `ow list` | `list.ts` | List managed repos |
+| `ow rm <repo>` | `remove.ts` | Remove repo + skill |
+| `ow init` | `init.ts` | Interactive global setup |
+| `ow project init` | `project.ts` | Scan deps, install skills |
+| `ow config *` | `config.ts` | Config management |
+| `ow auth *` | `auth.ts` | WorkOS authentication |
+
+## DATA PATHS
+
+| Purpose | Location |
+|---------|----------|
+| Config | `~/.config/offworld/config.json` |
+| Skills | `~/.local/share/offworld/skills/` |
+| Cloned repos | `~/ow/` (configurable) |
+
+## AGENTS SUPPORTED
+
+Skills are symlinked to:
+- OpenCode: `~/.config/opencode/skill/`
+- Claude Code: `~/.claude/skills/`
+- Codex: `~/.codex/skills/`
+- Amp: `~/.config/agents/skills/`
+- Antigravity: `~/.gemini/antigravity/skills/`
+- Cursor: `~/.cursor/skills/`
+
+## PACKAGE DEPENDENCIES
+
+```
+@offworld/config (tsconfig only)
+       ↓
+@offworld/types (Zod schemas)
+       ↓
+@offworld/backend (Convex) ←── @offworld/sdk
+       ↓
+    apps/cli, apps/web
 ```
 
 ## NOTES
 
-- Convex in `packages/backend/convex/` not root (monorepo pattern)
-- Web app uses Convex + TanStack Query integration via `@convex-dev/react-query`
-- Auth SSR: token fetched in `__root.tsx` beforeLoad, passed to ConvexBetterAuthProvider
-- Deploy: `cd packages/infra && bun run deploy` (uses Alchemy)
+- Convex in `packages/backend/convex/` (monorepo pattern)
+- Auth: WorkOS AuthKit (web + CLI device flow)
+- AI: OpenCode SDK for skill generation
+- Deploy: Alchemy → Cloudflare Workers
 
 ## Project Skills
 
 Skills installed for this project's dependencies:
 
-| Dependency | Skill                | Path                                                                            |
-| ---------- | -------------------- | ------------------------------------------------------------------------------- |
-| zod        | colinhacks-zod       | /Users/oscargabriel/.local/share/offworld/skills/colinhacks-zod-reference       |
-| typescript | microsoft-TypeScript | /Users/oscargabriel/.local/share/offworld/skills/microsoft-TypeScript-reference |
-| vitest     | vitest-dev-vitest    | /Users/oscargabriel/.local/share/offworld/skills/vitest-dev-vitest-reference    |
+| Dependency | Skill | Path |
+|------------|-------|------|
+| zod | colinhacks-zod | ~/.local/share/offworld/skills/colinhacks-zod-reference |
+| typescript | microsoft-TypeScript | ~/.local/share/offworld/skills/microsoft-TypeScript-reference |
+| vitest | vitest-dev-vitest | ~/.local/share/offworld/skills/vitest-dev-vitest-reference |
 
-To update skills, run: `ow pull <dependency>`
+To update skills: `ow pull <dependency>`
 To regenerate all: `ow project init --all --generate`

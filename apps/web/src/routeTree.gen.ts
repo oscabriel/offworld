@@ -8,288 +8,287 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as ExploreRouteImport } from './routes/explore'
-import { Route as CliRouteImport } from './routes/cli'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as GithubRouteRouteImport } from './routes/_github/route'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as GithubOwnerRouteImport } from './routes/_github/$owner'
-import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
-import { Route as GithubOwnerRepoRouteRouteImport } from './routes/_github/$owner_.$repo/route'
-import { Route as GithubOwnerRepoIndexRouteImport } from './routes/_github/$owner_.$repo/index'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as SignInRouteImport } from "./routes/sign-in";
+import { Route as ProfileRouteImport } from "./routes/profile";
+import { Route as ExploreRouteImport } from "./routes/explore";
+import { Route as CliRouteImport } from "./routes/cli";
+import { Route as AdminRouteImport } from "./routes/admin";
+import { Route as GithubRouteRouteImport } from "./routes/_github/route";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as GithubOwnerRouteImport } from "./routes/_github/$owner";
+import { Route as ApiAuthCallbackRouteImport } from "./routes/api/auth/callback";
+import { Route as GithubOwnerRepoRouteRouteImport } from "./routes/_github/$owner_.$repo/route";
+import { Route as GithubOwnerRepoIndexRouteImport } from "./routes/_github/$owner_.$repo/index";
 
 const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/sign-in",
+	path: "/sign-in",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/profile",
+	path: "/profile",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const ExploreRoute = ExploreRouteImport.update({
-  id: '/explore',
-  path: '/explore',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/explore",
+	path: "/explore",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const CliRoute = CliRouteImport.update({
-  id: '/cli',
-  path: '/cli',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/cli",
+	path: "/cli",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/admin",
+	path: "/admin",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const GithubRouteRoute = GithubRouteRouteImport.update({
-  id: '/_github',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/_github",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/",
+	path: "/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const GithubOwnerRoute = GithubOwnerRouteImport.update({
-  id: '/$owner',
-  path: '/$owner',
-  getParentRoute: () => GithubRouteRoute,
-} as any)
+	id: "/$owner",
+	path: "/$owner",
+	getParentRoute: () => GithubRouteRoute,
+} as any);
 const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
-  id: '/api/auth/callback',
-  path: '/api/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/api/auth/callback",
+	path: "/api/auth/callback",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const GithubOwnerRepoRouteRoute = GithubOwnerRepoRouteRouteImport.update({
-  id: '/$owner_/$repo',
-  path: '/$owner/$repo',
-  getParentRoute: () => GithubRouteRoute,
-} as any)
+	id: "/$owner_/$repo",
+	path: "/$owner/$repo",
+	getParentRoute: () => GithubRouteRoute,
+} as any);
 const GithubOwnerRepoIndexRoute = GithubOwnerRepoIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => GithubOwnerRepoRouteRoute,
-} as any)
+	id: "/",
+	path: "/",
+	getParentRoute: () => GithubOwnerRepoRouteRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/cli': typeof CliRoute
-  '/explore': typeof ExploreRoute
-  '/profile': typeof ProfileRoute
-  '/sign-in': typeof SignInRoute
-  '/$owner': typeof GithubOwnerRoute
-  '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
-  '/api/auth/callback': typeof ApiAuthCallbackRoute
-  '/$owner/$repo/': typeof GithubOwnerRepoIndexRoute
+	"/": typeof IndexRoute;
+	"/admin": typeof AdminRoute;
+	"/cli": typeof CliRoute;
+	"/explore": typeof ExploreRoute;
+	"/profile": typeof ProfileRoute;
+	"/sign-in": typeof SignInRoute;
+	"/$owner": typeof GithubOwnerRoute;
+	"/$owner/$repo": typeof GithubOwnerRepoRouteRouteWithChildren;
+	"/api/auth/callback": typeof ApiAuthCallbackRoute;
+	"/$owner/$repo/": typeof GithubOwnerRepoIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/cli': typeof CliRoute
-  '/explore': typeof ExploreRoute
-  '/profile': typeof ProfileRoute
-  '/sign-in': typeof SignInRoute
-  '/$owner': typeof GithubOwnerRoute
-  '/api/auth/callback': typeof ApiAuthCallbackRoute
-  '/$owner/$repo': typeof GithubOwnerRepoIndexRoute
+	"/": typeof IndexRoute;
+	"/admin": typeof AdminRoute;
+	"/cli": typeof CliRoute;
+	"/explore": typeof ExploreRoute;
+	"/profile": typeof ProfileRoute;
+	"/sign-in": typeof SignInRoute;
+	"/$owner": typeof GithubOwnerRoute;
+	"/api/auth/callback": typeof ApiAuthCallbackRoute;
+	"/$owner/$repo": typeof GithubOwnerRepoIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_github': typeof GithubRouteRouteWithChildren
-  '/admin': typeof AdminRoute
-  '/cli': typeof CliRoute
-  '/explore': typeof ExploreRoute
-  '/profile': typeof ProfileRoute
-  '/sign-in': typeof SignInRoute
-  '/_github/$owner': typeof GithubOwnerRoute
-  '/_github/$owner_/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
-  '/api/auth/callback': typeof ApiAuthCallbackRoute
-  '/_github/$owner_/$repo/': typeof GithubOwnerRepoIndexRoute
+	__root__: typeof rootRouteImport;
+	"/": typeof IndexRoute;
+	"/_github": typeof GithubRouteRouteWithChildren;
+	"/admin": typeof AdminRoute;
+	"/cli": typeof CliRoute;
+	"/explore": typeof ExploreRoute;
+	"/profile": typeof ProfileRoute;
+	"/sign-in": typeof SignInRoute;
+	"/_github/$owner": typeof GithubOwnerRoute;
+	"/_github/$owner_/$repo": typeof GithubOwnerRepoRouteRouteWithChildren;
+	"/api/auth/callback": typeof ApiAuthCallbackRoute;
+	"/_github/$owner_/$repo/": typeof GithubOwnerRepoIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/admin'
-    | '/cli'
-    | '/explore'
-    | '/profile'
-    | '/sign-in'
-    | '/$owner'
-    | '/$owner/$repo'
-    | '/api/auth/callback'
-    | '/$owner/$repo/'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/admin'
-    | '/cli'
-    | '/explore'
-    | '/profile'
-    | '/sign-in'
-    | '/$owner'
-    | '/api/auth/callback'
-    | '/$owner/$repo'
-  id:
-    | '__root__'
-    | '/'
-    | '/_github'
-    | '/admin'
-    | '/cli'
-    | '/explore'
-    | '/profile'
-    | '/sign-in'
-    | '/_github/$owner'
-    | '/_github/$owner_/$repo'
-    | '/api/auth/callback'
-    | '/_github/$owner_/$repo/'
-  fileRoutesById: FileRoutesById
+	fileRoutesByFullPath: FileRoutesByFullPath;
+	fullPaths:
+		| "/"
+		| "/admin"
+		| "/cli"
+		| "/explore"
+		| "/profile"
+		| "/sign-in"
+		| "/$owner"
+		| "/$owner/$repo"
+		| "/api/auth/callback"
+		| "/$owner/$repo/";
+	fileRoutesByTo: FileRoutesByTo;
+	to:
+		| "/"
+		| "/admin"
+		| "/cli"
+		| "/explore"
+		| "/profile"
+		| "/sign-in"
+		| "/$owner"
+		| "/api/auth/callback"
+		| "/$owner/$repo";
+	id:
+		| "__root__"
+		| "/"
+		| "/_github"
+		| "/admin"
+		| "/cli"
+		| "/explore"
+		| "/profile"
+		| "/sign-in"
+		| "/_github/$owner"
+		| "/_github/$owner_/$repo"
+		| "/api/auth/callback"
+		| "/_github/$owner_/$repo/";
+	fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  GithubRouteRoute: typeof GithubRouteRouteWithChildren
-  AdminRoute: typeof AdminRoute
-  CliRoute: typeof CliRoute
-  ExploreRoute: typeof ExploreRoute
-  ProfileRoute: typeof ProfileRoute
-  SignInRoute: typeof SignInRoute
-  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
+	IndexRoute: typeof IndexRoute;
+	GithubRouteRoute: typeof GithubRouteRouteWithChildren;
+	AdminRoute: typeof AdminRoute;
+	CliRoute: typeof CliRoute;
+	ExploreRoute: typeof ExploreRoute;
+	ProfileRoute: typeof ProfileRoute;
+	SignInRoute: typeof SignInRoute;
+	ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute;
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/explore': {
-      id: '/explore'
-      path: '/explore'
-      fullPath: '/explore'
-      preLoaderRoute: typeof ExploreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cli': {
-      id: '/cli'
-      path: '/cli'
-      fullPath: '/cli'
-      preLoaderRoute: typeof CliRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_github': {
-      id: '/_github'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof GithubRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_github/$owner': {
-      id: '/_github/$owner'
-      path: '/$owner'
-      fullPath: '/$owner'
-      preLoaderRoute: typeof GithubOwnerRouteImport
-      parentRoute: typeof GithubRouteRoute
-    }
-    '/api/auth/callback': {
-      id: '/api/auth/callback'
-      path: '/api/auth/callback'
-      fullPath: '/api/auth/callback'
-      preLoaderRoute: typeof ApiAuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_github/$owner_/$repo': {
-      id: '/_github/$owner_/$repo'
-      path: '/$owner/$repo'
-      fullPath: '/$owner/$repo'
-      preLoaderRoute: typeof GithubOwnerRepoRouteRouteImport
-      parentRoute: typeof GithubRouteRoute
-    }
-    '/_github/$owner_/$repo/': {
-      id: '/_github/$owner_/$repo/'
-      path: '/'
-      fullPath: '/$owner/$repo/'
-      preLoaderRoute: typeof GithubOwnerRepoIndexRouteImport
-      parentRoute: typeof GithubOwnerRepoRouteRoute
-    }
-  }
+declare module "@tanstack/react-router" {
+	interface FileRoutesByPath {
+		"/sign-in": {
+			id: "/sign-in";
+			path: "/sign-in";
+			fullPath: "/sign-in";
+			preLoaderRoute: typeof SignInRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/profile": {
+			id: "/profile";
+			path: "/profile";
+			fullPath: "/profile";
+			preLoaderRoute: typeof ProfileRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/explore": {
+			id: "/explore";
+			path: "/explore";
+			fullPath: "/explore";
+			preLoaderRoute: typeof ExploreRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/cli": {
+			id: "/cli";
+			path: "/cli";
+			fullPath: "/cli";
+			preLoaderRoute: typeof CliRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/admin": {
+			id: "/admin";
+			path: "/admin";
+			fullPath: "/admin";
+			preLoaderRoute: typeof AdminRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/_github": {
+			id: "/_github";
+			path: "";
+			fullPath: "/";
+			preLoaderRoute: typeof GithubRouteRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/": {
+			id: "/";
+			path: "/";
+			fullPath: "/";
+			preLoaderRoute: typeof IndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/_github/$owner": {
+			id: "/_github/$owner";
+			path: "/$owner";
+			fullPath: "/$owner";
+			preLoaderRoute: typeof GithubOwnerRouteImport;
+			parentRoute: typeof GithubRouteRoute;
+		};
+		"/api/auth/callback": {
+			id: "/api/auth/callback";
+			path: "/api/auth/callback";
+			fullPath: "/api/auth/callback";
+			preLoaderRoute: typeof ApiAuthCallbackRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/_github/$owner_/$repo": {
+			id: "/_github/$owner_/$repo";
+			path: "/$owner/$repo";
+			fullPath: "/$owner/$repo";
+			preLoaderRoute: typeof GithubOwnerRepoRouteRouteImport;
+			parentRoute: typeof GithubRouteRoute;
+		};
+		"/_github/$owner_/$repo/": {
+			id: "/_github/$owner_/$repo/";
+			path: "/";
+			fullPath: "/$owner/$repo/";
+			preLoaderRoute: typeof GithubOwnerRepoIndexRouteImport;
+			parentRoute: typeof GithubOwnerRepoRouteRoute;
+		};
+	}
 }
 
 interface GithubOwnerRepoRouteRouteChildren {
-  GithubOwnerRepoIndexRoute: typeof GithubOwnerRepoIndexRoute
+	GithubOwnerRepoIndexRoute: typeof GithubOwnerRepoIndexRoute;
 }
 
 const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
-  GithubOwnerRepoIndexRoute: GithubOwnerRepoIndexRoute,
-}
+	GithubOwnerRepoIndexRoute: GithubOwnerRepoIndexRoute,
+};
 
-const GithubOwnerRepoRouteRouteWithChildren =
-  GithubOwnerRepoRouteRoute._addFileChildren(GithubOwnerRepoRouteRouteChildren)
+const GithubOwnerRepoRouteRouteWithChildren = GithubOwnerRepoRouteRoute._addFileChildren(
+	GithubOwnerRepoRouteRouteChildren,
+);
 
 interface GithubRouteRouteChildren {
-  GithubOwnerRoute: typeof GithubOwnerRoute
-  GithubOwnerRepoRouteRoute: typeof GithubOwnerRepoRouteRouteWithChildren
+	GithubOwnerRoute: typeof GithubOwnerRoute;
+	GithubOwnerRepoRouteRoute: typeof GithubOwnerRepoRouteRouteWithChildren;
 }
 
 const GithubRouteRouteChildren: GithubRouteRouteChildren = {
-  GithubOwnerRoute: GithubOwnerRoute,
-  GithubOwnerRepoRouteRoute: GithubOwnerRepoRouteRouteWithChildren,
-}
+	GithubOwnerRoute: GithubOwnerRoute,
+	GithubOwnerRepoRouteRoute: GithubOwnerRepoRouteRouteWithChildren,
+};
 
-const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(
-  GithubRouteRouteChildren,
-)
+const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(GithubRouteRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  GithubRouteRoute: GithubRouteRouteWithChildren,
-  AdminRoute: AdminRoute,
-  CliRoute: CliRoute,
-  ExploreRoute: ExploreRoute,
-  ProfileRoute: ProfileRoute,
-  SignInRoute: SignInRoute,
-  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
-}
+	IndexRoute: IndexRoute,
+	GithubRouteRoute: GithubRouteRouteWithChildren,
+	AdminRoute: AdminRoute,
+	CliRoute: CliRoute,
+	ExploreRoute: ExploreRoute,
+	ProfileRoute: ProfileRoute,
+	SignInRoute: SignInRoute,
+	ApiAuthCallbackRoute: ApiAuthCallbackRoute,
+};
 export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+	._addFileChildren(rootRouteChildren)
+	._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
+import type { getRouter } from "./router.tsx";
+import type { startInstance } from "./start.ts";
+declare module "@tanstack/react-start" {
+	interface Register {
+		ssr: true;
+		router: Awaited<ReturnType<typeof getRouter>>;
+		config: Awaited<ReturnType<typeof startInstance.getOptions>>;
+	}
 }

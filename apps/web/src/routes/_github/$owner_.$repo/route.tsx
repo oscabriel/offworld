@@ -42,7 +42,7 @@ function RepoLayout() {
 							description: metadata.description,
 							stars: metadata.stars,
 							language: metadata.language,
-						})
+						});
 					}
 				})
 				.catch(() => {
@@ -50,7 +50,7 @@ function RepoLayout() {
 				})
 				.finally(() => {
 					setMetadataLoading(false);
-				})
+				});
 		}
 	}, [owner, repo, fetchGitHubMetadata]);
 
@@ -68,7 +68,11 @@ function RepoLayout() {
 							<ChevronRight className="size-3" />
 						</li>
 						<li>
-							<Link to="/$owner" params={{ owner }} className="hover:text-foreground transition-colors">
+							<Link
+								to="/$owner"
+								params={{ owner }}
+								className="hover:text-foreground transition-colors"
+							>
 								{owner}
 							</Link>
 						</li>
@@ -88,5 +92,5 @@ function RepoLayout() {
 			/>
 			<Outlet />
 		</div>
-	)
+	);
 }

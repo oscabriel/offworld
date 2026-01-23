@@ -17,7 +17,7 @@ function ContentSkeleton() {
 			<div className="bg-muted h-5 w-full animate-pulse" />
 			<div className="bg-muted h-5 w-2/3 animate-pulse" />
 		</div>
-	)
+	);
 }
 
 function RepoAnalysisPage() {
@@ -35,7 +35,7 @@ function RepoAnalysisPage() {
 					<ContentSkeleton />
 				</div>
 			</div>
-		)
+		);
 	}
 
 	if (!analysis) {
@@ -58,7 +58,7 @@ function RepoAnalysisPage() {
 					</div>
 				</div>
 			</div>
-		)
+		);
 	}
 
 	return (
@@ -69,5 +69,5 @@ function RepoAnalysisPage() {
 				</article>
 			</div>
 		</div>
-	)
+	);
 }

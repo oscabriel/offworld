@@ -6,8 +6,10 @@ import { existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
-import { getRepoPath, getMetaPath, getSkillPath, loadConfig } from "./config.js";
+import { getRepoPath, getMetaPath, getSkillPath, loadConfig, toSkillDirName } from "./config.js";
 import { getIndexEntry, listIndexedRepos, removeFromIndex, updateIndex } from "./index-manager.js";
+import { getAllAgentConfigs } from "./agents.js";
+import { expandTilde } from "./paths.js";
 
 // ============================================================================
 // Custom Error Types
@@ -315,10 +317,6 @@ export async function removeRepo(
 
 function removeAgentSymlinks(repoName: string): void {
 	const config = loadConfig();
-	const { getAllAgentConfigs } = require("./agents.js");
-	const { expandTilde } = require("./paths.js");
-	const { toSkillDirName } = require("./config.js");
-
 	const skillDirName = toSkillDirName(repoName);
 
 	const configuredAgents = config.agents ?? [];

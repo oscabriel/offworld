@@ -204,6 +204,7 @@ describe("CLI handlers", () => {
 			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
+			mockConfirm.mockResolvedValue(true);
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
@@ -258,6 +259,7 @@ describe("CLI handlers", () => {
 			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
+			mockConfirm.mockResolvedValue(true);
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 

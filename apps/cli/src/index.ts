@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
 	pullHandler,
 	generateHandler,
-	listHandler,
 	pushHandler,
 	rmHandler,
 	configShowHandler,
@@ -18,6 +17,12 @@ import {
 	authStatusHandler,
 	initHandler,
 	projectInitHandler,
+	repoListHandler,
+	repoUpdateHandler,
+	repoPruneHandler,
+	repoStatusHandler,
+	repoGcHandler,
+	repoDiscoverHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -26,10 +31,7 @@ export const router = os.router({
 	pull: os
 		.input(
 			z.object({
-				repo: z
-					.string()
-					.describe("repo")
-					.meta({ positional: true }),
+				repo: z.string().describe("repo").meta({ positional: true }),
 				shallow: z
 					.boolean()
 					.default(true)
@@ -71,30 +73,26 @@ export const router = os.router({
 				json: z.boolean().default(false).describe("Output as JSON"),
 				paths: z.boolean().default(false).describe("Show full paths"),
 				stale: z.boolean().default(false).describe("Only show stale repos"),
+				pattern: z.string().optional().describe("Filter by pattern (e.g. 'react-*')"),
 			}),
 		)
 		.meta({
-			description: "List all cloned repositories",
+			description: "List managed repositories (alias for 'ow repo list')",
 			aliases: { command: ["ls"] },
 		})
 		.handler(async ({ input }) => {
-			const result = await listHandler({
+			await repoListHandler({
 				json: input.json,
 				paths: input.paths,
 				stale: input.stale,
+				pattern: input.pattern,
 			});
-			if (input.json) {
-				console.log(JSON.stringify(result.repos, null, 2));
-			}
 		}),
 
 	generate: os
 		.input(
 			z.object({
-				repo: z
-					.string()
-					.describe("repo")
-					.meta({ positional: true }),
+				repo: z.string().describe("repo").meta({ positional: true }),
 				force: z
 					.boolean()
 					.default(false)
@@ -311,6 +309,133 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 					deps: input.deps,
 					skip: input.skip,
 					generate: input.generate,
+					dryRun: input.dryRun,
+					yes: input.yes,
+				});
+			}),
+	}),
+
+	repo: os.router({
+		list: os
+			.input(
+				z.object({
+					json: z.boolean().default(false).describe("Output as JSON"),
+					paths: z.boolean().default(false).describe("Show full paths"),
+					stale: z.boolean().default(false).describe("Only show stale repos"),
+					pattern: z.string().optional().describe("Filter by pattern (e.g. 'react-*')"),
+				}),
+			)
+			.meta({
+				description: "List managed repositories",
+				default: true,
+				aliases: { command: ["ls"] },
+			})
+			.handler(async ({ input }) => {
+				await repoListHandler({
+					json: input.json,
+					paths: input.paths,
+					stale: input.stale,
+					pattern: input.pattern,
+				});
+			}),
+
+		update: os
+			.input(
+				z.object({
+					all: z.boolean().default(false).describe("Update all repos"),
+					stale: z.boolean().default(false).describe("Only update stale repos"),
+					pattern: z.string().optional().describe("Filter by pattern"),
+					dryRun: z
+						.boolean()
+						.default(false)
+						.describe("Show what would be updated")
+						.meta({ alias: "d" }),
+				}),
+			)
+			.meta({ description: "Update repos (git fetch + pull)" })
+			.handler(async ({ input }) => {
+				await repoUpdateHandler({
+					all: input.all,
+					stale: input.stale,
+					pattern: input.pattern,
+					dryRun: input.dryRun,
+				});
+			}),
+
+		prune: os
+			.input(
+				z.object({
+					dryRun: z
+						.boolean()
+						.default(false)
+						.describe("Show what would be pruned")
+						.meta({ alias: "d" }),
+					yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
+					removeOrphans: z.boolean().default(false).describe("Also remove orphaned directories"),
+				}),
+			)
+			.meta({ description: "Remove stale index entries and find orphaned directories" })
+			.handler(async ({ input }) => {
+				await repoPruneHandler({
+					dryRun: input.dryRun,
+					yes: input.yes,
+					removeOrphans: input.removeOrphans,
+				});
+			}),
+
+		status: os
+			.input(
+				z.object({
+					json: z.boolean().default(false).describe("Output as JSON"),
+				}),
+			)
+			.meta({ description: "Show summary of managed repos" })
+			.handler(async ({ input }) => {
+				await repoStatusHandler({ json: input.json });
+			}),
+
+		gc: os
+			.input(
+				z.object({
+					olderThan: z
+						.string()
+						.optional()
+						.describe("Remove repos not accessed in N days (e.g. '30d')"),
+					unanalyzed: z.boolean().default(false).describe("Remove repos without analysis"),
+					withoutSkill: z.boolean().default(false).describe("Remove repos without skills"),
+					dryRun: z
+						.boolean()
+						.default(false)
+						.describe("Show what would be removed")
+						.meta({ alias: "d" }),
+					yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
+				}),
+			)
+			.meta({ description: "Garbage collect old/unused repos" })
+			.handler(async ({ input }) => {
+				await repoGcHandler({
+					olderThan: input.olderThan,
+					unanalyzed: input.unanalyzed,
+					withoutSkill: input.withoutSkill,
+					dryRun: input.dryRun,
+					yes: input.yes,
+				});
+			}),
+
+		discover: os
+			.input(
+				z.object({
+					dryRun: z
+						.boolean()
+						.default(false)
+						.describe("Show what would be added")
+						.meta({ alias: "d" }),
+					yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
+				}),
+			)
+			.meta({ description: "Discover and index existing repos in repoRoot" })
+			.handler(async ({ input }) => {
+				await repoDiscoverHandler({
 					dryRun: input.dryRun,
 					yes: input.yes,
 				});

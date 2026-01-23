@@ -1,6 +1,26 @@
 export { pullHandler, type PullOptions, type PullResult } from "./pull.js";
 export { generateHandler, type GenerateOptions, type GenerateResult } from "./generate.js";
 export { listHandler, type ListOptions, type ListResult, type RepoListItem } from "./list.js";
+export {
+	repoListHandler,
+	repoUpdateHandler,
+	repoPruneHandler,
+	repoStatusHandler,
+	repoGcHandler,
+	repoDiscoverHandler,
+	type RepoListOptions,
+	type RepoListResult,
+	type RepoUpdateOptions,
+	type RepoUpdateResult,
+	type RepoPruneOptions,
+	type RepoPruneResult,
+	type RepoStatusOptions,
+	type RepoStatusResult,
+	type RepoGcOptions,
+	type RepoGcResult,
+	type RepoDiscoverOptions,
+	type RepoDiscoverResult,
+} from "./repo.js";
 export { pushHandler, type PushOptions, type PushResult } from "./push.js";
 export { rmHandler, type RmOptions, type RmResult } from "./remove.js";
 export {

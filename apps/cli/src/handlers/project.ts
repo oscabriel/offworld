@@ -65,7 +65,7 @@ export async function projectInitHandler(
 	}
 
 	const config = loadConfig();
-	if (!config.ai?.provider || !config.ai?.model) {
+	if (!config.defaultModel) {
 		p.log.error("Global config is missing AI settings. Run 'ow init --force' to reconfigure.");
 		p.outro("");
 		return { success: false, message: "Invalid global config" };

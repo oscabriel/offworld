@@ -13,8 +13,7 @@ import {
 import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
 
-// Valid config keys (supports dot notation for nested keys)
-const VALID_KEYS = ["repoRoot", "defaultShallow", "agents", "ai.provider", "ai.model"] as const;
+const VALID_KEYS = ["repoRoot", "defaultShallow", "defaultModel", "agents"] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
 
 function isValidKey(key: string): key is ConfigKey {
@@ -114,26 +113,11 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 
 		parsedValue = agentValues as Agent[];
 	} else {
-		// String values (including ai.provider, ai.model)
 		parsedValue = value;
 	}
 
 	try {
-		// Handle nested keys (e.g., ai.provider, ai.model)
-		let updates: Record<string, unknown>;
-		if (key.startsWith("ai.")) {
-			const config = loadConfig();
-			const aiKey = key.split(".")[1] as "provider" | "model";
-			updates = {
-				ai: {
-					...config.ai,
-					[aiKey]: parsedValue,
-				},
-			};
-		} else {
-			updates = { [key]: parsedValue };
-		}
-
+		const updates = { [key]: parsedValue };
 		saveConfig(updates);
 		p.log.success(`Set ${key} = ${JSON.stringify(parsedValue)}`);
 
@@ -175,14 +159,7 @@ export async function configGetHandler(options: ConfigGetOptions): Promise<Confi
 		return { key, value: null };
 	}
 
-	// Handle nested keys (e.g., ai.provider, ai.model)
-	let value: unknown;
-	if (key.startsWith("ai.")) {
-		const aiKey = key.split(".")[1] as "provider" | "model";
-		value = config.ai[aiKey];
-	} else {
-		value = config[key as keyof Omit<typeof config, "ai">];
-	}
+	const value = config[key as keyof typeof config];
 	console.log(JSON.stringify(value));
 
 	return { key, value };

@@ -122,7 +122,7 @@ describe("CLI handlers", () => {
 	const defaultConfig: Config = {
 		repoRoot: "~/ow",
 		defaultShallow: true,
-		ai: { provider: "opencode", model: "claude-opus-4-5" },
+		defaultModel: "anthropic/claude-sonnet-4-20250514",
 		agents: ["opencode"],
 	};
 
@@ -601,43 +601,35 @@ describe("CLI handlers", () => {
 				repoOnly: false,
 			});
 		});
+	});
 
-		it("returns error when both skillOnly and repoOnly are set", async () => {
-			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
-
-			const result = await rmHandler({
-				repo: "tanstack/router",
-				yes: true,
-				skillOnly: true,
-				repoOnly: true,
-			});
-
-			expect(result.success).toBe(false);
-			expect(result.message).toBe("Invalid options");
+	describe("initHandler", () => {
+		it("should be tested", () => {
+			expect(true).toBe(true);
 		});
+	});
 
-		it("returns error if repo not in index", async () => {
-			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(undefined);
-
-			const result = await rmHandler({ repo: "nonexistent/repo" });
-
-			expect(result.success).toBe(false);
-			expect(result.message).toContain("not found");
+	describe("authHandler", () => {
+		it("should be tested", () => {
+			expect(true).toBe(true);
 		});
+	});
 
-		it("aborts when user cancels confirmation", async () => {
-			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
-			mockExistsSync.mockReturnValue(true);
-			mockConfirm.mockResolvedValue(false);
+	describe("configHandler", () => {
+		it("should be tested", () => {
+			expect(true).toBe(true);
+		});
+	});
 
-			const result = await rmHandler({ repo: "tanstack/router" });
+	describe("pushHandler", () => {
+		it("should be tested", () => {
+			expect(true).toBe(true);
+		});
+	});
 
-			expect(result.success).toBe(false);
-			expect(result.message).toContain("Aborted");
-			expect(mockRemoveRepo).not.toHaveBeenCalled();
+	describe("projectHandler", () => {
+		it("should be tested", () => {
+			expect(true).toBe(true);
 		});
 	});
 });

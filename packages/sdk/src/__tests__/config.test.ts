@@ -171,8 +171,15 @@ describe("config.ts", () => {
 			const config = {
 				repoRoot: "/custom/repos",
 				defaultShallow: true,
-				ai: { provider: "opencode", model: "claude-opus-4-5" },
-				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
+				defaultModel: "anthropic/claude-sonnet-4-20250514",
+				agents: ["opencode"] as (
+					| "opencode"
+					| "claude-code"
+					| "codex"
+					| "amp"
+					| "antigravity"
+					| "cursor"
+				)[],
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe("/custom/repos");
@@ -182,8 +189,15 @@ describe("config.ts", () => {
 			const config = {
 				repoRoot: "~/custom/repos",
 				defaultShallow: true,
-				ai: { provider: "opencode", model: "claude-opus-4-5" },
-				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
+				defaultModel: "anthropic/claude-sonnet-4-20250514",
+				agents: ["opencode"] as (
+					| "opencode"
+					| "claude-code"
+					| "codex"
+					| "amp"
+					| "antigravity"
+					| "cursor"
+				)[],
 			};
 			const result = getRepoRoot(config);
 			expect(result).toBe(join(home, "custom/repos"));
@@ -213,8 +227,15 @@ describe("config.ts", () => {
 			const config = {
 				repoRoot: "/data/repos",
 				defaultShallow: true,
-				ai: { provider: "opencode", model: "claude-opus-4-5" },
-				agents: ["opencode"] as ("opencode" | "claude-code" | "codex")[],
+				defaultModel: "anthropic/claude-sonnet-4-20250514",
+				agents: ["opencode"] as (
+					| "opencode"
+					| "claude-code"
+					| "codex"
+					| "amp"
+					| "antigravity"
+					| "cursor"
+				)[],
 			};
 			const result = getRepoPath("owner/repo", "github", config);
 			expect(result).toBe(join("/data/repos", "github", "owner", "repo"));

@@ -17,9 +17,7 @@ import { createSpinner } from "../utils/spinner";
 export interface GenerateOptions {
 	repo: string;
 	force?: boolean;
-	/** AI provider ID (e.g., "anthropic", "openai"). Overrides config. */
-	provider?: string;
-	/** AI model ID. Overrides config. */
+	/** Model override in provider/model format (e.g., "anthropic/claude-sonnet-4-20250514") */
 	model?: string;
 }
 
@@ -29,8 +27,18 @@ export interface GenerateResult {
 	message?: string;
 }
 
+function parseModelFlag(model?: string): { provider?: string; model?: string } {
+	if (!model) return {};
+	const parts = model.split("/");
+	if (parts.length === 2) {
+		return { provider: parts[0], model: parts[1] };
+	}
+	return { model };
+}
+
 export async function generateHandler(options: GenerateOptions): Promise<GenerateResult> {
-	const { repo, force = false, provider, model } = options;
+	const { repo, force = false } = options;
+	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
 
 	const s = createSpinner();

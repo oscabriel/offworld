@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 /**
- * Analyses Convex Functions
+ * Skill Convex Functions
  * Public queries/mutations for CLI and web app
  */
 
@@ -11,21 +11,60 @@ import { mutation, query } from "./_generated/server";
 // ============================================================================
 
 /**
- * Get analysis by repository fullName (public)
- * Display analysis on web
+ * Get skill by repository fullName (public)
+ * Display skill on web
  */
 export const get = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
 		return await ctx.db
-			.query("analyses")
+			.query("skill")
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 	},
 });
 
 /**
- * List all analyses sorted by pull count (public)
+ * Get skill by repository fullName + skillName (public)
+ * Display specific skill on web
+ */
+export const getByName = query({
+	args: { fullName: v.string(), skillName: v.string() },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("skill")
+			.withIndex("by_fullName_skillName", (q) =>
+				q.eq("fullName", args.fullName).eq("skillName", args.skillName),
+			)
+			.first();
+	},
+});
+
+/**
+ * List all skills for a repository (public)
+ */
+export const listByRepo = query({
+	args: { fullName: v.string() },
+	handler: async (ctx, args) => {
+		const skills = await ctx.db
+			.query("skill")
+			.withIndex("by_fullName_analyzedAt", (q) => q.eq("fullName", args.fullName))
+			.order("desc")
+			.collect();
+
+		return skills.map((skill) => ({
+			skillName: skill.skillName,
+			skillDescription: skill.skillDescription,
+			analyzedAt: skill.analyzedAt,
+			commitSha: skill.commitSha,
+			pullCount: skill.pullCount,
+			isVerified: skill.isVerified,
+		}));
+	},
+});
+
+/**
+ * List all skills sorted by pull count (public)
  * Repo directory/explore page
  */
 export const list = query({
@@ -36,19 +75,14 @@ export const list = query({
 	handler: async (ctx, args) => {
 		const limit = args.limit ?? 50;
 
-		const analyses = await ctx.db
-			.query("analyses")
-			.withIndex("by_pullCount")
-			.order("desc")
-			.take(limit);
+		const skills = await ctx.db.query("skill").withIndex("by_pullCount").order("desc").take(limit);
 
-		return analyses.map((a) => ({
-			fullName: a.fullName,
-			provider: a.provider,
-			pullCount: a.pullCount,
-			analyzedAt: a.analyzedAt,
-			commitSha: a.commitSha,
-			isVerified: a.isVerified,
+		return skills.map((skill) => ({
+			fullName: skill.fullName,
+			pullCount: skill.pullCount,
+			analyzedAt: skill.analyzedAt,
+			commitSha: skill.commitSha,
+			isVerified: skill.isVerified,
 		}));
 	},
 });
@@ -58,26 +92,33 @@ export const list = query({
 // ============================================================================
 
 /**
- * Fetch analysis for CLI pull (no pull count tracking)
+ * Fetch skill for CLI pull (no pull count tracking)
  */
 export const pull = query({
-	args: { fullName: v.string() },
+	args: { fullName: v.string(), skillName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
-		const analysis = await ctx.db
-			.query("analyses")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
+		const skillName = args.skillName;
+		const skill = skillName
+			? await ctx.db
+					.query("skill")
+					.withIndex("by_fullName_skillName", (q) =>
+						q.eq("fullName", args.fullName).eq("skillName", skillName),
+					)
+					.first()
+			: await ctx.db
+					.query("skill")
+					.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+					.first();
 
-		if (!analysis) return null;
+		if (!skill) return null;
 
 		return {
-			fullName: analysis.fullName,
-			summary: analysis.summary,
-			architecture: analysis.architecture,
-			skill: analysis.skill,
-			fileIndex: analysis.fileIndex,
-			commitSha: analysis.commitSha,
-			analyzedAt: analysis.analyzedAt,
+			fullName: skill.fullName,
+			skillName: skill.skillName,
+			skillDescription: skill.skillDescription,
+			skillContent: skill.skillContent,
+			commitSha: skill.commitSha,
+			analyzedAt: skill.analyzedAt,
 		};
 	},
 });
@@ -86,19 +127,27 @@ export const pull = query({
  * Lightweight existence check for CLI
  */
 export const check = query({
-	args: { fullName: v.string() },
+	args: { fullName: v.string(), skillName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
-		const analysis = await ctx.db
-			.query("analyses")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
+		const skillName = args.skillName;
+		const skill = skillName
+			? await ctx.db
+					.query("skill")
+					.withIndex("by_fullName_skillName", (q) =>
+						q.eq("fullName", args.fullName).eq("skillName", skillName),
+					)
+					.first()
+			: await ctx.db
+					.query("skill")
+					.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+					.first();
 
-		if (!analysis) return { exists: false as const };
+		if (!skill) return { exists: false as const };
 
 		return {
 			exists: true as const,
-			commitSha: analysis.commitSha,
-			analyzedAt: analysis.analyzedAt,
+			commitSha: skill.commitSha,
+			analyzedAt: skill.analyzedAt,
 		};
 	},
 });
@@ -109,10 +158,9 @@ export const check = query({
 export const push = mutation({
 	args: {
 		fullName: v.string(),
-		summary: v.string(),
-		architecture: v.any(),
-		skill: v.any(),
-		fileIndex: v.any(),
+		skillName: v.string(),
+		skillDescription: v.string(),
+		skillContent: v.string(),
 		commitSha: v.string(),
 		analyzedAt: v.string(),
 	},
@@ -143,7 +191,7 @@ export const push = mutation({
 		// Rate limit check (3 pushes per repo per day per user)
 		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 		const recentPushes = await ctx.db
-			.query("pushLogs")
+			.query("pushLog")
 			.withIndex("by_repo_date", (q) => q.eq("fullName", args.fullName).gte("pushedAt", oneDayAgo))
 			.filter((q) => q.eq(q.field("workosId"), workosId))
 			.collect();
@@ -154,8 +202,10 @@ export const push = mutation({
 
 		// Conflict check
 		const existing = await ctx.db
-			.query("analyses")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.query("skill")
+			.withIndex("by_fullName_skillName", (q) =>
+				q.eq("fullName", args.fullName).eq("skillName", args.skillName),
+			)
 			.first();
 
 		if (existing) {
@@ -175,15 +225,11 @@ export const push = mutation({
 		if (existing) {
 			await ctx.db.patch(existing._id, {
 				...args,
-				provider: "github",
-				version: "0.1.0",
 				workosId,
 			});
 		} else {
-			await ctx.db.insert("analyses", {
+			await ctx.db.insert("skill", {
 				...args,
-				provider: "github",
-				version: "0.1.0",
 				pullCount: 0,
 				isVerified: false,
 				workosId,
@@ -191,7 +237,7 @@ export const push = mutation({
 		}
 
 		// Log push
-		await ctx.db.insert("pushLogs", {
+		await ctx.db.insert("pushLog", {
 			fullName: args.fullName,
 			workosId,
 			pushedAt: new Date().toISOString(),
@@ -206,16 +252,24 @@ export const push = mutation({
  * Record a pull event - increments pullCount for display on repo pages
  */
 export const recordPull = mutation({
-	args: { fullName: v.string() },
+	args: { fullName: v.string(), skillName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
-		const analysis = await ctx.db
-			.query("analyses")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
-			.first();
+		const skillName = args.skillName;
+		const skill = skillName
+			? await ctx.db
+					.query("skill")
+					.withIndex("by_fullName_skillName", (q) =>
+						q.eq("fullName", args.fullName).eq("skillName", skillName),
+					)
+					.first()
+			: await ctx.db
+					.query("skill")
+					.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+					.first();
 
-		if (analysis) {
-			await ctx.db.patch(analysis._id, {
-				pullCount: analysis.pullCount + 1,
+		if (skill) {
+			await ctx.db.patch(skill._id, {
+				pullCount: skill.pullCount + 1,
 			});
 		}
 	},

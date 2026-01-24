@@ -7,17 +7,15 @@ export const listAllAnalyses = query({
 	handler: async (ctx) => {
 		await requireAdmin(ctx);
 
-		const analyses = await ctx.db.query("analyses").order("desc").collect();
+		const skills = await ctx.db.query("skill").order("desc").collect();
 
-		return analyses.map((a) => ({
-			_id: a._id,
-			fullName: a.fullName,
-			provider: a.provider,
-			pullCount: a.pullCount,
-			analyzedAt: a.analyzedAt,
-			commitSha: a.commitSha,
-			isVerified: a.isVerified,
-			version: a.version,
+		return skills.map((skill) => ({
+			_id: skill._id,
+			fullName: skill.fullName,
+			pullCount: skill.pullCount,
+			analyzedAt: skill.analyzedAt,
+			commitSha: skill.commitSha,
+			isVerified: skill.isVerified,
 		}));
 	},
 });
@@ -45,7 +43,7 @@ export const deleteAnalysis = mutation({
 		await requireAdmin(ctx);
 
 		const analysis = await ctx.db
-			.query("analyses")
+			.query("skill")
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 
@@ -64,7 +62,7 @@ export const toggleVerified = mutation({
 		await requireAdmin(ctx);
 
 		const analysis = await ctx.db
-			.query("analyses")
+			.query("skill")
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 

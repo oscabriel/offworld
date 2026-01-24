@@ -12,7 +12,6 @@ ITERATION=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPT_FILE="$SCRIPT_DIR/prompt.md"
 PRD_FILE="$SCRIPT_DIR/PRD.json"
-PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
 
 # Colors
 RED='\033[0;31m'
@@ -32,12 +31,10 @@ if [ ! -f "$PRD_FILE" ]; then
     exit 1
 fi
 
-# Initialize progress.txt if missing
-if [ ! -f "$PROGRESS_FILE" ]; then
-    echo "# Ralph Progress Log" > "$PROGRESS_FILE"
-    echo "" >> "$PROGRESS_FILE"
-    echo -e "${YELLOW}Created $PROGRESS_FILE${NC}"
-fi
+# Get last 10 commit messages for context
+get_commit_history() {
+    git log --oneline -10 2>/dev/null || echo "No commit history"
+}
 
 # Check if PRD is complete (global passes: true OR all stories pass)
 check_prd_complete() {
@@ -86,10 +83,18 @@ run_iteration() {
     get_progress_summary
     echo ""
 
-    # Read prompt
-    local prompt=$(cat "$PROMPT_FILE")
+    # Build prompt with commit history
+    local commit_history=$(get_commit_history)
+    local base_prompt=$(cat "$PROMPT_FILE")
+    local prompt="$base_prompt
 
-    # Run opencode
+## Recent Commits (last 10)
+
+\`\`\`
+$commit_history
+\`\`\`
+"
+
     echo -e "${BLUE}Running opencode...${NC}"
     echo ""
 
@@ -116,7 +121,6 @@ echo -e "${BLUE}Ralph Agent Loop Runner${NC}"
 echo -e "${BLUE}================================${NC}"
 echo -e "Prompt: ${GREEN}$(display_path "$PROMPT_FILE")${NC}"
 echo -e "PRD: ${GREEN}$(display_path "$PRD_FILE")${NC}"
-echo -e "Progress: ${GREEN}$(display_path "$PROGRESS_FILE")${NC}"
 echo -e "Max iterations: ${YELLOW}$MAX_ITERATIONS${NC}"
 echo ""
 

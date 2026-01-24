@@ -54,7 +54,7 @@ offworld/
 
 ### Backend (`packages/backend/convex/`)
 
-- `schema.ts` — Tables: analyses, pushLogs, user
+- `schema.ts` — Tables: analyses, pushLog, user
 - `analyses.ts` — CRUD for skill analyses
 - `admin.ts` — Admin functions
 - `github.ts` — GitHub API queries

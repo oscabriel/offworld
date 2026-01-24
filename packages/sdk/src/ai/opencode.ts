@@ -372,8 +372,8 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			},
 		});
 
-	const textAccumulator = new TextAccumulator();
-	debug("Waiting for response...");
+		const textAccumulator = new TextAccumulator();
+		debug("Waiting for response...");
 
 		let timeoutId: ReturnType<typeof setTimeout> | null = null;
 

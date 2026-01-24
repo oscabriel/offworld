@@ -1,8 +1,9 @@
+import "@/types/router";
 import { convexQuery, type ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { api } from "@offworld/backend/convex/_generated/api";
-import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	HeadContent,
 	Outlet,
@@ -18,10 +19,11 @@ import {
 	useAccessToken,
 	useAuth,
 } from "@workos/authkit-tanstack-react-start/client";
-import { ConvexProviderWithAuth, useMutation } from "convex/react";
-import { useCallback, useEffect, useMemo } from "react";
+import { ConvexProviderWithAuth, useConvex, useMutation } from "convex/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { BackgroundImage } from "@/components/layout/background-image";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Toaster } from "@/components/ui/sonner";
 
 import { Footer } from "@/components/layout/footer";
@@ -197,17 +199,49 @@ function RootComponent() {
 	const context = useRouteContext({ from: Route.id });
 
 	return (
-		<QueryClientProvider client={context.queryClient}>
-			<AuthKitProvider initialAuth={context.initialAuth ?? undefined}>
-				<ConvexProviderWithAuth
-					client={context.convexQueryClient.convexClient}
-					useAuth={useAuthFromWorkOS}
-				>
-					<RootDocument token={context.token} />
-				</ConvexProviderWithAuth>
-			</AuthKitProvider>
-		</QueryClientProvider>
+		<AuthKitProvider initialAuth={context.initialAuth ?? undefined}>
+			<ConvexProviderWithAuth
+				client={context.convexQueryClient.convexClient}
+				useAuth={useAuthFromWorkOS}
+			>
+				<RootDocument token={context.token} />
+			</ConvexProviderWithAuth>
+		</AuthKitProvider>
 	);
+}
+
+function ConnectionMonitor() {
+	const convex = useConvex();
+	const queryClient = useQueryClient();
+	const [wasConnected, setWasConnected] = useState(true);
+	const [initialized, setInitialized] = useState(false);
+
+	useEffect(() => {
+		const checkConnection = () => {
+			const state = convex.connectionState();
+			const connected = state.isWebSocketConnected;
+
+			if (!initialized && connected) {
+				setInitialized(true);
+				setWasConnected(true);
+				return;
+			}
+
+			if (!connected && wasConnected) {
+				console.warn("[Convex] WebSocket disconnected");
+				setWasConnected(false);
+			} else if (connected && !wasConnected) {
+				console.info("[Convex] WebSocket reconnected, refreshing queries...");
+				setWasConnected(true);
+				void queryClient.invalidateQueries();
+			}
+		};
+
+		const interval = setInterval(checkConnection, 1000);
+		return () => clearInterval(interval);
+	}, [convex, wasConnected, queryClient, initialized]);
+
+	return null;
 }
 
 function RootDocument({ token }: { token: string | null }) {
@@ -229,9 +263,11 @@ function RootDocument({ token }: { token: string | null }) {
 				<HeadContent />
 			</head>
 			<body className="relative flex min-h-screen flex-col">
+				<ConnectionMonitor />
 				<BackgroundImage />
 				<div className="relative z-10 flex flex-1 flex-col">
 					<Header />
+					<Breadcrumbs />
 					<main className="flex flex-1 flex-col pt-34">
 						<Outlet />
 					</main>

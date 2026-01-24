@@ -13,6 +13,9 @@ export const Route = createFileRoute("/profile")({
 			throw redirect({ to: "/sign-in", search: { redirect: "/profile" } });
 		}
 	},
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(convexQuery(api.auth.getCurrentUserSafe, {}));
+	},
 });
 
 function ProfileComponent() {

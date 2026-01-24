@@ -5,7 +5,8 @@
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@offworld/backend/api";
-import type { Architecture, FileIndex, RepoSource, Skill } from "@offworld/types";
+import { toSkillDirName } from "./config.js";
+import type { RepoSource } from "@offworld/types";
 
 // ============================================================================
 // Configuration
@@ -83,10 +84,9 @@ export class PushNotAllowedError extends SyncError {
 /** Analysis data structure for sync operations */
 export interface AnalysisData {
 	fullName: string;
-	summary: string;
-	architecture: Architecture;
-	skill: Skill;
-	fileIndex: FileIndex;
+	skillName: string;
+	skillDescription: string;
+	skillContent: string;
 	commitSha: string;
 	analyzedAt: string;
 }
@@ -94,10 +94,9 @@ export interface AnalysisData {
 /** Response from pull query */
 export interface PullResponse {
 	fullName: string;
-	summary: string;
-	architecture: Architecture;
-	skill: Skill;
-	fileIndex: FileIndex;
+	skillName: string;
+	skillDescription: string;
+	skillContent: string;
 	commitSha: string;
 	analyzedAt: string;
 }
@@ -158,10 +157,43 @@ function createClient(token?: string): ConvexHttpClient {
 export async function pullAnalysis(fullName: string): Promise<PullResponse | null> {
 	const client = createClient();
 	try {
-		const result = await client.query(api.analyses.pull, { fullName });
+		let result = await client.query(api.analyses.pull, {
+			fullName,
+			skillName: toSkillDirName(fullName),
+		});
+		if (!result) {
+			result = await client.query(api.analyses.pull, { fullName });
+		}
 		if (!result) return null;
 
-		client.mutation(api.analyses.recordPull, { fullName }).catch(() => {});
+		client
+			.mutation(api.analyses.recordPull, { fullName, skillName: result.skillName })
+			.catch(() => {});
+
+		return result as unknown as PullResponse;
+	} catch (error) {
+		throw new NetworkError(
+			`Failed to pull analysis: ${error instanceof Error ? error.message : error}`,
+		);
+	}
+}
+
+/**
+ * Fetches a specific skill by name from the remote server
+ * @param fullName - Repository full name (owner/repo)
+ * @param skillName - Specific skill name to pull
+ * @returns Analysis data or null if not found
+ */
+export async function pullAnalysisByName(
+	fullName: string,
+	skillName: string,
+): Promise<PullResponse | null> {
+	const client = createClient();
+	try {
+		const result = await client.query(api.analyses.pull, { fullName, skillName });
+		if (!result) return null;
+
+		client.mutation(api.analyses.recordPull, { fullName, skillName }).catch(() => {});
 
 		return result as unknown as PullResponse;
 	} catch (error) {
@@ -182,10 +214,9 @@ export async function pushAnalysis(analysis: AnalysisData, token: string): Promi
 	try {
 		const result = await client.mutation(api.analyses.push, {
 			fullName: analysis.fullName,
-			summary: analysis.summary,
-			architecture: analysis.architecture,
-			skill: analysis.skill,
-			fileIndex: analysis.fileIndex,
+			skillName: analysis.skillName,
+			skillDescription: analysis.skillDescription,
+			skillContent: analysis.skillContent,
 			commitSha: analysis.commitSha,
 			analyzedAt: analysis.analyzedAt,
 		});
@@ -222,7 +253,41 @@ export async function pushAnalysis(analysis: AnalysisData, token: string): Promi
 export async function checkRemote(fullName: string): Promise<CheckResponse> {
 	const client = createClient();
 	try {
-		const result = await client.query(api.analyses.check, { fullName });
+		let result = await client.query(api.analyses.check, {
+			fullName,
+			skillName: toSkillDirName(fullName),
+		});
+		if (!result.exists) {
+			result = await client.query(api.analyses.check, { fullName });
+		}
+		if (!result.exists) {
+			return { exists: false };
+		}
+		return {
+			exists: true,
+			commitSha: result.commitSha,
+			analyzedAt: result.analyzedAt,
+		};
+	} catch (error) {
+		throw new NetworkError(
+			`Failed to check remote: ${error instanceof Error ? error.message : error}`,
+		);
+	}
+}
+
+/**
+ * Checks if a specific skill exists on the remote server
+ * @param fullName - Repository full name (owner/repo)
+ * @param skillName - Specific skill name to check
+ * @returns Check result
+ */
+export async function checkRemoteByName(
+	fullName: string,
+	skillName: string,
+): Promise<CheckResponse> {
+	const client = createClient();
+	try {
+		const result = await client.query(api.analyses.check, { fullName, skillName });
 		if (!result.exists) {
 			return { exists: false };
 		}

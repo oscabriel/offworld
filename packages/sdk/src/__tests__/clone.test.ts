@@ -500,9 +500,7 @@ describe("cloneRepo", () => {
 
 			await cloneRepo(mockSource, { sparse: true });
 
-			const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls.map(
-				(c) => c[1] as string[],
-			);
+			const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[1] as string[]);
 			const sparseSetIdx = calls.findIndex(
 				(args) => args.includes("sparse-checkout") && args.includes("set"),
 			);

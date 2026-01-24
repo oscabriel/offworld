@@ -91,7 +91,7 @@ function Calendar({
 					defaultClassNames.day,
 				),
 				range_start: cn(
-					"bg-muted elative after:bg-muted isolate -z-0 rounded-l-(--cell-radius) after:absolute after:inset-y-0 after:right-0 after:w-4",
+					"bg-muted after:bg-muted relative isolate -z-0 rounded-l-(--cell-radius) after:absolute after:inset-y-0 after:right-0 after:w-4",
 					defaultClassNames.range_start,
 				),
 				range_middle: cn("rounded-none", defaultClassNames.range_middle),

@@ -24,9 +24,11 @@ export interface UpdateAllOptions {
 	staleOnly?: boolean;
 	pattern?: string;
 	dryRun?: boolean;
+	/** Convert shallow clones to full clones */
+	unshallow?: boolean;
 	onProgress?: (
 		repo: string,
-		status: "updating" | "updated" | "skipped" | "error",
+		status: "updating" | "updated" | "skipped" | "error" | "unshallowed",
 		message?: string,
 	) => void;
 }
@@ -34,6 +36,7 @@ export interface UpdateAllOptions {
 export interface UpdateAllResult {
 	updated: string[];
 	skipped: string[];
+	unshallowed: string[];
 	errors: Array<{ repo: string; error: string }>;
 }
 
@@ -185,11 +188,12 @@ export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<Re
 }
 
 export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<UpdateAllResult> {
-	const { staleOnly = false, pattern, dryRun = false, onProgress } = options;
+	const { staleOnly = false, pattern, dryRun = false, unshallow = false, onProgress } = options;
 
 	const repos = listRepos();
 	const updated: string[] = [];
 	const skipped: string[] = [];
+	const unshallowed: string[] = [];
 	const errors: Array<{ repo: string; error: string }> = [];
 
 	for (const repo of repos) {
@@ -217,7 +221,11 @@ export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<Up
 
 		onProgress?.(repo.fullName, "updating");
 		try {
-			const result = await updateRepo(repo.qualifiedName);
+			const result = await updateRepo(repo.qualifiedName, { unshallow });
+			if (result.unshallowed) {
+				unshallowed.push(repo.qualifiedName);
+				onProgress?.(repo.fullName, "unshallowed", "converted to full clone");
+			}
 			if (result.updated) {
 				updated.push(repo.qualifiedName);
 				onProgress?.(
@@ -225,7 +233,7 @@ export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<Up
 					"updated",
 					`${result.previousSha.slice(0, 7)} → ${result.currentSha.slice(0, 7)}`,
 				);
-			} else {
+			} else if (!result.unshallowed) {
 				skipped.push(repo.qualifiedName);
 				onProgress?.(repo.fullName, "skipped", "already up to date");
 			}
@@ -236,7 +244,7 @@ export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<Up
 		}
 	}
 
-	return { updated, skipped, errors };
+	return { updated, skipped, unshallowed, errors };
 }
 
 export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResult> {

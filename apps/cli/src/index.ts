@@ -39,7 +39,7 @@ export const router = os.router({
 					.meta({ alias: "s" }),
 				shallow: z
 					.boolean()
-					.default(true)
+					.default(false)
 					.describe("Use shallow clone (--depth 1)")
 					.meta({ negativeAlias: "full-history" }),
 				sparse: z
@@ -356,6 +356,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 						.default(false)
 						.describe("Show what would be updated")
 						.meta({ alias: "d" }),
+					unshallow: z.boolean().default(false).describe("Convert shallow clones to full clones"),
 				}),
 			)
 			.meta({ description: "Update repos (git fetch + pull)" })
@@ -365,6 +366,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 					stale: input.stale,
 					pattern: input.pattern,
 					dryRun: input.dryRun,
+					unshallow: input.unshallow,
 				});
 			}),
 

@@ -21,7 +21,6 @@ import {
 	ConflictError,
 	type AnalysisData,
 } from "@offworld/sdk";
-import type { Architecture, FileIndex, Skill } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
@@ -44,9 +43,8 @@ export interface PushResult {
 // ============================================================================
 
 /**
- * Load local analysis from the new AI-only format.
- * New format has: SKILL.md + meta.json
- * Creates placeholder objects for architecture/fileIndex/skill to satisfy API contract.
+ * Load local skill data from the AI-only format.
+ * Format: SKILL.md + meta.json
  */
 function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | null {
 	const skillMdPath = join(skillDir, "SKILL.md");
@@ -77,31 +75,11 @@ function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | nu
 			if (descMatch?.[1]) description = descMatch[1].trim();
 		}
 
-		// Create placeholder objects for API compatibility
-		const architecture: Architecture = {
-			projectType: "library",
-			entities: [],
-			relationships: [],
-			keyFiles: [],
-			patterns: {},
-		};
-
-		const fileIndex: FileIndex = [];
-
-		const skill: Skill = {
-			name,
-			description,
-		};
-
-		// Use SKILL.md content as summary
-		const summary = skillContent;
-
 		return {
 			fullName: "",
-			summary,
-			architecture,
-			fileIndex,
-			skill,
+			skillName: name,
+			skillDescription: description,
+			skillContent,
 			commitSha: meta.commitSha,
 			analyzedAt: meta.analyzedAt,
 		};

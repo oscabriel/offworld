@@ -32,6 +32,11 @@ export const router = os.router({
 		.input(
 			z.object({
 				repo: z.string().describe("repo").meta({ positional: true }),
+				skill: z
+					.string()
+					.optional()
+					.describe("Skill name to pull (defaults to owner-repo-reference)")
+					.meta({ alias: "s" }),
 				shallow: z
 					.boolean()
 					.default(true)
@@ -58,6 +63,7 @@ export const router = os.router({
 		.handler(async ({ input }) => {
 			await pullHandler({
 				repo: input.repo,
+				skill: input.skill,
 				shallow: input.shallow,
 				sparse: input.sparse,
 				branch: input.branch,

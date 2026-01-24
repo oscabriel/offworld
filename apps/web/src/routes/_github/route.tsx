@@ -1,9 +1,13 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_github")({
-	component: RepoLayout,
+	component: GitHubLayout,
 });
 
-function RepoLayout() {
-	return <Outlet />;
+function GitHubLayout() {
+	return (
+		<div className="flex flex-1 flex-col">
+			<Outlet />
+		</div>
+	);
 }

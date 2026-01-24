@@ -1,110 +1,73 @@
-import { convexQuery } from "@convex-dev/react-query";
+import { convexAction, convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAction } from "convex/react";
 import { ArrowRight, Star } from "lucide-react";
-import { useEffect, useState } from "react";
 import { StatusBadge } from "@/components/repo/status-badge";
 
-type OwnerInfo = {
-	login: string;
-	name: string;
-	avatarUrl: string;
-	bio?: string;
-	type: "user" | "organization";
-	publicRepos: number;
-	followers: number;
-	htmlUrl: string;
-};
-
-type GitHubRepo = {
-	owner: string;
-	name: string;
-	fullName: string;
-	description?: string;
-	stars: number;
-	language?: string;
-};
-
-export const Route = createFileRoute("/_github/$owner")({
+export const Route = createFileRoute("/_github/$owner/")({
 	component: OwnerPage,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(convexQuery(api.analyses.list, { limit: 200 }));
+	},
 });
+
+function OwnerHeaderSkeleton() {
+	return (
+		<div className="flex items-start gap-8">
+			<div className="border-primary/10 bg-muted size-21 shrink-0 animate-pulse border" />
+			<div className="space-y-3">
+				<div className="bg-muted h-13 w-48 animate-pulse" />
+				<div className="bg-muted h-5 w-64 animate-pulse" />
+			</div>
+		</div>
+	);
+}
+
+function RepoGridSkeleton({ count = 6 }: { count?: number }) {
+	return (
+		<div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+			{Array.from({ length: count }).map((_, i) => (
+				<div key={i} className="border-primary/10 space-y-3 border p-5">
+					<div className="bg-muted h-6 w-3/4 animate-pulse" />
+					<div className="bg-muted h-4 w-full animate-pulse" />
+					<div className="bg-muted h-4 w-2/3 animate-pulse" />
+				</div>
+			))}
+		</div>
+	);
+}
 
 function OwnerPage() {
 	const { owner } = Route.useParams();
+	const { data: allAnalyses } = useSuspenseQuery(convexQuery(api.analyses.list, { limit: 200 }));
 
-	const { data: allAnalyses } = useQuery(convexQuery(api.analyses.list, { limit: 200 }));
+	const {
+		data: ownerInfo,
+		isLoading: ownerLoading,
+		isError: ownerError,
+	} = useQuery(convexAction(api.github.fetchOwnerInfo, { owner }));
+
+	const { data: repos, isLoading: reposLoading } = useQuery(
+		convexAction(api.github.fetchOwnerRepos, { owner, perPage: 30 }),
+	);
 
 	const indexedRepoNames = new Set(
 		allAnalyses
-			?.filter((a) => a.fullName.toLowerCase().startsWith(`${owner.toLowerCase()}/`))
-			.map((a) => a.fullName.toLowerCase()) ?? [],
+			.filter((a) => a.fullName.toLowerCase().startsWith(`${owner.toLowerCase()}/`))
+			.map((a) => a.fullName.toLowerCase()),
 	);
 
-	const [ownerInfo, setOwnerInfo] = useState<OwnerInfo | null>(null);
-	const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	const fetchOwnerInfo = useAction(api.github.fetchOwnerInfo);
-	const fetchOwnerRepos = useAction(api.github.fetchOwnerRepos);
-
-	useEffect(() => {
-		let cancelled = false;
-
-		async function load() {
-			try {
-				const [info, repoList] = await Promise.all([
-					fetchOwnerInfo({ owner }),
-					fetchOwnerRepos({ owner, perPage: 30 }),
-				]);
-
-				if (cancelled) return;
-
-				if (!info) {
-					setError("Owner not found");
-					setLoading(false);
-					return;
-				}
-
-				setOwnerInfo(info);
-				setRepos(repoList ?? []);
-				setLoading(false);
-			} catch (err) {
-				if (!cancelled) {
-					setError(err instanceof Error ? err.message : "Failed to load");
-					setLoading(false);
-				}
-			}
-		}
-
-		load();
-		return () => {
-			cancelled = true;
-		};
-	}, [owner, fetchOwnerInfo, fetchOwnerRepos]);
-
-	if (loading) {
-		return (
-			<div className="container mx-auto max-w-7xl px-5 pb-13 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-				<div className="flex items-start gap-8">
-					<div className="border-primary/10 bg-muted size-21 shrink-0 animate-pulse border" />
-					<div className="space-y-3">
-						<div className="bg-muted h-13 w-48 animate-pulse" />
-						<div className="bg-muted h-5 w-64 animate-pulse" />
-					</div>
-				</div>
-			</div>
-		);
+	if (ownerLoading || reposLoading) {
+		return <OwnerPageSkeleton />;
 	}
 
-	if (error || !ownerInfo) {
+	if (ownerError || !ownerInfo) {
 		return (
 			<div className="container mx-auto max-w-7xl px-5 pb-13 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="border-destructive/20 bg-destructive/5 border p-8">
 					<h1 className="text-destructive font-serif text-2xl">Error</h1>
-					<p className="text-muted-foreground mt-2 font-mono">{error ?? "Owner not found"}</p>
+					<p className="text-muted-foreground mt-2 font-mono">Owner not found</p>
 				</div>
 			</div>
 		);
@@ -179,6 +142,20 @@ function OwnerPage() {
 							})}
 						</div>
 					)}
+				</section>
+			</div>
+		</div>
+	);
+}
+
+function OwnerPageSkeleton() {
+	return (
+		<div className="container mx-auto max-w-7xl px-5 pb-13 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+			<div className="space-y-13">
+				<OwnerHeaderSkeleton />
+				<section className="space-y-8">
+					<div className="bg-muted h-8 w-48 animate-pulse" />
+					<RepoGridSkeleton count={6} />
 				</section>
 			</div>
 		</div>

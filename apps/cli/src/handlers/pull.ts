@@ -7,7 +7,9 @@ import {
 	getCommitSha,
 	parseRepoInput,
 	pullAnalysis,
+	pullAnalysisByName,
 	checkRemote,
+	checkRemoteByName,
 	loadConfig,
 	loadAuthData,
 	getMetaPath,
@@ -24,6 +26,7 @@ import { createSpinner } from "../utils/spinner";
 
 export interface PullOptions {
 	repo: string;
+	skill?: string;
 	shallow?: boolean;
 	sparse?: boolean;
 	branch?: string;
@@ -76,17 +79,17 @@ function hasValidCache(source: RepoSource, currentSha: string): boolean {
 }
 
 /**
- * Save remote analysis to local filesystem.
- * Remote analysis comes with pre-generated skill/summary content.
+ * Save remote skill to local filesystem.
+ * Remote skill comes with pre-generated skill content.
  */
 function saveRemoteAnalysis(
 	repoName: string,
-	summary: string,
+	skillContent: string,
 	commitSha: string,
 	analyzedAt: string,
 ): void {
 	const meta = { analyzedAt, commitSha, version: "0.1.0" };
-	installSkillToFS(repoName, summary, meta);
+	installSkillToFS(repoName, skillContent, meta);
 }
 
 function parseModelFlag(model?: string): { provider?: string; model?: string } {
@@ -100,14 +103,16 @@ function parseModelFlag(model?: string): { provider?: string; model?: string } {
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
 	const { repo, shallow = true, sparse = false, branch, force = false, verbose = false } = options;
+	const skillName = options.skill?.trim() || undefined;
 	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
+	const isSkillOverride = Boolean(skillName);
 
 	const s = createSpinner();
 
 	if (verbose) {
 		p.log.info(
-			`[verbose] Options: repo=${repo}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
+			`[verbose] Options: repo=${repo}, skill=${skillName ?? "default"}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
 		);
 	}
 
@@ -166,8 +171,16 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		const currentSha = getCommitSha(repoPath);
 		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
 
+		if (isSkillOverride && source.type !== "remote") {
+			throw new Error("--skill can only be used with remote repositories");
+		}
+		if (isSkillOverride && !skillName) {
+			throw new Error("--skill requires a skill name");
+		}
+		const requiredSkillName = skillName ?? "";
+
 		// Check for cached analysis first
-		if (!force && hasValidCache(source, currentSha)) {
+		if (!force && !isSkillOverride && hasValidCache(source, currentSha)) {
 			verboseLog("Using cached analysis", verbose);
 			s.stop("Using cached skill");
 
@@ -180,22 +193,29 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 
 		// Check remote API for remote repos (with SHA comparison)
-		if (source.type === "remote" && !force) {
+		if (source.type === "remote" && (!force || isSkillOverride)) {
 			verboseLog(`Checking offworld.sh for analysis: ${source.fullName}`, verbose);
 			s.start("Checking offworld.sh for analysis...");
 
 			try {
-				const remoteCheck = await checkRemote(source.fullName);
+				const remoteCheck = isSkillOverride
+					? await checkRemoteByName(source.fullName, requiredSkillName)
+					: await checkRemote(source.fullName);
 
 				if (remoteCheck.exists && remoteCheck.commitSha) {
 					const remoteShaNorm = remoteCheck.commitSha.slice(0, 7);
 					const currentShaNorm = currentSha.slice(0, 7);
+					const shouldDownload = isSkillOverride || remoteShaNorm === currentShaNorm;
 
-					if (remoteShaNorm === currentShaNorm) {
-						verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
+					if (shouldDownload) {
+						if (!isSkillOverride) {
+							verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
+						}
 						s.stop("Remote skill found");
 
-						const previewUrl = `https://offworld.sh/${source.fullName}`;
+						const previewUrl = skillName
+							? `https://offworld.sh/${source.fullName}/${encodeURIComponent(skillName)}`
+							: `https://offworld.sh/${source.fullName}`;
 						p.log.info(`Preview: ${previewUrl}`);
 
 						const useRemote = await p.confirm({
@@ -208,17 +228,22 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						}
 
 						if (!useRemote) {
+							if (isSkillOverride) {
+								throw new Error("Remote skill download declined");
+							}
 							p.log.info("Skipping remote skill, generating locally...");
 						} else {
 							s.start("Downloading remote skill...");
-							const remoteAnalysis = await pullAnalysis(source.fullName);
+							const remoteAnalysis = isSkillOverride
+								? await pullAnalysisByName(source.fullName, requiredSkillName)
+								: await pullAnalysis(source.fullName);
 
 							if (remoteAnalysis) {
 								s.stop("Downloaded remote skill");
 
 								saveRemoteAnalysis(
 									source.fullName,
-									remoteAnalysis.summary,
+									remoteAnalysis.skillContent,
 									remoteAnalysis.commitSha,
 									remoteAnalysis.analyzedAt ?? new Date().toISOString(),
 								);
@@ -233,7 +258,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 									});
 								}
 
-								p.log.success(`Skill installed for: ${qualifiedName}`);
+								p.log.success(
+									skillName
+										? `Skill installed (${skillName}) for: ${qualifiedName}`
+										: `Skill installed for: ${qualifiedName}`,
+								);
 
 								return {
 									success: true,
@@ -241,6 +270,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 									analysisSource: "remote",
 									skillInstalled: true,
 								};
+							}
+							if (isSkillOverride) {
+								throw new Error("Remote skill download failed");
 							}
 							s.stop("Remote download failed, generating locally...");
 						}
@@ -259,8 +291,15 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					`Remote check failed: ${err instanceof Error ? err.message : "Unknown"}`,
 					verbose,
 				);
+				if (isSkillOverride) {
+					throw err instanceof Error ? err : new Error("Remote check failed");
+				}
 				s.stop("Remote check failed, continuing locally");
 			}
+		}
+
+		if (isSkillOverride) {
+			throw new Error(`Skill not found on offworld.sh: ${skillName}`);
 		}
 
 		// Generate locally using AI

@@ -4,6 +4,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { ConvexReactClient } from "convex/react";
 
+import { ErrorComponent, NotFoundComponent } from "./components/error-boundary";
 import Loader from "./components/loader";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
@@ -22,7 +23,8 @@ export function getRouter() {
 			queries: {
 				queryKeyHashFn: convexQueryClient.hashFn(),
 				queryFn: convexQueryClient.queryFn(),
-				gcTime: 5000,
+				staleTime: Infinity, // Convex pushes updates reactively
+				gcTime: 2 * 60 * 1000, // 2 minutes
 			},
 		},
 	});
@@ -33,9 +35,13 @@ export function getRouter() {
 		defaultPreload: "intent",
 		scrollRestoration: true,
 		defaultPreloadStaleTime: 0,
-		defaultPendingComponent: () => <Loader />,
-		defaultErrorComponent: (err) => <div>{err.error.stack}</div>,
-		defaultNotFoundComponent: () => <div>Not Found</div>,
+		defaultPendingComponent: () => (
+			<div className="flex flex-1 items-center justify-center">
+				<Loader />
+			</div>
+		),
+		defaultErrorComponent: ErrorComponent,
+		defaultNotFoundComponent: NotFoundComponent,
 		context: { queryClient, convexQueryClient },
 	});
 

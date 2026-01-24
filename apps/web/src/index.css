@@ -189,7 +189,6 @@
 /* Prose styles for markdown rendering */
 .prose {
 	@apply text-foreground;
-	max-width: 65ch;
 }
 
 .prose :where(p):not(:where([class~="not-prose"] *)) {
@@ -250,4 +249,28 @@
 
 .prose :where(a):not(:where([class~="not-prose"] *)) {
 	@apply text-primary decoration-primary/30 hover:decoration-primary underline underline-offset-2;
+}
+
+.prose :where(table):not(:where([class~="not-prose"] *)) {
+	@apply my-5 w-full border-collapse text-sm;
+}
+
+.prose :where(thead):not(:where([class~="not-prose"] *)) {
+	@apply border-b border-zinc-700;
+}
+
+.prose :where(th):not(:where([class~="not-prose"] *)) {
+	@apply px-3 py-2 text-left font-semibold;
+}
+
+.prose :where(td):not(:where([class~="not-prose"] *)) {
+	@apply border-t border-zinc-800 px-3 py-2;
+}
+
+.prose :where(tr):not(:where([class~="not-prose"] *)) {
+	@apply border-zinc-800;
+}
+
+.prose :where(hr):not(:where([class~="not-prose"] *)) {
+	@apply my-8 border-zinc-700;
 }

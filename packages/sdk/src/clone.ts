@@ -126,6 +126,37 @@ export function getCommitSha(repoPath: string): string {
 	return execGit(["rev-parse", "HEAD"], repoPath);
 }
 
+/**
+ * Get the number of commits between two SHAs.
+ * Returns the number of commits from `olderSha` to `newerSha`.
+ * Returns null if the distance cannot be determined (e.g., shallow clone without the commit).
+ *
+ * @param repoPath - Path to the git repository
+ * @param olderSha - The older commit SHA (e.g., remote skill's commit)
+ * @param newerSha - The newer commit SHA (e.g., current HEAD), defaults to HEAD
+ */
+export function getCommitDistance(
+	repoPath: string,
+	olderSha: string,
+	newerSha = "HEAD",
+): number | null {
+	try {
+		// Check if olderSha exists in the repo (may not exist in shallow clones)
+		try {
+			execGit(["cat-file", "-e", olderSha], repoPath);
+		} catch {
+			// Commit doesn't exist locally (shallow clone) - return null
+			return null;
+		}
+
+		// Count commits between olderSha and newerSha
+		const count = execGit(["rev-list", "--count", `${olderSha}..${newerSha}`], repoPath);
+		return Number.parseInt(count, 10);
+	} catch {
+		return null;
+	}
+}
+
 // ============================================================================
 // Clone Operations
 // ============================================================================
@@ -235,6 +266,32 @@ async function cloneSparse(
 // Update Operations
 // ============================================================================
 
+/**
+ * Check if a repository is a shallow clone.
+ */
+export function isShallowClone(repoPath: string): boolean {
+	try {
+		const result = execGit(["rev-parse", "--is-shallow-repository"], repoPath);
+		return result === "true";
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Convert a shallow clone to a full clone by fetching all history.
+ * Returns true if the repo was shallow and is now unshallowed.
+ * Returns false if the repo was already a full clone.
+ */
+export async function unshallowRepo(repoPath: string): Promise<boolean> {
+	if (!isShallowClone(repoPath)) {
+		return false;
+	}
+
+	await execGitAsync(["fetch", "--unshallow"], repoPath);
+	return true;
+}
+
 export interface UpdateResult {
 	/** Whether any updates were fetched */
 	updated: boolean;
@@ -242,17 +299,28 @@ export interface UpdateResult {
 	previousSha: string;
 	/** Current commit SHA after update */
 	currentSha: string;
+	/** Whether the repo was unshallowed */
+	unshallowed?: boolean;
+}
+
+export interface UpdateOptions {
+	/** Convert shallow clone to full clone */
+	unshallow?: boolean;
 }
 
 /**
  * Update a cloned repository by running git fetch and pull.
  *
  * @param qualifiedName - The qualified name of the repo (e.g., "github:owner/repo")
+ * @param options - Update options
  * @returns Update result with commit SHAs
  * @throws RepoNotFoundError if repo not in index
  * @throws GitError if fetch/pull fails
  */
-export async function updateRepo(qualifiedName: string): Promise<UpdateResult> {
+export async function updateRepo(
+	qualifiedName: string,
+	options: UpdateOptions = {},
+): Promise<UpdateResult> {
 	const entry = getIndexEntry(qualifiedName);
 	if (!entry) {
 		throw new RepoNotFoundError(qualifiedName);
@@ -266,6 +334,12 @@ export async function updateRepo(qualifiedName: string): Promise<UpdateResult> {
 
 	// Get current SHA before update
 	const previousSha = getCommitSha(repoPath);
+
+	// Unshallow if requested
+	let unshallowed = false;
+	if (options.unshallow) {
+		unshallowed = await unshallowRepo(repoPath);
+	}
 
 	await execGitAsync(["fetch"], repoPath);
 	await execGitAsync(["pull", "--ff-only"], repoPath);
@@ -283,6 +357,7 @@ export async function updateRepo(qualifiedName: string): Promise<UpdateResult> {
 		updated: previousSha !== currentSha,
 		previousSha,
 		currentSha,
+		unshallowed,
 	};
 }
 

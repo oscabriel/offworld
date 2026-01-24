@@ -5,6 +5,7 @@ import {
 	isRepoCloned,
 	getClonedRepoPath,
 	getCommitSha,
+	getCommitDistance,
 	parseRepoInput,
 	pullAnalysis,
 	pullAnalysisByName,
@@ -102,7 +103,7 @@ function parseModelFlag(model?: string): { provider?: string; model?: string } {
 }
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const { repo, shallow = true, sparse = false, branch, force = false, verbose = false } = options;
+	const { repo, shallow = false, sparse = false, branch, force = false, verbose = false } = options;
 	const skillName = options.skill?.trim() || undefined;
 	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
@@ -203,15 +204,37 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					: await checkRemote(source.fullName);
 
 				if (remoteCheck.exists && remoteCheck.commitSha) {
-					const remoteShaNorm = remoteCheck.commitSha.slice(0, 7);
+					const remoteSha = remoteCheck.commitSha;
+					const remoteShaNorm = remoteSha.slice(0, 7);
 					const currentShaNorm = currentSha.slice(0, 7);
-					const shouldDownload = isSkillOverride || remoteShaNorm === currentShaNorm;
+
+					// Check commit distance - accept if within threshold
+					const MAX_COMMIT_DISTANCE = 20;
+					const commitDistance = getCommitDistance(repoPath, remoteSha, currentSha);
+					const isWithinThreshold =
+						remoteShaNorm === currentShaNorm ||
+						(commitDistance !== null && commitDistance <= MAX_COMMIT_DISTANCE);
+
+					const shouldDownload = isSkillOverride || isWithinThreshold;
 
 					if (shouldDownload) {
 						if (!isSkillOverride) {
-							verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
+							if (commitDistance === 0 || remoteShaNorm === currentShaNorm) {
+								verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
+								s.stop("Remote skill found (exact match)");
+							} else if (commitDistance !== null) {
+								verboseLog(
+									`Remote skill is ${commitDistance} commits behind (within ${MAX_COMMIT_DISTANCE} threshold)`,
+									verbose,
+								);
+								s.stop(`Remote skill found (${commitDistance} commits behind)`);
+							} else {
+								verboseLog("Remote skill found (commit distance unknown)", verbose);
+								s.stop("Remote skill found");
+							}
+						} else {
+							s.stop("Remote skill found");
 						}
-						s.stop("Remote skill found");
 
 						const previewUrl = skillName
 							? `https://offworld.sh/${source.fullName}/${encodeURIComponent(skillName)}`
@@ -277,11 +300,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							s.stop("Remote download failed, generating locally...");
 						}
 					} else {
+						const distanceInfo =
+							commitDistance !== null ? ` (${commitDistance} commits behind)` : "";
 						verboseLog(
-							`Remote SHA (${remoteShaNorm}) differs from current (${currentShaNorm}), skipping remote`,
+							`Remote skill too outdated${distanceInfo}, threshold is ${MAX_COMMIT_DISTANCE}`,
 							verbose,
 						);
-						s.stop("Remote analysis outdated");
+						s.stop(`Remote skill outdated${distanceInfo}`);
 					}
 				} else {
 					s.stop("No remote analysis found");

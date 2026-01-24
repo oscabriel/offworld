@@ -28,7 +28,12 @@ export interface RawStreamEvent {
  * Result of parsing a stream event
  */
 export type ParsedEventResult =
-	| { type: "message.part.updated"; props: MessagePartUpdatedProps; textPart: TextPart | null; toolPart: ToolPart | null }
+	| {
+			type: "message.part.updated";
+			props: MessagePartUpdatedProps;
+			textPart: TextPart | null;
+			toolPart: ToolPart | null;
+	  }
 	| { type: "session.idle"; props: SessionIdleProps }
 	| { type: "session.error"; props: SessionErrorProps; error: SessionErrorPayload | null }
 	| { type: "unknown"; rawType: string };

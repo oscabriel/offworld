@@ -9,56 +9,17 @@ const modules = import.meta.glob("../**/*.ts");
 const t = () => convexTest(schema, modules);
 
 /**
- * Unit tests for Convex analyses functions
+ * Unit tests for Convex skill functions
  */
 
-// Sample analysis data for testing
-const sampleAnalysis = {
+// Sample skill data for testing
+const sampleSkill = {
 	fullName: "tanstack/router",
-	provider: "github",
-	summary: "# TanStack Router\n\nA fully type-safe router for React.",
-	architecture: {
-		projectType: "library",
-		entities: [
-			{
-				name: "router-core",
-				type: "package",
-				path: "packages/router-core",
-				description: "Core routing logic",
-				responsibilities: ["URL matching", "Route definitions"],
-				exports: ["createRouter", "Route"],
-				dependencies: [],
-			},
-		],
-		relationships: [{ from: "router-core", to: "utils", type: "imports" }],
-		keyFiles: [{ path: "src/index.ts", role: "entry", description: "Main export" }],
-		patterns: {
-			framework: "React",
-			buildTool: "Vite",
-			testFramework: "Vitest",
-		},
-	},
-	skill: {
-		name: "tanstack-router",
-		description: "TanStack Router skill",
-		allowedTools: ["Read", "Glob", "Grep"],
-		repositoryStructure: [{ path: "packages/", purpose: "Monorepo packages" }],
-		keyFiles: [{ path: "src/index.ts", description: "Main entry point" }],
-		searchStrategies: ["grep for createRouter"],
-		whenToUse: ["When working with TanStack Router"],
-	},
-	fileIndex: [
-		{
-			path: "src/index.ts",
-			importance: 0.9,
-			type: "entry",
-			exports: ["createRouter"],
-			imports: ["./router"],
-		},
-	],
+	skillName: "tanstack-router",
+	skillDescription: "TanStack Router skill",
+	skillContent: "# TanStack Router\n\nA fully type-safe router for React.",
 	commitSha: "abc123def456",
 	analyzedAt: "2026-01-09T10:00:00.000Z",
-	version: "0.1.0",
 };
 
 describe("pull", () => {
@@ -77,8 +38,8 @@ describe("pull", () => {
 
 		// Insert test data directly
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				pullCount: 0,
 				isVerified: false,
 			});
@@ -90,7 +51,7 @@ describe("pull", () => {
 
 		expect(result).not.toBeNull();
 		expect(result?.fullName).toBe("tanstack/router");
-		expect(result?.summary).toContain("TanStack Router");
+		expect(result?.skillContent).toContain("TanStack Router");
 		expect(result?.commitSha).toBe("abc123def456");
 	});
 });
@@ -110,8 +71,8 @@ describe("check", () => {
 		const ctx = t();
 
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				pullCount: 42,
 				isVerified: true,
 			});
@@ -134,13 +95,12 @@ describe("push", () => {
 		const ctx = t();
 
 		const result = await ctx.mutation(api.analyses.push, {
-			fullName: sampleAnalysis.fullName,
-			summary: sampleAnalysis.summary,
-			architecture: sampleAnalysis.architecture,
-			skill: sampleAnalysis.skill,
-			fileIndex: sampleAnalysis.fileIndex,
-			commitSha: sampleAnalysis.commitSha,
-			analyzedAt: sampleAnalysis.analyzedAt,
+			fullName: sampleSkill.fullName,
+			skillName: sampleSkill.skillName,
+			skillDescription: sampleSkill.skillDescription,
+			skillContent: sampleSkill.skillContent,
+			commitSha: sampleSkill.commitSha,
+			analyzedAt: sampleSkill.analyzedAt,
 		});
 
 		expect(result.success).toBe(false);
@@ -149,7 +109,7 @@ describe("push", () => {
 		}
 	});
 
-	it("creates new analysis when authenticated", async () => {
+	it("creates new skill when authenticated", async () => {
 		const ctx = t();
 
 		// Mock authenticated user
@@ -159,18 +119,17 @@ describe("push", () => {
 		});
 
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleAnalysis.fullName,
-			summary: sampleAnalysis.summary,
-			architecture: sampleAnalysis.architecture,
-			skill: sampleAnalysis.skill,
-			fileIndex: sampleAnalysis.fileIndex,
-			commitSha: sampleAnalysis.commitSha,
-			analyzedAt: sampleAnalysis.analyzedAt,
+			fullName: sampleSkill.fullName,
+			skillName: sampleSkill.skillName,
+			skillDescription: sampleSkill.skillDescription,
+			skillContent: sampleSkill.skillContent,
+			commitSha: sampleSkill.commitSha,
+			analyzedAt: sampleSkill.analyzedAt,
 		});
 
 		expect(result.success).toBe(true);
 
-		// Verify analysis was created
+		// Verify skill was created
 		const analysis = await ctx.query(api.analyses.pull, {
 			fullName: "tanstack/router",
 		});
@@ -178,13 +137,13 @@ describe("push", () => {
 		expect(analysis?.fullName).toBe("tanstack/router");
 	});
 
-	it("updates existing analysis when newer", async () => {
+	it("updates existing skill when newer", async () => {
 		const ctx = t();
 
-		// Insert initial analysis
+		// Insert initial skill
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				analyzedAt: "2026-01-09T08:00:00.000Z", // Older
 				pullCount: 10,
 				isVerified: true,
@@ -197,34 +156,33 @@ describe("push", () => {
 			email: "test@example.com",
 		});
 
-		// Update with newer analysis
+		// Update with newer skill
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleAnalysis.fullName,
-			summary: "# Updated Summary",
-			architecture: sampleAnalysis.architecture,
-			skill: sampleAnalysis.skill,
-			fileIndex: sampleAnalysis.fileIndex,
+			fullName: sampleSkill.fullName,
+			skillName: sampleSkill.skillName,
+			skillDescription: sampleSkill.skillDescription,
+			skillContent: "# Updated Skill",
 			commitSha: "newsha123",
 			analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
 		});
 
 		expect(result.success).toBe(true);
 
-		// Verify analysis was updated
+		// Verify skill was updated
 		const analysis = await ctx.query(api.analyses.pull, {
 			fullName: "tanstack/router",
 		});
-		expect(analysis?.summary).toBe("# Updated Summary");
+		expect(analysis?.skillContent).toBe("# Updated Skill");
 		expect(analysis?.commitSha).toBe("newsha123");
 	});
 
-	it("rejects older analysis over newer", async () => {
+	it("rejects older skill over newer", async () => {
 		const ctx = t();
 
-		// Insert initial analysis with newer timestamp
+		// Insert initial skill with newer timestamp
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
 				pullCount: 0,
 				isVerified: false,
@@ -237,14 +195,13 @@ describe("push", () => {
 			email: "test@example.com",
 		});
 
-		// Try to update with older analysis
+		// Try to update with older skill
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleAnalysis.fullName,
-			summary: sampleAnalysis.summary,
-			architecture: sampleAnalysis.architecture,
-			skill: sampleAnalysis.skill,
-			fileIndex: sampleAnalysis.fileIndex,
-			commitSha: sampleAnalysis.commitSha,
+			fullName: sampleSkill.fullName,
+			skillName: sampleSkill.skillName,
+			skillDescription: sampleSkill.skillDescription,
+			skillContent: sampleSkill.skillContent,
+			commitSha: sampleSkill.commitSha,
 			analyzedAt: "2026-01-09T08:00:00.000Z", // Older
 		});
 
@@ -262,7 +219,7 @@ describe("push", () => {
 		// Add 3 push logs
 		await ctx.run(async (ctx) => {
 			for (let i = 0; i < 3; i++) {
-				await ctx.db.insert("pushLogs", {
+				await ctx.db.insert("pushLog", {
 					fullName: "tanstack/router",
 					workosId,
 					pushedAt: new Date().toISOString(),
@@ -279,11 +236,10 @@ describe("push", () => {
 
 		// 4th push should be rate limited
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleAnalysis.fullName,
-			summary: sampleAnalysis.summary,
-			architecture: sampleAnalysis.architecture,
-			skill: sampleAnalysis.skill,
-			fileIndex: sampleAnalysis.fileIndex,
+			fullName: sampleSkill.fullName,
+			skillName: sampleSkill.skillName,
+			skillDescription: sampleSkill.skillDescription,
+			skillContent: sampleSkill.skillContent,
 			commitSha: "newcommit",
 			analyzedAt: new Date().toISOString(),
 		});
@@ -296,12 +252,12 @@ describe("push", () => {
 });
 
 describe("get", () => {
-	it("returns full analysis for web app", async () => {
+	it("returns full skill for web app", async () => {
 		const ctx = t();
 
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				pullCount: 42,
 				isVerified: true,
 			});
@@ -319,18 +275,18 @@ describe("get", () => {
 });
 
 describe("list", () => {
-	it("returns analyses sorted by pullCount", async () => {
+	it("returns skills sorted by pullCount", async () => {
 		const ctx = t();
 
 		await ctx.run(async (ctx) => {
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				fullName: "repo/low",
 				pullCount: 5,
 				isVerified: false,
 			});
-			await ctx.db.insert("analyses", {
-				...sampleAnalysis,
+			await ctx.db.insert("skill", {
+				...sampleSkill,
 				fullName: "repo/high",
 				pullCount: 100,
 				isVerified: true,

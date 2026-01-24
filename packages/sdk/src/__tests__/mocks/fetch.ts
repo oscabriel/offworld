@@ -128,9 +128,9 @@ export function installFetchMock(): Mock {
  */
 export function mockOffworldPullResponse(analysis: {
 	fullName: string;
-	summary: string;
-	architecture: object;
-	skill: string;
+	skillName: string;
+	skillDescription: string;
+	skillContent: string;
 	commitSha: string;
 	analyzedAt: string;
 }): FetchMockRoute {

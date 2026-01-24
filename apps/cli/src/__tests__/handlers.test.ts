@@ -47,7 +47,9 @@ vi.mock("@offworld/sdk", () => ({
 	getIndexEntry: vi.fn(),
 	listRepos: vi.fn(),
 	pullAnalysis: vi.fn(),
+	pullAnalysisByName: vi.fn(),
 	checkRemote: vi.fn(),
+	checkRemoteByName: vi.fn(),
 	checkStaleness: vi.fn(),
 	generateSkillWithAI: vi.fn(),
 	installSkill: vi.fn(),
@@ -145,25 +147,11 @@ describe("CLI handlers", () => {
 
 	const mockRemoteAnalysis = {
 		fullName: "tanstack/router",
-		summary: "# TanStack Router\n...",
-		architecture: {
-			projectType: "library" as const,
-			entities: [],
-			relationships: [],
-			keyFiles: [],
-			patterns: {},
-		},
-		skill: {
-			name: "tanstack-router",
-			description: "TanStack Router expert",
-			quickPaths: [{ path: "src", description: "Source code" }],
-			searchPatterns: [{ find: "Routes", pattern: "createRoute", path: "src" }],
-			whenToUse: ["When working with TanStack Router"],
-		},
-		fileIndex: [],
+		skillName: "tanstack-router",
+		skillDescription: "TanStack Router expert",
+		skillContent: "# TanStack Router\n...",
 		commitSha: "abc123",
 		analyzedAt: "2026-01-09T12:00:00Z",
-		pullCount: 10,
 	};
 
 	const mockIndexEntry: RepoIndexEntry = {

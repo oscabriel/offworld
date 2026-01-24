@@ -17,14 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
-function formatDate(isoString: string): string {
-	return new Date(isoString).toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
-}
+import { formatShortDate } from "@/lib/format";
 
 export function AnalysisTable() {
 	const { data: analyses } = useSuspenseQuery(convexQuery(api.admin.listAllAnalyses, {}));
@@ -68,7 +61,7 @@ export function AnalysisTable() {
 								Analyzed
 							</th>
 							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
-								Version
+								Commit
 							</th>
 							<th className="text-muted-foreground px-5 py-3 text-right font-mono text-xs">
 								Actions
@@ -88,10 +81,10 @@ export function AnalysisTable() {
 									{analysis.pullCount.toLocaleString()}
 								</td>
 								<td className="text-muted-foreground px-5 py-3 font-mono text-sm">
-									{formatDate(analysis.analyzedAt)}
+									{formatShortDate(analysis.analyzedAt)}
 								</td>
 								<td className="text-muted-foreground px-5 py-3 font-mono text-sm">
-									{analysis.version}
+									{analysis.commitSha ? analysis.commitSha.slice(0, 7) : "—"}
 								</td>
 								<td className="px-5 py-3 text-right">
 									<div className="flex justify-end gap-2">

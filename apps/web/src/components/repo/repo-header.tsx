@@ -1,8 +1,6 @@
-import { Check, Copy, ExternalLink } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
 import { StatusBadge } from "@/components/repo/status-badge";
+import { InstallCommandBox } from "@/components/repo/install-command-box";
 
 function formatStars(stars: number): string {
 	if (stars < 10) return stars.toString();
@@ -26,36 +24,6 @@ interface RepoHeaderProps {
 		language?: string;
 	} | null;
 	loading?: boolean;
-	breadcrumbs?: React.ReactNode;
-}
-
-function InstallCommandBox({ fullName }: { fullName: string }) {
-	const [copied, setCopied] = useState(false);
-	const command = `bunx offworld pull ${fullName}`;
-
-	const copyCommand = () => {
-		navigator.clipboard.writeText(command);
-		setCopied(true);
-		toast.success("Copied to clipboard");
-		setTimeout(() => setCopied(false), 2000);
-	};
-
-	return (
-		<div className="bg-muted/50 border-primary/10 border">
-			<div className="text-muted-foreground border-primary/10 border-b px-5 py-2 font-mono text-sm">
-				Install skill
-			</div>
-			<div className="flex items-center gap-3 p-5">
-				<code className="flex items-center gap-2 font-mono text-xs">
-					<span className="text-muted-foreground select-none">$</span>
-					<span className="text-foreground">{command}</span>
-				</code>
-				<Button variant="ghost" size="icon-sm" onClick={copyCommand} className="shrink-0">
-					{copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-				</Button>
-			</div>
-		</div>
-	);
 }
 
 export function RepoHeader({
@@ -64,7 +32,6 @@ export function RepoHeader({
 	analysisData,
 	githubMetadata,
 	loading,
-	breadcrumbs,
 }: RepoHeaderProps) {
 	const hasAnalysis = analysisData !== null && analysisData !== undefined;
 
@@ -73,7 +40,6 @@ export function RepoHeader({
 	return (
 		<header>
 			<div className="container mx-auto max-w-7xl px-5 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-				{breadcrumbs && <nav className="-mt-3 mb-2">{breadcrumbs}</nav>}
 				<div className="space-y-5">
 					<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
 						<div className="space-y-3">
@@ -115,7 +81,10 @@ export function RepoHeader({
 								</p>
 							)}
 						</div>
-						<InstallCommandBox fullName={fullName} />
+						<InstallCommandBox
+							fullName={fullName}
+							label={hasAnalysis ? "Install skill" : "Create skill"}
+						/>
 					</div>
 				</div>
 			</div>

@@ -7,10 +7,31 @@ import { v } from "convex/values";
  */
 
 export default defineSchema({
-	// Skill table
-	skill: defineTable({
-		// Repository identification
+	// Repository table - GitHub metadata
+	repository: defineTable({
+		// GitHub identification
 		fullName: v.string(), // owner/repo format
+		owner: v.string(),
+		name: v.string(),
+
+		// GitHub metadata
+		description: v.optional(v.string()),
+		stars: v.number(),
+		language: v.optional(v.string()),
+		defaultBranch: v.string(),
+		githubUrl: v.string(),
+
+		// Timestamps
+		fetchedAt: v.string(), // when we last synced from GitHub
+	})
+		.index("by_fullName", ["fullName"])
+		.index("by_owner", ["owner"])
+		.index("by_stars", ["stars"])
+		.index("by_fetchedAt", ["fetchedAt"]),
+
+	// Skill table - references repository
+	skill: defineTable({
+		repositoryId: v.id("repository"),
 
 		// Skill content
 		skillName: v.string(),
@@ -28,9 +49,8 @@ export default defineSchema({
 		// User who pushed (optional)
 		workosId: v.optional(v.string()),
 	})
-		.index("by_fullName", ["fullName"])
-		.index("by_fullName_skillName", ["fullName", "skillName"])
-		.index("by_fullName_analyzedAt", ["fullName", "analyzedAt"])
+		.index("by_repositoryId", ["repositoryId"])
+		.index("by_repositoryId_skillName", ["repositoryId", "skillName"])
 		.index("by_pullCount", ["pullCount"])
 		.index("by_analyzedAt", ["analyzedAt"]),
 

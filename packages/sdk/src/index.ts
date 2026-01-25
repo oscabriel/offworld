@@ -89,6 +89,7 @@ export {
 	checkRemoteByName,
 	checkStaleness,
 	fetchRepoStars,
+	fetchGitHubMetadata,
 	canPushToWeb,
 	validatePushAllowed,
 	type AnalysisData,
@@ -97,6 +98,7 @@ export {
 	type PushResponse,
 	type StalenessResult,
 	type CanPushResult,
+	type GitHubRepoMetadata,
 } from "./sync.js";
 
 export {

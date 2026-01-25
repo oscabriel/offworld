@@ -48,7 +48,8 @@ export interface InstallSkillMeta {
 // Skill Generation
 // ============================================================================
 
-const SKILL_GENERATION_PROMPT = `You are an expert at analyzing open source libraries and producing skill files for AI coding agents.
+function createSkillGenerationPrompt(skillName: string): string {
+	return `You are an expert at analyzing open source libraries and producing skill files for AI coding agents.
 
 ## PRIMARY GOAL
 
@@ -94,9 +95,11 @@ Use Read, Grep, Glob tools to explore:
 
 ## OUTPUT FORMAT
 
+IMPORTANT: The skill name MUST be exactly "${skillName}" - do not change this.
+
 \`\`\`markdown
 ---
-name: {Library Name}
+name: ${skillName}
 description: {One-line description, max 100 chars}
 allowed-tools: [Read, Grep, Glob]
 ---
@@ -183,11 +186,12 @@ Now explore the codebase and generate the SKILL.md content.
 CRITICAL: Wrap your final SKILL.md output in XML tags exactly like this:
 <skill_output>
 ---
-name: ...
+name: ${skillName}
 (the complete markdown content)
 </skill_output>
 
 Output ONLY the skill content inside the tags. No explanations before or after the tags.`;
+}
 
 /**
  * Extract the actual SKILL.md content from AI response.
@@ -278,8 +282,12 @@ export async function generateSkillWithAI(
 	const commitSha = getCommitSha(repoPath);
 	onDebug?.(`Commit SHA: ${commitSha}`);
 
+	// Generate the skill name in owner-repo-reference format
+	const skillName = toSkillDirName(repoName);
+	onDebug?.(`Skill name: ${skillName}`);
+
 	const promptOptions: StreamPromptOptions = {
-		prompt: SKILL_GENERATION_PROMPT,
+		prompt: createSkillGenerationPrompt(skillName),
 		cwd: repoPath,
 		provider: aiProvider,
 		model: aiModel,

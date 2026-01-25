@@ -48,14 +48,26 @@ export function getRepoPath(
 
 /**
  * Convert owner/repo format to skill directory name.
- * Collapses owner==repo (e.g., better-auth/better-auth -> better-auth-reference)
+ * Collapses redundant owner/repo pairs by checking if repo name is contained in owner:
+ * - honojs/hono -> hono-reference (hono is in honojs)
+ * - get-convex/convex-backend -> convex-backend-reference (convex is in get-convex)
+ * - tanstack/query -> tanstack-query-reference (query is not in tanstack)
  */
 export function toSkillDirName(repoName: string): string {
 	if (repoName.includes("/")) {
 		const [owner, repo] = repoName.split("/") as [string, string];
-		if (owner === repo) {
+		const ownerLower = owner.toLowerCase();
+		const repoLower = repo.toLowerCase();
+
+		// If owner contains repo (or a significant part of repo), just use repo
+		// Split repo by hyphens and check if any part is in the owner
+		const repoParts = repoLower.split("-");
+		const significantPart = repoParts.find((part) => part.length >= 3 && ownerLower.includes(part));
+
+		if (significantPart || ownerLower === repoLower) {
 			return `${repo}-reference`;
 		}
+
 		return `${owner}-${repo}-reference`;
 	}
 	return `${repoName}-reference`;

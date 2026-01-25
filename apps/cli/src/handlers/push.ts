@@ -13,6 +13,7 @@ import {
 	isRepoCloned,
 	pushAnalysis,
 	validatePushAllowed,
+	fetchGitHubMetadata,
 	NotLoggedInError,
 	TokenExpiredError,
 	PushNotAllowedError,
@@ -213,7 +214,18 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 
 		s.stop("Analysis loaded");
 
-		// Step 6: Push to offworld.sh
+		// Step 6: Fetch GitHub metadata
+		s.start("Fetching repository metadata...");
+		const githubMetadata = await fetchGitHubMetadata(source.owner, source.repo);
+		if (githubMetadata) {
+			localAnalysis.repoDescription = githubMetadata.description;
+			localAnalysis.repoStars = githubMetadata.stars;
+			localAnalysis.repoLanguage = githubMetadata.language;
+			localAnalysis.repoDefaultBranch = githubMetadata.defaultBranch;
+		}
+		s.stop("Metadata fetched");
+
+		// Step 7: Push to offworld.sh
 		s.start("Uploading to offworld.sh...");
 		try {
 			const result = await pushAnalysis(localAnalysis, token);

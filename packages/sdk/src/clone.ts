@@ -394,6 +394,7 @@ export async function removeRepo(
 
 	if (removeRepoFiles && existsSync(entry.localPath)) {
 		rmSync(entry.localPath, { recursive: true, force: true });
+		cleanupEmptyParentDirs(entry.localPath);
 	}
 
 	if (removeSkillFiles) {

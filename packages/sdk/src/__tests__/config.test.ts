@@ -118,6 +118,7 @@ import {
 	getConfigPath,
 	loadConfig,
 	saveConfig,
+	toSkillDirName,
 } from "../config.js";
 
 describe("config.ts", () => {
@@ -498,6 +499,44 @@ describe("config.ts", () => {
 			const parsed = JSON.parse(savedFile!.content);
 			expect(parsed.repoRoot).toBe("/verify/path");
 			expect(parsed.defaultShallow).toBe(false);
+		});
+	});
+
+	// =========================================================================
+	// toSkillDirName tests
+	// =========================================================================
+	describe("toSkillDirName", () => {
+		it("collapses exact owner/repo match", () => {
+			expect(toSkillDirName("better-auth/better-auth")).toBe("better-auth-reference");
+		});
+
+		it("collapses when repo part is contained in owner", () => {
+			expect(toSkillDirName("honojs/hono")).toBe("hono-reference");
+			expect(toSkillDirName("get-convex/convex-backend")).toBe("convex-backend-reference");
+			expect(toSkillDirName("get-convex/convex-helpers")).toBe("convex-helpers-reference");
+			expect(toSkillDirName("alchemy-run/alchemy")).toBe("alchemy-reference");
+			expect(toSkillDirName("vitest-dev/vitest")).toBe("vitest-reference");
+			expect(toSkillDirName("use-gesture/gesture")).toBe("gesture-reference");
+		});
+
+		it("keeps owner when no repo part is contained in owner", () => {
+			expect(toSkillDirName("tanstack/query")).toBe("tanstack-query-reference");
+			expect(toSkillDirName("tanstack/router")).toBe("tanstack-router-reference");
+			expect(toSkillDirName("vercel/ai")).toBe("vercel-ai-reference");
+		});
+
+		it("ignores short parts (< 3 chars) to avoid false positives", () => {
+			// "ai" is only 2 chars, so vercel/ai should not collapse
+			expect(toSkillDirName("vercel/ai")).toBe("vercel-ai-reference");
+		});
+
+		it("handles simple repo name without slash", () => {
+			expect(toSkillDirName("my-lib")).toBe("my-lib-reference");
+		});
+
+		it("is case insensitive for matching", () => {
+			expect(toSkillDirName("HonoJS/Hono")).toBe("Hono-reference");
+			expect(toSkillDirName("Get-Convex/Convex-Backend")).toBe("Convex-Backend-reference");
 		});
 	});
 });

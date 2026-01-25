@@ -89,6 +89,11 @@ export interface AnalysisData {
 	skillContent: string;
 	commitSha: string;
 	analyzedAt: string;
+	// Optional GitHub metadata for repository
+	repoDescription?: string;
+	repoStars?: number;
+	repoLanguage?: string;
+	repoDefaultBranch?: string;
 }
 
 /** Response from pull query */
@@ -219,6 +224,11 @@ export async function pushAnalysis(analysis: AnalysisData, token: string): Promi
 			skillContent: analysis.skillContent,
 			commitSha: analysis.commitSha,
 			analyzedAt: analysis.analyzedAt,
+			// Include GitHub metadata if available
+			repoDescription: analysis.repoDescription,
+			repoStars: analysis.repoStars,
+			repoLanguage: analysis.repoLanguage,
+			repoDefaultBranch: analysis.repoDefaultBranch,
 		});
 
 		if (!result.success) {
@@ -336,6 +346,54 @@ export async function checkStaleness(
 // Push Validation Functions
 // ============================================================================
 
+/** GitHub repository metadata */
+export interface GitHubRepoMetadata {
+	stars: number;
+	description?: string;
+	language?: string;
+	defaultBranch: string;
+}
+
+/**
+ * Fetches GitHub repository metadata
+ * @param owner - Repository owner
+ * @param repo - Repository name
+ * @returns Repository metadata or null on error
+ */
+export async function fetchGitHubMetadata(
+	owner: string,
+	repo: string,
+): Promise<GitHubRepoMetadata | null> {
+	try {
+		const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}`, {
+			headers: {
+				Accept: "application/vnd.github.v3+json",
+				"User-Agent": "offworld-cli",
+			},
+		});
+
+		if (!response.ok) {
+			return null;
+		}
+
+		const data = (await response.json()) as {
+			stargazers_count?: number;
+			description?: string | null;
+			language?: string | null;
+			default_branch?: string;
+		};
+
+		return {
+			stars: data.stargazers_count ?? 0,
+			description: data.description ?? undefined,
+			language: data.language ?? undefined,
+			defaultBranch: data.default_branch ?? "main",
+		};
+	} catch {
+		return null;
+	}
+}
+
 /**
  * Fetches GitHub repository stars
  * @param owner - Repository owner
@@ -343,24 +401,8 @@ export async function checkStaleness(
  * @returns Number of stars, or 0 on error
  */
 export async function fetchRepoStars(owner: string, repo: string): Promise<number> {
-	try {
-		const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}`, {
-			headers: {
-				Accept: "application/vnd.github.v3+json",
-				// User-Agent required by GitHub API
-				"User-Agent": "offworld-cli",
-			},
-		});
-
-		if (!response.ok) {
-			return 0;
-		}
-
-		const data = (await response.json()) as { stargazers_count?: number };
-		return data.stargazers_count ?? 0;
-	} catch {
-		return 0;
-	}
+	const metadata = await fetchGitHubMetadata(owner, repo);
+	return metadata?.stars ?? 0;
 }
 
 /**

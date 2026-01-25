@@ -34,8 +34,8 @@ export const agents: Record<Agent, AgentConfig> = {
 	opencode: {
 		name: "opencode",
 		displayName: "OpenCode",
-		skillsDir: ".opencode/skill",
-		globalSkillsDir: "~/.config/opencode/skill",
+		skillsDir: ".opencode/skills",
+		globalSkillsDir: "~/.config/opencode/skills",
 		detectInstalled: () => existsSync(expandTilde("~/.config/opencode")),
 	},
 	"claude-code": {

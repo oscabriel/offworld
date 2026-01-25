@@ -9,14 +9,22 @@ export const listAllAnalyses = query({
 
 		const skills = await ctx.db.query("skill").order("desc").collect();
 
-		return skills.map((skill) => ({
-			_id: skill._id,
-			fullName: skill.fullName,
-			pullCount: skill.pullCount,
-			analyzedAt: skill.analyzedAt,
-			commitSha: skill.commitSha,
-			isVerified: skill.isVerified,
-		}));
+		// Join with repository data
+		const results = await Promise.all(
+			skills.map(async (skill) => {
+				const repo = await ctx.db.get(skill.repositoryId);
+				return {
+					_id: skill._id,
+					fullName: repo?.fullName ?? "unknown",
+					pullCount: skill.pullCount,
+					analyzedAt: skill.analyzedAt,
+					commitSha: skill.commitSha,
+					isVerified: skill.isVerified,
+				};
+			}),
+		);
+
+		return results;
 	},
 });
 
@@ -42,16 +50,25 @@ export const deleteAnalysis = mutation({
 	handler: async (ctx, args) => {
 		await requireAdmin(ctx);
 
-		const analysis = await ctx.db
-			.query("skill")
+		const repo = await ctx.db
+			.query("repository")
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 
-		if (!analysis) {
-			throw new Error("Analysis not found");
+		if (!repo) {
+			throw new Error("Repository not found");
 		}
 
-		await ctx.db.delete(analysis._id);
+		const skill = await ctx.db
+			.query("skill")
+			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
+			.first();
+
+		if (!skill) {
+			throw new Error("Skill not found");
+		}
+
+		await ctx.db.delete(skill._id);
 		return { success: true };
 	},
 });
@@ -61,19 +78,28 @@ export const toggleVerified = mutation({
 	handler: async (ctx, args) => {
 		await requireAdmin(ctx);
 
-		const analysis = await ctx.db
-			.query("skill")
+		const repo = await ctx.db
+			.query("repository")
 			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
 			.first();
 
-		if (!analysis) {
-			throw new Error("Analysis not found");
+		if (!repo) {
+			throw new Error("Repository not found");
 		}
 
-		await ctx.db.patch(analysis._id, {
-			isVerified: !analysis.isVerified,
+		const skill = await ctx.db
+			.query("skill")
+			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
+			.first();
+
+		if (!skill) {
+			throw new Error("Skill not found");
+		}
+
+		await ctx.db.patch(skill._id, {
+			isVerified: !skill.isVerified,
 		});
 
-		return { success: true, isVerified: !analysis.isVerified };
+		return { success: true, isVerified: !skill.isVerified };
 	},
 });

@@ -12,15 +12,49 @@ const t = () => convexTest(schema, modules);
  * Unit tests for Convex skill functions
  */
 
-// Sample skill data for testing
-const sampleSkill = {
+// Sample repository data
+const sampleRepo = {
 	fullName: "tanstack/router",
+	owner: "tanstack",
+	name: "router",
+	description: "TanStack Router - fully type-safe router for React",
+	stars: 1000,
+	language: "TypeScript",
+	defaultBranch: "main",
+	githubUrl: "https://github.com/tanstack/router",
+	fetchedAt: "2026-01-09T10:00:00.000Z",
+};
+
+// Sample skill data for testing (without repositoryId - added dynamically)
+const sampleSkillData = {
 	skillName: "tanstack-router",
 	skillDescription: "TanStack Router skill",
 	skillContent: "# TanStack Router\n\nA fully type-safe router for React.",
 	commitSha: "abc123def456",
 	analyzedAt: "2026-01-09T10:00:00.000Z",
 };
+
+// Helper to create repo and skill together
+async function createRepoAndSkill(
+	ctx: ReturnType<typeof t>,
+	repoOverrides: Partial<typeof sampleRepo> = {},
+	skillOverrides: Partial<typeof sampleSkillData & { pullCount: number; isVerified: boolean }> = {},
+) {
+	return await ctx.run(async (runCtx) => {
+		const repoId = await runCtx.db.insert("repository", {
+			...sampleRepo,
+			...repoOverrides,
+		});
+		const skillId = await runCtx.db.insert("skill", {
+			repositoryId: repoId,
+			...sampleSkillData,
+			pullCount: 0,
+			isVerified: false,
+			...skillOverrides,
+		});
+		return { repoId, skillId };
+	});
+}
 
 describe("pull", () => {
 	it("returns null for missing repo", async () => {
@@ -36,14 +70,7 @@ describe("pull", () => {
 	it("returns analysis for existing repo", async () => {
 		const ctx = t();
 
-		// Insert test data directly
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("skill", {
-				...sampleSkill,
-				pullCount: 0,
-				isVerified: false,
-			});
-		});
+		await createRepoAndSkill(ctx);
 
 		const result = await ctx.query(api.analyses.pull, {
 			fullName: "tanstack/router",
@@ -70,13 +97,7 @@ describe("check", () => {
 	it("returns commitSha and analyzedAt when exists", async () => {
 		const ctx = t();
 
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("skill", {
-				...sampleSkill,
-				pullCount: 42,
-				isVerified: true,
-			});
-		});
+		await createRepoAndSkill(ctx, {}, { pullCount: 42, isVerified: true });
 
 		const result = await ctx.query(api.analyses.check, {
 			fullName: "tanstack/router",
@@ -95,12 +116,12 @@ describe("push", () => {
 		const ctx = t();
 
 		const result = await ctx.mutation(api.analyses.push, {
-			fullName: sampleSkill.fullName,
-			skillName: sampleSkill.skillName,
-			skillDescription: sampleSkill.skillDescription,
-			skillContent: sampleSkill.skillContent,
-			commitSha: sampleSkill.commitSha,
-			analyzedAt: sampleSkill.analyzedAt,
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
+			skillContent: sampleSkillData.skillContent,
+			commitSha: sampleSkillData.commitSha,
+			analyzedAt: sampleSkillData.analyzedAt,
 		});
 
 		expect(result.success).toBe(false);
@@ -119,12 +140,12 @@ describe("push", () => {
 		});
 
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleSkill.fullName,
-			skillName: sampleSkill.skillName,
-			skillDescription: sampleSkill.skillDescription,
-			skillContent: sampleSkill.skillContent,
-			commitSha: sampleSkill.commitSha,
-			analyzedAt: sampleSkill.analyzedAt,
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
+			skillContent: sampleSkillData.skillContent,
+			commitSha: sampleSkillData.commitSha,
+			analyzedAt: sampleSkillData.analyzedAt,
 		});
 
 		expect(result.success).toBe(true);
@@ -140,15 +161,16 @@ describe("push", () => {
 	it("updates existing skill when newer", async () => {
 		const ctx = t();
 
-		// Insert initial skill
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("skill", {
-				...sampleSkill,
+		// Insert initial repo and skill
+		await createRepoAndSkill(
+			ctx,
+			{},
+			{
 				analyzedAt: "2026-01-09T08:00:00.000Z", // Older
 				pullCount: 10,
 				isVerified: true,
-			});
-		});
+			},
+		);
 
 		// Mock authenticated user
 		const asUser = ctx.withIdentity({
@@ -158,9 +180,9 @@ describe("push", () => {
 
 		// Update with newer skill
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleSkill.fullName,
-			skillName: sampleSkill.skillName,
-			skillDescription: sampleSkill.skillDescription,
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
 			skillContent: "# Updated Skill",
 			commitSha: "newsha123",
 			analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
@@ -179,15 +201,16 @@ describe("push", () => {
 	it("rejects older skill over newer", async () => {
 		const ctx = t();
 
-		// Insert initial skill with newer timestamp
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("skill", {
-				...sampleSkill,
+		// Insert initial repo and skill with newer timestamp
+		await createRepoAndSkill(
+			ctx,
+			{},
+			{
 				analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
 				pullCount: 0,
 				isVerified: false,
-			});
-		});
+			},
+		);
 
 		// Mock authenticated user
 		const asUser = ctx.withIdentity({
@@ -197,11 +220,11 @@ describe("push", () => {
 
 		// Try to update with older skill
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleSkill.fullName,
-			skillName: sampleSkill.skillName,
-			skillDescription: sampleSkill.skillDescription,
-			skillContent: sampleSkill.skillContent,
-			commitSha: sampleSkill.commitSha,
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
+			skillContent: sampleSkillData.skillContent,
+			commitSha: sampleSkillData.commitSha,
 			analyzedAt: "2026-01-09T08:00:00.000Z", // Older
 		});
 
@@ -217,9 +240,9 @@ describe("push", () => {
 		const workosId = "workos_test_user";
 
 		// Add 3 push logs
-		await ctx.run(async (ctx) => {
+		await ctx.run(async (runCtx) => {
 			for (let i = 0; i < 3; i++) {
-				await ctx.db.insert("pushLog", {
+				await runCtx.db.insert("pushLog", {
 					fullName: "tanstack/router",
 					workosId,
 					pushedAt: new Date().toISOString(),
@@ -236,10 +259,10 @@ describe("push", () => {
 
 		// 4th push should be rate limited
 		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleSkill.fullName,
-			skillName: sampleSkill.skillName,
-			skillDescription: sampleSkill.skillDescription,
-			skillContent: sampleSkill.skillContent,
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
+			skillContent: sampleSkillData.skillContent,
 			commitSha: "newcommit",
 			analyzedAt: new Date().toISOString(),
 		});
@@ -255,20 +278,13 @@ describe("get", () => {
 	it("returns full skill for web app", async () => {
 		const ctx = t();
 
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("skill", {
-				...sampleSkill,
-				pullCount: 42,
-				isVerified: true,
-			});
-		});
+		await createRepoAndSkill(ctx, {}, { pullCount: 42, isVerified: true });
 
 		const result = await ctx.query(api.analyses.get, {
 			fullName: "tanstack/router",
 		});
 
 		expect(result).not.toBeNull();
-		expect(result?.fullName).toBe("tanstack/router");
 		expect(result?.pullCount).toBe(42);
 		expect(result?.isVerified).toBe(true);
 	});
@@ -278,16 +294,29 @@ describe("list", () => {
 	it("returns skills sorted by pullCount", async () => {
 		const ctx = t();
 
-		await ctx.run(async (ctx) => {
-			await ctx.db.insert("skill", {
-				...sampleSkill,
+		await ctx.run(async (runCtx) => {
+			const lowRepoId = await runCtx.db.insert("repository", {
+				...sampleRepo,
 				fullName: "repo/low",
+				owner: "repo",
+				name: "low",
+			});
+			await runCtx.db.insert("skill", {
+				repositoryId: lowRepoId,
+				...sampleSkillData,
 				pullCount: 5,
 				isVerified: false,
 			});
-			await ctx.db.insert("skill", {
-				...sampleSkill,
+
+			const highRepoId = await runCtx.db.insert("repository", {
+				...sampleRepo,
 				fullName: "repo/high",
+				owner: "repo",
+				name: "high",
+			});
+			await runCtx.db.insert("skill", {
+				repositoryId: highRepoId,
+				...sampleSkillData,
 				pullCount: 100,
 				isVerified: true,
 			});

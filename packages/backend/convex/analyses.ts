@@ -17,9 +17,16 @@ import { mutation, query } from "./_generated/server";
 export const get = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) return null;
+
 		return await ctx.db
 			.query("skill")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.first();
 	},
 });
@@ -31,10 +38,17 @@ export const get = query({
 export const getByName = query({
 	args: { fullName: v.string(), skillName: v.string() },
 	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) return null;
+
 		return await ctx.db
 			.query("skill")
-			.withIndex("by_fullName_skillName", (q) =>
-				q.eq("fullName", args.fullName).eq("skillName", args.skillName),
+			.withIndex("by_repositoryId_skillName", (q) =>
+				q.eq("repositoryId", repo._id).eq("skillName", args.skillName),
 			)
 			.first();
 	},
@@ -46,10 +60,16 @@ export const getByName = query({
 export const listByRepo = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) return [];
+
 		const skills = await ctx.db
 			.query("skill")
-			.withIndex("by_fullName_analyzedAt", (q) => q.eq("fullName", args.fullName))
-			.order("desc")
+			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.collect();
 
 		return skills.map((skill) => ({
@@ -77,13 +97,21 @@ export const list = query({
 
 		const skills = await ctx.db.query("skill").withIndex("by_pullCount").order("desc").take(limit);
 
-		return skills.map((skill) => ({
-			fullName: skill.fullName,
-			pullCount: skill.pullCount,
-			analyzedAt: skill.analyzedAt,
-			commitSha: skill.commitSha,
-			isVerified: skill.isVerified,
-		}));
+		// Join with repository data
+		const results = await Promise.all(
+			skills.map(async (skill) => {
+				const repo = await ctx.db.get(skill.repositoryId);
+				return {
+					fullName: repo?.fullName ?? "unknown",
+					pullCount: skill.pullCount,
+					analyzedAt: skill.analyzedAt,
+					commitSha: skill.commitSha,
+					isVerified: skill.isVerified,
+				};
+			}),
+		);
+
+		return results;
 	},
 });
 
@@ -97,23 +125,30 @@ export const list = query({
 export const pull = query({
 	args: { fullName: v.string(), skillName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) return null;
+
 		const skillName = args.skillName;
 		const skill = skillName
 			? await ctx.db
 					.query("skill")
-					.withIndex("by_fullName_skillName", (q) =>
-						q.eq("fullName", args.fullName).eq("skillName", skillName),
+					.withIndex("by_repositoryId_skillName", (q) =>
+						q.eq("repositoryId", repo._id).eq("skillName", skillName),
 					)
 					.first()
 			: await ctx.db
 					.query("skill")
-					.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+					.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 					.first();
 
 		if (!skill) return null;
 
 		return {
-			fullName: skill.fullName,
+			fullName: repo.fullName,
 			skillName: skill.skillName,
 			skillDescription: skill.skillDescription,
 			skillContent: skill.skillContent,
@@ -129,17 +164,24 @@ export const pull = query({
 export const check = query({
 	args: { fullName: v.string(), skillName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) return { exists: false as const };
+
 		const skillName = args.skillName;
 		const skill = skillName
 			? await ctx.db
 					.query("skill")
-					.withIndex("by_fullName_skillName", (q) =>
-						q.eq("fullName", args.fullName).eq("skillName", skillName),
+					.withIndex("by_repositoryId_skillName", (q) =>
+						q.eq("repositoryId", repo._id).eq("skillName", skillName),
 					)
 					.first()
 			: await ctx.db
 					.query("skill")
-					.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+					.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 					.first();
 
 		if (!skill) return { exists: false as const };
@@ -163,6 +205,11 @@ export const push = mutation({
 		skillContent: v.string(),
 		commitSha: v.string(),
 		analyzedAt: v.string(),
+		// GitHub metadata for repository upsert
+		repoDescription: v.optional(v.string()),
+		repoStars: v.optional(v.number()),
+		repoLanguage: v.optional(v.string()),
+		repoDefaultBranch: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Auth check
@@ -172,7 +219,7 @@ export const push = mutation({
 		}
 		const workosId = identity.subject;
 
-		// Ensure user exists (inline from auth.ts ensureUser)
+		// Ensure user exists
 		const existingUser = await ctx.db
 			.query("user")
 			.withIndex("by_workosId", (q) => q.eq("workosId", workosId))
@@ -200,11 +247,51 @@ export const push = mutation({
 			return { success: false, error: "rate_limit" } as const;
 		}
 
+		// Parse owner/name from fullName
+		const parts = args.fullName.split("/");
+		const owner = parts[0] ?? "";
+		const name = parts[1] ?? "";
+
+		// Upsert repository
+		let repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		const now = new Date().toISOString();
+
+		if (repo) {
+			await ctx.db.patch(repo._id, {
+				description: args.repoDescription,
+				stars: args.repoStars ?? repo.stars,
+				language: args.repoLanguage,
+				defaultBranch: args.repoDefaultBranch ?? repo.defaultBranch,
+				fetchedAt: now,
+			});
+		} else {
+			const repoId = await ctx.db.insert("repository", {
+				fullName: args.fullName,
+				owner,
+				name,
+				description: args.repoDescription,
+				stars: args.repoStars ?? 0,
+				language: args.repoLanguage,
+				defaultBranch: args.repoDefaultBranch ?? "main",
+				githubUrl: `https://github.com/${args.fullName}`,
+				fetchedAt: now,
+			});
+			repo = await ctx.db.get(repoId);
+		}
+
+		if (!repo) {
+			return { success: false, error: "repository_creation_failed" } as const;
+		}
+
 		// Conflict check
 		const existing = await ctx.db
 			.query("skill")
-			.withIndex("by_fullName_skillName", (q) =>
-				q.eq("fullName", args.fullName).eq("skillName", args.skillName),
+			.withIndex("by_repositoryId_skillName", (q) =>
+				q.eq("repositoryId", repo._id).eq("skillName", args.skillName),
 			)
 			.first();
 
@@ -221,15 +308,24 @@ export const push = mutation({
 			}
 		}
 
-		// Upsert
+		// Upsert skill
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				...args,
+				skillName: args.skillName,
+				skillDescription: args.skillDescription,
+				skillContent: args.skillContent,
+				commitSha: args.commitSha,
+				analyzedAt: args.analyzedAt,
 				workosId,
 			});
 		} else {
 			await ctx.db.insert("skill", {
-				...args,
+				repositoryId: repo._id,
+				skillName: args.skillName,
+				skillDescription: args.skillDescription,
+				skillContent: args.skillContent,
+				commitSha: args.commitSha,
+				analyzedAt: args.analyzedAt,
 				pullCount: 0,
 				isVerified: false,
 				workosId,
@@ -240,7 +336,7 @@ export const push = mutation({
 		await ctx.db.insert("pushLog", {
 			fullName: args.fullName,
 			workosId,
-			pushedAt: new Date().toISOString(),
+			pushedAt: now,
 			commitSha: args.commitSha,
 		});
 
@@ -254,17 +350,24 @@ export const push = mutation({
 export const recordPull = mutation({
 	args: { fullName: v.string(), skillName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
+		const repo = await ctx.db
+			.query("repository")
+			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.first();
+
+		if (!repo) return;
+
 		const skillName = args.skillName;
 		const skill = skillName
 			? await ctx.db
 					.query("skill")
-					.withIndex("by_fullName_skillName", (q) =>
-						q.eq("fullName", args.fullName).eq("skillName", skillName),
+					.withIndex("by_repositoryId_skillName", (q) =>
+						q.eq("repositoryId", repo._id).eq("skillName", skillName),
 					)
 					.first()
 			: await ctx.db
 					.query("skill")
-					.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+					.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 					.first();
 
 		if (skill) {

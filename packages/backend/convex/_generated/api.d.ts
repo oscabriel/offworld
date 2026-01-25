@@ -14,6 +14,7 @@ import type * as auth from "../auth.js";
 import type * as github from "../github.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
+import type * as repository from "../repository.js";
 
 import type {
   ApiFromModules,
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   github: typeof github;
   healthCheck: typeof healthCheck;
   http: typeof http;
+  repository: typeof repository;
 }>;
 
 /**

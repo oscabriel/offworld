@@ -133,7 +133,7 @@ function RepoSkillsPage() {
 											<Link
 												to="/$owner/$repo/$skill"
 												params={{ owner, repo, skill: skill.skillName }}
-												className="font-serif text-lg transition-colors hover:text-muted-foreground"
+												className="hover:text-muted-foreground font-serif text-lg transition-colors"
 											>
 												{skill.skillName}
 											</Link>

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const installCommands = [
 	{ id: "curl", label: "curl", command: "curl -fsSL https://offworld.sh/install | bash" },
-	{ id: "npm", label: "npm", command: "npm i -g offworld" },
+	{ id: "npm", label: "npm", command: "npm install -g offworld" },
 	{ id: "bun", label: "bun", command: "bun add -g offworld" },
 	{ id: "brew", label: "brew", command: "brew install oscabriel/tap/offworld" },
 ] as const;
@@ -46,9 +46,9 @@ export function InstallTabs({ className, variant = "default" }: InstallTabsProps
 						<button
 							type="button"
 							onClick={copyCommand}
-							className="group/cmd flex w-full cursor-pointer items-center gap-2"
+							className="group/cmd flex w-full cursor-pointer items-center gap-2 overflow-x-auto"
 						>
-							<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 overflow-x-auto font-mono text-sm transition-colors">
+							<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 whitespace-nowrap font-mono text-base transition-colors">
 								<span className="select-none">$ </span>
 								{cmd.command}
 							</code>
@@ -68,9 +68,9 @@ export function InstallTabs({ className, variant = "default" }: InstallTabsProps
 								key={cmd.id}
 								value={cmd.id}
 								className={cn(
-									"data-active:bg-primary/5 data-active:text-primary relative h-full px-5 py-2 font-mono text-sm transition-colors",
+									"data-active:bg-primary/5 data-active:text-primary relative h-full px-5 py-2 font-mono text-base transition-colors",
 									"hover:bg-primary/5",
-									"after:hidden border-none",
+									"border-none after:hidden",
 									"data-active:before:bg-primary data-active:before:absolute data-active:before:inset-x-0 data-active:before:top-0 data-active:before:h-px",
 								)}
 							>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { InstallTabs } from "@/components/home/install-tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -36,7 +37,7 @@ export function HeroSection() {
 					Create skills for <em>your</em> stack
 				</h1>
 
-				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-xl leading-relaxed">
+				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-xl">
 					Give your coding agent instant, up-to-date context for any open source library.
 				</p>
 			</div>
@@ -48,6 +49,12 @@ export function HeroSection() {
 				style={{ transitionDelay: "400ms" }}
 			>
 				<InstallTabs />
+				<p className="text-muted-foreground mt-5 text-center font-mono text-base italic">
+					or{" "}
+					<Link to="/cli" hash="install-agent" className="text-primary hover:underline">
+						let your agent do it!
+					</Link>
+				</p>
 			</div>
 		</div>
 	);

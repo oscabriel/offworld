@@ -1,7 +1,6 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 
 interface InstallCommandBoxProps {
 	fullName: string;
@@ -13,7 +12,7 @@ export function InstallCommandBox({
 	label = "Install this skill",
 }: InstallCommandBoxProps) {
 	const [copied, setCopied] = useState(false);
-	const command = `bunx offworld pull ${fullName}`;
+	const command = `ow pull ${fullName}`;
 
 	const copyCommand = () => {
 		navigator.clipboard.writeText(command);
@@ -23,19 +22,25 @@ export function InstallCommandBox({
 	};
 
 	return (
-		<div className="bg-muted/50 border-primary/10 border">
-			<div className="text-muted-foreground border-primary/10 border-b px-5 py-2 font-mono text-xs">
+		<div className="bg-card border-primary/10 border">
+			<div className="text-muted-foreground border-primary/10 border-b px-5 py-3 text-left font-mono text-xs">
 				{label}
 			</div>
-			<div className="flex items-center gap-3 p-5">
-				<code className="flex items-center gap-2 font-mono text-sm">
-					<span className="text-muted-foreground select-none">$</span>
-					<span className="text-foreground">{command}</span>
+			<button
+				type="button"
+				onClick={copyCommand}
+				className="group flex w-full cursor-pointer items-center gap-2 px-5 py-3"
+			>
+				<code className="text-foreground group-hover:text-muted-foreground flex items-center gap-2 font-mono text-sm transition-colors">
+					<span className="select-none">$</span>
+					<span>{command}</span>
 				</code>
-				<Button variant="ghost" size="icon-sm" onClick={copyCommand} className="shrink-0">
-					{copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-				</Button>
-			</div>
+				{copied ? (
+					<Check className="size-4 text-green-500" />
+				) : (
+					<Copy className="text-muted-foreground size-4 opacity-0 transition-opacity group-hover:opacity-100" />
+				)}
+			</button>
 		</div>
 	);
 }

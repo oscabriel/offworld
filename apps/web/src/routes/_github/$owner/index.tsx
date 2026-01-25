@@ -1,14 +1,16 @@
 import { convexAction, convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Star } from "lucide-react";
-import { StatusBadge } from "@/components/repo/status-badge";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
+import { RepoCard } from "@/components/repo/repo-card";
 
 export const Route = createFileRoute("/_github/$owner/")({
 	component: OwnerPage,
-	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(convexQuery(api.analyses.list, { limit: 200 }));
+	loader: async ({ context, params }) => {
+		await context.queryClient.ensureQueryData(
+			convexQuery(api.repository.listByOwner, { owner: params.owner }),
+		);
 	},
 });
 
@@ -40,7 +42,9 @@ function RepoGridSkeleton({ count = 6 }: { count?: number }) {
 
 function OwnerPage() {
 	const { owner } = Route.useParams();
-	const { data: allAnalyses } = useSuspenseQuery(convexQuery(api.analyses.list, { limit: 200 }));
+	const { data: indexedRepos } = useSuspenseQuery(
+		convexQuery(api.repository.listByOwner, { owner }),
+	);
 
 	const {
 		data: ownerInfo,
@@ -52,11 +56,7 @@ function OwnerPage() {
 		convexAction(api.github.fetchOwnerRepos, { owner, perPage: 30 }),
 	);
 
-	const indexedRepoNames = new Set(
-		allAnalyses
-			.filter((a) => a.fullName.toLowerCase().startsWith(`${owner.toLowerCase()}/`))
-			.map((a) => a.fullName.toLowerCase()),
-	);
+	const indexedRepoNames = new Set(indexedRepos.map((r) => r.fullName.toLowerCase()));
 
 	if (ownerLoading || reposLoading) {
 		return <OwnerPageSkeleton />;
@@ -108,38 +108,17 @@ function OwnerPage() {
 						<p className="text-muted-foreground font-serif">No public repositories found.</p>
 					) : (
 						<div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-							{repos.map((repo) => {
-								const isIndexed = indexedRepoNames.has(repo.fullName.toLowerCase());
-								return (
-									<Link
-										key={repo.fullName}
-										to="/$owner/$repo"
-										params={{ owner: repo.owner, repo: repo.name }}
-										className="group border-primary/10 bg-card hover:border-primary/30 flex min-h-34 flex-col justify-between border p-5 transition-all duration-200 hover:-translate-y-0.5"
-									>
-										<div className="space-y-2">
-											<div className="flex items-start justify-between gap-3">
-												<h3 className="group-hover:text-primary font-mono font-semibold">
-													{repo.name}
-												</h3>
-												{isIndexed && <StatusBadge status="indexed" variant="compact" />}
-											</div>
-											{repo.description && (
-												<p className="text-muted-foreground line-clamp-2 font-serif text-sm">
-													{repo.description}
-												</p>
-											)}
-										</div>
-										<div className="text-muted-foreground mt-3 flex items-center gap-5 font-mono text-xs">
-											{repo.language && <span>{repo.language}</span>}
-											<span className="flex items-center gap-1">
-												<Star className="size-3" />
-												{repo.stars.toLocaleString()}
-											</span>
-										</div>
-									</Link>
-								);
-							})}
+							{repos.map((repo) => (
+								<RepoCard
+									key={repo.fullName}
+									fullName={repo.fullName}
+									displayName={repo.name}
+									stars={repo.stars}
+									description={repo.description}
+									language={repo.language}
+									indexed={indexedRepoNames.has(repo.fullName.toLowerCase())}
+								/>
+							))}
 						</div>
 					)}
 				</section>

@@ -15,13 +15,13 @@ export default function Header() {
 				<nav className="pointer-events-auto flex items-center gap-8">
 					<Link
 						to="/cli"
-						className="text-primary hover:text-primary/70 font-mono text-base transition-colors"
+						className="text-primary hover:text-primary/40 font-mono text-base transition-colors"
 					>
 						CLI
 					</Link>
 					<Link
 						to="/explore"
-						className="text-primary hover:text-primary/70 font-mono text-base transition-colors"
+						className="text-primary hover:text-primary/40 font-mono text-base transition-colors"
 					>
 						Explore
 					</Link>

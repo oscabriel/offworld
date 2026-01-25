@@ -6,6 +6,7 @@ import { BadgeCheck, Terminal } from "lucide-react";
 import { MarkdownContent } from "@/components/repo/markdown-content";
 import { InstallCommandBox } from "@/components/repo/install-command-box";
 import { formatShortDate } from "@/lib/format";
+import { StatusBadge } from "@/components/repo/status-badge";
 
 export const Route = createFileRoute("/_github/$owner/$repo/$skill")({
 	staticData: {
@@ -42,24 +43,25 @@ function SkillHeader({
 	isVerified?: boolean;
 }) {
 	return (
-		<div className="border-primary/10 border p-5">
-			<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-				<div className="space-y-2">
-					<div className="flex items-center gap-3">
-						<h1 className="font-serif text-2xl">{skillName}</h1>
-						{isVerified && <BadgeCheck className="size-5 text-blue-500" />}
+		<header>
+			<div className="container mx-auto max-w-7xl px-5 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+				<div className="space-y-5">
+					<div className="space-y-3">
+						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">{skillName}</h1>
+						<div className="text-muted-foreground flex flex-wrap items-center gap-5 font-mono text-sm">
+							<StatusBadge status="indexed" variant="compact" />
+							{commitSha && <span>Commit: {commitSha.slice(0, 7)}</span>}
+							{typeof pullCount === "number" && <span>{pullCount.toLocaleString()} pulls</span>}
+							{isVerified && <BadgeCheck className="size-4 text-blue-500" />}
+							{analyzedAt && <span>Updated {formatShortDate(analyzedAt)}</span>}
+						</div>
+						{skillDescription && (
+							<p className="text-muted-foreground font-mono text-base">{skillDescription}</p>
+						)}
 					</div>
-					{skillDescription && (
-						<p className="text-muted-foreground max-w-xl font-serif">{skillDescription}</p>
-					)}
-				</div>
-				<div className="text-muted-foreground flex flex-wrap gap-5 font-mono text-xs">
-					{analyzedAt && <span>Updated {formatShortDate(analyzedAt)}</span>}
-					{commitSha && <span>Commit {commitSha.slice(0, 7)}</span>}
-					{typeof pullCount === "number" && <span>{pullCount.toLocaleString()} pulls</span>}
 				</div>
 			</div>
-		</div>
+		</header>
 	);
 }
 
@@ -101,18 +103,18 @@ function SkillDetailPage() {
 
 	return (
 		<div className="flex flex-1 flex-col">
+			<SkillHeader
+				skillName={skillData.skillName}
+				skillDescription={skillData.skillDescription}
+				analyzedAt={skillData.analyzedAt}
+				commitSha={skillData.commitSha}
+				pullCount={skillData.pullCount}
+				isVerified={skillData.isVerified}
+			/>
 			<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-5">
-					<SkillHeader
-						skillName={skillData.skillName}
-						skillDescription={skillData.skillDescription}
-						analyzedAt={skillData.analyzedAt}
-						commitSha={skillData.commitSha}
-						pullCount={skillData.pullCount}
-						isVerified={skillData.isVerified}
-					/>
 					<InstallCommandBox fullName={fullName} />
-					<article className="border border-zinc-800 bg-zinc-950 p-8">
+					<article className="bg-card border-primary/10 border p-8">
 						<MarkdownContent content={skillData.skillContent} />
 					</article>
 				</div>

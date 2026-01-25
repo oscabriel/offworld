@@ -6,13 +6,12 @@ export function InfoSection() {
 			</h3>
 			<div className="text-muted-foreground space-y-5 font-serif text-lg leading-relaxed">
 				<p>
-					You add 40 npm packages. Your AI has never seen half of them. It hallucinates old APIs,
-					suggests deprecated patterns, or just asks you to paste the docs.
+					Your AI coding agent doesn't understand your dependencies. It hallucinates old APIs,
+					suggests deprecated patterns, or asks you to paste the docs.
 				</p>
 				<p>
-					Offworld fixes that. Point it at a repo, it generates a skill file. Run it on your
-					project, it skills your entire dependency tree. Works with Claude Code, Cursor, OpenCode,
-					and others.
+					Offworld generates skill files from source—for any repo, on demand. One command skills
+					your entire dependency tree across every agent you use.
 				</p>
 			</div>
 		</div>

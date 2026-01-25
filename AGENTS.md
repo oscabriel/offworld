@@ -62,7 +62,7 @@ offworld/
 ### Web (`apps/web/`)
 
 - `src/routes/index.tsx` — Landing page
-- `src/routes/explore.tsx` — Browse skills
+- `src/routes/explore.tsx` — Shared skills
 - `src/routes/_github/$owner_.$repo/` — Repo detail page
 - `src/routes/admin.tsx` — Admin dashboard
 - `src/components/home/` — Landing page components

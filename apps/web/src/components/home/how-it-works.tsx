@@ -7,11 +7,11 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">01</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							Point at a Repo
+							Clone the Repo
 						</h4>
 						<p className="text-muted-foreground font-serif text-base leading-relaxed">
-							Paste a GitHub URL above, or run <code className="text-primary">ow project init</code>{" "}
-							to skill your entire package.json
+							CLI creates easily-managed clones on your machine that you and your agents can read
+							and work on at any time.
 						</p>
 					</div>
 				</div>
@@ -20,11 +20,11 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">02</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							AI Explores the Source
+							Generate Skill from Source
 						</h4>
 						<p className="text-muted-foreground font-serif text-base leading-relaxed">
-							We clone the repo and generate a skill file from HEAD—not stale docs or scraped
-							snapshots
+							Agent explores the codebase and creates a SKILL.md with common patterns, API
+							references, and best practices.
 						</p>
 					</div>
 				</div>
@@ -33,10 +33,24 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">03</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							One Skill, Every Agent
+							Symlink to All Agents
 						</h4>
 						<p className="text-muted-foreground font-serif text-base leading-relaxed">
-							Skills symlink to Claude Code, Cursor, Codex, Amp, and more. No per-agent setup.
+							That one SKILL.md file is distributed to Claude Code, OpenCode, Codex, and other
+							agent configs automatically.
+						</p>
+					</div>
+				</div>
+
+				<div className="group border-primary/20 hover:border-primary/40 flex gap-5 border-l-2 pl-5 transition-colors">
+					<span className="text-muted-foreground font-mono text-sm">04</span>
+					<div className="flex-1 space-y-1">
+						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
+							Query Your Clones
+						</h4>
+						<p className="text-muted-foreground font-serif text-base leading-relaxed">
+							Ask your agent to load a skill and explore any cloned repo—get file summaries, search
+							code, or answer questions about the source.
 						</p>
 					</div>
 				</div>

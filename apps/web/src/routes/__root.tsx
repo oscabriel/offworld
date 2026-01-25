@@ -47,6 +47,8 @@ export interface RouterAppContext {
 	convexQueryClient: ConvexQueryClient;
 }
 
+const ROUTES_WITHOUT_FOOTER = ["/sign-in"];
+
 export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({
 		meta: [
@@ -125,16 +127,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				as: "image",
 				href: "/logotype.svg",
 			},
-			{
-				rel: "preload",
-				as: "image",
-				href: "/logotype-mobile.svg",
-			},
-			{
-				rel: "preload",
-				as: "image",
-				href: "/favicon.svg",
-			},
 			// Google Fonts - Sorts Mill Goudy & Geist Mono
 			{
 				rel: "preconnect",
@@ -161,11 +153,14 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 		await ctx.context.queryClient.ensureQueryData(convexQuery(api.auth.getCurrentUserSafe, {}));
 
+		const showFooter = !ROUTES_WITHOUT_FOOTER.includes(ctx.location.pathname);
+
 		return {
 			initialAuth,
 			isAuthenticated: !!token,
 			workosId,
 			token,
+			showFooter,
 		};
 	},
 });
@@ -204,7 +199,7 @@ function RootComponent() {
 				client={context.convexQueryClient.convexClient}
 				useAuth={useAuthFromWorkOS}
 			>
-				<RootDocument token={context.token} />
+				<RootDocument token={context.token} showFooter={context.showFooter} />
 			</ConvexProviderWithAuth>
 		</AuthKitProvider>
 	);
@@ -244,7 +239,7 @@ function ConnectionMonitor() {
 	return null;
 }
 
-function RootDocument({ token }: { token: string | null }) {
+function RootDocument({ token, showFooter }: { token: string | null; showFooter: boolean }) {
 	const ensureUser = useMutation(api.auth.ensureUser);
 	const queryClient = useQueryClient();
 
@@ -268,10 +263,10 @@ function RootDocument({ token }: { token: string | null }) {
 				<div className="relative z-10 flex flex-1 flex-col">
 					<Header />
 					<Breadcrumbs />
-					<main className="flex flex-1 flex-col pt-34">
+					<main className="flex flex-1 flex-col pt-13">
 						<Outlet />
 					</main>
-					<Footer />
+					{showFooter && <Footer />}
 				</div>
 				<Toaster richColors />
 				<TanStackRouterDevtools position="bottom-left" />

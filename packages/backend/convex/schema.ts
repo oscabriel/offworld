@@ -52,7 +52,8 @@ export default defineSchema({
 		.index("by_repositoryId", ["repositoryId"])
 		.index("by_repositoryId_skillName", ["repositoryId", "skillName"])
 		.index("by_pullCount", ["pullCount"])
-		.index("by_analyzedAt", ["analyzedAt"]),
+		.index("by_analyzedAt", ["analyzedAt"])
+		.index("by_workosId", ["workosId"]),
 
 	// Push logs for rate limiting
 	pushLog: defineTable({

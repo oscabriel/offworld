@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUser } from "./auth";
 
 /**
  * Skill Convex Functions
@@ -103,6 +104,43 @@ export const list = query({
 				const repo = await ctx.db.get(skill.repositoryId);
 				return {
 					fullName: repo?.fullName ?? "unknown",
+					pullCount: skill.pullCount,
+					analyzedAt: skill.analyzedAt,
+					commitSha: skill.commitSha,
+					isVerified: skill.isVerified,
+				};
+			}),
+		);
+
+		return results;
+	},
+});
+
+/**
+ * List skills pushed by the current user
+ */
+export const listByCurrentUser = query({
+	args: {},
+	handler: async (ctx) => {
+		const user = await getAuthUser(ctx);
+		if (!user) return [];
+
+		const skills = await ctx.db
+			.query("skill")
+			.withIndex("by_workosId", (q) => q.eq("workosId", user.workosId))
+			.order("desc")
+			.collect();
+
+		// Join with repository data
+		const results = await Promise.all(
+			skills.map(async (skill) => {
+				const repo = await ctx.db.get(skill.repositoryId);
+				return {
+					fullName: repo?.fullName ?? "unknown",
+					owner: repo?.owner ?? "unknown",
+					name: repo?.name ?? "unknown",
+					skillName: skill.skillName,
+					skillDescription: skill.skillDescription,
 					pullCount: skill.pullCount,
 					analyzedAt: skill.analyzedAt,
 					commitSha: skill.commitSha,

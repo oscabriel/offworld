@@ -1,7 +1,6 @@
 import * as p from "@clack/prompts";
 import {
 	listRepos,
-	getCommitSha,
 	getRepoStatus,
 	updateAllRepos,
 	pruneRepos,
@@ -10,8 +9,8 @@ import {
 	getRepoRoot,
 	loadConfig,
 } from "@offworld/sdk";
-import type { RepoIndexEntry } from "@offworld/types";
 import { existsSync, rmSync } from "node:fs";
+import { entryToListItem, formatRepoForDisplay, type RepoListItem } from "./shared.js";
 
 export interface RepoListOptions {
 	json?: boolean;
@@ -20,17 +19,7 @@ export interface RepoListOptions {
 	pattern?: string;
 }
 
-export interface RepoListItem {
-	fullName: string;
-	qualifiedName: string;
-	localPath: string;
-	analyzed: boolean;
-	analyzedAt?: string;
-	commitSha?: string;
-	hasSkill: boolean;
-	isStale?: boolean;
-	exists: boolean;
-}
+export type { RepoListItem };
 
 export interface RepoListResult {
 	repos: RepoListItem[];
@@ -115,51 +104,6 @@ function matchesPattern(name: string, pattern: string): boolean {
 		"i",
 	);
 	return regex.test(name);
-}
-
-async function entryToListItem(entry: RepoIndexEntry, checkStale: boolean): Promise<RepoListItem> {
-	const exists = existsSync(entry.localPath);
-	const analyzed = !!entry.analyzedAt;
-
-	let isStale: boolean | undefined;
-
-	if (checkStale && analyzed && exists && entry.commitSha) {
-		try {
-			const currentSha = getCommitSha(entry.localPath);
-			isStale = currentSha !== entry.commitSha;
-		} catch {
-			isStale = undefined;
-		}
-	}
-
-	return {
-		fullName: entry.fullName,
-		qualifiedName: entry.qualifiedName,
-		localPath: entry.localPath,
-		analyzed,
-		analyzedAt: entry.analyzedAt,
-		commitSha: entry.commitSha,
-		hasSkill: entry.hasSkill,
-		isStale,
-		exists,
-	};
-}
-
-function formatRepoForDisplay(item: RepoListItem, showPaths: boolean): string {
-	const parts: string[] = [item.fullName];
-
-	if (item.analyzed) {
-		parts.push("[analyzed]");
-		if (item.hasSkill) parts.push("[skill]");
-		if (item.isStale) parts.push("[stale]");
-	} else {
-		parts.push("[not analyzed]");
-	}
-
-	if (showPaths) parts.push(`(${item.localPath})`);
-	if (!item.exists) parts.push("[missing]");
-
-	return parts.join(" ");
 }
 
 export async function repoListHandler(options: RepoListOptions): Promise<RepoListResult> {

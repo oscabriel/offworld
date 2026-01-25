@@ -39,6 +39,7 @@ vi.mock("@offworld/sdk", () => ({
 	isRepoCloned: vi.fn(),
 	getClonedRepoPath: vi.fn(),
 	getCommitSha: vi.fn(),
+	getCommitDistance: vi.fn(),
 	loadConfig: vi.fn(),
 	getSkillPath: vi.fn(),
 	getMetaPath: vi.fn(),
@@ -78,6 +79,7 @@ import {
 	isRepoCloned,
 	getClonedRepoPath,
 	getCommitSha,
+	getCommitDistance,
 	loadConfig,
 	getSkillPath,
 	getMetaPath,
@@ -116,6 +118,7 @@ describe("CLI handlers", () => {
 	const mockListRepos = listRepos as ReturnType<typeof vi.fn>;
 	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
 	const mockCheckRemote = checkRemote as ReturnType<typeof vi.fn>;
+	const mockGetCommitDistance = getCommitDistance as ReturnType<typeof vi.fn>;
 	const mockGenerateSkillWithAI = generateSkillWithAI as ReturnType<typeof vi.fn>;
 	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
 	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
@@ -185,6 +188,7 @@ describe("CLI handlers", () => {
 			mockGetCommitSha.mockReturnValue("abc1234");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
+			mockGetCommitDistance.mockReturnValue(0);
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
@@ -198,7 +202,7 @@ describe("CLI handlers", () => {
 
 			expect(mockCloneRepo).toHaveBeenCalledWith(
 				mockGitHubSource,
-				expect.objectContaining({ shallow: true }),
+				expect.objectContaining({ config: defaultConfig }),
 			);
 			expect(result.success).toBe(true);
 		});
@@ -240,6 +244,7 @@ describe("CLI handlers", () => {
 			mockGetCommitSha.mockReturnValue("abc1234");
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
+			mockGetCommitDistance.mockReturnValue(0);
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
@@ -252,6 +257,7 @@ describe("CLI handlers", () => {
 			const result = await pullHandler({ repo: "tanstack/router" });
 
 			expect(mockCheckRemote).toHaveBeenCalledWith("tanstack/router");
+			expect(mockGetCommitDistance).toHaveBeenCalled();
 			expect(mockPullAnalysis).toHaveBeenCalledWith("tanstack/router");
 			expect(mockGenerateSkillWithAI).not.toHaveBeenCalled();
 			expect(result.analysisSource).toBe("remote");

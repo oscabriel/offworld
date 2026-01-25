@@ -20,10 +20,9 @@
 		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke"
 	},
 	"dependencies": {
-		"@anthropic-ai/claude-agent-sdk": "^0.2.12",
 		"@offworld/backend": "workspace:*",
 		"@offworld/types": "workspace:*",
-		"@opencode-ai/sdk": "^1.1.25",
+		"@opencode-ai/sdk": "^1.1.36",
 		"convex": "catalog:",
 		"xdg-basedir": "^5.1.0",
 		"zod": "catalog:"

@@ -33,57 +33,52 @@ export function InstallTabs({ className, variant = "default" }: InstallTabsProps
 
 	return (
 		<div className={cn("w-full", className)}>
-			<Tabs value={activeTab} onValueChange={setActiveTab}>
-				<div className="border-primary/20 bg-background/50 flex items-stretch border-x border-t backdrop-blur-sm">
+			<Tabs value={activeTab} onValueChange={setActiveTab} className="gap-0">
+				{installCommands.map((cmd) => (
+					<TabsContent
+						key={cmd.id}
+						value={cmd.id}
+						className={cn(
+							"border-primary/20 bg-background/30 group border backdrop-blur-sm",
+							isCompact ? "px-3 py-3" : "px-5 py-5",
+						)}
+					>
+						<button
+							type="button"
+							onClick={copyCommand}
+							className="group/cmd flex w-full cursor-pointer items-center gap-2"
+						>
+							<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 overflow-x-auto font-mono text-sm transition-colors">
+								<span className="select-none">$ </span>
+								{cmd.command}
+							</code>
+							{copied ? (
+								<Check className="size-4 shrink-0 text-green-500" />
+							) : (
+								<Copy className="text-muted-foreground size-4 shrink-0 opacity-0 transition-opacity group-hover/cmd:opacity-100" />
+							)}
+						</button>
+					</TabsContent>
+				))}
+
+				<div className="border-primary/20 bg-background/30 flex items-stretch border-x border-b backdrop-blur-sm">
 					<TabsList variant="line" className="h-auto flex-1 justify-start gap-0 bg-transparent p-0">
 						{installCommands.map((cmd) => (
 							<TabsTrigger
 								key={cmd.id}
 								value={cmd.id}
 								className={cn(
-									"border-primary/20 data-[state=active]:bg-primary/5 data-[state=active]:text-primary h-full border-r px-5 py-3 font-mono text-sm transition-colors",
+									"data-active:bg-primary/5 data-active:text-primary relative h-full px-5 py-2 font-mono text-sm transition-colors",
 									"hover:bg-primary/5",
+									"after:hidden border-none",
+									"data-active:before:bg-primary data-active:before:absolute data-active:before:inset-x-0 data-active:before:top-0 data-active:before:h-px",
 								)}
 							>
 								{cmd.label}
 							</TabsTrigger>
 						))}
 					</TabsList>
-
-					<button
-						type="button"
-						onClick={copyCommand}
-						className="text-muted-foreground hover:text-primary hover:bg-primary/5 flex items-center gap-2 px-5 font-mono text-sm transition-colors"
-					>
-						{copied ? (
-							<>
-								<Check className="size-4 text-green-500" />
-								<span className="hidden text-green-500 sm:inline">Copied</span>
-							</>
-						) : (
-							<>
-								<Copy className="size-4" />
-								<span className="hidden sm:inline">Copy</span>
-							</>
-						)}
-					</button>
 				</div>
-
-				{installCommands.map((cmd) => (
-					<TabsContent
-						key={cmd.id}
-						value={cmd.id}
-						className={cn(
-							"border-primary/20 bg-card/50 mt-0 border border-t-0",
-							isCompact ? "px-3 py-2" : "px-5 py-3",
-						)}
-					>
-						<code className="text-primary block overflow-x-auto font-mono text-sm">
-							<span className="text-muted-foreground select-none">$ </span>
-							{cmd.command}
-						</code>
-					</TabsContent>
-				))}
 			</Tabs>
 		</div>
 	);

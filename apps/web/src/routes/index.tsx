@@ -10,18 +10,22 @@ import { RecentlyIndexedCarousel } from "@/components/home/recently-indexed-caro
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
 	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(convexQuery(api.analyses.list, { limit: 10 }));
+		await context.queryClient.ensureQueryData(
+			convexQuery(api.repository.listRecent, { limit: 10 }),
+		);
 	},
 });
 
 function HomeComponent() {
-	const { data: analyses } = useSuspenseQuery(convexQuery(api.analyses.list, { limit: 10 }));
+	const { data: repositories } = useSuspenseQuery(
+		convexQuery(api.repository.listRecent, { limit: 10 }),
+	);
 
 	return (
 		<div className="relative flex-1 overflow-x-hidden">
 			<HeroSection />
 
-			<RecentlyIndexedCarousel analyses={analyses ?? []} />
+			<RecentlyIndexedCarousel repositories={repositories ?? []} />
 
 			<div className="border-primary/10 relative border-b py-34">
 				<div className="container mx-auto max-w-7xl px-5 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">

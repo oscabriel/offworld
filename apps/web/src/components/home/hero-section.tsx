@@ -12,7 +12,7 @@ export function HeroSection() {
 	}, []);
 
 	return (
-		<div ref={heroRef} className="relative flex flex-col items-center justify-center px-5 pb-13">
+		<div ref={heroRef} className="relative flex flex-col items-center justify-center px-5 pb-34">
 			<div
 				className={`mx-auto flex w-full max-w-4xl flex-col items-center transition-all duration-1000 ${
 					isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
@@ -23,7 +23,7 @@ export function HeroSection() {
 					href="https://docs.offworld.sh/cli"
 					target="_blank"
 					rel="noopener noreferrer"
-					className="group border-primary/20 bg-primary/5 hover:border-primary/40 hover:bg-primary/10 mb-8 inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-xs transition-colors"
+					className="group border-primary/20 bg-background/30 hover:border-primary/40 hover:bg-background/50 mb-8 inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-xs backdrop-blur-sm transition-colors"
 				>
 					<Badge variant="secondary" className="bg-green-500/20 text-green-500">
 						NEW
@@ -33,12 +33,11 @@ export function HeroSection() {
 				</a>
 
 				<h1 className="text-primary mb-5 text-center font-serif text-5xl tracking-tight md:text-6xl lg:text-7xl">
-					Create skills for any repo
+					Create skills for <em>your</em> stack
 				</h1>
 
-				<p className="text-muted-foreground mb-13 max-w-xl text-center font-serif text-lg leading-relaxed">
-					Generate documentation skills from any GitHub repo. Works with Claude Code, Cursor,
-					OpenCode, and more.
+				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-xl leading-relaxed">
+					Give your coding agent instant, up-to-date context for any open source library.
 				</p>
 			</div>
 

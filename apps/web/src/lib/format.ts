@@ -16,3 +16,10 @@ export function formatRelativeDate(isoString: string): string {
 	if (diffDays < 7) return `${diffDays} days ago`;
 	return formatShortDate(isoString);
 }
+
+export function formatCompactNumber(count: number): string {
+	if (count < 1000) return count.toString();
+	if (count < 10000) return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+	if (count < 1000000) return `${Math.floor(count / 1000)}k`;
+	return `${(count / 1000000).toFixed(1).replace(/\.0$/, "")}m`;
+}

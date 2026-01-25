@@ -195,7 +195,11 @@
 	@apply my-5 leading-7;
 }
 
-.prose :where(h1):not(:where([class~="not-prose"] *)) {
+.prose :where(h1:first-child):not(:where([class~="not-prose"] *)) {
+	@apply mb-5 text-2xl font-bold tracking-tight;
+}
+
+.prose :where(h1:not(:first-child)):not(:where([class~="not-prose"] *)) {
 	@apply mt-8 mb-5 text-2xl font-bold tracking-tight;
 }
 
@@ -232,15 +236,15 @@
 }
 
 .prose :where(code):not(:where([class~="not-prose"] *)) {
-	@apply bg-muted px-1.5 py-0.5 font-mono text-sm;
+	@apply bg-secondary/15 border-border/50 border px-1.5 py-0.5 font-mono text-sm;
 }
 
 .prose :where(pre):not(:where([class~="not-prose"] *)) {
-	@apply bg-muted my-5 overflow-x-auto p-5;
+	@apply bg-secondary/15 border-border/50 my-5 overflow-x-auto border p-5;
 }
 
 .prose :where(pre code):not(:where([class~="not-prose"] *)) {
-	@apply bg-transparent p-0;
+	@apply bg-transparent border-0 p-0;
 }
 
 .prose :where(blockquote):not(:where([class~="not-prose"] *)) {

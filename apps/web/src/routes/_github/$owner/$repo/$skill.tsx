@@ -3,10 +3,10 @@ import { api } from "@offworld/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, Terminal } from "lucide-react";
-import { MarkdownContent } from "@/components/repo/markdown-content";
 import { InstallCommandBox } from "@/components/repo/install-command-box";
-import { formatShortDate } from "@/lib/format";
 import { StatusBadge } from "@/components/repo/status-badge";
+import { CopyableBlock } from "@/components/ui/copyable-block";
+import { formatShortDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_github/$owner/$repo/$skill")({
 	staticData: {
@@ -114,9 +114,11 @@ function SkillDetailPage() {
 			<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-5">
 					<InstallCommandBox fullName={fullName} />
-					<article className="bg-card border-primary/10 border p-8">
-						<MarkdownContent content={skillData.skillContent} />
-					</article>
+					<CopyableBlock
+						title="SKILL.md"
+						content={skillData.skillContent}
+						stripFrontmatter
+					/>
 				</div>
 			</div>
 		</div>

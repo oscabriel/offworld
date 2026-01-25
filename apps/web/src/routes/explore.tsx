@@ -25,6 +25,9 @@ function ExploreComponent() {
 				<div className="space-y-13">
 					<div className="space-y-5">
 						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Shared skills</h1>
+						<p className="text-muted-foreground font-mono text-lg">
+							Explore skills shared by the community
+						</p>
 					</div>
 
 					<div>

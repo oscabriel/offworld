@@ -9,7 +9,7 @@ export function HowItWorks() {
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
 							Clone the Repo
 						</h4>
-						<p className="text-muted-foreground font-serif text-base leading-relaxed">
+						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
 							CLI creates easily-managed clones on your machine that you and your agents can read
 							and work on at any time.
 						</p>
@@ -22,7 +22,7 @@ export function HowItWorks() {
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
 							Generate Skill from Source
 						</h4>
-						<p className="text-muted-foreground font-serif text-base leading-relaxed">
+						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
 							Agent explores the codebase and creates a SKILL.md with common patterns, API
 							references, and best practices.
 						</p>
@@ -35,9 +35,9 @@ export function HowItWorks() {
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
 							Symlink to All Agents
 						</h4>
-						<p className="text-muted-foreground font-serif text-base leading-relaxed">
-							That one SKILL.md file is distributed to Claude Code, OpenCode, Codex, and other
-							agent configs automatically.
+						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
+							That one SKILL.md file is distributed to Claude Code, OpenCode, Codex, and other agent
+							configs automatically.
 						</p>
 					</div>
 				</div>
@@ -48,7 +48,7 @@ export function HowItWorks() {
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
 							Query Your Clones
 						</h4>
-						<p className="text-muted-foreground font-serif text-base leading-relaxed">
+						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
 							Ask your agent to load a skill and explore any cloned repo—get file summaries, search
 							code, or answer questions about the source.
 						</p>

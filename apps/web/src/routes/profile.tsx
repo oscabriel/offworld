@@ -17,7 +17,7 @@ export const Route = createFileRoute("/profile")({
 	loader: async ({ context }) => {
 		await Promise.all([
 			context.queryClient.ensureQueryData(convexQuery(api.auth.getCurrentUserSafe, {})),
-			context.queryClient.ensureQueryData(convexQuery(api.analyses.listByCurrentUser, {})),
+			context.queryClient.ensureQueryData(convexQuery(api.references.listByCurrentUser, {})),
 		]);
 	},
 });
@@ -46,7 +46,7 @@ function formatFullDate(isoString: string) {
 
 function ProfileComponent() {
 	const { data: user } = useSuspenseQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
-	const { data: pushedSkills } = useSuspenseQuery(convexQuery(api.analyses.listByCurrentUser, {}));
+	const { data: pushedReferences } = useSuspenseQuery(convexQuery(api.references.listByCurrentUser, {}));
 
 	const { signOut } = useAuth();
 
@@ -90,15 +90,15 @@ function ProfileComponent() {
 				</div>
 
 				<div className="space-y-5">
-					<h2 className="font-serif text-3xl tracking-tight">Pushed Skills</h2>
+					<h2 className="font-serif text-3xl tracking-tight">Pushed References</h2>
 
-					{pushedSkills.length === 0 ? (
+					{pushedReferences.length === 0 ? (
 						<div className="bg-background border-primary/10 border p-8 text-center">
 							<p className="text-muted-foreground font-mono text-sm">
-								You haven't pushed any skills yet.
+								You haven't pushed any references yet.
 							</p>
 							<p className="text-muted-foreground mt-2 font-mono text-xs">
-								Use <code className="text-primary">ow push &lt;repo&gt;</code> to share a skill.
+								Use <code className="text-primary">ow push &lt;repo&gt;</code> to share a reference.
 							</p>
 						</div>
 					) : (
@@ -110,7 +110,7 @@ function ProfileComponent() {
 											Repository
 										</th>
 										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs tracking-widest uppercase">
-											Skill
+											Reference
 										</th>
 										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs tracking-widest uppercase">
 											Pulls
@@ -122,30 +122,30 @@ function ProfileComponent() {
 								</thead>
 								<tbody>
 									<TooltipProvider>
-										{pushedSkills.map((skill) => (
+										{pushedReferences.map((reference) => (
 											<tr
-												key={`${skill.fullName}-${skill.skillName}`}
+												key={`${reference.fullName}-${reference.referenceName}`}
 												className="border-primary/5 border-b last:border-b-0"
 											>
 												<td className="px-5 py-4">
 													<Link
 														to="/$owner/$repo"
-														params={{ owner: skill.owner, repo: skill.name }}
+														params={{ owner: reference.owner, repo: reference.name }}
 														className="text-primary font-mono text-sm hover:underline"
 													>
-														{skill.fullName}
+														{reference.fullName}
 													</Link>
 												</td>
 												<td className="text-muted-foreground px-5 py-4 font-mono text-sm">
-													{skill.skillName}
+													{reference.referenceName}
 												</td>
 												<td className="text-muted-foreground px-5 py-4 font-mono text-sm">
-													{skill.pullCount}
+													{reference.pullCount}
 												</td>
 												<td className="text-muted-foreground px-5 py-4 font-mono text-sm">
 													<Tooltip>
-														<TooltipTrigger>{formatRelativeDate(skill.analyzedAt)}</TooltipTrigger>
-														<TooltipContent>{formatFullDate(skill.analyzedAt)}</TooltipContent>
+														<TooltipTrigger>{formatRelativeDate(reference.generatedAt)}</TooltipTrigger>
+														<TooltipContent>{formatFullDate(reference.generatedAt)}</TooltipContent>
 													</Tooltip>
 												</td>
 											</tr>

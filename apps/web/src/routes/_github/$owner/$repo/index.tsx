@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { repoSkillsQuery } from "./route";
 
 export const Route = createFileRoute("/_github/$owner/$repo/")({
-	component: RepoSkillsPage,
+	component: RepoReferencesPage,
 });
 
 function CopyableCommand({ command }: { command: string }) {
@@ -51,9 +51,9 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 					<Terminal className="text-muted-foreground size-5" />
 				</div>
 				<div className="space-y-3">
-					<h3 className="font-serif text-xl">No Skills Generated</h3>
+					<h3 className="font-serif text-xl">No References Generated</h3>
 					<p className="text-muted-foreground font-mono leading-relaxed">
-						This repository doesn&apos;t have any skills yet. Generate and share a skill with the
+						This repository doesn&apos;t have any references yet. Generate and share a reference with the
 						commands below:
 					</p>
 					<div className="space-y-2">
@@ -66,16 +66,16 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 	);
 }
 
-function RepoSkillsPage() {
+function RepoReferencesPage() {
 	const { owner, repo } = Route.useParams();
-	const { data: skills, isLoading: skillsLoading } = useSuspenseQuery(repoSkillsQuery(owner, repo));
+	const { data: references, isLoading: referencesLoading } = useSuspenseQuery(repoSkillsQuery(owner, repo));
 
-	const primarySkill = skills[0] ?? null;
-	const analysisData = primarySkill
+	const primaryReference = references[0] ?? null;
+	const analysisData = primaryReference
 		? {
-				commitSha: primarySkill.commitSha,
-				pullCount: primarySkill.pullCount,
-				isVerified: primarySkill.isVerified,
+				commitSha: primaryReference.commitSha,
+				pullCount: primaryReference.pullCount,
+				isVerified: primaryReference.isVerified,
 			}
 		: null;
 
@@ -83,7 +83,7 @@ function RepoSkillsPage() {
 		convexAction(api.github.fetchRepoMetadata, { owner, name: repo }),
 	);
 
-	if (skills.length === 0) {
+	if (references.length === 0) {
 		return (
 			<div className="flex flex-1 flex-col">
 				<RepoHeader
@@ -107,7 +107,7 @@ function RepoSkillsPage() {
 				repo={repo}
 				analysisData={analysisData}
 				githubMetadata={githubMetadata}
-				loading={skillsLoading || metadataLoading}
+				loading={referencesLoading || metadataLoading}
 			/>
 			<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<Card className="border-primary/10 border p-0">
@@ -116,7 +116,7 @@ function RepoSkillsPage() {
 							<thead>
 								<tr className="border-primary/10 border-b">
 									<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
-										Skill
+										Reference
 									</th>
 									<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 										Description
@@ -127,23 +127,23 @@ function RepoSkillsPage() {
 								</tr>
 							</thead>
 							<tbody>
-								{skills.map((skill) => (
-									<tr key={skill.skillName} className="border-primary/5 border-b last:border-0">
+								{references.map((reference) => (
+									<tr key={reference.referenceName} className="border-primary/5 border-b last:border-0">
 										<td className="px-5 py-3">
 											<Link
-												to="/$owner/$repo/$skill"
-												params={{ owner, repo, skill: skill.skillName }}
+												to="/$owner/$repo/$reference"
+												params={{ owner, repo, reference: reference.referenceName }}
 												className="group/link hover:text-muted-foreground inline-flex items-center gap-1 font-serif text-lg transition-colors"
 											>
-												{skill.skillName}
+												{reference.referenceName}
 												<ChevronRight className="size-4 opacity-0 transition-opacity group-hover/link:opacity-100" />
 											</Link>
 										</td>
 										<td className="text-muted-foreground max-w-md truncate px-5 py-3 font-mono text-sm">
-											{skill.skillDescription || "—"}
+											{reference.referenceDescription || "—"}
 										</td>
 										<td className="px-5 py-3 font-mono text-sm">
-											{typeof skill.pullCount === "number" ? skill.pullCount.toLocaleString() : "—"}
+											{typeof reference.pullCount === "number" ? reference.pullCount.toLocaleString() : "—"}
 										</td>
 									</tr>
 								))}

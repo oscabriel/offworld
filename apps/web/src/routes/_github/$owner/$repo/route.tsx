@@ -3,7 +3,7 @@ import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export function repoSkillsQuery(owner: string, repo: string) {
-	return convexQuery(api.analyses.listByRepo, { fullName: `${owner}/${repo}`.toLowerCase() });
+	return convexQuery(api.references.listByRepo, { fullName: `${owner}/${repo}`.toLowerCase() });
 }
 
 export const Route = createFileRoute("/_github/$owner/$repo")({

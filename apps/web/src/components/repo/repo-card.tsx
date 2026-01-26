@@ -11,7 +11,7 @@ interface RepoCardProps {
 	language?: string;
 	/** Display name override (e.g., just repo name instead of fullName) */
 	displayName?: string;
-	/** Whether this repo has a skill indexed */
+	/** Whether this repo has a reference indexed */
 	indexed?: boolean;
 }
 

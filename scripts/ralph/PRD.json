@@ -198,7 +198,7 @@
         "rg \"reference\" apps/web/src/routeTree.gen.ts",
         "rg \"skill\" apps/web/src -g'*.tsx'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-012",

@@ -31,23 +31,23 @@ interface Command {
 const commands: Command[] = [
 	{
 		name: "project init",
-		description: "Scan manifest, install skills, update AGENTS.md",
+		description: "Scan manifest, install references, update AGENTS.md",
 		usage: "ow project init [OPTIONS]",
 		flags: [
 			{ flag: "--all", description: "Select all detected dependencies" },
 			{ flag: "--deps", description: "Comma-separated deps to include" },
 			{ flag: "--skip", description: "Comma-separated deps to exclude" },
-			{ flag: "--generate, -g", description: "Generate skills for deps without existing ones" },
+			{ flag: "--generate, -g", description: "Generate references for deps without existing ones" },
 			{ flag: "--dry-run, -d", description: "Show what would be done" },
 			{ flag: "--yes, -y", description: "Skip confirmations" },
 		],
 	},
 	{
 		name: "pull",
-		description: "Clone a repository and fetch or generate its skill",
+		description: "Clone a repository and fetch or generate its reference",
 		usage: "ow pull <repo> [OPTIONS]",
 		flags: [
-			{ flag: "--skill, -s", description: "Skill name to pull (defaults to owner-repo-reference)" },
+			{ flag: "--reference, -r", description: "Reference name to pull (defaults to owner-repo)" },
 			{ flag: "--shallow", description: "Use shallow clone (--depth 1)" },
 			{ flag: "--sparse", description: "Use sparse checkout (only src/, lib/, packages/, docs/)" },
 			{ flag: "--branch", description: "Branch to clone" },
@@ -84,13 +84,13 @@ const commands: Command[] = [
 	},
 	{
 		name: "remove",
-		description: "Remove a cloned repository and its skill",
+		description: "Remove a cloned repository and its reference",
 		usage: "ow remove <repo> [OPTIONS]",
 		aliases: ["rm"],
 		flags: [
 			{ flag: "--yes, -y", description: "Skip confirmation" },
-			{ flag: "--skill-only", description: "Only remove skill files (keep repo)" },
-			{ flag: "--repo-only", description: "Only remove cloned repo (keep skill)" },
+			{ flag: "--reference-only", description: "Only remove reference files (keep repo)" },
+			{ flag: "--repo-only", description: "Only remove cloned repo (keep reference)" },
 			{ flag: "--dry-run, -d", description: "Show what would be done" },
 		],
 	},
@@ -110,7 +110,7 @@ const commands: Command[] = [
 
 const subcommands = {
 	auth: {
-		description: "Authenticate with offworld.sh to push and pull shared skills.",
+		description: "Authenticate with offworld.sh to push and pull shared references.",
 		commands: [
 			{ name: "login", description: "Login to offworld.sh" },
 			{ name: "logout", description: "Logout from offworld.sh" },
@@ -358,14 +358,14 @@ List the installed skills:
 ow list
 \`\`\`
 
-The user should see their selected dependencies with skill files ready.
+The user should see their selected dependencies with reference files ready.
 
 #### Troubleshooting
 
-If skills aren't appearing, check:
+If references aren't appearing, check:
 1. Is the config valid? \`ow config show\`
 2. Are agents configured? \`ow config agents\`
-3. Check skill directory: \`ls ~/.local/share/offworld/skills/\``;
+3. Check reference directory: \`ls ~/.local/share/offworld/skill/offworld/references/\``;
 
 function TableOfContents({
 	activeSection,
@@ -461,7 +461,7 @@ function CliPage() {
 						<section id="overview" className="space-y-5">
 							<h1 className="font-serif text-6xl tracking-tight md:text-7xl">CLI</h1>
 							<p className="text-muted-foreground font-mono text-lg">
-								Offworld provides a CLI for creating and managing git clones and skill files.
+								Offworld provides a CLI for creating and managing git clones and reference files.
 							</p>
 						</section>
 
@@ -526,17 +526,17 @@ function CliPage() {
 								</div>
 								<div>
 									<p className="mb-3 font-mono">
-										<span className="text-muted-foreground">2.</span> Pull skills for any repo
+										<span className="text-muted-foreground">2.</span> Pull references for any repo
 									</p>
 									<CodeBlock code="ow pull tanstack/router" />
 								</div>
 								<div>
 									<p className="mb-3 font-mono">
-										<span className="text-muted-foreground">3.</span> Use the skill in your agent
+										<span className="text-muted-foreground">3.</span> Use the reference in your agent
 									</p>
 									<CopyableBlock
 										title="Example prompt"
-										content="Use the tanstack-router-reference skill. How do I set up file-based routing?"
+										content="Use the tanstack-router reference. How do I set up file-based routing?"
 										markdown={false}
 									/>
 								</div>
@@ -557,7 +557,7 @@ function CliPage() {
 									<code className="text-primary bg-background border-primary/20 border px-2 py-0.5 font-mono">
 										project init
 									</code>
-									, which scans your manifest files and generates skills for your dependencies.
+									, which scans your manifest files and generates references for your dependencies.
 								</p>
 								<CodeBlock code="ow project init" />
 							</div>
@@ -567,7 +567,7 @@ function CliPage() {
 						<section id="commands" className="pt-21">
 							<h2 className="mb-5 font-serif text-3xl tracking-tight">Commands</h2>
 							<p className="text-muted-foreground mb-8 font-mono text-sm">
-								Core commands for managing skills and repositories.
+								Core commands for managing references and repositories.
 							</p>
 
 							<div className="overflow-x-auto">

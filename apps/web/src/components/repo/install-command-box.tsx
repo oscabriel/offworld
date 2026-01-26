@@ -9,7 +9,7 @@ interface InstallCommandBoxProps {
 
 export function InstallCommandBox({
 	fullName,
-	label = "Install this skill",
+	label = "Install this reference",
 }: InstallCommandBoxProps) {
 	const [copied, setCopied] = useState(false);
 	const command = `ow pull ${fullName}`;

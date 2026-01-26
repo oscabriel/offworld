@@ -21,7 +21,7 @@ import { Route as GithubOwnerIndexRouteImport } from './routes/_github/$owner/in
 import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 import { Route as GithubOwnerRepoRouteRouteImport } from './routes/_github/$owner/$repo/route'
 import { Route as GithubOwnerRepoIndexRouteImport } from './routes/_github/$owner/$repo/index'
-import { Route as GithubOwnerRepoSkillRouteImport } from './routes/_github/$owner/$repo/$skill'
+import { Route as GithubOwnerRepoReferenceRouteImport } from './routes/_github/$owner/$repo/$reference'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -82,11 +82,12 @@ const GithubOwnerRepoIndexRoute = GithubOwnerRepoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => GithubOwnerRepoRouteRoute,
 } as any)
-const GithubOwnerRepoSkillRoute = GithubOwnerRepoSkillRouteImport.update({
-  id: '/$skill',
-  path: '/$skill',
-  getParentRoute: () => GithubOwnerRepoRouteRoute,
-} as any)
+const GithubOwnerRepoReferenceRoute =
+  GithubOwnerRepoReferenceRouteImport.update({
+    id: '/$reference',
+    path: '/$reference',
+    getParentRoute: () => GithubOwnerRepoRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -99,7 +100,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$owner/': typeof GithubOwnerIndexRoute
-  '/$owner/$repo/$skill': typeof GithubOwnerRepoSkillRoute
+  '/$owner/$repo/$reference': typeof GithubOwnerRepoReferenceRoute
   '/$owner/$repo/': typeof GithubOwnerRepoIndexRoute
 }
 export interface FileRoutesByTo {
@@ -111,7 +112,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$owner': typeof GithubOwnerIndexRoute
-  '/$owner/$repo/$skill': typeof GithubOwnerRepoSkillRoute
+  '/$owner/$repo/$reference': typeof GithubOwnerRepoReferenceRoute
   '/$owner/$repo': typeof GithubOwnerRepoIndexRoute
 }
 export interface FileRoutesById {
@@ -127,7 +128,7 @@ export interface FileRoutesById {
   '/_github/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/_github/$owner/': typeof GithubOwnerIndexRoute
-  '/_github/$owner/$repo/$skill': typeof GithubOwnerRepoSkillRoute
+  '/_github/$owner/$repo/$reference': typeof GithubOwnerRepoReferenceRoute
   '/_github/$owner/$repo/': typeof GithubOwnerRepoIndexRoute
 }
 export interface FileRouteTypes {
@@ -143,7 +144,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/api/auth/callback'
     | '/$owner/'
-    | '/$owner/$repo/$skill'
+    | '/$owner/$repo/$reference'
     | '/$owner/$repo/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,7 +156,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/api/auth/callback'
     | '/$owner'
-    | '/$owner/$repo/$skill'
+    | '/$owner/$repo/$reference'
     | '/$owner/$repo'
   id:
     | '__root__'
@@ -170,7 +171,7 @@ export interface FileRouteTypes {
     | '/_github/$owner/$repo'
     | '/api/auth/callback'
     | '/_github/$owner/'
-    | '/_github/$owner/$repo/$skill'
+    | '/_github/$owner/$repo/$reference'
     | '/_github/$owner/$repo/'
   fileRoutesById: FileRoutesById
 }
@@ -271,23 +272,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GithubOwnerRepoIndexRouteImport
       parentRoute: typeof GithubOwnerRepoRouteRoute
     }
-    '/_github/$owner/$repo/$skill': {
-      id: '/_github/$owner/$repo/$skill'
-      path: '/$skill'
-      fullPath: '/$owner/$repo/$skill'
-      preLoaderRoute: typeof GithubOwnerRepoSkillRouteImport
+    '/_github/$owner/$repo/$reference': {
+      id: '/_github/$owner/$repo/$reference'
+      path: '/$reference'
+      fullPath: '/$owner/$repo/$reference'
+      preLoaderRoute: typeof GithubOwnerRepoReferenceRouteImport
       parentRoute: typeof GithubOwnerRepoRouteRoute
     }
   }
 }
 
 interface GithubOwnerRepoRouteRouteChildren {
-  GithubOwnerRepoSkillRoute: typeof GithubOwnerRepoSkillRoute
+  GithubOwnerRepoReferenceRoute: typeof GithubOwnerRepoReferenceRoute
   GithubOwnerRepoIndexRoute: typeof GithubOwnerRepoIndexRoute
 }
 
 const GithubOwnerRepoRouteRouteChildren: GithubOwnerRepoRouteRouteChildren = {
-  GithubOwnerRepoSkillRoute: GithubOwnerRepoSkillRoute,
+  GithubOwnerRepoReferenceRoute: GithubOwnerRepoReferenceRoute,
   GithubOwnerRepoIndexRoute: GithubOwnerRepoIndexRoute,
 }
 

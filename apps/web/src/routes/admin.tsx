@@ -15,14 +15,14 @@ export const Route = createFileRoute("/admin")({
 	},
 	loader: async ({ context }) => {
 		await Promise.all([
-			context.queryClient.ensureQueryData(convexQuery(api.admin.listAllAnalyses, {})),
+			context.queryClient.ensureQueryData(convexQuery(api.admin.listAllReferences, {})),
 			context.queryClient.ensureQueryData(convexQuery(api.admin.listAllUsers, {})),
 		]);
 	},
 });
 
 function AdminPage() {
-	const [activeTab, setActiveTab] = useState<"analyses" | "users">("analyses");
+	const [activeTab, setActiveTab] = useState<"references" | "users">("references");
 
 	return (
 		<div className="relative flex flex-1 flex-col">
@@ -33,14 +33,14 @@ function AdminPage() {
 					<div className="border-primary/10 flex gap-5 border-b">
 						<button
 							type="button"
-							onClick={() => setActiveTab("analyses")}
+							onClick={() => setActiveTab("references")}
 							className={`px-5 py-2 font-mono text-sm ${
-								activeTab === "analyses"
+								activeTab === "references"
 									? "border-primary text-primary border-b-2"
 									: "text-muted-foreground hover:text-foreground"
 							}`}
 						>
-							Analyses
+							References
 						</button>
 						<button
 							type="button"
@@ -55,7 +55,7 @@ function AdminPage() {
 						</button>
 					</div>
 
-					{activeTab === "analyses" && <AnalysisTable />}
+					{activeTab === "references" && <AnalysisTable />}
 					{activeTab === "users" && <UserTable />}
 				</div>
 			</div>

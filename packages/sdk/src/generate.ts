@@ -391,7 +391,13 @@ export function installSkill(repoName: string, skillContent: string, meta: Insta
  * Static template for the global SKILL.md file.
  * This is the single routing skill that all agents see.
  */
-const GLOBAL_SKILL_TEMPLATE = `# Offworld Skills Router
+const GLOBAL_SKILL_TEMPLATE = `---
+name: offworld
+description: Routes agent queries to Offworld reference files. Use to locate, select, and read per-repo references for dependency knowledge.
+allowed-tools: Bash(ow:*) Read Glob Grep
+---
+
+# Offworld Skills Router
 
 This is the global Offworld skill that routes queries to per-repository reference files.
 
@@ -492,6 +498,8 @@ export function installReference(
 	meta: InstallSkillMeta,
 	keywords?: string[],
 ): void {
+	installGlobalSkill();
+
 	const referenceFileName = toReferenceFileName(repoName);
 	const metaDirName = toMetaDirName(repoName);
 

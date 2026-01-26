@@ -79,7 +79,7 @@
 			"priority": 2,
 			"description": "Acceptance criteria: apps/cli/src/__tests__/handlers.test.ts mocks pullReference/pushReference and reference fields; apps/cli/package.json keywords/description use reference wording; apps/cli/README.md path examples use skill/offworld.",
 			"stepsToVerify": ["bun run test"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-011",

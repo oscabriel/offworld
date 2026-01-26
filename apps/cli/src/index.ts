@@ -327,24 +327,24 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 	repo: os.router({
 		list: os
 			.input(
-			z.object({
-				json: z.boolean().default(false).describe("Output as JSON"),
-				paths: z.boolean().default(false).describe("Show full paths"),
-				pattern: z.string().optional().describe("Filter by pattern (e.g. 'react-*')"),
+				z.object({
+					json: z.boolean().default(false).describe("Output as JSON"),
+					paths: z.boolean().default(false).describe("Show full paths"),
+					pattern: z.string().optional().describe("Filter by pattern (e.g. 'react-*')"),
+				}),
+			)
+			.meta({
+				description: "List managed repositories",
+				default: true,
+				aliases: { command: ["ls"] },
+			})
+			.handler(async ({ input }) => {
+				await repoListHandler({
+					json: input.json,
+					paths: input.paths,
+					pattern: input.pattern,
+				});
 			}),
-		)
-		.meta({
-			description: "List managed repositories",
-			default: true,
-			aliases: { command: ["ls"] },
-		})
-		.handler(async ({ input }) => {
-			await repoListHandler({
-				json: input.json,
-				paths: input.paths,
-				pattern: input.pattern,
-			});
-		}),
 
 		update: os
 			.input(

@@ -133,9 +133,9 @@ ow list
 ```json
 {
 	"paths": {
-		"skillDir": "~/.local/share/offworld/skills/offworld",
-		"globalMap": "~/.local/share/offworld/skills/offworld/assets/map.json",
-		"referencesDir": "~/.local/share/offworld/skills/offworld/references",
+		"skillDir": "~/.local/share/offworld/skill/offworld",
+		"globalMap": "~/.local/share/offworld/skill/offworld/assets/map.json",
+		"referencesDir": "~/.local/share/offworld/skill/offworld/references",
 		"projectMap": "/abs/path/to/repo/.offworld/map.json"
 	}
 }

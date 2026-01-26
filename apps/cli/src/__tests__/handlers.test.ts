@@ -42,7 +42,7 @@ vi.mock("@offworld/sdk", () => ({
 	getCommitSha: vi.fn(),
 	getCommitDistance: vi.fn(),
 	loadConfig: vi.fn(),
-	getSkillPath: vi.fn(),
+	getReferencePath: vi.fn(),
 	getMetaPath: vi.fn(),
 	getMetaRoot: vi.fn(),
 	updateIndex: vi.fn(),
@@ -54,8 +54,8 @@ vi.mock("@offworld/sdk", () => ({
 	checkRemote: vi.fn(),
 	checkRemoteByName: vi.fn(),
 	checkStaleness: vi.fn(),
-	generateSkillWithAI: vi.fn(),
-	installSkill: vi.fn(),
+	generateReferenceWithAI: vi.fn(),
+	installReference: vi.fn(),
 	loadAuthData: vi.fn(),
 	canPushToWeb: vi.fn(),
 	pushAnalysis: vi.fn(),
@@ -86,7 +86,7 @@ import {
 	getCommitSha,
 	getCommitDistance,
 	loadConfig,
-	getSkillPath,
+	getReferencePath,
 	getMetaPath,
 	getMetaRoot,
 	getIndexEntry,
@@ -94,7 +94,7 @@ import {
 	readGlobalMap,
 	pullAnalysis,
 	checkRemote,
-	generateSkillWithAI,
+	generateReferenceWithAI,
 	loadAuthData,
 	canPushToWeb,
 } from "@offworld/sdk";
@@ -115,7 +115,7 @@ describe("CLI handlers", () => {
 	const mockGetClonedRepoPath = getClonedRepoPath as ReturnType<typeof vi.fn>;
 	const mockGetCommitSha = getCommitSha as ReturnType<typeof vi.fn>;
 	const mockLoadConfig = loadConfig as ReturnType<typeof vi.fn>;
-	const mockGetSkillPath = getSkillPath as ReturnType<typeof vi.fn>;
+	const mockGetReferencePath = getReferencePath as ReturnType<typeof vi.fn>;
 	const mockGetMetaPath = getMetaPath as ReturnType<typeof vi.fn>;
 	const mockGetMetaRoot = getMetaRoot as ReturnType<typeof vi.fn>;
 	const mockLoadAuthData = loadAuthData as ReturnType<typeof vi.fn>;
@@ -126,7 +126,9 @@ describe("CLI handlers", () => {
 	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
 	const mockCheckRemote = checkRemote as ReturnType<typeof vi.fn>;
 	const mockGetCommitDistance = getCommitDistance as ReturnType<typeof vi.fn>;
-	const mockGenerateSkillWithAI = generateSkillWithAI as ReturnType<typeof vi.fn>;
+	const mockGenerateReferenceWithAI = generateReferenceWithAI as ReturnType<typeof vi.fn>;
+	const mockGenerateSkillWithAI = mockGenerateReferenceWithAI;
+	const mockGetSkillPath = mockGetReferencePath;
 	const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
 	const mockReadFileSync = readFileSync as ReturnType<typeof vi.fn>;
 	const mockConfirm = p.confirm as ReturnType<typeof vi.fn>;
@@ -157,11 +159,11 @@ describe("CLI handlers", () => {
 
 	const mockRemoteAnalysis = {
 		fullName: "tanstack/router",
-		skillName: "tanstack-router",
-		skillDescription: "TanStack Router expert",
-		skillContent: "# TanStack Router\n...",
+		referenceName: "tanstack-router",
+		referenceDescription: "TanStack Router expert",
+		referenceContent: "# TanStack Router\n...",
 		commitSha: "abc123",
-		analyzedAt: "2026-01-09T12:00:00Z",
+		generatedAt: "2026-01-09T12:00:00Z",
 	};
 
 	const mockIndexEntry: RepoIndexEntry = {
@@ -197,7 +199,7 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockGetCommitDistance.mockReturnValue(0);
 			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
-			mockGetSkillPath.mockReturnValue(
+			mockGetReferencePath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
 			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
@@ -227,10 +229,10 @@ describe("CLI handlers", () => {
 			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "def456",
 			});
-			mockGetSkillPath.mockReturnValue(
+			mockGetReferencePath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
 			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
@@ -284,7 +286,7 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "abc123",
 			});
 
@@ -314,7 +316,7 @@ describe("CLI handlers", () => {
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "abc123",
 			});
 
@@ -364,7 +366,7 @@ describe("CLI handlers", () => {
 			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/myrepo");
 			mockGetCommitSha.mockReturnValue("xyz789");
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "xyz789",
 			});
 
@@ -409,7 +411,7 @@ describe("CLI handlers", () => {
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("def456");
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "def456",
 			});
 
@@ -434,7 +436,7 @@ describe("CLI handlers", () => {
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "abc123",
 			});
 
@@ -463,7 +465,7 @@ describe("CLI handlers", () => {
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });
 			mockGetCommitSha.mockReturnValue("abc123");
 			mockGenerateSkillWithAI.mockResolvedValue({
-				skillContent: "# Skill\n...",
+				referenceContent: "# Skill\n...",
 				commitSha: "abc123",
 			});
 

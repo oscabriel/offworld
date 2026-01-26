@@ -17,7 +17,7 @@
         "rg \"GlobalMap|ProjectMap|ReferenceData\" packages/types/src/schemas.ts",
         "bun run typecheck"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-002",

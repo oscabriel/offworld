@@ -15,12 +15,11 @@ import type {
 	FileIndexEntrySchema,
 	FileIndexSchema,
 	AnalysisMetaSchema,
-	QuickPathSchema,
-	SearchPatternSchema,
-	CommonPatternSchema,
-	SkillSchema,
-	RepoIndexEntrySchema,
-	RepoIndexSchema,
+	ReferenceDataSchema,
+	GlobalMapRepoEntrySchema,
+	GlobalMapSchema,
+	ProjectMapRepoEntrySchema,
+	ProjectMapSchema,
 } from "./schemas";
 
 export type Agent = z.infer<typeof AgentSchema>;
@@ -42,10 +41,8 @@ export type FileIndexEntry = z.infer<typeof FileIndexEntrySchema>;
 export type FileIndex = z.infer<typeof FileIndexSchema>;
 export type AnalysisMeta = z.infer<typeof AnalysisMetaSchema>;
 
-export type QuickPath = z.infer<typeof QuickPathSchema>;
-export type SearchPattern = z.infer<typeof SearchPatternSchema>;
-export type CommonPattern = z.infer<typeof CommonPatternSchema>;
-export type Skill = z.infer<typeof SkillSchema>;
-
-export type RepoIndexEntry = z.infer<typeof RepoIndexEntrySchema>;
-export type RepoIndex = z.infer<typeof RepoIndexSchema>;
+export type ReferenceData = z.infer<typeof ReferenceDataSchema>;
+export type GlobalMapRepoEntry = z.infer<typeof GlobalMapRepoEntrySchema>;
+export type GlobalMap = z.infer<typeof GlobalMapSchema>;
+export type ProjectMapRepoEntry = z.infer<typeof ProjectMapRepoEntrySchema>;
+export type ProjectMap = z.infer<typeof ProjectMapSchema>;

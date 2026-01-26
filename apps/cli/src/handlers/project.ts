@@ -8,7 +8,9 @@ import {
 	updateAgentFiles,
 	getReferencePath,
 	toReferenceFileName,
-	type InstalledSkill,
+	readGlobalMap,
+	writeProjectMap,
+	type InstalledReference,
 	type ReferenceMatch,
 } from "@offworld/sdk";
 import { existsSync } from "node:fs";
@@ -23,7 +25,7 @@ export interface ProjectInitOptions {
 	deps?: string;
 	/** Comma-separated deps to exclude */
 	skip?: string;
-	/** Generate skills for deps without existing ones */
+	/** Generate references for deps without existing ones */
 	generate?: boolean;
 	/** Show what would be done without doing it */
 	dryRun?: boolean;
@@ -34,7 +36,7 @@ export interface ProjectInitOptions {
 export interface ProjectInitResult {
 	success: boolean;
 	message?: string;
-	skillsInstalled?: number;
+	referencesInstalled?: number;
 }
 
 function detectProjectRoot(): string | null {
@@ -139,7 +141,7 @@ export async function projectInitHandler(
 
 	if (!options.yes && !options.dryRun) {
 		const confirm = await p.confirm({
-			message: `Install skills for ${selected.length} dependencies?`,
+			message: `Install references for ${selected.length} dependencies?`,
 		});
 
 		if (p.isCancel(confirm) || !confirm) {
@@ -150,7 +152,7 @@ export async function projectInitHandler(
 
 	if (options.dryRun) {
 		p.log.info("");
-		p.log.info("Dry run - would install skills for:");
+		p.log.info("Dry run - would install references for:");
 		for (const match of selected) {
 			p.log.info(`  - ${match.dep} (${match.repo})`);
 		}
@@ -160,7 +162,7 @@ export async function projectInitHandler(
 
 	p.log.step(`Installing ${selected.length} references...`);
 
-	const installed: InstalledSkill[] = [];
+	const installed: InstalledReference[] = [];
 	let failedCount = 0;
 
 	for (const match of selected) {
@@ -176,11 +178,11 @@ export async function projectInitHandler(
 				verbose: false,
 			});
 
-			if (pullResult.success && pullResult.skillInstalled) {
+			if (pullResult.success && pullResult.referenceInstalled) {
 				const referencePath = getReferencePath(match.repo);
 				installed.push({
 					dependency: match.dep,
-					skill: toReferenceFileName(match.repo),
+					reference: toReferenceFileName(match.repo),
 					path: referencePath,
 				});
 			} else {
@@ -194,6 +196,25 @@ export async function projectInitHandler(
 		}
 	}
 
+	const map = readGlobalMap();
+	const projectEntries = Object.fromEntries(
+		selected
+			.filter((m) => m.repo)
+			.map((m) => {
+				const qualifiedName = `github.com:${m.repo}`;
+				const entry = map.repos[qualifiedName];
+				return [
+					qualifiedName,
+					{
+						localPath: entry?.localPath ?? "",
+						reference: toReferenceFileName(m.repo!),
+						keywords: entry?.keywords ?? [],
+					},
+				];
+			}),
+	);
+	writeProjectMap(projectRoot, projectEntries);
+
 	if (installed.length > 0) {
 		p.log.step("Updating AGENTS.md...");
 		try {
@@ -206,12 +227,12 @@ export async function projectInitHandler(
 	}
 
 	p.log.info("");
-	p.log.success(`Installed ${installed.length} skills`);
+	p.log.success(`Installed ${installed.length} references`);
 	if (failedCount > 0) {
-		p.log.warn(`Failed to install ${failedCount} skills`);
+		p.log.warn(`Failed to install ${failedCount} references`);
 	}
 
 	p.outro("Project init complete");
 
-	return { success: true, skillsInstalled: installed.length };
+	return { success: true, referencesInstalled: installed.length };
 }

@@ -13,8 +13,11 @@
 	"dependencies": {
 		"@astrojs/cloudflare": "^12.6.4",
 		"@astrojs/starlight": "^0.37.4",
+		"@fontsource/geist-mono": "^5.2.7",
+		"@fontsource/sorts-mill-goudy": "^5.2.8",
 		"astro": "^5.16.15",
 		"sharp": "^0.34.5",
+		"unist-util-visit": "^5.1.0",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

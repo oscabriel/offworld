@@ -1,16 +1,15 @@
 {
 	"name": "offworld",
 	"version": "0.1.0",
-	"description": "Offworld CLI - Repository analysis and skill generation for AI coding agents",
+	"description": "Offworld CLI - Repository reference generation for AI coding agents",
 	"keywords": [
 		"ai",
-		"analysis",
 		"claude",
 		"cli",
 		"coding-agent",
 		"opencode",
-		"repository",
-		"skill"
+		"reference",
+		"repository"
 	],
 	"homepage": "https://offworld.sh",
 	"bugs": {

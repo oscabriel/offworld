@@ -10,12 +10,19 @@ vi.mock("../clone.js", () => ({
 
 vi.mock("../config.js", () => ({
 	loadConfig: vi.fn(),
-	toSkillDirName: vi.fn((repoName: string) => {
+	toReferenceName: vi.fn((repoName: string) => {
 		if (repoName.includes("/")) {
 			const [owner, repo] = repoName.split("/");
-			return `${owner}-${repo}-reference`;
+			return `${owner}-${repo}`;
 		}
-		return `${repoName}-reference`;
+		return repoName;
+	}),
+	toReferenceFileName: vi.fn((repoName: string) => {
+		if (repoName.includes("/")) {
+			const [owner, repo] = repoName.split("/");
+			return `${owner}-${repo}.md`;
+		}
+		return `${repoName}.md`;
 	}),
 	toMetaDirName: vi.fn((repoName: string) => {
 		if (repoName.includes("/")) {
@@ -30,9 +37,18 @@ vi.mock("../agents.js", () => ({
 	agents: {},
 }));
 
+vi.mock("../index-manager.js", () => ({
+	readGlobalMap: vi.fn(() => ({ repos: {} })),
+	upsertGlobalMapEntry: vi.fn(),
+}));
+
 vi.mock("../paths.js", () => ({
 	Paths: {
 		data: "/mock/data",
+		metaDir: "/mock/data/meta",
+		offworldReferencesDir: "/mock/data/references",
+		offworldSkillDir: "/mock/data/skill/offworld",
+		offworldAssetsDir: "/mock/data/skill/offworld/assets",
 	},
 	expandTilde: vi.fn((path: string) => path),
 }));
@@ -44,13 +60,13 @@ vi.mock("node:fs", () => ({
 	unlinkSync: vi.fn(),
 	rmSync: vi.fn(),
 	symlinkSync: vi.fn(),
-	existsSync: vi.fn(),
+	existsSync: vi.fn(() => false),
 }));
 
 import { streamPrompt } from "../ai/opencode.js";
 import { getCommitSha } from "../clone.js";
 import { loadConfig } from "../config.js";
-import { generateReferenceWithAI, installSkill } from "../generate.js";
+import { generateReferenceWithAI, installReference } from "../generate.js";
 
 const mockStreamPrompt = streamPrompt as ReturnType<typeof vi.fn>;
 const mockGetCommitSha = getCommitSha as ReturnType<typeof vi.fn>;
@@ -147,7 +163,7 @@ ${"Content ".repeat(100)}
 	});
 });
 
-describe("installSkill", () => {
+describe("installReference", () => {
 	beforeEach(() => {
 		mockLoadConfig.mockReturnValue({
 			agents: [],
@@ -156,8 +172,8 @@ describe("installSkill", () => {
 
 	it("should accept valid arguments", () => {
 		expect(() => {
-			installSkill("test/repo", "---\nname: Test\n---\n# Test\nContent", {
-				analyzedAt: new Date().toISOString(),
+			installReference("github.com:test/repo", "test/repo", "/path/to/repo", "# Test\nContent", {
+				referenceUpdatedAt: new Date().toISOString(),
 				commitSha: "abc123",
 				version: "0.1.0",
 			});

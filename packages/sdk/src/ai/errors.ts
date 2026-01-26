@@ -1,23 +1,23 @@
 // Tagged error types with actionable hints for OpenCode integration
 
 /**
- * Base class for OpenCode analysis errors
+ * Base class for OpenCode reference errors
  */
-export class OpenCodeAnalysisError extends Error {
-	readonly _tag: string = "OpenCodeAnalysisError";
+export class OpenCodeReferenceError extends Error {
+	readonly _tag: string = "OpenCodeReferenceError";
 	constructor(
 		message: string,
 		public readonly details?: unknown,
 	) {
 		super(message);
-		this.name = "OpenCodeAnalysisError";
+		this.name = "OpenCodeReferenceError";
 	}
 }
 
 /**
  * Error when the @opencode-ai/sdk package is not installed
  */
-export class OpenCodeSDKError extends OpenCodeAnalysisError {
+export class OpenCodeSDKError extends OpenCodeReferenceError {
 	readonly _tag = "OpenCodeSDKError" as const;
 	constructor() {
 		super("Failed to import @opencode-ai/sdk. Install it with: bun add @opencode-ai/sdk");
@@ -28,7 +28,7 @@ export class OpenCodeSDKError extends OpenCodeAnalysisError {
 /**
  * Error when the requested provider is not found
  */
-export class InvalidProviderError extends OpenCodeAnalysisError {
+export class InvalidProviderError extends OpenCodeReferenceError {
 	readonly _tag = "InvalidProviderError" as const;
 	readonly hint: string;
 
@@ -49,7 +49,7 @@ export class InvalidProviderError extends OpenCodeAnalysisError {
 /**
  * Error when the provider exists but is not connected/authenticated
  */
-export class ProviderNotConnectedError extends OpenCodeAnalysisError {
+export class ProviderNotConnectedError extends OpenCodeReferenceError {
 	readonly _tag = "ProviderNotConnectedError" as const;
 	readonly hint: string;
 
@@ -70,7 +70,7 @@ export class ProviderNotConnectedError extends OpenCodeAnalysisError {
 /**
  * Error when the requested model is not found for a provider
  */
-export class InvalidModelError extends OpenCodeAnalysisError {
+export class InvalidModelError extends OpenCodeReferenceError {
 	readonly _tag = "InvalidModelError" as const;
 	readonly hint: string;
 
@@ -92,7 +92,7 @@ export class InvalidModelError extends OpenCodeAnalysisError {
 /**
  * Error when the OpenCode server fails to start
  */
-export class ServerStartError extends OpenCodeAnalysisError {
+export class ServerStartError extends OpenCodeReferenceError {
 	readonly _tag = "ServerStartError" as const;
 	readonly hint: string;
 
@@ -113,7 +113,7 @@ export class ServerStartError extends OpenCodeAnalysisError {
 /**
  * Error when a session operation fails
  */
-export class SessionError extends OpenCodeAnalysisError {
+export class SessionError extends OpenCodeReferenceError {
 	readonly _tag = "SessionError" as const;
 	readonly hint: string;
 
@@ -135,7 +135,7 @@ export class SessionError extends OpenCodeAnalysisError {
 /**
  * Error when a request times out
  */
-export class TimeoutError extends OpenCodeAnalysisError {
+export class TimeoutError extends OpenCodeReferenceError {
 	readonly _tag = "TimeoutError" as const;
 	readonly hint: string;
 

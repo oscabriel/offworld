@@ -10,42 +10,27 @@ export {
 	type FileRole,
 } from "@offworld/types";
 
-// Deprecated exports for backwards compatibility (TODO: remove after US-006)
-/** @deprecated */
-export type RepoIndex = { version: number; repos: Record<string, any> };
-/** @deprecated */
-export type RepoIndexEntry = any;
-
 export { VERSION, DEFAULT_IGNORE_PATTERNS } from "./constants.js";
 
 export {
 	getMetaRoot,
 	getRepoRoot,
 	getRepoPath,
-	getAnalysisPath,
-	getSkillPath,
 	getReferencePath,
 	getMetaPath,
 	getConfigPath,
 	loadConfig,
 	saveConfig,
-	toSkillDirName,
+	toReferenceName,
 	toReferenceFileName,
 	toMetaDirName,
 } from "./config.js";
 
-import { Paths as PathsImport } from "./paths.js";
 export { expandTilde, Paths } from "./paths.js";
-
-// Backward-compatible alias for US-005 migration
-/** @deprecated Use Paths.state instead */
-export function getStateRoot(): string {
-	return PathsImport.state;
-}
 
 export {
 	parseRepoInput,
-	getAnalysisPathForSource,
+	getReferenceFileNameForSource,
 	RepoSourceError,
 	PathNotFoundError,
 	NotGitRepoError,
@@ -57,21 +42,12 @@ export {
 	upsertGlobalMapEntry,
 	removeGlobalMapEntry,
 	writeProjectMap,
-	// Deprecated (TODO: remove after US-006)
-	getIndex,
-	saveIndex,
-	updateIndex,
-	removeFromIndex,
-	getIndexEntry,
-	listIndexedRepos,
-	getIndexPath,
 } from "./index-manager.js";
 
 export {
 	cloneRepo,
 	updateRepo,
 	removeRepo,
-	removeReferenceByName,
 	listRepos,
 	isRepoCloned,
 	getClonedRepoPath,
@@ -91,7 +67,6 @@ export {
 
 export {
 	streamPrompt,
-	OpenCodeAnalysisError,
 	OpenCodeSDKError,
 	type StreamPromptOptions,
 	type StreamPromptResult,
@@ -106,7 +81,6 @@ export {
 	CommitExistsError,
 	InvalidInputError,
 	InvalidReferenceError,
-	InvalidSkillError,
 	RepoNotFoundError as SyncRepoNotFoundError,
 	LowStarsError,
 	PrivateRepoError,
@@ -116,9 +90,6 @@ export {
 	pullReference,
 	pullReferenceByName,
 	pushReference,
-	pullAnalysis,
-	pullAnalysisByName,
-	pushAnalysis,
 	checkRemote,
 	checkRemoteByName,
 	checkStaleness,
@@ -127,7 +98,6 @@ export {
 	canPushToWeb,
 	validatePushAllowed,
 	type ReferenceData,
-	type AnalysisData,
 	type PullResponse,
 	type CheckResponse,
 	type PushResponse,
@@ -155,17 +125,12 @@ export {
 
 export {
 	generateReferenceWithAI,
-	installSkill,
 	installGlobalSkill,
 	installReference,
 	type GenerateReferenceOptions,
 	type GenerateReferenceResult,
-	type InstallSkillMeta,
+	type InstallReferenceMeta,
 } from "./generate.js";
-
-// Backward-compatible alias for US-005 migration
-/** @deprecated Use generateReferenceWithAI instead */
-export { generateReferenceWithAI as generateSkillWithAI } from "./generate.js";
 
 export {
 	agents,
@@ -196,7 +161,7 @@ export {
 	type ReferenceMatch,
 } from "./reference-matcher.js";
 
-export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";
+export { updateAgentFiles, appendReferencesSection, type InstalledReference } from "./agents-md.js";
 
 export {
 	getRepoStatus,

@@ -7,7 +7,7 @@ import {
 	saveConfig,
 	getConfigPath,
 	getMetaRoot,
-	getStateRoot,
+	Paths,
 	detectInstalledAgents,
 	getAllAgentConfigs,
 	getAuthStatus,
@@ -303,7 +303,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		p.log.info(`  Config file: ${configPath}`);
 		p.log.info(`  Repo root: ${repoRoot}`);
 		p.log.info(`  Meta root: ${getMetaRoot()}`);
-		p.log.info(`  State root: ${getStateRoot()}`);
+		p.log.info(`  State root: ${Paths.state}`);
 		p.log.info(`  Model: ${defaultModel}`);
 		p.log.info(`  Agents: ${agents.join(", ")}`);
 	} catch (error) {
@@ -324,7 +324,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 			let shouldDiscover = options.yes;
 			if (!options.yes) {
 				const confirmDiscover = await p.confirm({
-					message: "Add them to your index? (they will be marked as not analyzed)",
+					message: "Add them to your index? (they will be marked as not referenced)",
 					initialValue: true,
 				});
 				if (!p.isCancel(confirmDiscover)) {

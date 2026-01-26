@@ -2,18 +2,16 @@
  * Shared utilities for CLI handlers
  */
 
-import { getCommitSha, readGlobalMap } from "@offworld/sdk";
+import { readGlobalMap } from "@offworld/sdk";
 import { existsSync } from "node:fs";
 
 export interface RepoListItem {
 	fullName: string;
 	qualifiedName: string;
 	localPath: string;
-	analyzed: boolean;
-	analyzedAt?: string;
+	hasReference: boolean;
+	referenceUpdatedAt?: string;
 	commitSha?: string;
-	hasSkill: boolean;
-	isStale?: boolean;
 	exists: boolean;
 }
 
@@ -23,12 +21,10 @@ export interface RepoListItem {
 export function formatRepoForDisplay(item: RepoListItem, showPaths: boolean): string {
 	const parts: string[] = [item.fullName];
 
-	if (item.analyzed) {
-		parts.push("[analyzed]");
-		if (item.hasSkill) parts.push("[skill]");
-		if (item.isStale) parts.push("[stale]");
+	if (item.hasReference) {
+		parts.push("[reference]");
 	} else {
-		parts.push("[not analyzed]");
+		parts.push("[no-reference]");
 	}
 
 	if (showPaths) parts.push(`(${item.localPath})`);
@@ -38,12 +34,9 @@ export function formatRepoForDisplay(item: RepoListItem, showPaths: boolean): st
 }
 
 /**
- * Convert qualified name to list item with staleness check
+ * Convert qualified name to list item
  */
-export async function entryToListItem(
-	qualifiedName: string,
-	checkStale: boolean,
-): Promise<RepoListItem> {
+export async function entryToListItem(qualifiedName: string): Promise<RepoListItem> {
 	const map = readGlobalMap();
 	const entry = map.repos[qualifiedName];
 
@@ -52,39 +45,21 @@ export async function entryToListItem(
 			fullName: qualifiedName,
 			qualifiedName,
 			localPath: "",
-			analyzed: false,
-			hasSkill: false,
-			isStale: false,
+			hasReference: false,
 			exists: false,
 		};
 	}
 
 	const exists = existsSync(entry.localPath);
-	const analyzed = !!entry.references && entry.references.length > 0;
-	const hasSkill = analyzed;
-
-	let isStale: boolean | undefined;
-
-	// TODO: Implement stale check based on map's updatedAt vs current commit
-	if (checkStale && analyzed && exists) {
-		try {
-			getCommitSha(entry.localPath); // Check if repo is git-valid
-			// For now, assume not stale (no commitSha in map yet)
-			isStale = false;
-		} catch {
-			isStale = undefined;
-		}
-	}
+	const hasReference = !!entry.references && entry.references.length > 0;
 
 	return {
 		fullName: qualifiedName,
 		qualifiedName,
 		localPath: entry.localPath,
-		analyzed,
-		analyzedAt: entry.updatedAt,
+		hasReference,
+		referenceUpdatedAt: entry.updatedAt,
 		commitSha: undefined, // Map doesn't store commitSha yet
-		hasSkill,
-		isStale,
 		exists,
 	};
 }

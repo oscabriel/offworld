@@ -97,8 +97,8 @@ export const FileIndexEntrySchema = z.object({
 
 export const FileIndexSchema = z.array(FileIndexEntrySchema);
 
-export const AnalysisMetaSchema = z.object({
-	analyzedAt: z.string(),
+export const ReferenceMetaSchema = z.object({
+	referenceUpdatedAt: z.string(),
 	commitSha: z.string(),
 	version: z.string(),
 	tokenCost: z.number().optional(),

@@ -7,6 +7,7 @@ import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { basename } from "node:path";
 import type { GitProvider, LocalRepoSource, RemoteRepoSource, RepoSource } from "@offworld/types";
+import { toReferenceFileName } from "./config.js";
 import { expandTilde } from "./paths.js";
 
 // Custom error types for specific failure modes
@@ -82,7 +83,7 @@ function parseHttpsUrl(input: string): RemoteRepoSource | null {
 		owner,
 		repo,
 		fullName: `${owner}/${repo}`,
-		qualifiedName: `${provider}:${owner}/${repo}`,
+		qualifiedName: `${host}:${owner}/${repo}`,
 		cloneUrl: buildCloneUrl(provider, owner, repo),
 	};
 }
@@ -106,7 +107,7 @@ function parseSshUrl(input: string): RemoteRepoSource | null {
 		owner,
 		repo,
 		fullName: `${owner}/${repo}`,
-		qualifiedName: `${provider}:${owner}/${repo}`,
+		qualifiedName: `${host}:${owner}/${repo}`,
 		cloneUrl: buildCloneUrl(provider, owner, repo),
 	};
 }
@@ -123,6 +124,7 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
 	if (!owner || !repo) return null;
 
 	const provider: GitProvider = "github";
+	const host = "github.com";
 
 	return {
 		type: "remote",
@@ -130,7 +132,7 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
 		owner,
 		repo,
 		fullName: `${owner}/${repo}`,
-		qualifiedName: `${provider}:${owner}/${repo}`,
+		qualifiedName: `${host}:${owner}/${repo}`,
 		cloneUrl: buildCloneUrl(provider, owner, repo),
 	};
 }
@@ -221,9 +223,9 @@ export function parseRepoInput(input: string): RepoSource {
 	);
 }
 
-export function getAnalysisPathForSource(source: RepoSource): string {
+export function getReferenceFileNameForSource(source: RepoSource): string {
 	if (source.type === "remote") {
-		return `${source.owner}-${source.repo}-reference`;
+		return toReferenceFileName(source.fullName);
 	}
-	return `${source.name}-reference`;
+	return toReferenceFileName(source.name);
 }

@@ -5,7 +5,7 @@
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@offworld/backend/api";
-import { toSkillDirName } from "./config.js";
+import { toReferenceName } from "./config.js";
 import type { RepoSource } from "@offworld/types";
 
 // ============================================================================
@@ -87,9 +87,6 @@ export class InvalidReferenceError extends SyncError {
 	}
 }
 
-/** @deprecated Use InvalidReferenceError */
-export const InvalidSkillError = InvalidReferenceError;
-
 export class RepoNotFoundError extends SyncError {
 	constructor(message = "Repository not found on GitHub.") {
 		super(message);
@@ -148,9 +145,6 @@ export interface ReferenceData {
 	commitSha: string;
 	generatedAt: string;
 }
-
-/** @deprecated Use ReferenceData */
-export type AnalysisData = ReferenceData;
 
 /** Response from pull query */
 export interface PullResponse {
@@ -220,7 +214,7 @@ export async function pullReference(fullName: string): Promise<PullResponse | nu
 	try {
 		let result = await client.query(api.references.pull, {
 			fullName,
-			referenceName: toSkillDirName(fullName),
+			referenceName: toReferenceName(fullName),
 		});
 		if (!result) {
 			result = await client.query(api.references.pull, { fullName });
@@ -346,7 +340,7 @@ export async function checkRemote(fullName: string): Promise<CheckResponse> {
 	try {
 		let result = await client.query(api.references.check, {
 			fullName,
-			referenceName: toSkillDirName(fullName),
+			referenceName: toReferenceName(fullName),
 		});
 		if (!result.exists) {
 			result = await client.query(api.references.check, { fullName });
@@ -422,19 +416,6 @@ export async function checkStaleness(
 		remoteCommitSha: remote.commitSha,
 	};
 }
-
-// ============================================================================
-// Deprecated Exports (Backward Compatibility)
-// ============================================================================
-
-/** @deprecated Use pullReference */
-export const pullAnalysis = pullReference;
-
-/** @deprecated Use pullReferenceByName */
-export const pullAnalysisByName = pullReferenceByName;
-
-/** @deprecated Use pushReference */
-export const pushAnalysis = pushReference;
 
 // ============================================================================
 // Push Validation Functions

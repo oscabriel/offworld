@@ -52,13 +52,6 @@ export const Paths = {
 	},
 
 	/**
-	 * Skills directory: ~/.local/share/offworld/skills
-	 */
-	get skillsDir(): string {
-		return join(this.data, "skills");
-	},
-
-	/**
 	 * Meta directory: ~/.local/share/offworld/meta
 	 */
 	get metaDir(): string {

@@ -84,7 +84,7 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	"*.eot",
 	"*.otf",
 
-	// Lock files (large, not useful for analysis)
+	// Lock files (large, not useful for reference generation)
 	"package-lock.json",
 	"yarn.lock",
 	"pnpm-lock.yaml",

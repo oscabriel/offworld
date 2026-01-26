@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-	AnalysisMetaSchema,
+	ReferenceMetaSchema,
 	ArchitectureSchema,
 	ConfigSchema,
 	EntitySchema,
@@ -78,7 +78,7 @@ describe("RepoSourceSchema", () => {
 			owner: "tanstack",
 			repo: "router",
 			fullName: "tanstack/router",
-			qualifiedName: "github:tanstack/router",
+			qualifiedName: "github.com:tanstack/router",
 			cloneUrl: "https://github.com/tanstack/router.git",
 		};
 		const result = RepoSourceSchema.safeParse(remote);
@@ -405,33 +405,33 @@ describe("FileIndexSchema", () => {
 	});
 });
 
-describe("AnalysisMetaSchema", () => {
+describe("ReferenceMetaSchema", () => {
 	it("validates complete meta object", () => {
 		const meta = {
-			analyzedAt: "2026-01-09T12:00:00Z",
+			referenceUpdatedAt: "2026-01-09T12:00:00Z",
 			commitSha: "abc123def456",
 			version: "0.1.0",
 			tokenCost: 1250,
 		};
-		const result = AnalysisMetaSchema.safeParse(meta);
+		const result = ReferenceMetaSchema.safeParse(meta);
 		expect(result.success).toBe(true);
 	});
 
 	it("accepts meta without optional tokenCost", () => {
 		const meta = {
-			analyzedAt: "2026-01-09T12:00:00Z",
+			referenceUpdatedAt: "2026-01-09T12:00:00Z",
 			commitSha: "abc123def456",
 			version: "0.1.0",
 		};
-		const result = AnalysisMetaSchema.safeParse(meta);
+		const result = ReferenceMetaSchema.safeParse(meta);
 		expect(result.success).toBe(true);
 	});
 
 	it("rejects missing required fields", () => {
 		const incomplete = {
-			analyzedAt: "2026-01-09T12:00:00Z",
+			referenceUpdatedAt: "2026-01-09T12:00:00Z",
 		};
-		const result = AnalysisMetaSchema.safeParse(incomplete);
+		const result = ReferenceMetaSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
 	});
 });

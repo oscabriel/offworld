@@ -1,7 +1,7 @@
 /**
  * Unit tests for sync.ts API communication
  *
- * NOTE: Tests for pullAnalysis, pushAnalysis, checkRemote, and checkStaleness
+ * NOTE: Tests for pullReference, pushReference, checkRemote, and checkStaleness
  * are removed because they now use ConvexHttpClient which is difficult to mock
  * in vitest. These functions are tested via integration tests against real Convex.
  *
@@ -24,7 +24,7 @@ describe("sync.ts", () => {
 		owner: "tanstack",
 		repo: "router",
 		fullName: "tanstack/router",
-		qualifiedName: "github:tanstack/router",
+		qualifiedName: "github.com:tanstack/router",
 		cloneUrl: "https://github.com/tanstack/router.git",
 	};
 
@@ -34,7 +34,7 @@ describe("sync.ts", () => {
 		owner: "group",
 		repo: "project",
 		fullName: "group/project",
-		qualifiedName: "gitlab:group/project",
+		qualifiedName: "gitlab.com:group/project",
 		cloneUrl: "https://gitlab.com/group/project.git",
 	};
 

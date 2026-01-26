@@ -10,24 +10,24 @@ bun add @offworld/sdk
 
 ## Modules
 
-| Module               | Description                                |
-| -------------------- | ------------------------------------------ |
-| `config.ts`          | Config load/save, path utilities           |
-| `paths.ts`           | XDG-compliant path resolution              |
-| `clone.ts`           | Git clone/update/remove                    |
-| `index-manager.ts`   | Global + project map management            |
-| `generate.ts`        | AI reference generation                    |
-| `sync.ts`            | Convex client for push/pull                |
-| `auth.ts`            | WorkOS token management                    |
-| `agents.ts`          | Agent registry (6 agents)                  |
-| `agents-md.ts`       | AGENTS.md skill table generation           |
-| `repo-source.ts`     | Parse repo input (URL, owner/repo, local)  |
-| `manifest.ts`        | Dependency parsing (package.json, etc.)    |
-| `dep-mappings.ts`    | npm package → GitHub repo resolution       |
-| `reference-matcher.ts` | Match deps to installed references       |
-| `repo-manager.ts`    | Bulk repo operations (update, prune, gc)   |
-| `models.ts`          | AI provider/model registry                 |
-| `installation.ts`    | Upgrade/uninstall utilities                |
+| Module                 | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `config.ts`            | Config load/save, path utilities          |
+| `paths.ts`             | XDG-compliant path resolution             |
+| `clone.ts`             | Git clone/update/remove                   |
+| `index-manager.ts`     | Global + project map management           |
+| `generate.ts`          | AI reference generation                   |
+| `sync.ts`              | Convex client for push/pull               |
+| `auth.ts`              | WorkOS token management                   |
+| `agents.ts`            | Agent registry (6 agents)                 |
+| `agents-md.ts`         | AGENTS.md reference table generation      |
+| `repo-source.ts`       | Parse repo input (URL, owner/repo, local) |
+| `manifest.ts`          | Dependency parsing (package.json, etc.)   |
+| `dep-mappings.ts`      | npm package → GitHub repo resolution      |
+| `reference-matcher.ts` | Match deps to installed references        |
+| `repo-manager.ts`      | Bulk repo operations (update, prune, gc)  |
+| `models.ts`            | AI provider/model registry                |
+| `installation.ts`      | Upgrade/uninstall utilities               |
 
 ## Key Exports
 
@@ -83,7 +83,11 @@ const status = await checkRemote("owner/repo");
 ### Dependency Resolution
 
 ```typescript
-import { parseDependencies, resolveDependencyRepo, matchDependenciesToReferences } from "@offworld/sdk";
+import {
+	parseDependencies,
+	resolveDependencyRepo,
+	matchDependenciesToReferences,
+} from "@offworld/sdk";
 
 const deps = parseDependencies("package.json");
 const repo = await resolveDependencyRepo("zod");
@@ -101,15 +105,15 @@ console.log(agents); // AgentConfig[]
 
 ## Data Paths
 
-| Purpose      | Getter                    |
-| ------------ | ------------------------- |
-| Config       | `Paths.config`            |
-| Data root    | `Paths.data`              |
-| Skill dir    | `Paths.offworldDir`       |
-| Global map   | `Paths.globalMap`         |
-| References   | `Paths.referencesDir`     |
-| Auth         | `Paths.auth`              |
-| State        | `Paths.state`             |
+| Purpose    | Getter                |
+| ---------- | --------------------- |
+| Config     | `Paths.config`        |
+| Data root  | `Paths.data`          |
+| Skill dir  | `Paths.offworldDir`   |
+| Global map | `Paths.globalMap`     |
+| References | `Paths.referencesDir` |
+| Auth       | `Paths.auth`          |
+| State      | `Paths.state`         |
 
 ## Commands
 

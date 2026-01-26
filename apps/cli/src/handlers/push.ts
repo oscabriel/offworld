@@ -8,18 +8,18 @@ import {
 	getToken,
 	getMetaPath,
 	getReferencePath,
-	toSkillDirName,
+	toReferenceName,
 	getCommitSha,
 	getClonedRepoPath,
 	isRepoCloned,
-	pushAnalysis,
+	pushReference,
 	NotLoggedInError,
 	TokenExpiredError,
 	AuthenticationError,
 	RateLimitError,
 	CommitExistsError,
 	InvalidInputError,
-	InvalidSkillError,
+	InvalidReferenceError,
 	SyncRepoNotFoundError,
 	LowStarsError,
 	PrivateRepoError,
@@ -75,16 +75,17 @@ function extractDescription(referenceContent: string, fallback: string): string 
 
 	description = description.replace(/\s+/g, " ").trim();
 	if (!description) description = fallback;
-	if (description.length > DESCRIPTION_MAX) description = description.slice(0, DESCRIPTION_MAX).trim();
+	if (description.length > DESCRIPTION_MAX)
+		description = description.slice(0, DESCRIPTION_MAX).trim();
 	if (!description) description = fallback.slice(0, DESCRIPTION_MAX);
 	return description;
 }
 
 /**
- * Load local reference data from the reference format.
+ * Load local reference data from disk.
  * Format: reference file + meta.json
  */
-function loadLocalAnalysis(
+function loadLocalReference(
 	metaDir: string,
 	referencePath: string,
 	fullName: string,
@@ -100,13 +101,10 @@ function loadLocalAnalysis(
 		const referenceContent = readFileSync(referencePath, "utf-8");
 		const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as {
 			commitSha: string;
-			analyzedAt: string;
+			referenceUpdatedAt: string;
 		};
-		const referenceName = toSkillDirName(fullName);
-		const referenceDescription = extractDescription(
-			referenceContent,
-			`Reference for ${fullName}`,
-		);
+		const referenceName = toReferenceName(fullName);
+		const referenceDescription = extractDescription(referenceContent, `Reference for ${fullName}`);
 
 		return {
 			fullName: "",
@@ -114,7 +112,7 @@ function loadLocalAnalysis(
 			referenceDescription,
 			referenceContent,
 			commitSha: meta.commitSha,
-			generatedAt: meta.analyzedAt,
+			generatedAt: meta.referenceUpdatedAt,
 		};
 	} catch {
 		return null;
@@ -183,25 +181,25 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			return { success: false, message: "No local reference found" };
 		}
 
-		const localAnalysis = loadLocalAnalysis(metaDir, referencePath, source.fullName);
+		const localReference = loadLocalReference(metaDir, referencePath, source.fullName);
 
-		if (!localAnalysis) {
+		if (!localReference) {
 			s.stop("Invalid reference");
 			p.log.error("Local reference is incomplete or corrupted.");
 			p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
 			return { success: false, message: "Local reference incomplete" };
 		}
 
-		localAnalysis.fullName = source.fullName;
+		localReference.fullName = source.fullName;
 
 		// Verify commit SHA matches current repo state
 		const repoPath = getClonedRepoPath(source.qualifiedName);
 		if (repoPath) {
 			const currentSha = getCommitSha(repoPath);
-			if (currentSha !== localAnalysis.commitSha) {
+			if (currentSha !== localReference.commitSha) {
 				s.stop("Reference outdated");
 				p.log.warn("Local reference was generated for a different commit.");
-				p.log.info(`Reference: ${localAnalysis.commitSha.slice(0, 7)}`);
+				p.log.info(`Reference: ${localReference.commitSha.slice(0, 7)}`);
 				p.log.info(`Current:  ${currentSha.slice(0, 7)}`);
 				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
 				return { success: false, message: "Reference outdated - run generate to update" };
@@ -213,7 +211,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		// Step 6: Push to offworld.sh (all validation happens server-side)
 		s.start("Uploading to offworld.sh...");
 		try {
-			const result = await pushAnalysis(localAnalysis, token);
+			const result = await pushReference(localReference, token);
 
 			if (result.success) {
 				s.stop("Reference uploaded!");
@@ -235,18 +233,18 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 
 			if (err instanceof RateLimitError) {
 				p.log.error("Rate limit exceeded.");
-				p.log.info("You can push up to 20 skills per day.");
+				p.log.info("You can push up to 20 references per day.");
 				p.log.info("Please try again tomorrow.");
 				return { success: false, message: "Rate limit exceeded" };
 			}
 
 			if (err instanceof CommitExistsError) {
-				p.log.error("A skill already exists for this commit.");
-				p.log.info(`Commit: ${localAnalysis.commitSha.slice(0, 7)}`);
+				p.log.error("A reference already exists for this commit.");
+				p.log.info(`Commit: ${localReference.commitSha.slice(0, 7)}`);
 				p.log.info(
-					"Skills are immutable per commit. Update the repo and regenerate to push a new version.",
+					"References are immutable per commit. Update the repo and regenerate to push a new version.",
 				);
-				return { success: false, message: "Skill already exists for this commit" };
+				return { success: false, message: "Reference already exists for this commit" };
 			}
 
 			if (err instanceof InvalidInputError) {
@@ -255,8 +253,8 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 				return { success: false, message: err.message };
 			}
 
-			if (err instanceof InvalidSkillError) {
-				p.log.error("Invalid skill content.");
+			if (err instanceof InvalidReferenceError) {
+				p.log.error("Invalid reference content.");
 				p.log.info(err.message);
 				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
 				return { success: false, message: err.message };

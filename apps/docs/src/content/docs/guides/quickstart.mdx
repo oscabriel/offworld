@@ -1,0 +1,66 @@
+---
+title: Quickstart
+description: Install Offworld and pull your first reference in under 2 minutes.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+## Install
+
+<Tabs>
+	<TabItem label="macOS / Linux">```bash curl -fsSL https://offworld.sh/install | bash ```</TabItem>
+	<TabItem label="npm">```bash npm install -g offworld ```</TabItem>
+	<TabItem label="bun">```bash bun install -g offworld ```</TabItem>
+</Tabs>
+
+Verify:
+
+```bash
+ow --version
+```
+
+## Initialize
+
+```bash
+ow init
+```
+
+This creates your config and symlinks the Offworld skill to all supported agents (Claude Code, Cursor, Amp, OpenCode, Codex, Gemini).
+
+## Pull a Reference
+
+```bash
+ow pull tanstack/router
+```
+
+This clones the repository to `~/ow/tanstack/router`, generates an AI-optimized reference, and adds it to the global map.
+
+## Set Up a Project
+
+In your project root:
+
+```bash
+ow project init
+```
+
+This scans your dependencies, installs matching references, creates `.offworld/map.json`, and updates your `AGENTS.md`.
+
+## Use with Your Agent
+
+Prompt your AI agent:
+
+```
+What Offworld references are available for this project?
+```
+
+Or use a specific reference:
+
+```
+Using the TanStack Router reference, implement file-based routing for this app.
+```
+
+## Next Steps
+
+- [Agent Integration](/agents/) — Agent-specific tips
+- [How It Works](/concepts/) — Understand the architecture
+- [CLI Reference](/reference/cli/) — Full command docs

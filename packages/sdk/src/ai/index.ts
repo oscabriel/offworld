@@ -2,7 +2,12 @@ export {
 	streamPrompt,
 	DEFAULT_AI_PROVIDER,
 	DEFAULT_AI_MODEL,
-	OpenCodeAnalysisError,
+	type StreamPromptOptions,
+	type StreamPromptResult,
+} from "./opencode.js";
+
+export {
+	OpenCodeReferenceError,
 	OpenCodeSDKError,
 	InvalidProviderError,
 	ProviderNotConnectedError,
@@ -10,6 +15,4 @@ export {
 	ServerStartError,
 	SessionError,
 	TimeoutError,
-	type StreamPromptOptions,
-	type StreamPromptResult,
-} from "./opencode.js";
+} from "./errors.js";

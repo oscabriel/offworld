@@ -1,126 +1,101 @@
 {
-  "branchName": "ralph/post-refactor-code-cleanup",
-  "userStories": [
-    {
-      "id": "US-001",
-      "title": "Rename analysis meta types to reference meta",
-      "priority": 1,
-      "description": "Acceptance criteria: ReferenceMetaSchema exported in packages/types/src/schemas.ts with referenceUpdatedAt field; packages/types/src/types.ts exports ReferenceMeta and removes RepoIndex types; packages/types/src/__tests__/schemas.test.ts uses ReferenceMetaSchema and referenceUpdatedAt.",
-      "stepsToVerify": [
-        "bun run test",
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-002",
-      "title": "Align SDK config/path helpers to reference naming",
-      "priority": 1,
-      "description": "Acceptance criteria: packages/sdk/src/config.ts removes toSkillDirName/getSkillPath/getAnalysisPath and adds toReferenceName; packages/sdk/src/paths.ts skillsDir points to skill/offworld legacy alias; packages/sdk/src/repo-source.ts exposes getReferenceFileNameForSource using toReferenceFileName; packages/sdk/src/index-manager.ts legacy exports removed; packages/sdk/src/index.ts removes deprecated exports and re-exports getReferenceFileNameForSource and InstalledReference.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-003",
-      "title": "Fix SDK sync reference name usage",
-      "priority": 1,
-      "description": "Acceptance criteria: packages/sdk/src/sync.ts uses toReferenceName for API referenceName in checkRemote/pullReference; deprecated analysis exports and InvalidSkillError alias removed; public API exports only reference-based names.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-004",
-      "title": "Normalize SDK generate/clone map updates",
-      "priority": 1,
-      "description": "Acceptance criteria: packages/sdk/src/generate.ts uses InstallReferenceMeta with referenceUpdatedAt, removes installSkill, installReference accepts qualifiedName/fullName, stores map under qualifiedName, and uses full ISO updatedAt; packages/sdk/src/clone.ts always upserts map entries with qualifiedName and only deletes reference/meta files using entry.references/entry.primary.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-005",
-      "title": "Remove stale-only flow in repo manager",
-      "priority": 2,
-      "description": "Acceptance criteria: packages/sdk/src/repo-manager.ts removes stale fields from summaries/options, drops staleOnly filtering, and status results no longer report stale counts.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-006",
-      "title": "Update SDK reference terminology in agents and AI",
-      "priority": 2,
-      "description": "Acceptance criteria: packages/sdk/src/agents-md.ts uses InstalledReference and reference naming for table/section generation; packages/sdk/src/ai/errors.ts defines OpenCodeReferenceError and derived classes extend it; packages/sdk/src/ai/opencode.ts and ai/index.ts re-export OpenCodeReferenceError and update logs; packages/sdk/src/constants.ts comment references reference generation; packages/sdk/src/installation.ts uses top-level writeFileSync import.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-007",
-      "title": "Update SDK tests and fetch mocks for reference naming",
-      "priority": 2,
-      "description": "Acceptance criteria: packages/sdk/src/__tests__/generate.test.ts uses installReference and referenceUpdatedAt; config.test.ts validates toReferenceFileName outputs; repo-source.test.ts asserts getReferenceFileNameForSource; mocks/fetch.ts uses /api/references endpoints and reference fields.",
-      "stepsToVerify": [
-        "bun run test"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-008",
-      "title": "Align CLI pull/generate/shared/list/repo handlers to references",
-      "priority": 1,
-      "description": "Acceptance criteria: apps/cli/src/handlers/pull.ts uses pullReference APIs, referenceSource/referenceInstalled, and installReference with qualifiedName + referenceRepoName; generate.ts uses qualifiedName and referenceRepoName consistently; shared.ts uses hasReference/referenceUpdatedAt and removes stale checks; list.ts and repo.ts remove stale filters and use reference wording in output.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-009",
-      "title": "Complete CLI project/init/push/remove wiring for references",
-      "priority": 1,
-      "description": "Acceptance criteria: apps/cli/src/handlers/project.ts writes .offworld/map.json using readGlobalMap/writeProjectMap and returns referencesInstalled; init.ts uses Paths.state and reference wording; config.ts prompt references references; push.ts uses toReferenceName/pushReference and referenceUpdatedAt; remove.ts uses toReferenceFileName and local delete block; apps/cli/src/index.ts removes stale flags from inputs.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-010",
-      "title": "Refresh CLI tests and docs for reference terminology",
-      "priority": 2,
-      "description": "Acceptance criteria: apps/cli/src/__tests__/handlers.test.ts mocks pullReference/pushReference and reference fields; apps/cli/package.json keywords/description use reference wording; apps/cli/README.md path examples use skill/offworld.",
-      "stepsToVerify": [
-        "bun run test"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-011",
-      "title": "Update web routes/components to reference naming",
-      "priority": 2,
-      "description": "Acceptance criteria: apps/web routes use repoReferencesQuery and referenceData props; repo header uses hasReference/referenceData; admin table renamed ReferenceTable with Generated column; cli/explore/breadcrumbs copy uses references; apps/web/e2e/analysis.spec.ts asserts reference copy.",
-      "stepsToVerify": [
-        "bun run typecheck"
-      ],
-      "passes": false
-    },
-    {
-      "id": "US-012",
-      "title": "Update root docs and workflow wording",
-      "priority": 3,
-      "description": "Acceptance criteria: AGENTS.md, README.md, packages/sdk/README.md, and .github/workflows/release.yml use skill/offworld path and reference terminology.",
-      "stepsToVerify": [
-        "bun run check"
-      ],
-      "passes": false
-    }
-  ]
+	"branchName": "ralph/post-refactor-code-cleanup",
+	"userStories": [
+		{
+			"id": "US-001",
+			"title": "Rename analysis meta types to reference meta",
+			"priority": 1,
+			"description": "Acceptance criteria: ReferenceMetaSchema exported in packages/types/src/schemas.ts with referenceUpdatedAt field; packages/types/src/types.ts exports ReferenceMeta and removes RepoIndex types; packages/types/src/__tests__/schemas.test.ts uses ReferenceMetaSchema and referenceUpdatedAt.",
+			"stepsToVerify": ["bun run test", "bun run typecheck"],
+			"passes": true
+		},
+		{
+			"id": "US-002",
+			"title": "Align SDK config/path helpers to reference naming",
+			"priority": 1,
+			"description": "Acceptance criteria: packages/sdk/src/config.ts removes toSkillDirName/getSkillPath/getAnalysisPath and adds toReferenceName; packages/sdk/src/paths.ts skillsDir points to skill/offworld legacy alias; packages/sdk/src/repo-source.ts exposes getReferenceFileNameForSource using toReferenceFileName; packages/sdk/src/index-manager.ts legacy exports removed; packages/sdk/src/index.ts removes deprecated exports and re-exports getReferenceFileNameForSource and InstalledReference.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-003",
+			"title": "Fix SDK sync reference name usage",
+			"priority": 1,
+			"description": "Acceptance criteria: packages/sdk/src/sync.ts uses toReferenceName for API referenceName in checkRemote/pullReference; deprecated analysis exports and InvalidSkillError alias removed; public API exports only reference-based names.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-004",
+			"title": "Normalize SDK generate/clone map updates",
+			"priority": 1,
+			"description": "Acceptance criteria: packages/sdk/src/generate.ts uses InstallReferenceMeta with referenceUpdatedAt, removes installSkill, installReference accepts qualifiedName/fullName, stores map under qualifiedName, and uses full ISO updatedAt; packages/sdk/src/clone.ts always upserts map entries with qualifiedName and only deletes reference/meta files using entry.references/entry.primary.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-005",
+			"title": "Remove stale-only flow in repo manager",
+			"priority": 2,
+			"description": "Acceptance criteria: packages/sdk/src/repo-manager.ts removes stale fields from summaries/options, drops staleOnly filtering, and status results no longer report stale counts.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-006",
+			"title": "Update SDK reference terminology in agents and AI",
+			"priority": 2,
+			"description": "Acceptance criteria: packages/sdk/src/agents-md.ts uses InstalledReference and reference naming for table/section generation; packages/sdk/src/ai/errors.ts defines OpenCodeReferenceError and derived classes extend it; packages/sdk/src/ai/opencode.ts and ai/index.ts re-export OpenCodeReferenceError and update logs; packages/sdk/src/constants.ts comment references reference generation; packages/sdk/src/installation.ts uses top-level writeFileSync import.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-007",
+			"title": "Update SDK tests and fetch mocks for reference naming",
+			"priority": 2,
+			"description": "Acceptance criteria: packages/sdk/src/__tests__/generate.test.ts uses installReference and referenceUpdatedAt; config.test.ts validates toReferenceFileName outputs; repo-source.test.ts asserts getReferenceFileNameForSource; mocks/fetch.ts uses /api/references endpoints and reference fields.",
+			"stepsToVerify": ["bun run test"],
+			"passes": false
+		},
+		{
+			"id": "US-008",
+			"title": "Align CLI pull/generate/shared/list/repo handlers to references",
+			"priority": 1,
+			"description": "Acceptance criteria: apps/cli/src/handlers/pull.ts uses pullReference APIs, referenceSource/referenceInstalled, and installReference with qualifiedName + referenceRepoName; generate.ts uses qualifiedName and referenceRepoName consistently; shared.ts uses hasReference/referenceUpdatedAt and removes stale checks; list.ts and repo.ts remove stale filters and use reference wording in output.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-009",
+			"title": "Complete CLI project/init/push/remove wiring for references",
+			"priority": 1,
+			"description": "Acceptance criteria: apps/cli/src/handlers/project.ts writes .offworld/map.json using readGlobalMap/writeProjectMap and returns referencesInstalled; init.ts uses Paths.state and reference wording; config.ts prompt references references; push.ts uses toReferenceName/pushReference and referenceUpdatedAt; remove.ts uses toReferenceFileName and local delete block; apps/cli/src/index.ts removes stale flags from inputs.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-010",
+			"title": "Refresh CLI tests and docs for reference terminology",
+			"priority": 2,
+			"description": "Acceptance criteria: apps/cli/src/__tests__/handlers.test.ts mocks pullReference/pushReference and reference fields; apps/cli/package.json keywords/description use reference wording; apps/cli/README.md path examples use skill/offworld.",
+			"stepsToVerify": ["bun run test"],
+			"passes": false
+		},
+		{
+			"id": "US-011",
+			"title": "Update web routes/components to reference naming",
+			"priority": 2,
+			"description": "Acceptance criteria: apps/web routes use repoReferencesQuery and referenceData props; repo header uses hasReference/referenceData; admin table renamed ReferenceTable with Generated column; cli/explore/breadcrumbs copy uses references; apps/web/e2e/analysis.spec.ts asserts reference copy.",
+			"stepsToVerify": ["bun run typecheck"],
+			"passes": false
+		},
+		{
+			"id": "US-012",
+			"title": "Update root docs and workflow wording",
+			"priority": 3,
+			"description": "Acceptance criteria: AGENTS.md, README.md, packages/sdk/README.md, and .github/workflows/release.yml use skill/offworld path and reference terminology.",
+			"stepsToVerify": ["bun run check"],
+			"passes": false
+		}
+	]
 }

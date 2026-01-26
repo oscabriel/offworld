@@ -44,6 +44,7 @@ offworld/
 
 - `src/config.ts` — Config load/save, path utilities
 - `src/clone.ts` — Git clone/update/remove
+- `src/index-manager.ts` — Global/project map management (replaces legacy index.json)
 - `src/generate.ts` — AI skill generation
 - `src/agents.ts` — Agent registry (6 agents)
 - `src/sync.ts` — Convex client for push/pull
@@ -141,6 +142,8 @@ Skills are symlinked to:
 - Auth: WorkOS AuthKit (web + CLI device flow)
 - AI: OpenCode SDK for skill generation
 - Deploy: Alchemy → Cloudflare Workers
+- **Map architecture**: Global map at `~/.local/share/offworld/skill/offworld/assets/map.json`, project maps at `.offworld/map.json`. Legacy index.json being phased out (US-003).
+- **Deprecated exports**: `index-manager.ts` maintains backward-compatible exports (`getIndex`, `updateIndex`, etc.) until US-006 migration completes.
 
 ## Project Skills
 

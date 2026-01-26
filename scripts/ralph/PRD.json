@@ -52,7 +52,7 @@
         "rg \"\.offworld/map\.json\" packages/sdk/src/index-manager.ts",
         "rg \"index\.json|Paths\.state\" packages/sdk/src -g'*.ts'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-004",

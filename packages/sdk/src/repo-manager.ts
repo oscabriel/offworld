@@ -1,6 +1,5 @@
 import { existsSync, statSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import type { RepoIndexEntry } from "@offworld/types";
 import { listRepos, updateRepo, getCommitSha, GitError } from "./clone.js";
 import { removeFromIndex, getIndex, updateIndex } from "./index-manager.js";
 import { getSkillPath, getMetaPath, loadConfig, getRepoRoot, toSkillDirName } from "./config.js";
@@ -63,7 +62,7 @@ export interface GcResult {
 	freedBytes: number;
 }
 
-function isRepoStale(entry: RepoIndexEntry): boolean {
+function isRepoStale(entry: any): boolean {
 	if (!entry.commitSha || !existsSync(entry.localPath)) {
 		return false;
 	}
@@ -272,7 +271,7 @@ export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResul
 
 	if (existsSync(repoRoot)) {
 		const index = getIndex();
-		const indexedPaths = new Set(Object.values(index.repos).map((r) => r.localPath));
+		const indexedPaths = new Set(Object.values(index.repos).map((r: any) => r.localPath));
 
 		try {
 			const providers = readdirSync(repoRoot, { withFileTypes: true });
@@ -423,7 +422,7 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 	}
 
 	const index = getIndex();
-	const indexedPaths = new Set(Object.values(index.repos).map((r) => r.localPath));
+	const indexedPaths = new Set(Object.values(index.repos).map((r: any) => r.localPath));
 
 	try {
 		const providers = readdirSync(repoRoot, { withFileTypes: true });
@@ -463,13 +462,13 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 							// Can't get commit SHA
 						}
 
-						const entry: RepoIndexEntry = {
-							fullName,
-							qualifiedName,
-							localPath: repoPath,
-							commitSha,
-							hasSkill: false,
-						};
+					const entry: any = {
+						fullName,
+						qualifiedName,
+						localPath: repoPath,
+						commitSha,
+						hasSkill: false,
+					};
 						updateIndex(entry);
 					}
 

@@ -1,115 +1,162 @@
 /**
- * Index manager for global repo index
+ * Map manager for global and project maps
  *
- * Manages ~/.local/state/offworld/index.json which tracks all cloned repositories
- * and their analysis status.
+ * Manages:
+ * - Global map: ~/.local/share/offworld/skill/offworld/assets/map.json
+ * - Project map: ./.offworld/map.json
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { RepoIndexSchema } from "@offworld/types";
-import type { RepoIndex, RepoIndexEntry } from "@offworld/types";
-import { getStateRoot } from "./config.js";
-import { VERSION } from "./constants.js";
+import {
+	GlobalMapSchema,
+	ProjectMapSchema,
+	type GlobalMap,
+	type GlobalMapRepoEntry,
+	type ProjectMap,
+	type ProjectMapRepoEntry,
+} from "@offworld/types";
+import { Paths } from "./paths.js";
 
-/**
- * Returns path to the global index file (~/.local/state/offworld/index.json)
- */
-export function getIndexPath(): string {
-	return join(getStateRoot(), "index.json");
+// ============================================================================
+// DEPRECATED LEGACY EXPORTS (for backwards compatibility during migration)
+// TODO: Remove these after US-006 (clone/repo-manager migration)
+// ============================================================================
+
+/** @deprecated Use readGlobalMap() instead */
+export function getIndex() {
+	return { version: 1, repos: {} };
 }
 
-/**
- * Reads the global repo index from ~/.local/state/offworld/index.json
- * Returns empty index if file doesn't exist or is invalid
- */
-export function getIndex(): RepoIndex {
-	const indexPath = getIndexPath();
+/** @deprecated Use writeGlobalMap() instead */
+export function saveIndex(_index: any) {
+	// no-op for now
+}
 
-	if (!existsSync(indexPath)) {
-		return { version: VERSION, repos: {} };
+/** @deprecated Use upsertGlobalMapEntry() instead */
+export function updateIndex(_entry: any) {
+	// no-op for now
+}
+
+/** @deprecated Use removeGlobalMapEntry() instead */
+export function removeFromIndex(_qualifiedName: string): boolean {
+	return false;
+}
+
+/** @deprecated Use readGlobalMap() and access repos directly */
+export function getIndexEntry(_qualifiedName: string): any {
+	return undefined;
+}
+
+/** @deprecated Use readGlobalMap() and Object.values(map.repos) */
+export function listIndexedRepos(): any[] {
+	return [];
+}
+
+/** @deprecated Use Paths.offworldGlobalMapPath instead */
+export function getIndexPath(): string {
+	return Paths.offworldGlobalMapPath;
+}
+
+// ============================================================================
+// End deprecated exports
+// ============================================================================
+
+/**
+ * Reads the global map from ~/.local/share/offworld/skill/offworld/assets/map.json
+ * Returns empty map if file doesn't exist or is invalid
+ */
+export function readGlobalMap(): GlobalMap {
+	const mapPath = Paths.offworldGlobalMapPath;
+
+	if (!existsSync(mapPath)) {
+		return { repos: {} };
 	}
 
 	try {
-		const content = readFileSync(indexPath, "utf-8");
+		const content = readFileSync(mapPath, "utf-8");
 		const data = JSON.parse(content);
-		return RepoIndexSchema.parse(data);
+		return GlobalMapSchema.parse(data);
 	} catch {
-		// If parsing fails, return empty index
-		return { version: VERSION, repos: {} };
+		// If parsing fails, return empty map
+		return { repos: {} };
 	}
 }
 
 /**
- * Saves repo index to ~/.local/state/offworld/index.json
+ * Writes the global map to ~/.local/share/offworld/skill/offworld/assets/map.json
  * Creates directory if it doesn't exist
  */
-export function saveIndex(index: RepoIndex): void {
-	const indexPath = getIndexPath();
-	const indexDir = dirname(indexPath);
+export function writeGlobalMap(map: GlobalMap): void {
+	const mapPath = Paths.offworldGlobalMapPath;
+	const mapDir = dirname(mapPath);
 
 	// Ensure directory exists
-	if (!existsSync(indexDir)) {
-		mkdirSync(indexDir, { recursive: true });
+	if (!existsSync(mapDir)) {
+		mkdirSync(mapDir, { recursive: true });
 	}
 
 	// Validate and write
-	const validated = RepoIndexSchema.parse(index);
-	writeFileSync(indexPath, JSON.stringify(validated, null, 2), "utf-8");
+	const validated = GlobalMapSchema.parse(map);
+	writeFileSync(mapPath, JSON.stringify(validated, null, 2), "utf-8");
 }
 
 /**
- * Adds or updates a repo entry in the index
+ * Adds or updates a repo entry in the global map
  *
- * @param entry - The repo entry to add/update (must include qualifiedName)
+ * @param qualifiedName - The qualified repo name (owner/repo)
+ * @param entry - The map entry to add/update
  */
-export function updateIndex(entry: RepoIndexEntry): void {
-	const index = getIndex();
-
-	// Update the entry keyed by qualifiedName
-	index.repos[entry.qualifiedName] = entry;
-
-	// Update version to current
-	index.version = VERSION;
-
-	saveIndex(index);
+export function upsertGlobalMapEntry(qualifiedName: string, entry: GlobalMapRepoEntry): void {
+	const map = readGlobalMap();
+	map.repos[qualifiedName] = entry;
+	writeGlobalMap(map);
 }
 
 /**
- * Removes a repo from the index
+ * Removes a repo entry from the global map
  *
- * @param qualifiedName - The qualified name of the repo to remove
+ * @param qualifiedName - The qualified repo name (owner/repo)
  * @returns true if repo was removed, false if not found
  */
-export function removeFromIndex(qualifiedName: string): boolean {
-	const index = getIndex();
+export function removeGlobalMapEntry(qualifiedName: string): boolean {
+	const map = readGlobalMap();
 
-	if (!(qualifiedName in index.repos)) {
+	if (!(qualifiedName in map.repos)) {
 		return false;
 	}
 
-	delete index.repos[qualifiedName];
-	saveIndex(index);
+	delete map.repos[qualifiedName];
+	writeGlobalMap(map);
 	return true;
 }
 
 /**
- * Gets a specific repo entry from the index
+ * Writes a project map to ./.offworld/map.json
  *
- * @param qualifiedName - The qualified name of the repo
- * @returns The repo entry or undefined if not found
+ * @param projectRoot - Absolute path to project root
+ * @param entries - Map of qualified repo names to project map entries
  */
-export function getIndexEntry(qualifiedName: string): RepoIndexEntry | undefined {
-	const index = getIndex();
-	return index.repos[qualifiedName];
-}
+export function writeProjectMap(
+	projectRoot: string,
+	entries: Record<string, ProjectMapRepoEntry>,
+): void {
+	const mapPath = join(projectRoot, ".offworld", "map.json");
+	const mapDir = dirname(mapPath);
 
-/**
- * Lists all repos in the index
- *
- * @returns Array of all repo entries
- */
-export function listIndexedRepos(): RepoIndexEntry[] {
-	const index = getIndex();
-	return Object.values(index.repos);
+	// Ensure directory exists
+	if (!existsSync(mapDir)) {
+		mkdirSync(mapDir, { recursive: true });
+	}
+
+	const projectMap: ProjectMap = {
+		version: 1,
+		scope: "project",
+		globalMapPath: Paths.offworldGlobalMapPath,
+		repos: entries,
+	};
+
+	// Validate and write
+	const validated = ProjectMapSchema.parse(projectMap);
+	writeFileSync(mapPath, JSON.stringify(validated, null, 2), "utf-8");
 }

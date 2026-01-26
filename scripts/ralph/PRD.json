@@ -140,7 +140,7 @@
         "rg \"references\\.\" packages/sdk/src/sync.ts",
         "rg \"skill|analysis\" packages/sdk/src/sync.ts"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-009",

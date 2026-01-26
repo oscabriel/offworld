@@ -58,7 +58,7 @@ export class RateLimitError extends SyncError {
 
 export class ConflictError extends SyncError {
 	constructor(
-		message = "A newer analysis already exists on the server.",
+		message = "A newer reference already exists on the server.",
 		public readonly remoteCommitSha?: string,
 	) {
 		super(message);
@@ -67,7 +67,7 @@ export class ConflictError extends SyncError {
 }
 
 export class CommitExistsError extends SyncError {
-	constructor(message = "A skill already exists for this commit SHA.") {
+	constructor(message = "A reference already exists for this commit SHA.") {
 		super(message);
 		this.name = "CommitExistsError";
 	}
@@ -80,12 +80,15 @@ export class InvalidInputError extends SyncError {
 	}
 }
 
-export class InvalidSkillError extends SyncError {
+export class InvalidReferenceError extends SyncError {
 	constructor(message: string) {
 		super(message);
-		this.name = "InvalidSkillError";
+		this.name = "InvalidReferenceError";
 	}
 }
+
+/** @deprecated Use InvalidReferenceError */
+export const InvalidSkillError = InvalidReferenceError;
 
 export class RepoNotFoundError extends SyncError {
 	constructor(message = "Repository not found on GitHub.") {
@@ -136,24 +139,27 @@ export class PushNotAllowedError extends SyncError {
 // Types
 // ============================================================================
 
-/** Analysis data structure for sync operations */
-export interface AnalysisData {
+/** Reference data structure for sync operations */
+export interface ReferenceData {
 	fullName: string;
-	skillName: string;
-	skillDescription: string;
-	skillContent: string;
+	referenceName: string;
+	referenceDescription: string;
+	referenceContent: string;
 	commitSha: string;
-	analyzedAt: string;
+	generatedAt: string;
 }
+
+/** @deprecated Use ReferenceData */
+export type AnalysisData = ReferenceData;
 
 /** Response from pull query */
 export interface PullResponse {
 	fullName: string;
-	skillName: string;
-	skillDescription: string;
-	skillContent: string;
+	referenceName: string;
+	referenceDescription: string;
+	referenceContent: string;
 	commitSha: string;
-	analyzedAt: string;
+	generatedAt: string;
 }
 
 /** Response from check query */
@@ -205,13 +211,14 @@ function createClient(token?: string): ConvexHttpClient {
 // ============================================================================
 
 /**
- * Fetches analysis from the remote server
+ * Fetches reference from the remote server
  * @param fullName - Repository full name (owner/repo)
- * @returns Analysis data or null if not found
+ * @returns Reference data or null if not found
  */
-export async function pullAnalysis(fullName: string): Promise<PullResponse | null> {
+export async function pullReference(fullName: string): Promise<PullResponse | null> {
 	const client = createClient();
 	try {
+		// TODO: US-010 will add api.references - using analyses temporarily
 		let result = await client.query(api.analyses.pull, {
 			fullName,
 			skillName: toSkillDirName(fullName),
@@ -225,56 +232,74 @@ export async function pullAnalysis(fullName: string): Promise<PullResponse | nul
 			.mutation(api.analyses.recordPull, { fullName, skillName: result.skillName })
 			.catch(() => {});
 
-		return result as unknown as PullResponse;
+		// Map response fields from skill* to reference*
+		return {
+			fullName: result.fullName,
+			referenceName: result.skillName,
+			referenceDescription: result.skillDescription,
+			referenceContent: result.skillContent,
+			commitSha: result.commitSha,
+			generatedAt: result.analyzedAt,
+		};
 	} catch (error) {
 		throw new NetworkError(
-			`Failed to pull analysis: ${error instanceof Error ? error.message : error}`,
+			`Failed to pull reference: ${error instanceof Error ? error.message : error}`,
 		);
 	}
 }
 
 /**
- * Fetches a specific skill by name from the remote server
+ * Fetches a specific reference by name from the remote server
  * @param fullName - Repository full name (owner/repo)
- * @param skillName - Specific skill name to pull
- * @returns Analysis data or null if not found
+ * @param referenceName - Specific reference name to pull
+ * @returns Reference data or null if not found
  */
-export async function pullAnalysisByName(
+export async function pullReferenceByName(
 	fullName: string,
-	skillName: string,
+	referenceName: string,
 ): Promise<PullResponse | null> {
 	const client = createClient();
 	try {
-		const result = await client.query(api.analyses.pull, { fullName, skillName });
+		// TODO: US-010 will add api.references - using analyses temporarily
+		const result = await client.query(api.analyses.pull, { fullName, skillName: referenceName });
 		if (!result) return null;
 
-		client.mutation(api.analyses.recordPull, { fullName, skillName }).catch(() => {});
+		client.mutation(api.analyses.recordPull, { fullName, skillName: referenceName }).catch(() => {});
 
-		return result as unknown as PullResponse;
+		// Map response fields from skill* to reference*
+		return {
+			fullName: result.fullName,
+			referenceName: result.skillName,
+			referenceDescription: result.skillDescription,
+			referenceContent: result.skillContent,
+			commitSha: result.commitSha,
+			generatedAt: result.analyzedAt,
+		};
 	} catch (error) {
 		throw new NetworkError(
-			`Failed to pull analysis: ${error instanceof Error ? error.message : error}`,
+			`Failed to pull reference: ${error instanceof Error ? error.message : error}`,
 		);
 	}
 }
 
 /**
- * Pushes analysis to the remote server
+ * Pushes reference to the remote server
  * All validation happens server-side
- * @param analysis - Analysis data to push
+ * @param reference - Reference data to push
  * @param token - Authentication token
  * @returns Push result
  */
-export async function pushAnalysis(analysis: AnalysisData, token: string): Promise<PushResponse> {
+export async function pushReference(reference: ReferenceData, token: string): Promise<PushResponse> {
 	const client = createClient(token);
 	try {
+		// TODO: US-010 will add api.references - using analyses temporarily
 		const result = await client.action(api.analyses.push, {
-			fullName: analysis.fullName,
-			skillName: analysis.skillName,
-			skillDescription: analysis.skillDescription,
-			skillContent: analysis.skillContent,
-			commitSha: analysis.commitSha,
-			analyzedAt: analysis.analyzedAt,
+			fullName: reference.fullName,
+			skillName: reference.referenceName,
+			skillDescription: reference.referenceDescription,
+			skillContent: reference.referenceContent,
+			commitSha: reference.commitSha,
+			analyzedAt: reference.generatedAt,
 		});
 
 		if (!result.success) {
@@ -288,7 +313,7 @@ export async function pushAnalysis(analysis: AnalysisData, token: string): Promi
 				case "invalid_input":
 					throw new InvalidInputError(result.message ?? "Invalid input");
 				case "invalid_skill":
-					throw new InvalidSkillError(result.message ?? "Invalid skill content");
+					throw new InvalidReferenceError(result.message ?? "Invalid reference content");
 				case "repo_not_found":
 					throw new RepoNotFoundError(result.message);
 				case "low_stars":
@@ -308,19 +333,20 @@ export async function pushAnalysis(analysis: AnalysisData, token: string): Promi
 	} catch (error) {
 		if (error instanceof SyncError) throw error;
 		throw new NetworkError(
-			`Failed to push analysis: ${error instanceof Error ? error.message : error}`,
+			`Failed to push reference: ${error instanceof Error ? error.message : error}`,
 		);
 	}
 }
 
 /**
- * Checks if analysis exists on remote server (lightweight check)
+ * Checks if reference exists on remote server (lightweight check)
  * @param fullName - Repository full name (owner/repo)
  * @returns Check result
  */
 export async function checkRemote(fullName: string): Promise<CheckResponse> {
 	const client = createClient();
 	try {
+		// TODO: US-010 will add api.references - using analyses temporarily
 		let result = await client.query(api.analyses.check, {
 			fullName,
 			skillName: toSkillDirName(fullName),
@@ -344,18 +370,19 @@ export async function checkRemote(fullName: string): Promise<CheckResponse> {
 }
 
 /**
- * Checks if a specific skill exists on the remote server
+ * Checks if a specific reference exists on the remote server
  * @param fullName - Repository full name (owner/repo)
- * @param skillName - Specific skill name to check
+ * @param referenceName - Specific reference name to check
  * @returns Check result
  */
 export async function checkRemoteByName(
 	fullName: string,
-	skillName: string,
+	referenceName: string,
 ): Promise<CheckResponse> {
 	const client = createClient();
 	try {
-		const result = await client.query(api.analyses.check, { fullName, skillName });
+		// TODO: US-010 will add api.references - using analyses temporarily
+		const result = await client.query(api.analyses.check, { fullName, skillName: referenceName });
 		if (!result.exists) {
 			return { exists: false };
 		}
@@ -384,7 +411,7 @@ export async function checkStaleness(
 	const remote = await checkRemote(fullName);
 
 	if (!remote.exists || !remote.commitSha) {
-		// No remote analysis, not stale (nothing to compare)
+		// No remote reference, not stale (nothing to compare)
 		return {
 			isStale: false,
 			localCommitSha,
@@ -399,6 +426,19 @@ export async function checkStaleness(
 		remoteCommitSha: remote.commitSha,
 	};
 }
+
+// ============================================================================
+// Deprecated Exports (Backward Compatibility)
+// ============================================================================
+
+/** @deprecated Use pullReference */
+export const pullAnalysis = pullReference;
+
+/** @deprecated Use pullReferenceByName */
+export const pullAnalysisByName = pullReferenceByName;
+
+/** @deprecated Use pushReference */
+export const pushAnalysis = pushReference;
 
 // ============================================================================
 // Push Validation Functions

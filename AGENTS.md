@@ -168,6 +168,23 @@ Skills are symlinked to:
 - Remove symlink management (single-skill model has no per-repo symlinks)
 - Replace skill path refs with `Paths.offworldReferencesDir + toReferenceFileName(qualifiedName)`
 
+## US-008 Implementation Notes
+
+### SDK Sync Refactor Complete
+
+- `sync.ts`: All types, functions, and docs use reference terminology.
+- **Types**: `AnalysisData` → `ReferenceData` with `referenceName`, `referenceDescription`, `referenceContent`, `generatedAt`.
+- **Functions**: `pullAnalysis` → `pullReference`, `pullAnalysisByName` → `pullReferenceByName`, `pushAnalysis` → `pushReference`.
+- **Error classes**: `InvalidSkillError` → `InvalidReferenceError`.
+- **Error messages**: Updated to reference wording (`CommitExistsError`, `ConflictError`).
+- **Backward compat**: Deprecated exports (`pullAnalysis`, `pushAnalysis`, `AnalysisData`, `InvalidSkillError`) aliased to new names for gradual CLI migration (US-009).
+- **Backend stub**: API calls still target `api.analyses.*` with field mapping until US-010 renames backend endpoints to `api.references.*`.
+
+### Patterns
+- When renaming types/functions across SDK boundaries, provide deprecated aliases to avoid breaking downstream consumers.
+- TODO comments mark temporary backend compatibility shims with US story IDs for removal.
+- Field mapping (`skillName` → `referenceName`, `analyzedAt` → `generatedAt`) in SDK keeps CLI working until backend migration.
+
 ## Project Skills
 
 Skills installed for this project's dependencies:

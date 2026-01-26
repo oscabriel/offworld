@@ -49,8 +49,8 @@ export function HowItWorks() {
 							Query Your Clones
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Ask your agent to load a reference and explore any cloned repo—get file summaries, search
-							code, or answer questions about the source.
+							Ask your agent to load a reference and explore any cloned repo—get file summaries,
+							search code, or answer questions about the source.
 						</p>
 					</div>
 				</div>

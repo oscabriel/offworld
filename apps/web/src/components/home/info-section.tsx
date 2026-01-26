@@ -8,9 +8,9 @@ export function InfoSection() {
 			<h3 className="text-primary font-mono text-sm tracking-[0.3em] uppercase">
 				What is Offworld?
 			</h3>
-			<p className="text-muted-foreground font-mono text-lg leading-relaxed">
-				Offworld is a CLI tool that generates agent references for any open source library, empowering
-				your agents with precise context.
+			<p className="text-muted-foreground font-mono text-base leading-relaxed">
+				Offworld is a CLI tool that generates agent references for any open source library,
+				empowering your agents with precise context.
 			</p>
 			<div className="text-muted-foreground space-y-5 font-serif text-lg leading-relaxed">
 				<p>
@@ -23,8 +23,8 @@ export function InfoSection() {
 				</p>
 				<p>
 					<span className="text-primary mr-1.5">Focused context</span> Use{" "}
-					<code className="text-primary/90 text-sm">project init</code> to add only references for your
-					current project, rather than a pile of global references.
+					<code className="text-primary/90 text-sm">project init</code> to add only references for
+					your current project, rather than a pile of global references.
 				</p>
 				<p>
 					<span className="text-primary mr-1.5">Curated discoverability</span> Web directory

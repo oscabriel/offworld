@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_github/$owner/$repo/$reference")({
 		const fullName = `${params.owner}/${params.repo}`.toLowerCase();
 		await context.queryClient.ensureQueryData(
 			convexQuery(api.references.getByName, { fullName, referenceName: params.reference }),
-		)
+		);
 	},
 });
 
@@ -62,7 +62,7 @@ function ReferenceHeader({
 				</div>
 			</div>
 		</header>
-	)
+	);
 }
 
 function NotFoundState() {
@@ -80,7 +80,7 @@ function NotFoundState() {
 				</div>
 			</div>
 		</div>
-	)
+	);
 }
 
 function ReferenceDetailPage() {
@@ -89,7 +89,7 @@ function ReferenceDetailPage() {
 
 	const { data: referenceData } = useSuspenseQuery(
 		convexQuery(api.references.getByName, { fullName, referenceName: reference }),
-	)
+	);
 
 	if (!referenceData) {
 		return (
@@ -98,7 +98,7 @@ function ReferenceDetailPage() {
 					<NotFoundState />
 				</div>
 			</div>
-		)
+		);
 	}
 
 	return (
@@ -114,9 +114,13 @@ function ReferenceDetailPage() {
 			<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-5">
 					<InstallCommandBox fullName={fullName} />
-					<CopyableBlock title="Reference" content={referenceData.referenceContent} stripFrontmatter />
+					<CopyableBlock
+						title="Reference"
+						content={referenceData.referenceContent}
+						stripFrontmatter
+					/>
 				</div>
 			</div>
 		</div>
-	)
+	);
 }

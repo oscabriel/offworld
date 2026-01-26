@@ -53,8 +53,8 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 				<div className="space-y-3">
 					<h3 className="font-serif text-xl">No References Generated</h3>
 					<p className="text-muted-foreground font-mono leading-relaxed">
-						This repository doesn&apos;t have any references yet. Generate and share a reference with the
-						commands below:
+						This repository doesn&apos;t have any references yet. Generate and share a reference
+						with the commands below:
 					</p>
 					<div className="space-y-2">
 						<CopyableCommand command={`ow generate ${repoPath}`} />
@@ -68,7 +68,9 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 
 function RepoReferencesPage() {
 	const { owner, repo } = Route.useParams();
-	const { data: references, isLoading: referencesLoading } = useSuspenseQuery(repoSkillsQuery(owner, repo));
+	const { data: references, isLoading: referencesLoading } = useSuspenseQuery(
+		repoSkillsQuery(owner, repo),
+	);
 
 	const primaryReference = references[0] ?? null;
 	const analysisData = primaryReference
@@ -128,7 +130,10 @@ function RepoReferencesPage() {
 							</thead>
 							<tbody>
 								{references.map((reference) => (
-									<tr key={reference.referenceName} className="border-primary/5 border-b last:border-0">
+									<tr
+										key={reference.referenceName}
+										className="border-primary/5 border-b last:border-0"
+									>
 										<td className="px-5 py-3">
 											<Link
 												to="/$owner/$repo/$reference"
@@ -143,7 +148,9 @@ function RepoReferencesPage() {
 											{reference.referenceDescription || "—"}
 										</td>
 										<td className="px-5 py-3 font-mono text-sm">
-											{typeof reference.pullCount === "number" ? reference.pullCount.toLocaleString() : "—"}
+											{typeof reference.pullCount === "number"
+												? reference.pullCount.toLocaleString()
+												: "—"}
 										</td>
 									</tr>
 								))}

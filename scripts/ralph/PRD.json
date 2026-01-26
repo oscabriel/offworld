@@ -250,7 +250,7 @@
         "test ! -d ~/.local/state/offworld",
         "bunx convex data list"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-015",

@@ -42,8 +42,6 @@ export function getRepoPath(
 	return join(root, provider, owner, repo);
 }
 
-
-
 /**
  * Convert owner/repo format to meta directory name.
  * Collapses owner==repo (e.g., better-auth/better-auth -> better-auth)

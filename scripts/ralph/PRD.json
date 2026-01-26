@@ -47,7 +47,7 @@
 			"priority": 2,
 			"description": "Acceptance criteria: packages/sdk/src/agents-md.ts uses InstalledReference and reference naming for table/section generation; packages/sdk/src/ai/errors.ts defines OpenCodeReferenceError and derived classes extend it; packages/sdk/src/ai/opencode.ts and ai/index.ts re-export OpenCodeReferenceError and update logs; packages/sdk/src/constants.ts comment references reference generation; packages/sdk/src/installation.ts uses top-level writeFileSync import.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-007",

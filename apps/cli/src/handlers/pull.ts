@@ -347,11 +347,11 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				onDebug,
 			});
 
-			const { skillContent, commitSha: analysisCommitSha } = result;
+			const { referenceContent, commitSha: analysisCommitSha } = result;
 			const analyzedAt = new Date().toISOString();
 			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
 
-			installSkillToFS(qualifiedName, skillContent, meta);
+			installSkillToFS(qualifiedName, referenceContent, meta);
 
 			if (!verbose) {
 				s.stop("Skill generated");

@@ -32,7 +32,14 @@ export {
 	toMetaDirName,
 } from "./config.js";
 
+import { Paths as PathsImport } from "./paths.js";
 export { expandTilde, Paths } from "./paths.js";
+
+// Backward-compatible alias for US-005 migration
+/** @deprecated Use Paths.state instead */
+export function getStateRoot(): string {
+	return PathsImport.state;
+}
 
 export {
 	parseRepoInput,
@@ -142,10 +149,16 @@ export {
 export {
 	generateReferenceWithAI,
 	installSkill,
+	installGlobalSkill,
+	installReference,
 	type GenerateReferenceOptions,
 	type GenerateReferenceResult,
 	type InstallSkillMeta,
 } from "./generate.js";
+
+// Backward-compatible alias for US-005 migration
+/** @deprecated Use generateReferenceWithAI instead */
+export { generateReferenceWithAI as generateSkillWithAI } from "./generate.js";
 
 export {
 	agents,

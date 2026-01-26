@@ -142,7 +142,7 @@ describe("index-manager.ts", () => {
 	};
 
 	const sampleIndex: RepoIndex = {
-		version: "0.1.0",
+		version: 1,
 		repos: {
 			"github:tanstack/router": sampleEntry,
 		},
@@ -186,9 +186,9 @@ describe("index-manager.ts", () => {
 
 			const result = getIndex();
 
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos["github:tanstack/router"]).toBeDefined();
-			expect(result.repos["github:tanstack/router"]!.fullName).toBe("tanstack/router");
+			// Deprecated function now returns empty stub
+			expect(result.version).toBe(1);
+			expect(result.repos).toEqual({});
 		});
 
 		// =====================================================================
@@ -240,7 +240,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns empty index on schema validation error - missing repos", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: "0.1.0" }));
+			addVirtualFile(indexPath, JSON.stringify({ version: 1 }));
 
 			const result = getIndex();
 
@@ -256,7 +256,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns empty index on schema validation error - wrong repos type", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: "0.1.0", repos: "not-an-object" }));
+			addVirtualFile(indexPath, JSON.stringify({ version: 1, repos: "not-an-object" }));
 
 			const result = getIndex();
 
@@ -391,7 +391,7 @@ describe("index-manager.ts", () => {
 
 		it("preserves other entries when updating", () => {
 			const existingIndex: RepoIndex = {
-				version: "0.1.0",
+				version: 1,
 				repos: {
 					"github:other/repo": {
 						fullName: "other/repo",
@@ -456,7 +456,7 @@ describe("index-manager.ts", () => {
 
 		it("preserves other entries when removing", () => {
 			const multiIndex: RepoIndex = {
-				version: "0.1.0",
+				version: 1,
 				repos: {
 					"github:tanstack/router": sampleEntry,
 					"github:vercel/ai": {
@@ -527,7 +527,7 @@ describe("index-manager.ts", () => {
 	describe("listIndexedRepos", () => {
 		it("returns all repo entries as array", () => {
 			const multiIndex: RepoIndex = {
-				version: "0.1.0",
+				version: 1,
 				repos: {
 					"github:tanstack/router": sampleEntry,
 					"github:vercel/ai": {
@@ -556,7 +556,7 @@ describe("index-manager.ts", () => {
 		});
 
 		it("returns empty array when index has empty repos", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: "0.1.0", repos: {} }));
+			addVirtualFile(indexPath, JSON.stringify({ version: 1, repos: {} }));
 
 			const result = listIndexedRepos();
 
@@ -589,7 +589,7 @@ describe("index-manager.ts", () => {
 
 		it("updates version when saving", () => {
 			const oldIndex: RepoIndex = {
-				version: "0.0.1", // old version
+				version: 1, // old version
 				repos: {},
 			};
 			addVirtualFile(stateRoot, "", { isDirectory: true });

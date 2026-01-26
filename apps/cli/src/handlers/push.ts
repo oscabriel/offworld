@@ -12,14 +12,18 @@ import {
 	getClonedRepoPath,
 	isRepoCloned,
 	pushAnalysis,
-	validatePushAllowed,
-	fetchGitHubMetadata,
 	NotLoggedInError,
 	TokenExpiredError,
-	PushNotAllowedError,
 	AuthenticationError,
 	RateLimitError,
-	ConflictError,
+	CommitExistsError,
+	InvalidInputError,
+	InvalidSkillError,
+	SyncRepoNotFoundError,
+	LowStarsError,
+	PrivateRepoError,
+	CommitNotFoundError,
+	GitHubError,
 	type AnalysisData,
 } from "@offworld/sdk";
 import { existsSync, readFileSync } from "node:fs";
@@ -109,10 +113,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		} catch (err) {
 			if (err instanceof NotLoggedInError || err instanceof TokenExpiredError) {
 				p.log.error(err.message);
-				return {
-					success: false,
-					message: err.message,
-				};
+				return { success: false, message: err.message };
 			}
 			throw err;
 		}
@@ -122,47 +123,24 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		const source = parseRepoInput(repo);
 		s.stop("Repository parsed");
 
-		// Step 3: Validate push is allowed (local, provider, stars)
-		s.start("Validating push eligibility...");
-		try {
-			await validatePushAllowed(source);
-			s.stop("Push validated");
-		} catch (err) {
-			s.stop("Push not allowed");
-			if (err instanceof PushNotAllowedError) {
-				p.log.error(err.message);
-
-				// Provide more specific guidance based on reason
-				if (err.reason === "local") {
-					p.log.info("Local repositories cannot be shared on offworld.sh.");
-					p.log.info("Only remote GitHub repositories can be pushed.");
-				} else if (err.reason === "not-github") {
-					p.log.info("GitLab and Bitbucket support coming soon!");
-				} else if (err.reason === "low-stars") {
-					p.log.info("We require 5+ stars to ensure quality analyses on offworld.sh.");
-				}
-
-				return {
-					success: false,
-					message: err.message,
-				};
-			}
-			throw err;
+		// Step 3: Quick client-side checks (server validates everything else)
+		if (source.type === "local") {
+			p.log.error("Local repositories cannot be pushed to offworld.sh.");
+			p.log.info("Only remote GitHub repositories can be pushed.");
+			return { success: false, message: "Local repositories not supported" };
 		}
 
-		// At this point we know source is remote
-		if (source.type !== "remote") {
-			throw new Error("Unexpected: source should be remote after validation");
+		if (source.provider !== "github") {
+			p.log.error(`${source.provider} repositories are not yet supported.`);
+			p.log.info("GitHub support only for now - GitLab and Bitbucket coming soon!");
+			return { success: false, message: "Only GitHub repositories supported" };
 		}
 
 		// Step 4: Check if repo is cloned locally
 		if (!isRepoCloned(source.qualifiedName)) {
 			p.log.error(`Repository ${source.fullName} is not cloned locally.`);
 			p.log.info(`Run 'ow pull ${source.fullName}' first to clone and analyze.`);
-			return {
-				success: false,
-				message: "Repository not cloned locally",
-			};
+			return { success: false, message: "Repository not cloned locally" };
 		}
 
 		// Step 5: Load local analysis
@@ -174,10 +152,7 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			s.stop("No analysis found");
 			p.log.error(`No analysis found for ${source.fullName}.`);
 			p.log.info(`Run 'ow generate ${source.fullName}' to generate analysis.`);
-			return {
-				success: false,
-				message: "No local analysis found",
-			};
+			return { success: false, message: "No local analysis found" };
 		}
 
 		const localAnalysis = loadLocalAnalysis(metaDir, skillDir);
@@ -186,13 +161,9 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			s.stop("Invalid analysis");
 			p.log.error("Local analysis is incomplete or corrupted.");
 			p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
-			return {
-				success: false,
-				message: "Local analysis incomplete",
-			};
+			return { success: false, message: "Local analysis incomplete" };
 		}
 
-		// Set the fullName on the analysis data
 		localAnalysis.fullName = source.fullName;
 
 		// Verify commit SHA matches current repo state
@@ -205,27 +176,13 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 				p.log.info(`Analysis: ${localAnalysis.commitSha.slice(0, 7)}`);
 				p.log.info(`Current:  ${currentSha.slice(0, 7)}`);
 				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
-				return {
-					success: false,
-					message: "Analysis outdated - run generate to update",
-				};
+				return { success: false, message: "Analysis outdated - run generate to update" };
 			}
 		}
 
 		s.stop("Analysis loaded");
 
-		// Step 6: Fetch GitHub metadata
-		s.start("Fetching repository metadata...");
-		const githubMetadata = await fetchGitHubMetadata(source.owner, source.repo);
-		if (githubMetadata) {
-			localAnalysis.repoDescription = githubMetadata.description;
-			localAnalysis.repoStars = githubMetadata.stars;
-			localAnalysis.repoLanguage = githubMetadata.language;
-			localAnalysis.repoDefaultBranch = githubMetadata.defaultBranch;
-		}
-		s.stop("Metadata fetched");
-
-		// Step 7: Push to offworld.sh
+		// Step 6: Push to offworld.sh (all validation happens server-side)
 		s.start("Uploading to offworld.sh...");
 		try {
 			const result = await pushAnalysis(localAnalysis, token);
@@ -234,50 +191,82 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 				s.stop("Analysis uploaded!");
 				p.log.success(`Successfully pushed analysis for ${source.fullName}`);
 				p.log.info(`View at: https://offworld.sh/${source.owner}/${source.repo}`);
-				return {
-					success: true,
-					message: "Analysis pushed successfully",
-				};
-			} else {
-				s.stop("Upload failed");
-				p.log.error(result.message || "Unknown error during upload");
-				return {
-					success: false,
-					message: result.message || "Upload failed",
-				};
+				return { success: true, message: "Analysis pushed successfully" };
 			}
+			s.stop("Upload failed");
+			p.log.error(result.message || "Unknown error during upload");
+			return { success: false, message: result.message || "Upload failed" };
 		} catch (err) {
 			s.stop("Upload failed");
 
 			if (err instanceof AuthenticationError) {
-				p.log.error("Authentication failed. Please run 'ow auth login' again.");
-				return {
-					success: false,
-					message: "Authentication failed",
-				};
+				p.log.error("Authentication failed.");
+				p.log.info("Please run 'ow auth login' again.");
+				return { success: false, message: "Authentication failed" };
 			}
 
 			if (err instanceof RateLimitError) {
 				p.log.error("Rate limit exceeded.");
-				p.log.info("You can push up to 3 times per repository per day.");
+				p.log.info("You can push up to 20 skills per day.");
 				p.log.info("Please try again tomorrow.");
-				return {
-					success: false,
-					message: "Rate limit exceeded",
-				};
+				return { success: false, message: "Rate limit exceeded" };
 			}
 
-			if (err instanceof ConflictError) {
-				p.log.error("A newer analysis already exists on offworld.sh.");
-				if (err.remoteCommitSha) {
-					p.log.info(`Remote: ${err.remoteCommitSha.slice(0, 7)}`);
-					p.log.info(`Local:  ${localAnalysis.commitSha.slice(0, 7)}`);
-				}
-				p.log.info("Pull the latest analysis with 'ow pull' or use '--force' if you're sure.");
-				return {
-					success: false,
-					message: "Conflict - newer analysis exists",
-				};
+			if (err instanceof CommitExistsError) {
+				p.log.error("A skill already exists for this commit.");
+				p.log.info(`Commit: ${localAnalysis.commitSha.slice(0, 7)}`);
+				p.log.info(
+					"Skills are immutable per commit. Update the repo and regenerate to push a new version.",
+				);
+				return { success: false, message: "Skill already exists for this commit" };
+			}
+
+			if (err instanceof InvalidInputError) {
+				p.log.error("Invalid input data.");
+				p.log.info(err.message);
+				return { success: false, message: err.message };
+			}
+
+			if (err instanceof InvalidSkillError) {
+				p.log.error("Invalid skill content.");
+				p.log.info(err.message);
+				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
+				return { success: false, message: err.message };
+			}
+
+			if (err instanceof SyncRepoNotFoundError) {
+				p.log.error("Repository not found on GitHub.");
+				p.log.info("Ensure the repository exists and is public.");
+				return { success: false, message: "Repository not found" };
+			}
+
+			if (err instanceof LowStarsError) {
+				p.log.error("Repository does not meet star requirements.");
+				p.log.info("Repositories need at least 5 stars to be pushed to offworld.sh.");
+				p.log.info("This helps ensure quality skills for the community.");
+				return { success: false, message: "Repository needs 5+ stars" };
+			}
+
+			if (err instanceof PrivateRepoError) {
+				p.log.error("Private repositories are not supported.");
+				p.log.info("Only public GitHub repositories can be pushed to offworld.sh.");
+				return { success: false, message: "Private repos not supported" };
+			}
+
+			if (err instanceof CommitNotFoundError) {
+				p.log.error("Commit not found in repository.");
+				p.log.info("The analyzed commit may have been rebased or removed.");
+				p.log.info(
+					`Run 'ow generate ${source.fullName} --force' to regenerate with current commit.`,
+				);
+				return { success: false, message: "Commit not found" };
+			}
+
+			if (err instanceof GitHubError) {
+				p.log.error("GitHub API error.");
+				p.log.info(err.message);
+				p.log.info("Please try again later.");
+				return { success: false, message: "GitHub API error" };
 			}
 
 			throw err;
@@ -286,9 +275,6 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		s.stop("Failed");
 		const message = error instanceof Error ? error.message : "Unknown error";
 		p.log.error(message);
-		return {
-			success: false,
-			message,
-		};
+		return { success: false, message };
 	}
 }

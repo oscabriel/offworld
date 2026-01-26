@@ -87,8 +87,7 @@ export class InvalidReferenceError extends SyncError {
 	}
 }
 
-/** @deprecated Use InvalidReferenceError */
-export const InvalidSkillError = InvalidReferenceError;
+
 
 export class RepoNotFoundError extends SyncError {
 	constructor(message = "Repository not found on GitHub.") {
@@ -423,18 +422,7 @@ export async function checkStaleness(
 	};
 }
 
-// ============================================================================
-// Deprecated Exports (Backward Compatibility)
-// ============================================================================
 
-/** @deprecated Use pullReference */
-export const pullAnalysis = pullReference;
-
-/** @deprecated Use pullReferenceByName */
-export const pullAnalysisByName = pullReferenceByName;
-
-/** @deprecated Use pushReference */
-export const pushAnalysis = pushReference;
 
 // ============================================================================
 // Push Validation Functions

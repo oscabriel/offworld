@@ -115,6 +115,10 @@ export function getSkillPath(fullName: string): string {
 	return join(Paths.data, "skills", toSkillDirName(fullName));
 }
 
+export function getReferencePath(fullName: string): string {
+	return join(Paths.offworldReferencesDir, toReferenceFileName(fullName));
+}
+
 export function getMetaPath(fullName: string): string {
 	return join(Paths.data, "meta", toMetaDirName(fullName));
 }

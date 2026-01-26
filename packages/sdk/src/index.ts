@@ -24,11 +24,13 @@ export {
 	getRepoPath,
 	getAnalysisPath,
 	getSkillPath,
+	getReferencePath,
 	getMetaPath,
 	getConfigPath,
 	loadConfig,
 	saveConfig,
 	toSkillDirName,
+	toReferenceFileName,
 	toMetaDirName,
 } from "./config.js";
 

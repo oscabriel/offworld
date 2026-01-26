@@ -231,33 +231,33 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 				return { success: false, message: "Authentication failed" };
 			}
 
-		if (err instanceof RateLimitError) {
-			p.log.error("Rate limit exceeded.");
-			p.log.info("You can push up to 20 references per day.");
-			p.log.info("Please try again tomorrow.");
-			return { success: false, message: "Rate limit exceeded" };
-		}
+			if (err instanceof RateLimitError) {
+				p.log.error("Rate limit exceeded.");
+				p.log.info("You can push up to 20 references per day.");
+				p.log.info("Please try again tomorrow.");
+				return { success: false, message: "Rate limit exceeded" };
+			}
 
-		if (err instanceof CommitExistsError) {
-			p.log.error("A reference already exists for this commit.");
-			p.log.info(`Commit: ${localReference.commitSha.slice(0, 7)}`);
-			p.log.info(
-				"References are immutable per commit. Update the repo and regenerate to push a new version.",
-			);
-			return { success: false, message: "Reference already exists for this commit" };
-		}
+			if (err instanceof CommitExistsError) {
+				p.log.error("A reference already exists for this commit.");
+				p.log.info(`Commit: ${localReference.commitSha.slice(0, 7)}`);
+				p.log.info(
+					"References are immutable per commit. Update the repo and regenerate to push a new version.",
+				);
+				return { success: false, message: "Reference already exists for this commit" };
+			}
 
-		if (err instanceof InvalidInputError) {
-			p.log.error("Invalid input data.");
-			p.log.info(err.message);
-			return { success: false, message: err.message };
-		}
+			if (err instanceof InvalidInputError) {
+				p.log.error("Invalid input data.");
+				p.log.info(err.message);
+				return { success: false, message: err.message };
+			}
 
-		if (err instanceof InvalidReferenceError) {
-			p.log.error("Invalid reference content.");
-			p.log.info(err.message);
-			p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
-			return { success: false, message: err.message };
+			if (err instanceof InvalidReferenceError) {
+				p.log.error("Invalid reference content.");
+				p.log.info(err.message);
+				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
+				return { success: false, message: err.message };
 			}
 
 			if (err instanceof SyncRepoNotFoundError) {

@@ -58,7 +58,7 @@ vi.mock("@offworld/sdk", () => ({
 	installReference: vi.fn(),
 	loadAuthData: vi.fn(),
 	canPushToWeb: vi.fn(),
-	pushAnalysis: vi.fn(),
+	pushReference: vi.fn(),
 	getAllAgentConfigs: vi.fn(() => []),
 	expandTilde: vi.fn((path: string) => path),
 	toReferenceFileName: vi.fn((repoName: string) => {
@@ -202,10 +202,9 @@ describe("CLI handlers", () => {
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
 			mockGetCommitSha.mockReturnValue("abc1234");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockGetCommitDistance.mockReturnValue(0);
-			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
+			mockPullReference.mockResolvedValue(mockRemoteAnalysis);
 			mockGetReferencePath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
@@ -233,7 +232,6 @@ describe("CLI handlers", () => {
 				currentSha: "def456",
 			});
 			mockGetCommitSha.mockReturnValue("def4567");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockGenerateSkillWithAI.mockResolvedValue({
 				referenceContent: "# Skill\n...",
@@ -258,10 +256,9 @@ describe("CLI handlers", () => {
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
 			mockGetCommitSha.mockReturnValue("abc1234");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc1234" });
 			mockGetCommitDistance.mockReturnValue(0);
-			mockPullAnalysis.mockResolvedValue(mockRemoteAnalysis);
+			mockPullReference.mockResolvedValue(mockRemoteAnalysis);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
@@ -274,9 +271,9 @@ describe("CLI handlers", () => {
 
 			expect(mockCheckRemote).toHaveBeenCalledWith("tanstack/router");
 			expect(mockGetCommitDistance).toHaveBeenCalled();
-			expect(mockPullAnalysis).toHaveBeenCalledWith("tanstack/router");
+			expect(mockPullReference).toHaveBeenCalledWith("tanstack/router");
 			expect(mockGenerateSkillWithAI).not.toHaveBeenCalled();
-			expect(result.analysisSource).toBe("remote");
+			expect(result.referenceSource).toBe("remote");
 		});
 
 		it("falls back to local generation when no remote reference exists", async () => {
@@ -284,7 +281,6 @@ describe("CLI handlers", () => {
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
 			mockGetCommitSha.mockReturnValue("abc123");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
@@ -300,9 +296,9 @@ describe("CLI handlers", () => {
 			const result = await pullHandler({ repo: "tanstack/router" });
 
 			expect(mockCheckRemote).toHaveBeenCalled();
-			expect(mockPullAnalysis).not.toHaveBeenCalled();
+			expect(mockPullReference).not.toHaveBeenCalled();
 			expect(mockGenerateSkillWithAI).toHaveBeenCalled();
-			expect(result.analysisSource).toBe("local");
+			expect(result.referenceSource).toBe("local");
 		});
 
 		it.skip("falls back to local generation when remote SHA differs", async () => {
@@ -330,9 +326,9 @@ describe("CLI handlers", () => {
 			const result = await pullHandler({ repo: "tanstack/router" });
 
 			expect(mockCheckRemote).toHaveBeenCalled();
-			expect(mockPullAnalysis).not.toHaveBeenCalled();
+			expect(mockPullReference).not.toHaveBeenCalled();
 			expect(mockGenerateSkillWithAI).toHaveBeenCalled();
-			expect(result.analysisSource).toBe("local");
+			expect(result.referenceSource).toBe("local");
 		});
 
 		it("uses cached reference when available", async () => {
@@ -344,7 +340,6 @@ describe("CLI handlers", () => {
 				previousSha: "abc123",
 				currentSha: "abc123",
 			});
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
@@ -362,8 +357,8 @@ describe("CLI handlers", () => {
 
 			const result = await pullHandler({ repo: "tanstack/router" });
 
-			expect(result.analysisSource).toBe("cached");
-			expect(mockPullAnalysis).not.toHaveBeenCalled();
+			expect(result.referenceSource).toBe("cached");
+			expect(mockPullReference).not.toHaveBeenCalled();
 			expect(mockGenerateSkillWithAI).not.toHaveBeenCalled();
 		});
 
@@ -409,7 +404,6 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc123" });
 			mockIsRepoCloned.mockReturnValue(true);
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
@@ -434,7 +428,6 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockIsRepoCloned.mockReturnValue(true);
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
@@ -455,7 +448,7 @@ describe("CLI handlers", () => {
 				expect.objectContaining({}),
 			);
 			expect(result.success).toBe(true);
-			expect(result.analysisPath).toBeDefined();
+			expect(result.referencePath).toBeDefined();
 		});
 
 		it("clones repo if not already cloned", async () => {
@@ -463,7 +456,6 @@ describe("CLI handlers", () => {
 			mockCheckRemote.mockResolvedValue({ exists: false });
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
 			mockGetSkillPath.mockReturnValue(
 				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
 			);
@@ -506,8 +498,7 @@ describe("CLI handlers", () => {
 
 			expect(result.repos).toHaveLength(1);
 			expect(result.repos[0]!.fullName).toBe("github:tanstack/router");
-			expect(result.repos[0]!.analyzed).toBe(true);
-			expect(result.repos[0]!.hasSkill).toBe(true);
+			expect(result.repos[0]!.hasReference).toBe(true);
 		});
 
 		it("outputs JSON with --json flag", async () => {
@@ -536,31 +527,7 @@ describe("CLI handlers", () => {
 
 		it.skip("filters stale repos with --stale flag", async () => {
 			// TODO: Implement stale detection in map model (needs commitSha tracking)
-			mockListRepos.mockReturnValue(["github:tanstack/router", "github:tanstack/query"]);
-			mockReadGlobalMap.mockReturnValue({
-				repos: {
-					"github:tanstack/router": {
-						localPath: "/home/user/ow/github/tanstack/router",
-						references: ["tanstack-router.md"],
-						primary: "tanstack-router.md",
-						keywords: [],
-						updatedAt: "2026-01-25",
-					},
-					"github:tanstack/query": {
-						localPath: "/home/user/ow/github/tanstack/query",
-						references: ["tanstack-query.md"],
-						primary: "tanstack-query.md",
-						keywords: [],
-						updatedAt: "2026-01-25",
-					},
-				},
-			});
-			mockExistsSync.mockReturnValue(true);
-
-			const result = await listHandler({ stale: true });
-
-			// Should filter to only stale repos
-			expect(result.repos.filter((r) => r.isStale === true)).toHaveLength(2);
+			// Skipped: stale flag removed in US-005
 		});
 
 		it("shows paths with --paths flag", async () => {

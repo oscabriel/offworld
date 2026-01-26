@@ -93,12 +93,12 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 		if (dryRun || !yes) {
 			p.log.info("The following will be removed:");
 
-		if (!referenceOnly && affected.repoPath) {
-			console.log(`  Repository: ${affected.repoPath}`);
-		}
-		if (!repoOnly && affected.referencePath) {
-			console.log(`  Reference: ${affected.referencePath}`);
-		}
+			if (!referenceOnly && affected.repoPath) {
+				console.log(`  Repository: ${affected.repoPath}`);
+			}
+			if (!repoOnly && affected.referencePath) {
+				console.log(`  Reference: ${affected.referencePath}`);
+			}
 			console.log("");
 		}
 

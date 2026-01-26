@@ -173,7 +173,9 @@ export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<Rep
 	}
 
 	const qualifiedNames = listRepos();
-	const filtered = pattern ? qualifiedNames.filter((q) => matchesPattern(q, pattern)) : qualifiedNames;
+	const filtered = pattern
+		? qualifiedNames.filter((q) => matchesPattern(q, pattern))
+		: qualifiedNames;
 	const total = filtered.length;
 
 	if (total === 0) {
@@ -337,12 +339,7 @@ export async function repoStatusHandler(options: RepoStatusOptions): Promise<Rep
 }
 
 export async function repoGcHandler(options: RepoGcOptions): Promise<RepoGcResult> {
-	const {
-		olderThan,
-		withoutReference = false,
-		dryRun = false,
-		yes = false,
-	} = options;
+	const { olderThan, withoutReference = false, dryRun = false, yes = false } = options;
 
 	if (!olderThan && !withoutReference) {
 		p.log.error("Specify at least one filter: --older-than or --without-reference");

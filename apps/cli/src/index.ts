@@ -145,7 +145,10 @@ export const router = os.router({
 			z.object({
 				repo: z.string().describe("repo").meta({ positional: true }),
 				yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
-				referenceOnly: z.boolean().default(false).describe("Only remove reference files (keep repo)"),
+				referenceOnly: z
+					.boolean()
+					.default(false)
+					.describe("Only remove reference files (keep repo)"),
 				repoOnly: z.boolean().default(false).describe("Only remove cloned repo (keep reference)"),
 				dryRun: z.boolean().default(false).describe("Show what would be done").meta({ alias: "d" }),
 			}),

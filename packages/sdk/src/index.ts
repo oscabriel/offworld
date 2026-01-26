@@ -184,3 +184,14 @@ export {
 	type ModelInfo,
 	type ProviderWithModels,
 } from "./models.js";
+
+export {
+	detectInstallMethod,
+	getCurrentVersion,
+	fetchLatestVersion,
+	executeUpgrade,
+	executeUninstall,
+	getShellConfigFiles,
+	cleanShellConfig,
+	type InstallMethod,
+} from "./installation.js";

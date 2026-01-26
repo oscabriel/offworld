@@ -95,7 +95,7 @@
 			"priority": 3,
 			"description": "Acceptance criteria: AGENTS.md, README.md, packages/sdk/README.md, and .github/workflows/release.yml use skill/offworld path and reference terminology.",
 			"stepsToVerify": ["bun run check"],
-			"passes": false
+			"passes": true
 		}
 	]
 }

@@ -206,7 +206,7 @@ jobs:
 
           cat > tap/Formula/ow.rb << EOF
           class Ow < Formula
-            desc "Offworld CLI - Repository analysis and skill generation"
+            desc "Offworld CLI - Generate references for your dependencies"
             homepage "https://offworld.sh"
             version "$VERSION"
             license "MIT"

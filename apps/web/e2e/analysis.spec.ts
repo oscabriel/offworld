@@ -39,8 +39,10 @@ test.describe("Reference E2E Tests", () => {
 		const referenceNotFound = page.getByText(/reference not found/i);
 		const loadingSkeleton = page.locator('[class*="Skeleton"]');
 
-		await expect(architectureHeading.or(referenceNotFound).or(loadingSkeleton.first())).toBeVisible({
-			timeout: 15000,
-		});
+		await expect(architectureHeading.or(referenceNotFound).or(loadingSkeleton.first())).toBeVisible(
+			{
+				timeout: 15000,
+			},
+		);
 	});
 });

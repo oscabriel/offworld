@@ -20,7 +20,7 @@ bun add @offworld/sdk
 | `sync.ts`              | Convex client for push/pull               |
 | `auth.ts`              | WorkOS token management                   |
 | `agents.ts`            | Agent registry (6 agents)                 |
-| `agents-md.ts`         | AGENTS.md skill table generation          |
+| `agents-md.ts`         | AGENTS.md reference table generation      |
 | `repo-source.ts`       | Parse repo input (URL, owner/repo, local) |
 | `manifest.ts`          | Dependency parsing (package.json, etc.)   |
 | `dep-mappings.ts`      | npm package → GitHub repo resolution      |

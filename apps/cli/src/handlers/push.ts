@@ -24,7 +24,7 @@ import {
 	PrivateRepoError,
 	CommitNotFoundError,
 	GitHubError,
-	type AnalysisData,
+	type ReferenceData,
 } from "@offworld/sdk";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -51,7 +51,7 @@ export interface PushResult {
  * Load local skill data from the AI-only format.
  * Format: SKILL.md + meta.json
  */
-function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | null {
+function loadLocalAnalysis(metaDir: string, skillDir: string): ReferenceData | null {
 	const skillMdPath = join(skillDir, "SKILL.md");
 	const metaPath = join(metaDir, "meta.json");
 
@@ -82,11 +82,11 @@ function loadLocalAnalysis(metaDir: string, skillDir: string): AnalysisData | nu
 
 		return {
 			fullName: "",
-			skillName: name,
-			skillDescription: description,
-			skillContent,
+			referenceName: name,
+			referenceDescription: description,
+			referenceContent: skillContent,
 			commitSha: meta.commitSha,
-			analyzedAt: meta.analyzedAt,
+			generatedAt: meta.analyzedAt,
 		};
 	} catch {
 		return null;

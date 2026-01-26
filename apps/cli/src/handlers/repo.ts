@@ -8,9 +8,10 @@ import {
 	discoverRepos,
 	getRepoRoot,
 	loadConfig,
+	readGlobalMap,
 } from "@offworld/sdk";
 import { existsSync, rmSync } from "node:fs";
-import { entryToListItem, formatRepoForDisplay, type RepoListItem } from "./shared.js";
+import { formatRepoForDisplay, type RepoListItem } from "./shared.js";
 
 export interface RepoListOptions {
 	json?: boolean;
@@ -107,9 +108,10 @@ function matchesPattern(name: string, pattern: string): boolean {
 export async function repoListHandler(options: RepoListOptions): Promise<RepoListResult> {
 	const { json = false, paths = false, stale = false, pattern } = options;
 
-	const entries = listRepos();
+	const qualifiedNames = listRepos();
+	const map = readGlobalMap();
 
-	if (entries.length === 0) {
+	if (qualifiedNames.length === 0) {
 		if (!json) {
 			p.log.info("No repositories cloned yet.");
 			p.log.info("Use 'ow pull <repo>' to clone and analyze a repository.");
@@ -118,10 +120,23 @@ export async function repoListHandler(options: RepoListOptions): Promise<RepoLis
 	}
 
 	const items: RepoListItem[] = [];
-	for (const entry of entries) {
-		if (pattern && !matchesPattern(entry.fullName, pattern)) continue;
-		const item = await entryToListItem(entry, stale);
-		items.push(item);
+	for (const qName of qualifiedNames) {
+		const entry = map.repos[qName];
+		if (!entry) continue;
+		if (pattern && !matchesPattern(qName, pattern)) continue;
+
+		const exists = existsSync(entry.localPath);
+		const isStale = undefined; // Simplified - full staleness check TBD
+
+		items.push({
+			fullName: qName,
+			qualifiedName: qName,
+			localPath: entry.localPath,
+			analyzed: !!entry.primary,
+			hasSkill: !!entry.primary,
+			isStale,
+			exists,
+		});
 	}
 
 	let filteredItems = items;
@@ -157,8 +172,8 @@ export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<Rep
 		return { updated: [], skipped: [], unshallowed: [], errors: [] };
 	}
 
-	const entries = listRepos();
-	const filtered = pattern ? entries.filter((e) => matchesPattern(e.fullName, pattern)) : entries;
+	const qualifiedNames = listRepos();
+	const filtered = pattern ? qualifiedNames.filter((q) => matchesPattern(q, pattern)) : qualifiedNames;
 	const total = filtered.length;
 
 	if (total === 0) {
@@ -302,8 +317,7 @@ export async function repoStatusHandler(options: RepoStatusOptions): Promise<Rep
 
 	const output: RepoStatusResult = {
 		total: status.total,
-		analyzed: status.analyzed,
-		withSkill: status.withSkill,
+		withReference: status.withReference,
 		stale: status.stale,
 		missing: status.missing,
 		diskMB: Math.round(status.diskBytes / (1024 * 1024)),
@@ -313,10 +327,7 @@ export async function repoStatusHandler(options: RepoStatusOptions): Promise<Rep
 		console.log(JSON.stringify(output, null, 2));
 	} else {
 		p.log.info(`Managed repos: ${status.total}`);
-		p.log.info(
-			`  Analyzed: ${status.analyzed} (${status.total ? Math.round((status.analyzed / status.total) * 100) : 0}%)`,
-		);
-		p.log.info(`  With skill: ${status.withSkill}`);
+		p.log.info(`  With reference: ${status.withReference}`);
 		p.log.info(`  Stale: ${status.stale}`);
 		p.log.info(`  Missing: ${status.missing}`);
 		p.log.info(`  Disk usage: ${formatBytes(status.diskBytes)}`);
@@ -328,14 +339,13 @@ export async function repoStatusHandler(options: RepoStatusOptions): Promise<Rep
 export async function repoGcHandler(options: RepoGcOptions): Promise<RepoGcResult> {
 	const {
 		olderThan,
-		unanalyzed = false,
-		withoutSkill = false,
+		withoutReference = false,
 		dryRun = false,
 		yes = false,
 	} = options;
 
-	if (!olderThan && !unanalyzed && !withoutSkill) {
-		p.log.error("Specify at least one filter: --older-than, --unanalyzed, or --without-skill");
+	if (!olderThan && !withoutReference) {
+		p.log.error("Specify at least one filter: --older-than or --without-reference");
 		return { removed: [], freedMB: 0 };
 	}
 
@@ -351,8 +361,7 @@ export async function repoGcHandler(options: RepoGcOptions): Promise<RepoGcResul
 
 	const previewResult = await gcRepos({
 		olderThanDays,
-		unanalyzed,
-		withoutSkill,
+		withoutReference,
 		dryRun: true,
 	});
 
@@ -395,8 +404,7 @@ export async function repoGcHandler(options: RepoGcOptions): Promise<RepoGcResul
 	if (shouldProceed) {
 		const result = await gcRepos({
 			olderThanDays,
-			unanalyzed,
-			withoutSkill,
+			withoutReference,
 			dryRun: false,
 		});
 

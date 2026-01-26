@@ -23,7 +23,7 @@
 			"priority": 1,
 			"description": "Acceptance criteria: packages/sdk/src/sync.ts uses toReferenceName for API referenceName in checkRemote/pullReference; deprecated analysis exports and InvalidSkillError alias removed; public API exports only reference-based names.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-004",

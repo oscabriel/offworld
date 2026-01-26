@@ -87,7 +87,7 @@ export function Footer() {
 				</div>
 
 				<div className="flex shrink-0 flex-col items-center justify-between gap-5 self-stretch text-center lg:items-end lg:text-right">
-					<p className="text-primary font-serif text-2xl italic">"Explore distant worlds."</p>
+					<p className="text-primary font-serif text-2xl italic">“Explore distant worlds.”</p>
 					<a
 						href="https://oscargabriel.dev"
 						target="_blank"

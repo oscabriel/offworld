@@ -1,29 +1,33 @@
-# Offworld CLI
+# Offworld
 
 > **WORK IN PROGRESS** — Not yet published. Expect breaking changes.
 
-**Generate AI agent skills for your entire dependency stack with one command.**
+**One skill for your whole stack.**
 
 ```bash
 ow project init
 ```
 
-Offworld scans your `package.json`, resolves each dependency to its source repo, generates skill files via AI, and distributes them to every coding agent you use.
+Offworld builds a persistent clone map, generates right-sized references, and installs one routing skill across all your coding agents.
 
 ## The Problem
 
-Your AI coding assistant doesn't understand your dependencies. You're building with Hono, Zod v4, and 40 other packages. Every time you ask "how do I use X?", it gives you an answer from 2 versions ago or hallucinates non-existent APIs.
+Agents can find your deps (package.json, web search, node_modules), but the path is expensive and fragile:
+
+- Token burn every session to rediscover docs and source
+- Hallucination after the context gets too deep
+- No memory between sessions
 
 ## The Solution
 
-Skills are markdown files that teach AI agents about a codebase. Using Offworld, instead of reading 10,000 lines of source code every time you have a simple question, the agent reads a 200-line skill file that points it in the right direction for your question instantly, saving you time and tokens.
+One global skill + per-repo references.
 
 Offworld:
 
-1. **Generates skills** that don't exist (competitors only install pre-made ones)
-2. **Scans your dependencies** automatically (no manual per-package commands)
-3. **Distributes everywhere** (one skill, symlinked to 6 agents)
-4. **Manages git clones** of source repos locally (you and your agents can read the actual code anytime)
+1. **Generates references** on demand (competitors only load or scrape)
+2. **Scans your entire dependency stack** in one command
+3. **Installs one routing skill** everywhere (O(1) startup load)
+4. **Maintains a persistent clone map** that survives sessions
 
 ## Installation
 
@@ -44,50 +48,75 @@ curl -fsSL https://offworld.sh/install | bash
 # One-time setup
 ow init
 
-# Skill your project's dependencies
+# Install references for your project's dependencies
 cd your-project
 ow project init
 ```
 
+## How It Works
+
+```
+ow project init
+  -> parse manifests
+  -> resolve deps to repos
+  -> clone repos
+  -> generate references
+  -> update assets/map.json
+  -> write .offworld/map.json
+  -> symlink single offworld skill
+```
+
+### The Clone Map
+
+`assets/map.json` is a persistent clone map. It gives agents a stable pointer to the right source tree without re-discovering it every session.
+
+### Local Layout
+
+```
+~/.local/share/offworld/skills/offworld/
+├── SKILL.md           # Static routing skill
+├── assets/
+│   └── map.json       # Canonical clone map
+└── references/
+    ├── tanstack-router.md
+    └── ...
+```
+
 ## CLI Commands
 
-| Command              | Description                                  |
-| -------------------- | -------------------------------------------- |
-| `ow project init`    | Scan deps, generate skills, update AGENTS.md |
-| `ow pull <repo>`     | Clone + generate skill for specific repo     |
-| `ow list`            | List managed repos and skill status          |
-| `ow generate <repo>` | Force local AI generation                    |
-| `ow push <repo>`     | Share skill to offworld.sh                   |
-| `ow rm <repo>`       | Remove repo and skill files                  |
-| `ow init`            | Interactive global setup                     |
-| `ow config show`     | View configuration                           |
-| `ow auth login`      | Authenticate with offworld.sh                |
+| Command              | Description                                   |
+| -------------------- | --------------------------------------------- |
+| `ow project init`    | Scan deps, generate references, update map    |
+| `ow pull <repo>`     | Clone + generate reference for specific repo  |
+| `ow list`            | List managed repos                            |
+| `ow generate <repo>` | Force local AI generation                     |
+| `ow push <repo>`     | Share reference to offworld.sh                |
+| `ow rm <repo>`       | Remove repo and reference files               |
+| `ow init`            | Interactive global setup                      |
+| `ow config show`     | View configuration (includes path discovery)  |
+| `ow auth login`      | Authenticate with offworld.sh                 |
 
 ## Git Clone Management
 
-Offworld doubles as a git clone manager. When generating skills, it clones each repo's source code to `~/ow/{provider}/{owner}/{repo}` (configurable via `ow config set repoRoot <path>`).
+Offworld manages git clones at `~/ow/{provider}/{owner}/{repo}` (configurable).
 
 These clones serve two purposes:
 
-- **Agent reads them** to generate accurate, up-to-date skills
+- **Agent reads them** to generate accurate references
 - **You can browse them** anytime for reference or to contribute
-
-The `ow repo` namespace provides full control over your cloned repositories:
 
 | Command            | Description                                           |
 | ------------------ | ----------------------------------------------------- |
-| `ow repo list`     | List all managed repos (alias: `ow repo ls`)          |
+| `ow repo list`     | List all managed repos                                |
 | `ow repo update`   | Pull latest changes (`--all`, `--stale`, `--pattern`) |
 | `ow repo status`   | Show summary: total repos, disk usage, stale count    |
-| `ow repo prune`    | Clean up stale index entries and orphaned dirs        |
+| `ow repo prune`    | Clean up stale map entries and orphaned dirs          |
 | `ow repo gc`       | Garbage collect old/unused repos                      |
 | `ow repo discover` | Find and index existing repos in your repoRoot        |
 
-All commands support `--dry-run` to preview changes before applying.
-
 ## Supported Agents
 
-Skills are symlinked to all detected agents:
+The single skill is symlinked to all detected agents:
 
 - OpenCode (`~/.config/opencode/skill/`)
 - Claude Code (`~/.claude/skills/`)
@@ -95,7 +124,6 @@ Skills are symlinked to all detected agents:
 - Amp (`~/.config/agents/skills/`)
 - Antigravity (`~/.gemini/antigravity/skills/`)
 - Cursor (`~/.cursor/skills/`)
-- More coming soon
 
 ## Project Structure
 
@@ -105,7 +133,7 @@ offworld/
 │   ├── cli/         # CLI application (offworld / ow)
 │   ├── web/         # Web app (offworld.sh)
 │   ├── docs/        # Documentation (Astro Starlight)
-│   └── tui/         # Terminal UI (OpenTUI) (Coming Soon)
+│   └── tui/         # Terminal UI (OpenTUI)
 ├── packages/
 │   ├── sdk/         # Core business logic
 │   ├── types/       # Zod schemas + TypeScript types
@@ -116,38 +144,29 @@ offworld/
 ## Development
 
 ```bash
-# Install dependencies
-bun install
-
-# Start all apps
-bun run dev
-
-# Start specific apps
-bun run dev:web      # Web app only
-bun run dev:server   # Convex backend only
-
-# Build CLI and link globally
-bun run build:cli
-
-# Run checks
-bun run check        # Oxlint + Oxfmt
-bun run typecheck    # TypeScript
-bun run test         # Vitest
+bun install              # Install deps
+bun run dev              # Start all apps
+bun run dev:web          # Web app only
+bun run dev:server       # Convex backend only
+bun run build:cli        # Build CLI + link globally
+bun run check            # Oxlint + Oxfmt
+bun run typecheck        # TypeScript
+bun run test             # Vitest
 ```
 
 ## Web App (offworld.sh)
 
-Browse and search community skills, download pre-generated skills, share your own.
+Browse and search community references, download pre-generated references, share your own.
 
 **Stack**: TanStack Start + Convex + WorkOS Auth + Cloudflare Workers
 
 ## Tech Stack
 
 - **CLI**: trpc-cli + @orpc/server + @clack/prompts
-- **AI**: OpenCode SDK, Claude Agent SDK
+- **AI**: Claude SDK for reference generation
 - **Backend**: Convex
 - **Web**: TanStack Start, TanStack Router, React Query
-- **Auth**: WorkOS AuthKit (CLI Auth and Web App Auth)
+- **Auth**: WorkOS AuthKit
 - **Deploy**: Alchemy (Cloudflare Workers)
 - **Tooling**: Bun, Turborepo, Oxlint, tsdown
 

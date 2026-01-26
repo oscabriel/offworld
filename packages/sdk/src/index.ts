@@ -69,7 +69,7 @@ export {
 	cloneRepo,
 	updateRepo,
 	removeRepo,
-	removeSkillByName,
+	removeReferenceByName,
 	listRepos,
 	isRepoCloned,
 	getClonedRepoPath,

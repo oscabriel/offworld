@@ -5,11 +5,14 @@
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { execFileSync, spawn } from "node:child_process";
-import type { Config, RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
-import { getRepoPath, getMetaPath, getSkillPath, loadConfig, toSkillDirName } from "./config.js";
-import { getIndexEntry, listIndexedRepos, removeFromIndex, updateIndex } from "./index-manager.js";
-import { getAllAgentConfigs } from "./agents.js";
-import { expandTilde } from "./paths.js";
+import type { Config, RemoteRepoSource } from "@offworld/types";
+import { getRepoPath, getMetaPath, loadConfig, toReferenceFileName } from "./config.js";
+import {
+	readGlobalMap,
+	upsertGlobalMapEntry,
+	removeGlobalMapEntry,
+} from "./index-manager.js";
+import { Paths } from "./paths.js";
 
 // ============================================================================
 // Custom Error Types
@@ -198,18 +201,21 @@ export async function cloneRepo(
 		throw err;
 	}
 
-	const commitSha = getCommitSha(repoPath);
-	const skillPath = getSkillPath(source.fullName);
-	const hasExistingSkill = existsSync(join(skillPath, "SKILL.md"));
+	getCommitSha(repoPath);
+	const referenceFileName = toReferenceFileName(source.fullName);
+	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+	const hasReference = existsSync(referencePath);
 
-	const indexEntry: RepoIndexEntry = {
-		fullName: source.fullName,
-		qualifiedName: source.qualifiedName,
-		localPath: repoPath,
-		commitSha,
-		hasSkill: hasExistingSkill,
-	};
-	updateIndex(indexEntry);
+	// Update global map (only if reference exists)
+	if (hasReference) {
+		upsertGlobalMapEntry(source.fullName, {
+			localPath: repoPath,
+			references: [referenceFileName],
+			primary: referenceFileName,
+			keywords: [],
+			updatedAt: new Date().toISOString(),
+		});
+	}
 
 	return repoPath;
 }
@@ -321,7 +327,8 @@ export async function updateRepo(
 	qualifiedName: string,
 	options: UpdateOptions = {},
 ): Promise<UpdateResult> {
-	const entry = getIndexEntry(qualifiedName);
+	const map = readGlobalMap();
+	const entry = map.repos[qualifiedName];
 	if (!entry) {
 		throw new RepoNotFoundError(qualifiedName);
 	}
@@ -347,10 +354,10 @@ export async function updateRepo(
 	// Get new SHA after update
 	const currentSha = getCommitSha(repoPath);
 
-	// Update index with new commit
-	updateIndex({
+	// Update map with timestamp
+	upsertGlobalMapEntry(qualifiedName, {
 		...entry,
-		commitSha: currentSha,
+		updatedAt: new Date().toISOString(),
 	});
 
 	return {
@@ -366,14 +373,14 @@ export async function updateRepo(
 // ============================================================================
 
 export interface RemoveOptions {
-	/** Only remove skill files (keep cloned repo) */
-	skillOnly?: boolean;
-	/** Only remove cloned repo (keep skill files) */
+	/** Only remove reference files (keep cloned repo) */
+	referenceOnly?: boolean;
+	/** Only remove cloned repo (keep reference files) */
 	repoOnly?: boolean;
 }
 
 /**
- * Remove a cloned repository and its analysis data.
+ * Remove a cloned repository and its reference data.
  *
  * @param qualifiedName - The qualified name of the repo
  * @param options - Remove options
@@ -383,68 +390,61 @@ export async function removeRepo(
 	qualifiedName: string,
 	options: RemoveOptions = {},
 ): Promise<boolean> {
-	const entry = getIndexEntry(qualifiedName);
+	const map = readGlobalMap();
+	const entry = map.repos[qualifiedName];
 	if (!entry) {
 		return false;
 	}
 
-	const { skillOnly = false, repoOnly = false } = options;
-	const removeRepoFiles = !skillOnly;
-	const removeSkillFiles = !repoOnly;
+	const { referenceOnly = false, repoOnly = false } = options;
+	const removeRepoFiles = !referenceOnly;
+	const removeReferenceFiles = !repoOnly;
 
 	if (removeRepoFiles && existsSync(entry.localPath)) {
 		rmSync(entry.localPath, { recursive: true, force: true });
 		cleanupEmptyParentDirs(entry.localPath);
 	}
 
-	if (removeSkillFiles) {
-		const skillPath = getSkillPath(entry.fullName);
-		if (existsSync(skillPath)) {
-			rmSync(skillPath, { recursive: true, force: true });
+	if (removeReferenceFiles) {
+		// Remove reference files
+		const referenceFileName = toReferenceFileName(qualifiedName);
+		const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+		if (existsSync(referencePath)) {
+			rmSync(referencePath, { force: true });
 		}
 
-		const metaPath = getMetaPath(entry.fullName);
+		// Remove meta directory
+		const metaPath = getMetaPath(qualifiedName);
 		if (existsSync(metaPath)) {
 			rmSync(metaPath, { recursive: true, force: true });
-		}
-
-		if (entry.hasSkill) {
-			removeAgentSymlinks(entry.fullName);
 		}
 	}
 
 	if (removeRepoFiles) {
-		removeFromIndex(qualifiedName);
-	} else if (removeSkillFiles) {
-		updateIndex({ ...entry, hasSkill: false });
+		removeGlobalMapEntry(qualifiedName);
+	} else if (removeReferenceFiles) {
+		upsertGlobalMapEntry(qualifiedName, {
+			...entry,
+			references: [],
+			primary: "",
+		});
 	}
 
 	return true;
 }
 
-function removeAgentSymlinks(repoName: string): void {
-	const config = loadConfig();
-	const skillDirName = toSkillDirName(repoName);
-
-	const configuredAgents = config.agents ?? [];
-	for (const agentName of configuredAgents) {
-		const agentConfig = getAllAgentConfigs().find((c: { name: string }) => c.name === agentName);
-		if (agentConfig) {
-			const agentSkillPath = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
-			if (existsSync(agentSkillPath)) {
-				rmSync(agentSkillPath, { recursive: true, force: true });
-			}
-		}
-	}
-}
-
-export function removeSkillByName(repoName: string): boolean {
-	const skillPath = getSkillPath(repoName);
+/**
+ * Remove a reference by repo name
+ * @deprecated Use removeRepo with referenceOnly option instead
+ */
+export function removeReferenceByName(repoName: string): boolean {
+	const referenceFileName = toReferenceFileName(repoName);
+	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 	const metaPath = getMetaPath(repoName);
 	let removed = false;
 
-	if (existsSync(skillPath)) {
-		rmSync(skillPath, { recursive: true, force: true });
+	if (existsSync(referencePath)) {
+		rmSync(referencePath, { force: true });
 		removed = true;
 	}
 
@@ -452,8 +452,6 @@ export function removeSkillByName(repoName: string): boolean {
 		rmSync(metaPath, { recursive: true, force: true });
 		removed = true;
 	}
-
-	removeAgentSymlinks(repoName);
 
 	return removed;
 }
@@ -463,22 +461,24 @@ export function removeSkillByName(repoName: string): boolean {
 // ============================================================================
 
 /**
- * List all cloned repositories from the index.
+ * List all cloned repositories from the global map.
  *
- * @returns Array of repo index entries
+ * @returns Array of qualified names
  */
-export function listRepos(): RepoIndexEntry[] {
-	return listIndexedRepos();
+export function listRepos(): string[] {
+	const map = readGlobalMap();
+	return Object.keys(map.repos);
 }
 
 /**
- * Check if a repository is cloned and in the index.
+ * Check if a repository is cloned and in the map.
  *
  * @param qualifiedName - The qualified name of the repo
- * @returns true if repo exists in index and on disk
+ * @returns true if repo exists in map and on disk
  */
 export function isRepoCloned(qualifiedName: string): boolean {
-	const entry = getIndexEntry(qualifiedName);
+	const map = readGlobalMap();
+	const entry = map.repos[qualifiedName];
 	if (!entry) return false;
 	return existsSync(entry.localPath);
 }
@@ -490,7 +490,8 @@ export function isRepoCloned(qualifiedName: string): boolean {
  * @returns The local path or undefined if not cloned
  */
 export function getClonedRepoPath(qualifiedName: string): string | undefined {
-	const entry = getIndexEntry(qualifiedName);
+	const map = readGlobalMap();
+	const entry = map.repos[qualifiedName];
 	if (!entry) return undefined;
 	if (!existsSync(entry.localPath)) return undefined;
 	return entry.localPath;

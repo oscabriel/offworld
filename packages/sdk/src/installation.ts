@@ -3,7 +3,7 @@
  */
 
 import { execSync, spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { VERSION } from "./constants.js";
@@ -291,7 +291,6 @@ export function cleanShellConfig(filePath: string): boolean {
 		}
 
 		if (modified) {
-			const { writeFileSync } = require("node:fs");
 			writeFileSync(filePath, filtered.join("\n"), "utf-8");
 		}
 

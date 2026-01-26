@@ -340,8 +340,6 @@ function ensureSymlink(target: string, linkPath: string): void {
 	symlinkSync(target, linkPath, "dir");
 }
 
-
-
 // ============================================================================
 // Single-Skill Installation (US-005)
 // ============================================================================

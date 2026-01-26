@@ -87,8 +87,6 @@ export class InvalidReferenceError extends SyncError {
 	}
 }
 
-
-
 export class RepoNotFoundError extends SyncError {
 	constructor(message = "Repository not found on GitHub.") {
 		super(message);
@@ -421,8 +419,6 @@ export async function checkStaleness(
 		remoteCommitSha: remote.commitSha,
 	};
 }
-
-
 
 // ============================================================================
 // Push Validation Functions

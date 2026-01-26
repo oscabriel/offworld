@@ -98,7 +98,12 @@ import {
 	loadAuthData,
 	canPushToWeb,
 } from "@offworld/sdk";
-import type { RemoteRepoSource, LocalRepoSource, Config, GlobalMapRepoEntry } from "@offworld/types";
+import type {
+	RemoteRepoSource,
+	LocalRepoSource,
+	Config,
+	GlobalMapRepoEntry,
+} from "@offworld/types";
 
 // Import handlers after mocks
 import { pullHandler } from "../handlers/pull.js";

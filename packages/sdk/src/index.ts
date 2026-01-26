@@ -168,7 +168,7 @@ export {
 	type ReferenceMatch,
 } from "./reference-matcher.js";
 
-export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";
+export { updateAgentFiles, appendReferencesSection, type InstalledReference } from "./agents-md.js";
 
 export {
 	getRepoStatus,

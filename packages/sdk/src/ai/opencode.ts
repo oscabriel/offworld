@@ -1,7 +1,7 @@
 // Streaming OpenCode API - Markdown templates instead of JSON schemas
 
 import {
-	OpenCodeAnalysisError,
+	OpenCodeReferenceError,
 	OpenCodeSDKError,
 	InvalidProviderError,
 	ProviderNotConnectedError,
@@ -14,7 +14,7 @@ import { TextAccumulator, parseStreamEvent, isEventForSession } from "./stream/i
 
 // Re-export error types for backwards compatibility
 export {
-	OpenCodeAnalysisError,
+	OpenCodeReferenceError,
 	OpenCodeSDKError,
 	InvalidProviderError,
 	ProviderNotConnectedError,
@@ -254,7 +254,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 					"- Always base your analysis on actual code you've read, never speculate",
 				].join("\n"),
 				mode: "primary",
-				description: "Analyze open source codebases and produce summaries and skill files",
+				description: "Analyze open source codebases and produce summaries and reference files",
 				tools: {
 					read: true,
 					grep: true,
@@ -330,7 +330,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		debug("Validating provider and model...");
 		const providerResult = await client.provider.list();
 		if (providerResult.error) {
-			throw new OpenCodeAnalysisError("Failed to fetch provider list", providerResult.error);
+			throw new OpenCodeReferenceError("Failed to fetch provider list", providerResult.error);
 		}
 
 		const { all: allProviders, connected: connectedProviders } = providerResult.data;
@@ -399,7 +399,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 						if (parsed.textPart) {
 							const delta = textAccumulator.accumulatePart(parsed.textPart);
 							if (!textAccumulator.hasReceivedText) {
-								debug("Writing skill...");
+								debug("Writing reference...");
 							}
 							if (delta) {
 								stream(delta);
@@ -448,7 +448,7 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		await promptPromise;
 
 		if (!responseText) {
-			throw new OpenCodeAnalysisError("No response received from OpenCode");
+			throw new OpenCodeReferenceError("No response received from OpenCode");
 		}
 
 		debug(`Response received (${responseText.length} chars)`);

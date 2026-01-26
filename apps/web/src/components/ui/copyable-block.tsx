@@ -72,17 +72,17 @@ export function CopyableBlock({
 					)}
 				</button>
 			</div>
-		<div className={cn("overflow-y-auto px-5 py-5", maxHeight)}>
-			{markdown ? (
-				<div className="prose prose-invert prose-sm max-w-none font-mono text-sm leading-relaxed *:first:mt-0!">
-					<ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
-				</div>
-			) : (
-				<pre className="text-primary whitespace-pre-wrap font-mono text-sm leading-relaxed">
-					{displayContent}
-				</pre>
-			)}
-		</div>
+			<div className={cn("overflow-y-auto px-5 py-5", maxHeight)}>
+				{markdown ? (
+					<div className="prose prose-invert prose-sm max-w-none font-mono text-sm leading-relaxed *:first:mt-0!">
+						<ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+					</div>
+				) : (
+					<pre className="text-primary font-mono text-sm leading-relaxed whitespace-pre-wrap">
+						{displayContent}
+					</pre>
+				)}
+			</div>
 		</div>
 	);
 }

@@ -48,7 +48,7 @@ export function InstallTabs({ className, variant = "default" }: InstallTabsProps
 							onClick={copyCommand}
 							className="group/cmd flex w-full cursor-pointer items-center gap-2 overflow-x-auto"
 						>
-							<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 whitespace-nowrap font-mono text-base transition-colors">
+							<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 font-mono text-base whitespace-nowrap transition-colors">
 								<span className="select-none">$ </span>
 								{cmd.command}
 							</code>

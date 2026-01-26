@@ -218,7 +218,7 @@ function CodeBlock({
 				onClick={copyCode}
 				className="group flex w-full cursor-pointer items-center gap-2 overflow-x-auto px-5 py-3"
 			>
-				<code className="text-foreground group-hover:text-muted-foreground flex items-center gap-2 whitespace-nowrap font-mono text-base transition-colors">
+				<code className="text-foreground group-hover:text-muted-foreground flex items-center gap-2 font-mono text-base whitespace-nowrap transition-colors">
 					<span className="select-none">$</span>
 					<span>{code}</span>
 				</code>
@@ -231,8 +231,6 @@ function CodeBlock({
 		</div>
 	);
 }
-
-
 
 function OptionBadge({ children }: { children: React.ReactNode }) {
 	return (
@@ -275,7 +273,7 @@ function NodeInstallTabs() {
 						onClick={copyCommand}
 						className="group/cmd flex w-full cursor-pointer items-center gap-2 overflow-x-auto"
 					>
-						<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 whitespace-nowrap font-mono text-base transition-colors">
+						<code className="text-foreground group-hover/cmd:text-muted-foreground flex items-center gap-2 font-mono text-base whitespace-nowrap transition-colors">
 							<span className="select-none">$ </span>
 							{cmd.command}
 						</code>
@@ -368,8 +366,6 @@ If skills aren't appearing, check:
 1. Is the config valid? \`ow config show\`
 2. Are agents configured? \`ow config agents\`
 3. Check skill directory: \`ls ~/.local/share/offworld/skills/\``;
-
-
 
 function TableOfContents({
 	activeSection,
@@ -504,7 +500,8 @@ function CliPage() {
 							<div id="install-agent" className="mt-13 scroll-mt-24 space-y-3">
 								<h3 className="text-primary font-mono">Agent-native</h3>
 								<p className="text-muted-foreground font-mono text-sm">
-									Copy this prompt to let your coding agent install, configure, and initialize Offworld for you.
+									Copy this prompt to let your coding agent install, configure, and initialize
+									Offworld for you.
 								</p>
 								<CopyableBlock
 									title="Install prompt"
@@ -616,7 +613,9 @@ function CliPage() {
 												</span>
 											)}
 										</div>
-										<p className="text-muted-foreground mb-4 font-mono text-sm">{cmd.description}</p>
+										<p className="text-muted-foreground mb-4 font-mono text-sm">
+											{cmd.description}
+										</p>
 										<CodeBlock code={cmd.usage} className="mb-4" />
 										{cmd.flags && cmd.flags.length > 0 && (
 											<div className="mt-4">
@@ -681,7 +680,7 @@ function CliPage() {
 											</tbody>
 										</table>
 									</div>
-							))}
+								))}
 							</div>
 						</section>
 

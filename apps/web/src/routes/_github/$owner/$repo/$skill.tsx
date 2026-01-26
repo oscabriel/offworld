@@ -114,11 +114,7 @@ function SkillDetailPage() {
 			<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-5">
 					<InstallCommandBox fullName={fullName} />
-					<CopyableBlock
-						title="SKILL.md"
-						content={skillData.skillContent}
-						stripFrontmatter
-					/>
+					<CopyableBlock title="SKILL.md" content={skillData.skillContent} stripFrontmatter />
 				</div>
 			</div>
 		</div>

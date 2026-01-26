@@ -31,7 +31,11 @@ export function InfoSection() {
 					surfaces only the skills that the community has validated and chosen to share.
 				</p>
 			</div>
-			<Button className="py-5 px-4 text-sm font-mono text-background" nativeButton={false} render={<Link to="/cli" />}>
+			<Button
+				className="text-background px-4 py-5 font-mono text-sm"
+				nativeButton={false}
+				render={<Link to="/cli" />}
+			>
 				Read more <ArrowRight className="size-4" />
 			</Button>
 		</div>

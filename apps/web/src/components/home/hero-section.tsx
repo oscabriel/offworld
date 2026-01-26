@@ -34,11 +34,12 @@ export function HeroSection() {
 				</a>
 
 				<h1 className="text-primary mb-5 text-center font-serif text-5xl tracking-tight md:text-6xl lg:text-7xl">
-					Create skills for <em>your</em> stack
+					One skill for your <em>whole</em> stack
 				</h1>
 
 				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-xl">
-					Give your coding agent instant, up-to-date context for any open source library.
+					A skill file and a CLI tool that give your coding agents a map to find and search within
+					any open source library.
 				</p>
 			</div>
 

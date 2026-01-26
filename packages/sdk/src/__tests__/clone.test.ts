@@ -312,9 +312,14 @@ vi.mock("../config.js", async (importOriginal) => {
 		getRepoPath: vi.fn((fullName: string, provider: string) => {
 			return join(mockRepoRoot, provider, fullName);
 		}),
-		getSkillPath: vi.fn((fullName: string) => {
-			const [owner, repo] = fullName.split("/");
-			return join(mockMetaRoot, "skills", `${owner}-${repo}-reference`);
+		getReferencePath: vi.fn((fullName: string) => {
+			return join(
+				mockMetaRoot,
+				"skill",
+				"offworld",
+				"references",
+				actual.toReferenceFileName(fullName),
+			);
 		}),
 		getMetaPath: vi.fn((fullName: string) => {
 			return join(mockMetaRoot, "meta", actual.toMetaDirName(fullName));
@@ -363,7 +368,7 @@ const mockSource: RemoteRepoSource = {
 	owner: "tanstack",
 	repo: "router",
 	fullName: "tanstack/router",
-	qualifiedName: "github:tanstack/router",
+	qualifiedName: "github.com:tanstack/router",
 	cloneUrl: "https://github.com/tanstack/router.git",
 };
 
@@ -642,7 +647,7 @@ describe("updateRepo", () => {
 	it("calls git fetch then git pull", async () => {
 		const { spawn } = await import("node:child_process");
 
-		await updateRepo("github:tanstack/router");
+		await updateRepo("github.com:tanstack/router");
 
 		const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls;
 		const fetchCall = calls.find((call) => (call[1] as string[]).includes("fetch"));
@@ -653,13 +658,13 @@ describe("updateRepo", () => {
 	});
 
 	it("throws RepoNotFoundError if not in index", async () => {
-		await expect(updateRepo("github:unknown/repo")).rejects.toThrow(RepoNotFoundError);
+		await expect(updateRepo("github.com:unknown/repo")).rejects.toThrow(RepoNotFoundError);
 	});
 
 	it("throws RepoNotFoundError if path doesn't exist on disk", async () => {
 		clearVirtualFs(); // Remove repo from disk but keep in index
 
-		await expect(updateRepo("github:tanstack/router")).rejects.toThrow(RepoNotFoundError);
+		await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(RepoNotFoundError);
 	});
 
 	it("returns UpdateResult with commit SHAs", async () => {
@@ -667,7 +672,7 @@ describe("updateRepo", () => {
 			revParse: { shas: ["oldsha123", "newsha456"], shouldSucceed: true },
 		});
 
-		const result = await updateRepo("github:tanstack/router");
+		const result = await updateRepo("github.com:tanstack/router");
 
 		expect(result).toHaveProperty("previousSha", "oldsha123");
 		expect(result).toHaveProperty("currentSha", "newsha456");
@@ -679,7 +684,7 @@ describe("updateRepo", () => {
 			revParse: { shas: ["sameSha", "sameSha"], shouldSucceed: true },
 		});
 
-		const result = await updateRepo("github:tanstack/router");
+		const result = await updateRepo("github.com:tanstack/router");
 
 		expect(result.updated).toBe(false);
 		expect(result.previousSha).toBe("sameSha");
@@ -692,10 +697,10 @@ describe("updateRepo", () => {
 			revParse: { shas: ["old", "newCommitSha"], shouldSucceed: true },
 		});
 
-		await updateRepo("github:tanstack/router");
+		await updateRepo("github.com:tanstack/router");
 
 		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
-			"github:tanstack/router",
+			"github.com:tanstack/router",
 			expect.objectContaining({
 				localPath: mockMapEntry.localPath,
 				updatedAt: expect.any(String),
@@ -713,8 +718,10 @@ describe("updateRepo", () => {
 				},
 			});
 
-			await expect(updateRepo("github:tanstack/router")).rejects.toThrow(GitError);
-			await expect(updateRepo("github:tanstack/router")).rejects.toThrow(/Connection timed out/);
+			await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(GitError);
+			await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(
+				/Connection timed out/,
+			);
 		});
 
 		it("throws GitError when pull fails with merge conflict", async () => {
@@ -725,8 +732,8 @@ describe("updateRepo", () => {
 				},
 			});
 
-			await expect(updateRepo("github:tanstack/router")).rejects.toThrow(GitError);
-			await expect(updateRepo("github:tanstack/router")).rejects.toThrow(/local changes/);
+			await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(GitError);
+			await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(/local changes/);
 		});
 
 		it("throws GitError when fetch fails with auth error", async () => {
@@ -737,8 +744,10 @@ describe("updateRepo", () => {
 				},
 			});
 
-			await expect(updateRepo("github:tanstack/router")).rejects.toThrow(GitError);
-			await expect(updateRepo("github:tanstack/router")).rejects.toThrow(/Authentication failed/);
+			await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(GitError);
+			await expect(updateRepo("github.com:tanstack/router")).rejects.toThrow(
+				/Authentication failed/,
+			);
 		});
 	});
 });
@@ -761,7 +770,7 @@ describe("removeRepo", () => {
 	it("removes repo directory", async () => {
 		const { rmSync } = await import("node:fs");
 
-		await removeRepo("github:tanstack/router");
+		await removeRepo("github.com:tanstack/router");
 
 		expect(rmSync).toHaveBeenCalledWith(mockMapEntry.localPath, {
 			recursive: true,
@@ -772,7 +781,7 @@ describe("removeRepo", () => {
 	it("removes reference file", async () => {
 		const { rmSync } = await import("node:fs");
 
-		await removeRepo("github:tanstack/router");
+		await removeRepo("github.com:tanstack/router");
 
 		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), {
 			force: true,
@@ -782,7 +791,7 @@ describe("removeRepo", () => {
 	it("removes meta directory", async () => {
 		const { rmSync } = await import("node:fs");
 
-		await removeRepo("github:tanstack/router");
+		await removeRepo("github.com:tanstack/router");
 
 		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("meta"), {
 			recursive: true,
@@ -793,19 +802,19 @@ describe("removeRepo", () => {
 	it("updates map after removal", async () => {
 		const { removeGlobalMapEntry } = await import("../index-manager.js");
 
-		await removeRepo("github:tanstack/router");
+		await removeRepo("github.com:tanstack/router");
 
-		expect(removeGlobalMapEntry).toHaveBeenCalledWith("github:tanstack/router");
+		expect(removeGlobalMapEntry).toHaveBeenCalledWith("github.com:tanstack/router");
 	});
 
 	it("returns false if not in index", async () => {
-		const result = await removeRepo("github:unknown/repo");
+		const result = await removeRepo("github.com:unknown/repo");
 
 		expect(result).toBe(false);
 	});
 
 	it("returns true after successful removal", async () => {
-		const result = await removeRepo("github:tanstack/router");
+		const result = await removeRepo("github.com:tanstack/router");
 
 		expect(result).toBe(true);
 	});
@@ -813,7 +822,7 @@ describe("removeRepo", () => {
 	it("with referenceOnly keeps repo directory", async () => {
 		const { rmSync } = await import("node:fs");
 
-		await removeRepo("github:tanstack/router", { referenceOnly: true });
+		await removeRepo("github.com:tanstack/router", { referenceOnly: true });
 
 		expect(rmSync).not.toHaveBeenCalledWith(mockMapEntry.localPath, expect.anything());
 		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), {
@@ -828,7 +837,7 @@ describe("removeRepo", () => {
 	it("with repoOnly keeps reference files", async () => {
 		const { rmSync } = await import("node:fs");
 
-		await removeRepo("github:tanstack/router", { repoOnly: true });
+		await removeRepo("github.com:tanstack/router", { repoOnly: true });
 
 		expect(rmSync).toHaveBeenCalledWith(mockMapEntry.localPath, {
 			recursive: true,
@@ -844,10 +853,10 @@ describe("removeRepo", () => {
 	it("with referenceOnly clears references in map", async () => {
 		const { upsertGlobalMapEntry } = await import("../index-manager.js");
 
-		await removeRepo("github:tanstack/router", { referenceOnly: true });
+		await removeRepo("github.com:tanstack/router", { referenceOnly: true });
 
 		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
-			"github:tanstack/router",
+			"github.com:tanstack/router",
 			expect.objectContaining({ references: [], primary: "" }),
 		);
 	});
@@ -863,7 +872,7 @@ describe("listRepos", () => {
 
 		const result = listRepos();
 
-		expect(result).toEqual(["github:tanstack/router"]);
+		expect(result).toEqual(["github.com:tanstack/router"]);
 	});
 
 	it("returns empty array when no repos indexed", () => {
@@ -882,18 +891,18 @@ describe("isRepoCloned", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 		addVirtualPath(mockMapEntry.localPath, true);
 
-		expect(isRepoCloned("github:tanstack/router")).toBe(true);
+		expect(isRepoCloned("github.com:tanstack/router")).toBe(true);
 	});
 
 	it("returns false if not in index", () => {
-		expect(isRepoCloned("github:unknown/repo")).toBe(false);
+		expect(isRepoCloned("github.com:unknown/repo")).toBe(false);
 	});
 
 	it("returns false if in index but not on disk", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 		// Don't add to virtualFs
 
-		expect(isRepoCloned("github:tanstack/router")).toBe(false);
+		expect(isRepoCloned("github.com:tanstack/router")).toBe(false);
 	});
 });
 
@@ -906,19 +915,19 @@ describe("getClonedRepoPath", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 		addVirtualPath(mockMapEntry.localPath, true);
 
-		const result = getClonedRepoPath("github:tanstack/router");
+		const result = getClonedRepoPath("github.com:tanstack/router");
 
 		expect(result).toBe(mockMapEntry.localPath);
 	});
 
 	it("returns undefined if not in index", () => {
-		expect(getClonedRepoPath("github:unknown/repo")).toBeUndefined();
+		expect(getClonedRepoPath("github.com:unknown/repo")).toBeUndefined();
 	});
 
 	it("returns undefined if not on disk", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 
-		expect(getClonedRepoPath("github:tanstack/router")).toBeUndefined();
+		expect(getClonedRepoPath("github.com:tanstack/router")).toBeUndefined();
 	});
 });
 

@@ -52,13 +52,6 @@ export const Paths = {
 	},
 
 	/**
-	 * Single-skill directory (legacy alias): ~/.local/share/offworld/skill/offworld
-	 */
-	get skillsDir(): string {
-		return join(this.data, "skill", "offworld");
-	},
-
-	/**
 	 * Meta directory: ~/.local/share/offworld/meta
 	 */
 	get metaDir(): string {

@@ -10,12 +10,6 @@ export {
 	type FileRole,
 } from "@offworld/types";
 
-// Deprecated exports for backwards compatibility (TODO: remove after US-006)
-/** @deprecated */
-export type RepoIndex = { version: number; repos: Record<string, any> };
-/** @deprecated */
-export type RepoIndexEntry = any;
-
 export { VERSION, DEFAULT_IGNORE_PATTERNS } from "./constants.js";
 
 export {
@@ -104,7 +98,6 @@ export {
 	canPushToWeb,
 	validatePushAllowed,
 	type ReferenceData,
-	type AnalysisData,
 	type PullResponse,
 	type CheckResponse,
 	type PushResponse,

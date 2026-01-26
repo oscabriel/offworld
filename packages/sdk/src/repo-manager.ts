@@ -2,7 +2,7 @@ import { existsSync, statSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { updateRepo, GitError } from "./clone.js";
 import { readGlobalMap, removeGlobalMapEntry, upsertGlobalMapEntry } from "./index-manager.js";
-import { getMetaPath, loadConfig, getRepoRoot } from "./config.js";
+import { loadConfig, getRepoRoot } from "./config.js";
 import { Paths } from "./paths.js";
 
 export interface RepoStatusSummary {
@@ -336,10 +336,13 @@ export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
 				}
 			}
 
-			// Remove meta
-			const metaPath = getMetaPath(qualifiedName);
-			if (existsSync(metaPath)) {
-				rmSync(metaPath, { recursive: true, force: true });
+			// Remove meta (derive from primary reference filename)
+			if (entry.primary) {
+				const metaDirName = entry.primary.replace(/\.md$/, "");
+				const metaPath = join(Paths.metaDir, metaDirName);
+				if (existsSync(metaPath)) {
+					rmSync(metaPath, { recursive: true, force: true });
+				}
 			}
 
 			removeGlobalMapEntry(qualifiedName);

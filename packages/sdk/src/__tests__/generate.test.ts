@@ -172,7 +172,7 @@ describe("installReference", () => {
 
 	it("should accept valid arguments", () => {
 		expect(() => {
-			installReference("github:test/repo", "test/repo", "/path/to/repo", "# Test\nContent", {
+			installReference("github.com:test/repo", "test/repo", "/path/to/repo", "# Test\nContent", {
 				referenceUpdatedAt: new Date().toISOString(),
 				commitSha: "abc123",
 				version: "0.1.0",

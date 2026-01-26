@@ -442,7 +442,7 @@ export function installGlobalSkill(): void {
  * - ~/.local/share/offworld/meta/{owner-repo}/meta.json
  * - Updates global map with reference info
  *
- * @param qualifiedName - Qualified key for map storage (e.g., "github:owner/repo" or "local:name")
+ * @param qualifiedName - Qualified key for map storage (e.g., "github.com:owner/repo" or "local:name")
  * @param fullName - Full repo name for file naming (e.g., "owner/repo")
  * @param localPath - Absolute path to the cloned repository
  * @param referenceContent - The generated reference markdown content

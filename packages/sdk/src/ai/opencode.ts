@@ -12,18 +12,6 @@ import {
 } from "./errors.js";
 import { TextAccumulator, parseStreamEvent, isEventForSession } from "./stream/index.js";
 
-// Re-export error types for backwards compatibility
-export {
-	OpenCodeReferenceError,
-	OpenCodeSDKError,
-	InvalidProviderError,
-	ProviderNotConnectedError,
-	InvalidModelError,
-	ServerStartError,
-	SessionError,
-	TimeoutError,
-} from "./errors.js";
-
 export const DEFAULT_AI_PROVIDER = "opencode";
 export const DEFAULT_AI_MODEL = "claude-opus-4-5";
 

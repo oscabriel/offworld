@@ -112,7 +112,7 @@ describe("clone.integration", () => {
 					owner: "octocat",
 					repo: "Hello-World",
 					fullName: "octocat/Hello-World",
-					qualifiedName: "github:octocat/Hello-World",
+					qualifiedName: "github.com:octocat/Hello-World",
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
@@ -139,7 +139,7 @@ describe("clone.integration", () => {
 					owner: "octocat",
 					repo: "Hello-World",
 					fullName: "octocat/Hello-World",
-					qualifiedName: "github:octocat/Hello-World",
+					qualifiedName: "github.com:octocat/Hello-World",
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
@@ -163,7 +163,7 @@ describe("clone.integration", () => {
 					owner: "definitely-not-a-real-user",
 					repo: "definitely-not-a-real-repo-12345",
 					fullName: "definitely-not-a-real-user/definitely-not-a-real-repo-12345",
-					qualifiedName: "github:definitely-not-a-real-user/definitely-not-a-real-repo-12345",
+					qualifiedName: "github.com:definitely-not-a-real-user/definitely-not-a-real-repo-12345",
 					cloneUrl:
 						"https://github.com/definitely-not-a-real-user/definitely-not-a-real-repo-12345.git",
 				};
@@ -183,7 +183,7 @@ describe("clone.integration", () => {
 					owner: "octocat",
 					repo: "Hello-World",
 					fullName: "octocat/Hello-World",
-					qualifiedName: "github:octocat/Hello-World",
+					qualifiedName: "github.com:octocat/Hello-World",
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
@@ -206,7 +206,7 @@ describe("clone.integration", () => {
 					owner: "octocat",
 					repo: "Hello-World",
 					fullName: "octocat/Hello-World",
-					qualifiedName: "github:octocat/Hello-World",
+					qualifiedName: "github.com:octocat/Hello-World",
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 

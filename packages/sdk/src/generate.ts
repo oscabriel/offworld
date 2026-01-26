@@ -17,7 +17,7 @@ import { expandTilde, Paths } from "./paths.js";
 // Types
 // ============================================================================
 
-export interface GenerateSkillOptions {
+export interface GenerateReferenceOptions {
 	/** AI provider ID (e.g., "anthropic", "openai"). Defaults to config value. */
 	provider?: string;
 	/** AI model ID. Defaults to config value. */
@@ -28,9 +28,9 @@ export interface GenerateSkillOptions {
 	onStream?: (text: string) => void;
 }
 
-export interface GenerateSkillResult {
-	/** The generated SKILL.md content */
-	skillContent: string;
+export interface GenerateReferenceResult {
+	/** The generated reference markdown content */
+	referenceContent: string;
 	/** The commit SHA at the time of generation */
 	commitSha: string;
 }
@@ -48,12 +48,12 @@ export interface InstallSkillMeta {
 // Skill Generation
 // ============================================================================
 
-function createSkillGenerationPrompt(skillName: string): string {
-	return `You are an expert at analyzing open source libraries and producing skill files for AI coding agents.
+function createReferenceGenerationPrompt(referenceName: string): string {
+	return `You are an expert at analyzing open source libraries and producing reference documentation for AI coding agents.
 
 ## PRIMARY GOAL
 
-Generate a SKILL.md that helps developers USE this library effectively. This is NOT a contribution guide - it's a usage reference for developers consuming this library in their own projects.
+Generate a reference markdown file that helps developers USE this library effectively. This is NOT a contribution guide - it's a usage reference for developers consuming this library in their own projects.
 
 ## CRITICAL RULES
 
@@ -63,19 +63,21 @@ Generate a SKILL.md that helps developers USE this library effectively. This is 
    - DO NOT include: commands like "npx hereby", "just ready", "bun test" that run the library's own tests
    - DO include: how to install, import, configure, and use the public API
 
-2. **QUICK REFERENCES**: Include a "Quick References" section with paths to key entry points in the repo:
+2. **NO FRONTMATTER**: Output pure markdown with NO YAML frontmatter. Start directly with the library name heading.
+
+3. **QUICK REFERENCES**: Include a "Quick References" section with paths to key entry points in the repo:
    - Paths must be relative from repo root (e.g., \`src/index.ts\`, \`docs/api.md\`)
    - Include: main entry point, type definitions, README, key docs
    - DO NOT include absolute paths or user-specific paths
    - Keep to 3-5 most important files that help users understand the library
 
-3. **PUBLIC API FOCUS**: Document what users import and call, not internal implementation details.
+4. **PUBLIC API FOCUS**: Document what users import and call, not internal implementation details.
    - Entry points: what to import from the package
    - Configuration: how to set up/initialize
    - Core methods/functions: the main API surface
    - Types: key TypeScript interfaces users need
 
-4. **MONOREPO AWARENESS**: Many libraries are monorepos with multiple packages:
+5. **MONOREPO AWARENESS**: Many libraries are monorepos with multiple packages:
    - Check for \`packages/\`, \`apps/\`, \`crates/\`, or \`libs/\` directories
    - Check root package.json for \`workspaces\` field
    - If monorepo: document the package structure and key packages users would install
@@ -95,15 +97,9 @@ Use Read, Grep, Glob tools to explore:
 
 ## OUTPUT FORMAT
 
-IMPORTANT: The skill name MUST be exactly "${skillName}" - do not change this.
+IMPORTANT: Reference name is "${referenceName}" (for internal tracking only - do NOT include in output).
 
 \`\`\`markdown
----
-name: ${skillName}
-description: {One-line description, max 100 chars}
-allowed-tools: [Read, Grep, Glob]
----
-
 # {Library Name}
 
 {2-3 sentence overview of what this library does and its key value proposition}
@@ -174,6 +170,7 @@ npm install @scope/core @scope/react
 ## QUALITY CHECKLIST
 
 Before outputting, verify:
+- [ ] NO YAML frontmatter - start directly with # heading
 - [ ] Every code example is something a USER would write, not a contributor
 - [ ] No internal test commands or contribution workflows
 - [ ] Quick References paths are relative from repo root (no absolute/user paths)
@@ -181,29 +178,28 @@ Before outputting, verify:
 - [ ] If monorepo: Packages section lists publishable packages with npm names
 - [ ] If monorepo: paths include package directory (e.g., \`packages/core/src/index.ts\`)
 
-Now explore the codebase and generate the SKILL.md content.
+Now explore the codebase and generate the reference content.
 
-CRITICAL: Wrap your final SKILL.md output in XML tags exactly like this:
-<skill_output>
----
-name: ${skillName}
-(the complete markdown content)
-</skill_output>
+CRITICAL: Wrap your final reference output in XML tags exactly like this:
+<reference_output>
+# {Library Name}
+(the complete markdown content with NO frontmatter)
+</reference_output>
 
-Output ONLY the skill content inside the tags. No explanations before or after the tags.`;
+Output ONLY the reference content inside the tags. No explanations before or after the tags.`;
 }
 
 /**
- * Extract the actual SKILL.md content from AI response.
- * The response may include echoed prompt/system context before the actual skill.
- * We look for the LAST occurrence of XML tags: <skill_output>...</skill_output>
+ * Extract the actual reference markdown content from AI response.
+ * The response may include echoed prompt/system context before the actual reference.
+ * We look for the LAST occurrence of XML tags: <reference_output>...</reference_output>
  * (Using last occurrence avoids extracting example tags from echoed prompt)
  */
-function extractSkillContent(rawResponse: string): string {
+function extractReferenceContent(rawResponse: string): string {
 	// Try XML tag extraction first (preferred)
 	// Use lastIndexOf to skip any echoed prompt examples
-	const openTag = "<skill_output>";
-	const closeTag = "</skill_output>";
+	const openTag = "<reference_output>";
+	const closeTag = "</reference_output>";
 	const closeIndex = rawResponse.lastIndexOf(closeTag);
 
 	if (closeIndex !== -1) {
@@ -220,54 +216,54 @@ function extractSkillContent(rawResponse: string): string {
 			}
 
 			content = content.trim();
-			validateSkillContent(content);
+			validateReferenceContent(content);
 			return content;
 		}
 	}
 
 	// No valid extraction - fail loud instead of returning garbage
 	throw new Error(
-		"Failed to extract skill content: no <skill_output> tags found in AI response. " +
+		"Failed to extract reference content: no <reference_output> tags found in AI response. " +
 			"The AI may have failed to follow the output format instructions.",
 	);
 }
 
 /**
- * Validate extracted skill content has minimum required structure.
+ * Validate extracted reference content has minimum required structure.
  * Throws if content is invalid.
  */
-function validateSkillContent(content: string): void {
+function validateReferenceContent(content: string): void {
 	if (content.length < 500) {
 		throw new Error(
-			`Invalid skill content: too short (${content.length} chars, minimum 500). ` +
+			`Invalid reference content: too short (${content.length} chars, minimum 500). ` +
 				"The AI may have produced placeholder or incomplete content.",
 		);
 	}
 
-	if (!content.startsWith("---")) {
+	if (!content.startsWith("#")) {
 		throw new Error(
-			"Invalid skill content: missing YAML frontmatter. " +
-				"Content must start with '---' followed by name and description fields.",
+			"Invalid reference content: must start with markdown heading. " +
+				"Content must begin with '# Library Name' (no YAML frontmatter).",
 		);
 	}
 }
 
 /**
- * Generate a SKILL.md file for a repository using AI.
+ * Generate a reference markdown file for a repository using AI.
  *
  * Opens an OpenCode session and instructs the AI agent to explore the codebase
- * using Read, Grep, and Glob tools, then produce a comprehensive skill file.
+ * using Read, Grep, and Glob tools, then produce a comprehensive reference.
  *
  * @param repoPath - Path to the repository to analyze
  * @param repoName - Qualified name of the repo (e.g., "tanstack/query" or "my-local-repo")
  * @param options - Generation options (provider, model, callbacks)
- * @returns The generated skill content and commit SHA
+ * @returns The generated reference content and commit SHA
  */
-export async function generateSkillWithAI(
+export async function generateReferenceWithAI(
 	repoPath: string,
 	repoName: string,
-	options: GenerateSkillOptions = {},
-): Promise<GenerateSkillResult> {
+	options: GenerateReferenceOptions = {},
+): Promise<GenerateReferenceResult> {
 	const { provider, model, onDebug, onStream } = options;
 	const config = loadConfig();
 
@@ -275,19 +271,19 @@ export async function generateSkillWithAI(
 	const aiProvider = provider ?? configProvider;
 	const aiModel = model ?? configModel;
 
-	onDebug?.(`Starting AI skill generation for ${repoName}`);
+	onDebug?.(`Starting AI reference generation for ${repoName}`);
 	onDebug?.(`Repo path: ${repoPath}`);
 	onDebug?.(`Provider: ${aiProvider ?? "default"}, Model: ${aiModel ?? "default"}`);
 
 	const commitSha = getCommitSha(repoPath);
 	onDebug?.(`Commit SHA: ${commitSha}`);
 
-	// Generate the skill name in owner-repo-reference format
-	const skillName = toSkillDirName(repoName);
-	onDebug?.(`Skill name: ${skillName}`);
+	// Generate the reference name in owner-repo format
+	const referenceName = toSkillDirName(repoName);
+	onDebug?.(`Reference name: ${referenceName}`);
 
 	const promptOptions: StreamPromptOptions = {
-		prompt: createSkillGenerationPrompt(skillName),
+		prompt: createReferenceGenerationPrompt(referenceName),
 		cwd: repoPath,
 		provider: aiProvider,
 		model: aiModel,
@@ -299,12 +295,12 @@ export async function generateSkillWithAI(
 
 	onDebug?.(`Generation complete (${result.durationMs}ms, ${result.text.length} chars)`);
 
-	// Extract just the skill content, removing any echoed prompt/system context
-	const skillContent = extractSkillContent(result.text);
-	onDebug?.(`Extracted skill content (${skillContent.length} chars)`);
+	// Extract just the reference content, removing any echoed prompt/system context
+	const referenceContent = extractReferenceContent(result.text);
+	onDebug?.(`Extracted reference content (${referenceContent.length} chars)`);
 
 	return {
-		skillContent,
+		referenceContent,
 		commitSha,
 	};
 }

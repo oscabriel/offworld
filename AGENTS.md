@@ -140,10 +140,11 @@ Skills are symlinked to:
 
 - Convex in `packages/backend/convex/` (monorepo pattern)
 - Auth: WorkOS AuthKit (web + CLI device flow)
-- AI: OpenCode SDK for skill generation
+- AI: OpenCode SDK for reference generation
 - Deploy: Alchemy → Cloudflare Workers
 - **Map architecture**: Global map at `~/.local/share/offworld/skill/offworld/assets/map.json`, project maps at `.offworld/map.json`. Legacy index.json being phased out (US-003).
 - **Deprecated exports**: `index-manager.ts` maintains backward-compatible exports (`getIndex`, `updateIndex`, etc.) until US-006 migration completes.
+- **Generation**: US-004 refactored to generate reference markdown (no frontmatter), validate with `#` heading, return `referenceContent` + `commitSha`.
 
 ## Project Skills
 

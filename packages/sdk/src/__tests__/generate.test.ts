@@ -50,13 +50,13 @@ vi.mock("node:fs", () => ({
 import { streamPrompt } from "../ai/opencode.js";
 import { getCommitSha } from "../clone.js";
 import { loadConfig } from "../config.js";
-import { generateSkillWithAI, installSkill } from "../generate.js";
+import { generateReferenceWithAI, installSkill } from "../generate.js";
 
 const mockStreamPrompt = streamPrompt as ReturnType<typeof vi.fn>;
 const mockGetCommitSha = getCommitSha as ReturnType<typeof vi.fn>;
 const mockLoadConfig = loadConfig as ReturnType<typeof vi.fn>;
 
-describe("generateSkillWithAI", () => {
+describe("generateReferenceWithAI", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockLoadConfig.mockReturnValue({
@@ -70,80 +70,70 @@ describe("generateSkillWithAI", () => {
 		vi.resetAllMocks();
 	});
 
-	it("extracts skill content from valid AI response", async () => {
-		const longContent = "This is skill content. ".repeat(30);
+	it("extracts reference content from valid AI response", async () => {
+		const longContent = "This is reference content. ".repeat(30);
 		mockStreamPrompt.mockResolvedValue({
-			text: `<skill_output>
----
-name: Test Library
-description: A test library
----
-
+			text: `<reference_output>
 # Test Library
+
 ${longContent}
-</skill_output>`,
+</reference_output>`,
 			durationMs: 1000,
 		});
 
-		const result = await generateSkillWithAI("/mock/repo", "test/repo");
+		const result = await generateReferenceWithAI("/mock/repo", "test/repo");
 
 		expect(result.commitSha).toBe("abc1234567890");
-		expect(result.skillContent).toContain("name: Test Library");
-		expect(result.skillContent).toContain("# Test Library");
+		expect(result.referenceContent).toContain("# Test Library");
 	});
 
-	it("throws when AI response missing skill_output tags", async () => {
+	it("throws when AI response missing reference_output tags", async () => {
 		mockStreamPrompt.mockResolvedValue({
 			text: "Some random response without tags",
 			durationMs: 1000,
 		});
 
-		await expect(generateSkillWithAI("/mock/repo", "test/repo")).rejects.toThrow(
-			"no <skill_output> tags found",
+		await expect(generateReferenceWithAI("/mock/repo", "test/repo")).rejects.toThrow(
+			"no <reference_output> tags found",
 		);
 	});
 
-	it("throws when skill content too short", async () => {
+	it("throws when reference content too short", async () => {
 		mockStreamPrompt.mockResolvedValue({
-			text: `<skill_output>
----
-name: Test
----
+			text: `<reference_output>
+# Test
 Short
-</skill_output>`,
+</reference_output>`,
 			durationMs: 1000,
 		});
 
-		await expect(generateSkillWithAI("/mock/repo", "test/repo")).rejects.toThrow("too short");
+		await expect(generateReferenceWithAI("/mock/repo", "test/repo")).rejects.toThrow("too short");
 	});
 
-	it("throws when skill content missing YAML frontmatter", async () => {
+	it("throws when reference content missing markdown heading", async () => {
 		mockStreamPrompt.mockResolvedValue({
-			text: `<skill_output>
-# No Frontmatter
+			text: `<reference_output>
+No heading here
 ${"This is some content ".repeat(50)}
-</skill_output>`,
+</reference_output>`,
 			durationMs: 1000,
 		});
 
-		await expect(generateSkillWithAI("/mock/repo", "test/repo")).rejects.toThrow(
-			"missing YAML frontmatter",
+		await expect(generateReferenceWithAI("/mock/repo", "test/repo")).rejects.toThrow(
+			"must start with markdown heading",
 		);
 	});
 
 	it("uses custom provider and model when provided", async () => {
 		mockStreamPrompt.mockResolvedValue({
-			text: `<skill_output>
----
-name: Test
-description: Test
----
+			text: `<reference_output>
+# Test
 ${"Content ".repeat(100)}
-</skill_output>`,
+</reference_output>`,
 			durationMs: 1000,
 		});
 
-		await generateSkillWithAI("/mock/repo", "test/repo", {
+		await generateReferenceWithAI("/mock/repo", "test/repo", {
 			provider: "openai",
 			model: "gpt-4",
 		});

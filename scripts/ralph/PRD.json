@@ -70,7 +70,7 @@
         "rg \"referenceContent|commitSha\" packages/sdk/src/generate.ts",
         "rg \"frontmatter|YAML\" packages/sdk/src/generate.ts"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-005",

@@ -140,10 +140,10 @@ export {
 } from "./auth.js";
 
 export {
-	generateSkillWithAI,
+	generateReferenceWithAI,
 	installSkill,
-	type GenerateSkillOptions,
-	type GenerateSkillResult,
+	type GenerateReferenceOptions,
+	type GenerateReferenceResult,
 	type InstallSkillMeta,
 } from "./generate.js";
 

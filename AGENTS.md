@@ -140,12 +140,13 @@ Skills are symlinked to:
 
 - Convex in `packages/backend/convex/` (monorepo pattern)
 - Auth: WorkOS AuthKit (web + CLI device flow)
-- AI: OpenCode SDK for reference generation
+- AI: Claude Code SDK for reference generation
 - Deploy: Alchemy → Cloudflare Workers
 - **Map architecture**: Global map at `~/.local/share/offworld/skill/offworld/assets/map.json`, project maps at `.offworld/map.json`. Legacy index.json being phased out (US-003).
 - **Deprecated exports**: `index-manager.ts` maintains backward-compatible exports (`getIndex`, `updateIndex`, etc.) until US-006 migration completes.
 - **Generation**: US-004 refactored to generate reference markdown (no frontmatter), validate with `#` heading, return `referenceContent` + `commitSha`.
 - **Installation**: US-005 adds `installGlobalSkill()` (single routing SKILL.md + symlinks offworld/ dir to agents) and `installReference()` (per-repo reference files under `references/`, updates global map with references list + primary). Backward-compatible `generateSkillWithAI` and `getStateRoot` exports added for gradual migration.
+- **Reference matching**: US-007 renamed `skill-matcher.ts` → `reference-matcher.ts`. Exports `isReferenceInstalled()` (checks `offworld/references/{owner-repo}.md`), `matchDependenciesToReferences()`, `ReferenceStatus`, `ReferenceMatch`. All dep resolution now uses reference terminology.
 
 ## US-006 Implementation Notes
 

@@ -183,11 +183,11 @@ export {
 } from "./dep-mappings.js";
 
 export {
-	matchDependenciesToSkills,
-	isSkillInstalled,
-	type SkillStatus,
-	type SkillMatch,
-} from "./skill-matcher.js";
+	matchDependenciesToReferences,
+	isReferenceInstalled,
+	type ReferenceStatus,
+	type ReferenceMatch,
+} from "./reference-matcher.js";
 
 export { updateAgentFiles, appendSkillsSection, type InstalledSkill } from "./agents-md.js";
 

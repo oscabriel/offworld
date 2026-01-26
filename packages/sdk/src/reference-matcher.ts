@@ -1,57 +1,58 @@
 /**
- * Skill matching utilities for dependency resolution
+ * Reference matching utilities for dependency resolution
  *
- * Maps dependencies to their skill status (installed, available, generate, unknown)
+ * Maps dependencies to their reference status (installed, available, generate, unknown)
  */
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { getSkillPath } from "./config.js";
+import { toReferenceFileName } from "./config.js";
+import { Paths } from "./paths.js";
 import type { ResolvedDep } from "./dep-mappings.js";
 
-export type SkillStatus = "installed" | "available" | "generate" | "unknown";
+export type ReferenceStatus = "installed" | "available" | "generate" | "unknown";
 
-export interface SkillMatch {
+export interface ReferenceMatch {
 	/** Dependency name */
 	dep: string;
 	/** GitHub repo (owner/repo) or null if unknown */
 	repo: string | null;
-	/** Skill availability status */
-	status: SkillStatus;
+	/** Reference availability status */
+	status: ReferenceStatus;
 	/** Resolution source: 'known' | 'npm' | 'unknown' */
 	source: "known" | "npm" | "unknown";
 }
 
 /**
- * Check if a skill is installed locally.
- * A skill is considered installed if SKILL.md exists at the expected path.
+ * Check if a reference is installed locally.
+ * A reference is considered installed if {owner-repo}.md exists in offworld/references/.
  *
  * @param repo - Repo name in owner/repo format
- * @returns true if skill is installed locally
+ * @returns true if reference is installed locally
  */
-export function isSkillInstalled(repo: string): boolean {
-	const skillPath = getSkillPath(repo);
-	const skillFile = join(skillPath, "SKILL.md");
-	return existsSync(skillFile);
+export function isReferenceInstalled(repo: string): boolean {
+	const referenceFileName = toReferenceFileName(repo);
+	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+	return existsSync(referencePath);
 }
 
 /**
- * Match dependencies to their skill availability status.
+ * Match dependencies to their reference availability status.
  *
  * Status logic:
- * - installed: SKILL.md exists locally
+ * - installed: {owner-repo}.md exists in offworld/references/
  * - available: Has valid GitHub repo (can be cloned)
  * - generate: Has valid GitHub repo but will need AI generation
  * - unknown: No GitHub repo found
  *
- * Note: Since we don't have a skill registry/index, "available" and "generate"
+ * Note: Since we don't have a reference registry/index, "available" and "generate"
  * are the same. We use "available" for consistency and reserve "generate" for
  * future use when we can distinguish pre-existing vs needs-generation.
  *
  * @param resolvedDeps - Array of resolved dependencies with repo info
- * @returns Array of skill matches with status
+ * @returns Array of reference matches with status
  */
-export function matchDependenciesToSkills(resolvedDeps: ResolvedDep[]): SkillMatch[] {
+export function matchDependenciesToReferences(resolvedDeps: ResolvedDep[]): ReferenceMatch[] {
 	return resolvedDeps.map((dep) => {
 		// If no repo, mark as unknown
 		if (!dep.repo) {
@@ -63,8 +64,8 @@ export function matchDependenciesToSkills(resolvedDeps: ResolvedDep[]): SkillMat
 			};
 		}
 
-		// Check if skill is installed
-		if (isSkillInstalled(dep.repo)) {
+		// Check if reference is installed
+		if (isReferenceInstalled(dep.repo)) {
 			return {
 				dep: dep.dep,
 				repo: dep.repo,

@@ -123,7 +123,7 @@
         "rg \"isReferenceInstalled\" packages/sdk/src/reference-matcher.ts",
         "rg \"skill-matcher\" packages/sdk/src -g'*.ts'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-008",

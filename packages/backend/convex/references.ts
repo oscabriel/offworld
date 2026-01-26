@@ -100,7 +100,11 @@ export const list = query({
 	handler: async (ctx, args) => {
 		const limit = args.limit ?? 50;
 
-		const references = await ctx.db.query("reference").withIndex("by_pullCount").order("desc").take(limit);
+		const references = await ctx.db
+			.query("reference")
+			.withIndex("by_pullCount")
+			.order("desc")
+			.take(limit);
 
 		// Join with repository data
 		const results = await Promise.all(

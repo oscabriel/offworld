@@ -71,6 +71,34 @@ export const Paths = {
 	get defaultRepoRoot(): string {
 		return join(homedir(), "ow");
 	},
+
+	/**
+	 * Offworld single-skill directory: ~/.local/share/offworld/skill/offworld
+	 */
+	get offworldSkillDir(): string {
+		return join(this.data, "skill", "offworld");
+	},
+
+	/**
+	 * Offworld references directory: ~/.local/share/offworld/skill/offworld/references
+	 */
+	get offworldReferencesDir(): string {
+		return join(this.offworldSkillDir, "references");
+	},
+
+	/**
+	 * Offworld assets directory: ~/.local/share/offworld/skill/offworld/assets
+	 */
+	get offworldAssetsDir(): string {
+		return join(this.offworldSkillDir, "assets");
+	},
+
+	/**
+	 * Global map path: ~/.local/share/offworld/skill/offworld/assets/map.json
+	 */
+	get offworldGlobalMapPath(): string {
+		return join(this.offworldAssetsDir, "map.json");
+	},
 };
 
 /**

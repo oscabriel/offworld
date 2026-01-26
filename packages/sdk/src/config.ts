@@ -88,6 +88,33 @@ export function toMetaDirName(repoName: string): string {
 	return repoName;
 }
 
+/**
+ * Convert owner/repo format to reference filename.
+ * Collapses redundant owner/repo pairs by checking if repo name is contained in owner:
+ * - honojs/hono -> hono.md (hono is in honojs)
+ * - get-convex/convex-backend -> convex-backend.md (convex is in get-convex)
+ * - tanstack/query -> tanstack-query.md (query is not in tanstack)
+ */
+export function toReferenceFileName(repoName: string): string {
+	if (repoName.includes("/")) {
+		const [owner, repo] = repoName.split("/") as [string, string];
+		const ownerLower = owner.toLowerCase();
+		const repoLower = repo.toLowerCase();
+
+		// If owner contains repo (or a significant part of repo), just use repo
+		// Split repo by hyphens and check if any part is in the owner
+		const repoParts = repoLower.split("-");
+		const significantPart = repoParts.find((part) => part.length >= 3 && ownerLower.includes(part));
+
+		if (significantPart || ownerLower === repoLower) {
+			return `${repo}.md`;
+		}
+
+		return `${owner}-${repo}.md`;
+	}
+	return `${repoName}.md`;
+}
+
 export function getSkillPath(fullName: string): string {
 	return join(Paths.data, "skills", toSkillDirName(fullName));
 }

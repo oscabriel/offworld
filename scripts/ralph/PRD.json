@@ -34,7 +34,7 @@
         "rg \"toReferenceFileName\" packages/sdk/src/config.ts",
         "rg \"getMetaPath\" packages/sdk/src/config.ts"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-003",

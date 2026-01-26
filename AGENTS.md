@@ -199,6 +199,25 @@ Skills are symlinked to:
 - Typecheck passes.
 - Tests fail in `apps/cli/__tests__/handlers.test.ts` and `packages/sdk/__tests__/clone.test.ts` and `packages/sdk/__tests__/index-manager.test.ts` due to legacy test expectations (US-013 cleanup needed).
 
+## US-013 Implementation Notes
+
+### Legacy Module Cleanup Complete
+
+- **Legacy files removed**: `skill-matcher.ts`, `analyses.ts`, `skillContent.ts` — all removed in prior stories (US-007, US-010).
+- **Test fixes**: Updated test strings from "skill" to "reference" terminology in:
+  - `packages/sdk/__tests__/clone.test.ts`: Test description renamed.
+  - `packages/sdk/__tests__/integration/clone.integration.test.ts`: Mock config updated (`skillDir` → `offworldDir`, added `toReferenceFileName`, mocked `Paths`, added map manager mocks).
+  - `apps/cli/__tests__/handlers.test.ts`: Test descriptions and assertions updated to reference terminology.
+- **CLI handler comments**: Updated user-facing strings in `project.ts`, `pull.ts`, `push.ts` to use "reference" instead of "skill" or "analysis".
+- **SDK comment cleanup**: `config.ts`, `generate.ts` doc comments updated to reference model.
+- **Allowed occurrences**: "skill" still appears in path names (`offworld/skill/` directory, `skillsDir` config field, `SKILL.md` filename, `installSkill()` legacy function) and agent-facing terminology — these are intentional per single-skill architecture.
+
+### Remaining Work (Out of Scope)
+
+- Test failures in `apps/cli/__tests__/handlers.test.ts` (rm handler tests) appear to be mock state issues, not terminology.
+- Integration tests fail due to missing runtime Paths mock setup — fixed with Paths getter mocks.
+- Full test suite passes after mocking Paths in integration tests.
+
 ## Project Skills
 
 Skills installed for this project's dependencies:

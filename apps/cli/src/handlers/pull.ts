@@ -80,8 +80,8 @@ function hasValidCache(source: RepoSource, currentSha: string): boolean {
 }
 
 /**
- * Save remote skill to local filesystem.
- * Remote skill comes with pre-generated skill content.
+ * Save remote reference to local filesystem.
+ * Remote reference comes with pre-generated reference content.
  */
 function saveRemoteAnalysis(
 	repoName: string,
@@ -180,9 +180,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 		const requiredReferenceName = referenceName ?? "";
 
-		// Check for cached analysis first
+		// Check for cached reference first
 		if (!force && !isReferenceOverride && hasValidCache(source, currentSha)) {
-			verboseLog("Using cached analysis", verbose);
+			verboseLog("Using cached reference", verbose);
 			s.stop("Using cached reference");
 
 			return {
@@ -195,8 +195,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 		// Check remote API for remote repos (with SHA comparison)
 		if (source.type === "remote" && (!force || isReferenceOverride)) {
-			verboseLog(`Checking offworld.sh for analysis: ${source.fullName}`, verbose);
-			s.start("Checking offworld.sh for analysis...");
+			verboseLog(`Checking offworld.sh for reference: ${source.fullName}`, verbose);
+			s.start("Checking offworld.sh for reference...");
 
 			try {
 				const remoteCheck = isReferenceOverride
@@ -309,7 +309,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						s.stop(`Remote reference outdated${distanceInfo}`);
 					}
 				} else {
-					s.stop("No remote analysis found");
+					s.stop("No remote reference found");
 				}
 			} catch (err) {
 				verboseLog(

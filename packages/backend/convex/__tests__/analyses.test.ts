@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import schema from "../schema";
 
 // Use import.meta.glob to load modules for convex-test
@@ -41,10 +41,8 @@ async function createRepoAndSkill(
 	skillOverrides: Partial<typeof sampleSkillData & { pullCount: number; isVerified: boolean }> = {},
 ) {
 	return await ctx.run(async (runCtx) => {
-		const repoId = await runCtx.db.insert("repository", {
-			...sampleRepo,
-			...repoOverrides,
-		});
+		const repoData = { ...sampleRepo, ...repoOverrides };
+		const repoId = await runCtx.db.insert("repository", repoData);
 		const skillId = await runCtx.db.insert("skill", {
 			repositoryId: repoId,
 			...sampleSkillData,
@@ -111,41 +109,21 @@ describe("check", () => {
 	});
 });
 
-describe("push", () => {
-	it("returns auth_required when not authenticated", async () => {
+describe("pushInternal", () => {
+	// Note: The public push action validates via GitHub API (tested separately)
+	// These tests verify the internal mutation behavior
+
+	it("creates new skill", async () => {
 		const ctx = t();
 
-		const result = await ctx.mutation(api.analyses.push, {
+		const result = await ctx.mutation(internal.analyses.pushInternal, {
 			fullName: sampleRepo.fullName,
 			skillName: sampleSkillData.skillName,
 			skillDescription: sampleSkillData.skillDescription,
 			skillContent: sampleSkillData.skillContent,
 			commitSha: sampleSkillData.commitSha,
 			analyzedAt: sampleSkillData.analyzedAt,
-		});
-
-		expect(result.success).toBe(false);
-		if (!result.success) {
-			expect(result.error).toBe("auth_required");
-		}
-	});
-
-	it("creates new skill when authenticated", async () => {
-		const ctx = t();
-
-		// Mock authenticated user
-		const asUser = ctx.withIdentity({
-			subject: "workos_test_user",
-			email: "test@example.com",
-		});
-
-		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleRepo.fullName,
-			skillName: sampleSkillData.skillName,
-			skillDescription: sampleSkillData.skillDescription,
-			skillContent: sampleSkillData.skillContent,
-			commitSha: sampleSkillData.commitSha,
-			analyzedAt: sampleSkillData.analyzedAt,
+			workosId: "workos_test_user",
 		});
 
 		expect(result.success).toBe(true);
@@ -158,119 +136,108 @@ describe("push", () => {
 		expect(analysis?.fullName).toBe("tanstack/router");
 	});
 
-	it("updates existing skill when newer", async () => {
+	it("rejects duplicate commit (immutability)", async () => {
 		const ctx = t();
 
-		// Insert initial repo and skill
-		await createRepoAndSkill(
-			ctx,
-			{},
-			{
-				analyzedAt: "2026-01-09T08:00:00.000Z", // Older
-				pullCount: 10,
-				isVerified: true,
-			},
-		);
+		// Create initial skill
+		await createRepoAndSkill(ctx);
 
-		// Mock authenticated user
-		const asUser = ctx.withIdentity({
-			subject: "workos_test_user",
-			email: "test@example.com",
-		});
-
-		// Update with newer skill
-		const result = await asUser.mutation(api.analyses.push, {
+		// Try to push same commit again
+		const result = await ctx.mutation(internal.analyses.pushInternal, {
 			fullName: sampleRepo.fullName,
 			skillName: sampleSkillData.skillName,
 			skillDescription: sampleSkillData.skillDescription,
-			skillContent: "# Updated Skill",
-			commitSha: "newsha123",
-			analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
-		});
-
-		expect(result.success).toBe(true);
-
-		// Verify skill was updated
-		const analysis = await ctx.query(api.analyses.pull, {
-			fullName: "tanstack/router",
-		});
-		expect(analysis?.skillContent).toBe("# Updated Skill");
-		expect(analysis?.commitSha).toBe("newsha123");
-	});
-
-	it("rejects older skill over newer", async () => {
-		const ctx = t();
-
-		// Insert initial repo and skill with newer timestamp
-		await createRepoAndSkill(
-			ctx,
-			{},
-			{
-				analyzedAt: "2026-01-09T12:00:00.000Z", // Newer
-				pullCount: 0,
-				isVerified: false,
-			},
-		);
-
-		// Mock authenticated user
-		const asUser = ctx.withIdentity({
-			subject: "workos_test_user",
-			email: "test@example.com",
-		});
-
-		// Try to update with older skill
-		const result = await asUser.mutation(api.analyses.push, {
-			fullName: sampleRepo.fullName,
-			skillName: sampleSkillData.skillName,
-			skillDescription: sampleSkillData.skillDescription,
-			skillContent: sampleSkillData.skillContent,
-			commitSha: sampleSkillData.commitSha,
-			analyzedAt: "2026-01-09T08:00:00.000Z", // Older
+			skillContent: "# Updated Content",
+			commitSha: sampleSkillData.commitSha, // Same commit SHA
+			analyzedAt: new Date().toISOString(),
+			workosId: "workos_test_user",
 		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error).toBe("conflict");
+			expect(result.error).toBe("commit_already_exists");
 		}
 	});
 
-	it("enforces rate limit (3/repo/day)", async () => {
+	it("allows different commit for same repo", async () => {
+		const ctx = t();
+
+		// Create initial skill
+		await createRepoAndSkill(ctx);
+
+		// Push with different commit SHA
+		const result = await ctx.mutation(internal.analyses.pushInternal, {
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
+			skillContent: "# Updated Content",
+			commitSha: "different123sha456789012345678901234567890", // Different commit (40 chars)
+			analyzedAt: new Date().toISOString(),
+			workosId: "workos_test_user",
+		});
+
+		expect(result.success).toBe(true);
+	});
+
+	it("enforces rate limit (20/day/user)", async () => {
 		const ctx = t();
 
 		const workosId = "workos_test_user";
 
-		// Add 3 push logs
+		// Add 20 push logs for this user
 		await ctx.run(async (runCtx) => {
-			for (let i = 0; i < 3; i++) {
+			for (let i = 0; i < 20; i++) {
 				await runCtx.db.insert("pushLog", {
-					fullName: "tanstack/router",
+					fullName: `repo${i}/test`,
 					workosId,
 					pushedAt: new Date().toISOString(),
-					commitSha: `commit${i}`,
+					commitSha: `commit${i}${"0".repeat(33)}`,
 				});
 			}
 		});
 
-		// Mock authenticated user
-		const asUser = ctx.withIdentity({
-			subject: workosId,
-			email: "test@example.com",
-		});
-
-		// 4th push should be rate limited
-		const result = await asUser.mutation(api.analyses.push, {
+		// 21st push should be rate limited
+		const result = await ctx.mutation(internal.analyses.pushInternal, {
 			fullName: sampleRepo.fullName,
 			skillName: sampleSkillData.skillName,
 			skillDescription: sampleSkillData.skillDescription,
 			skillContent: sampleSkillData.skillContent,
-			commitSha: "newcommit",
+			commitSha: "newcommit1234567890123456789012345678901",
 			analyzedAt: new Date().toISOString(),
+			workosId,
 		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error).toBe("rate_limit");
 		}
+	});
+
+	it("creates user if not exists", async () => {
+		const ctx = t();
+
+		const newWorkosId = "new_workos_user";
+
+		await ctx.mutation(internal.analyses.pushInternal, {
+			fullName: sampleRepo.fullName,
+			skillName: sampleSkillData.skillName,
+			skillDescription: sampleSkillData.skillDescription,
+			skillContent: sampleSkillData.skillContent,
+			commitSha: sampleSkillData.commitSha,
+			analyzedAt: sampleSkillData.analyzedAt,
+			workosId: newWorkosId,
+		});
+
+		// Verify user was created
+		const user = await ctx.run(async (runCtx) => {
+			return await runCtx.db
+				.query("user")
+				.withIndex("by_workosId", (q) => q.eq("workosId", newWorkosId))
+				.first();
+		});
+
+		expect(user).not.toBeNull();
+		expect(user?.workosId).toBe(newWorkosId);
 	});
 });
 

@@ -15,6 +15,9 @@ import type * as github from "../github.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as repository from "../repository.js";
+import type * as validation_github from "../validation/github.js";
+import type * as validation_push from "../validation/push.js";
+import type * as validation_skillContent from "../validation/skillContent.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +33,9 @@ declare const fullApi: ApiFromModules<{
   healthCheck: typeof healthCheck;
   http: typeof http;
   repository: typeof repository;
+  "validation/github": typeof validation_github;
+  "validation/push": typeof validation_push;
+  "validation/skillContent": typeof validation_skillContent;
 }>;
 
 /**

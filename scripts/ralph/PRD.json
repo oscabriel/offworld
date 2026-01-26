@@ -15,7 +15,7 @@
 			"priority": 1,
 			"description": "Acceptance criteria: packages/sdk/src/config.ts removes toSkillDirName/getSkillPath/getAnalysisPath and adds toReferenceName; packages/sdk/src/paths.ts skillsDir points to skill/offworld legacy alias; packages/sdk/src/repo-source.ts exposes getReferenceFileNameForSource using toReferenceFileName; packages/sdk/src/index-manager.ts legacy exports removed; packages/sdk/src/index.ts removes deprecated exports and re-exports getReferenceFileNameForSource and InstalledReference.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-003",

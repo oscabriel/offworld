@@ -115,8 +115,8 @@ vi.mock("../paths.js", () => ({
 }));
 
 import { mkdirSync, writeFileSync } from "node:fs";
+import { Paths } from "../paths.js";
 import {
-	getIndexPath,
 	readGlobalMap,
 	writeGlobalMap,
 	upsertGlobalMapEntry,
@@ -152,9 +152,9 @@ describe("index-manager.ts", () => {
 		clearVirtualFs();
 	});
 
-	describe("getIndexPath", () => {
+	describe("Paths.offworldGlobalMapPath", () => {
 		it("returns global map path", () => {
-			expect(getIndexPath()).toBe(globalMapPath);
+			expect(Paths.offworldGlobalMapPath).toBe(globalMapPath);
 		});
 	});
 

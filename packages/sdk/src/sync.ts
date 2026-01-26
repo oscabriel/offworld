@@ -5,7 +5,7 @@
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@offworld/backend/api";
-import { toSkillDirName } from "./config.js";
+import { toReferenceName } from "./config.js";
 import type { RepoSource } from "@offworld/types";
 
 // ============================================================================
@@ -220,7 +220,7 @@ export async function pullReference(fullName: string): Promise<PullResponse | nu
 	try {
 		let result = await client.query(api.references.pull, {
 			fullName,
-			referenceName: toSkillDirName(fullName),
+			referenceName: toReferenceName(fullName),
 		});
 		if (!result) {
 			result = await client.query(api.references.pull, { fullName });
@@ -346,7 +346,7 @@ export async function checkRemote(fullName: string): Promise<CheckResponse> {
 	try {
 		let result = await client.query(api.references.check, {
 			fullName,
-			referenceName: toSkillDirName(fullName),
+			referenceName: toReferenceName(fullName),
 		});
 		if (!result.exists) {
 			result = await client.query(api.references.check, { fullName });

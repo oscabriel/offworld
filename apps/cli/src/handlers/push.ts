@@ -75,7 +75,8 @@ function extractDescription(referenceContent: string, fallback: string): string 
 
 	description = description.replace(/\s+/g, " ").trim();
 	if (!description) description = fallback;
-	if (description.length > DESCRIPTION_MAX) description = description.slice(0, DESCRIPTION_MAX).trim();
+	if (description.length > DESCRIPTION_MAX)
+		description = description.slice(0, DESCRIPTION_MAX).trim();
 	if (!description) description = fallback.slice(0, DESCRIPTION_MAX);
 	return description;
 }
@@ -103,10 +104,7 @@ function loadLocalAnalysis(
 			analyzedAt: string;
 		};
 		const referenceName = toSkillDirName(fullName);
-		const referenceDescription = extractDescription(
-			referenceContent,
-			`Reference for ${fullName}`,
-		);
+		const referenceDescription = extractDescription(referenceContent, `Reference for ${fullName}`);
 
 		return {
 			fullName: "",

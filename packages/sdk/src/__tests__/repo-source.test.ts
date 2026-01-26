@@ -13,7 +13,7 @@ vi.mock("node:fs", () => ({
 import { existsSync, statSync } from "node:fs";
 import {
 	parseRepoInput,
-	getAnalysisPathForSource,
+	getReferenceFileNameForSource,
 	PathNotFoundError,
 	NotGitRepoError,
 	RepoSourceError,
@@ -268,31 +268,31 @@ describe("repo-source.ts", () => {
 	});
 
 	// =========================================================================
-	// getAnalysisPathForSource tests
+	// getReferenceFileNameForSource tests
 	// =========================================================================
-	describe("getAnalysisPathForSource", () => {
-		it("returns owner-repo-reference format for remote", () => {
+	describe("getReferenceFileNameForSource", () => {
+		it("returns owner-repo.md format for remote", () => {
 			const source = parseRepoInput("tanstack/router");
-			const result = getAnalysisPathForSource(source);
+			const result = getReferenceFileNameForSource(source);
 
-			expect(result).toBe("tanstack-router-reference");
+			expect(result).toBe("tanstack-router.md");
 		});
 
-		it("returns owner-repo-reference format for gitlab", () => {
+		it("returns owner-repo.md format for gitlab", () => {
 			const source = parseRepoInput("https://gitlab.com/group/project");
-			const result = getAnalysisPathForSource(source);
+			const result = getReferenceFileNameForSource(source);
 
-			expect(result).toBe("group-project-reference");
+			expect(result).toBe("group-project.md");
 		});
 
-		it("returns name-reference format for local", () => {
+		it("returns name.md format for local", () => {
 			mockExistsSync.mockReturnValue(true);
 			mockStatSync.mockReturnValue({ isDirectory: () => true });
 
 			const source = parseRepoInput("/some/path");
-			const result = getAnalysisPathForSource(source);
+			const result = getReferenceFileNameForSource(source);
 
-			expect(result).toMatch(/^path-reference$/);
+			expect(result).toMatch(/^path\.md$/);
 		});
 	});
 

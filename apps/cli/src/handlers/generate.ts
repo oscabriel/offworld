@@ -55,12 +55,12 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			const remoteCheck = await checkRemote(source.fullName);
 
 			if (remoteCheck.exists) {
-			s.stop("Remote reference exists");
-			// Always use --force to override if desired
-			return {
-				success: false,
-				message: "Remote reference exists. Use --force to override.",
-			};
+				s.stop("Remote reference exists");
+				// Always use --force to override if desired
+				return {
+					success: false,
+					message: "Remote reference exists. Use --force to override.",
+				};
 			}
 			s.stop("No remote analysis found");
 		}

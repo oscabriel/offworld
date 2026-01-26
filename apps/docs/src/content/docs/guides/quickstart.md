@@ -34,6 +34,7 @@ ow init
 ```
 
 This will:
+
 - Create the config at `~/.config/offworld/config.json`
 - Set up the skill directory at `~/.local/share/offworld/skills/offworld/`
 - Symlink the skill to Claude Code, Cursor, Amp, OpenCode, and other supported agents
@@ -55,6 +56,7 @@ ow project init
 ```
 
 This will:
+
 1. Scan your `package.json`, `Cargo.toml`, `go.mod`, etc.
 2. Match dependencies to available references
 3. Install missing references

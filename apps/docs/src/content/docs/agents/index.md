@@ -45,13 +45,13 @@ Run `ow project init` in your project root to:
 
 ## Supported Agents
 
-| Agent | Skill Location | Status |
-|-------|---------------|--------|
-| **Claude Code** | `~/.claude/skills/` | ✅ Supported |
-| **Cursor** | `~/.cursor/skills/` | ✅ Supported |
-| **Amp** | `~/.config/agents/skills/` | ✅ Supported |
-| **OpenCode** | `~/.config/opencode/skill/` | ✅ Supported |
-| **Codex** | `~/.codex/skills/` | ✅ Supported |
+| Agent                    | Skill Location                  | Status       |
+| ------------------------ | ------------------------------- | ------------ |
+| **Claude Code**          | `~/.claude/skills/`             | ✅ Supported |
+| **Cursor**               | `~/.cursor/skills/`             | ✅ Supported |
+| **Amp**                  | `~/.config/agents/skills/`      | ✅ Supported |
+| **OpenCode**             | `~/.config/opencode/skill/`     | ✅ Supported |
+| **Codex**                | `~/.codex/skills/`              | ✅ Supported |
 | **Gemini (Antigravity)** | `~/.gemini/antigravity/skills/` | ✅ Supported |
 
 All agents share the same skill via symlinks, so updates apply everywhere.
@@ -84,11 +84,13 @@ ow project init
 ## Skill vs Manual References
 
 **Use the Offworld skill when:**
+
 - You want agents to discover references autonomously
 - Working across multiple projects with different dependencies
 - You want consistent, community-maintained references
 
 **Use manual AGENTS.md when:**
+
 - You have project-specific conventions not covered by references
 - You need custom instructions beyond library documentation
 - You're working in a monorepo with complex internal dependencies

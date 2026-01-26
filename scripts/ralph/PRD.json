@@ -63,7 +63,7 @@
 			"priority": 1,
 			"description": "Acceptance criteria: apps/cli/src/handlers/pull.ts uses pullReference APIs, referenceSource/referenceInstalled, and installReference with qualifiedName + referenceRepoName; generate.ts uses qualifiedName and referenceRepoName consistently; shared.ts uses hasReference/referenceUpdatedAt and removes stale checks; list.ts and repo.ts remove stale filters and use reference wording in output.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-009",
@@ -71,7 +71,7 @@
 			"priority": 1,
 			"description": "Acceptance criteria: apps/cli/src/handlers/project.ts writes .offworld/map.json using readGlobalMap/writeProjectMap and returns referencesInstalled; init.ts uses Paths.state and reference wording; config.ts prompt references references; push.ts uses toReferenceName/pushReference and referenceUpdatedAt; remove.ts uses toReferenceFileName and local delete block; apps/cli/src/index.ts removes stale flags from inputs.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-010",

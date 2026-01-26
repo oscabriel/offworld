@@ -21,11 +21,11 @@ npm install -g offworld
 
 **Environment variables:**
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OW_VERSION` | Pin to specific version | Latest |
-| `OW_CHANNEL` | Release channel: `stable` or `beta` | `stable` |
-| `OW_BIN_DIR` | Override installation directory | `~/.local/bin` |
+| Variable     | Description                         | Default        |
+| ------------ | ----------------------------------- | -------------- |
+| `OW_VERSION` | Pin to specific version             | Latest         |
+| `OW_CHANNEL` | Release channel: `stable` or `beta` | `stable`       |
+| `OW_BIN_DIR` | Override installation directory     | `~/.local/bin` |
 
 ## Commands
 
@@ -38,6 +38,7 @@ ow init
 ```
 
 **What it does:**
+
 - Creates `~/.config/offworld/config.json`
 - Sets up `~/.local/share/offworld/skills/offworld/`
 - Symlinks skill to Claude Code, Cursor, Amp, OpenCode, Codex, Gemini
@@ -52,16 +53,16 @@ ow pull <repo> [options]
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `repo` | Repository to pull (e.g., `tanstack/router`, `https://github.com/owner/repo`) |
+| Argument | Description                                                                   |
+| -------- | ----------------------------------------------------------------------------- |
+| `repo`   | Repository to pull (e.g., `tanstack/router`, `https://github.com/owner/repo`) |
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option             | Description                                      |
+| ------------------ | ------------------------------------------------ |
 | `--generate`, `-g` | Force regenerate the reference even if it exists |
-| `--local <path>` | Use a local directory instead of cloning |
+| `--local <path>`   | Use a local directory instead of cloning         |
 
 **Examples:**
 
@@ -105,8 +106,8 @@ ow list [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option   | Description    |
+| -------- | -------------- |
 | `--json` | Output as JSON |
 
 ### ow rm
@@ -133,13 +134,14 @@ ow project init [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
-| `--all` | Process all dependencies, not just direct |
-| `--generate` | Generate missing references locally |
-| `--dry-run` | Show what would be installed without making changes |
+| Option       | Description                                         |
+| ------------ | --------------------------------------------------- |
+| `--all`      | Process all dependencies, not just direct           |
+| `--generate` | Generate missing references locally                 |
+| `--dry-run`  | Show what would be installed without making changes |
 
 **What it does:**
+
 1. Scans `package.json`, `Cargo.toml`, `go.mod`, etc.
 2. Matches dependencies to available references
 3. Pulls missing references from offworld.sh or generates locally
@@ -159,10 +161,10 @@ ow config get <key>         # Get a config value
 
 **Config keys:**
 
-| Key | Description | Default |
-|-----|-------------|---------|
-| `reposDir` | Where to clone repositories | `~/ow` |
-| `skillsDir` | Where to store the skill | `~/.local/share/offworld/skills` |
+| Key         | Description                 | Default                          |
+| ----------- | --------------------------- | -------------------------------- |
+| `reposDir`  | Where to clone repositories | `~/ow`                           |
+| `skillsDir` | Where to store the skill    | `~/.local/share/offworld/skills` |
 
 ### ow auth
 
@@ -184,10 +186,10 @@ ow upgrade [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
-| `--target <version>` | Upgrade to specific version |
-| `--method <method>` | Force upgrade method: `npm`, `curl`, `bun` |
+| Option               | Description                                |
+| -------------------- | ------------------------------------------ |
+| `--target <version>` | Upgrade to specific version                |
+| `--method <method>`  | Force upgrade method: `npm`, `curl`, `bun` |
 
 ### ow repo update
 
@@ -199,27 +201,27 @@ ow repo update [options]
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
-| `--all` | Update all repositories |
-| `--stale` | Only update stale repositories |
-| `--dry-run` | Show what would be updated |
+| Option      | Description                    |
+| ----------- | ------------------------------ |
+| `--all`     | Update all repositories        |
+| `--stale`   | Only update stale repositories |
+| `--dry-run` | Show what would be updated     |
 
 ## Data Locations
 
-| Purpose | Location |
-|---------|----------|
-| Config | `~/.config/offworld/config.json` |
-| Global skill | `~/.local/share/offworld/skills/offworld/` |
-| Global map | `~/.local/share/offworld/skills/offworld/assets/map.json` |
-| References | `~/.local/share/offworld/skills/offworld/references/` |
-| Project map | `./.offworld/map.json` |
-| Cloned repos | `~/ow/` (configurable) |
+| Purpose      | Location                                                  |
+| ------------ | --------------------------------------------------------- |
+| Config       | `~/.config/offworld/config.json`                          |
+| Global skill | `~/.local/share/offworld/skills/offworld/`                |
+| Global map   | `~/.local/share/offworld/skills/offworld/assets/map.json` |
+| References   | `~/.local/share/offworld/skills/offworld/references/`     |
+| Project map  | `./.offworld/map.json`                                    |
+| Cloned repos | `~/ow/` (configurable)                                    |
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Success |
-| `1` | General error |
-| `2` | Invalid arguments |
+| Code | Meaning           |
+| ---- | ----------------- |
+| `0`  | Success           |
+| `1`  | General error     |
+| `2`  | Invalid arguments |

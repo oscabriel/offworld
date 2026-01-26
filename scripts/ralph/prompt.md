@@ -5,13 +5,11 @@
 1. Read `scripts/ralph/plan.md`
 2. Read `scripts/ralph/PRD.json`
 3. Review recent commits below (context from previous iterations)
-4. Check you're on the correct branch
-5. Pick highest priority story where `passes: false`
-6. Implement that ONE story
-7. Run typecheck and tests
-8. Update AGENTS.md files with learnings
-9. Update PRD.json: `passes: true`
-10. Commit with detailed message (see format below)
+4. Pick highest priority story where `passes: false`
+5. Implement that ONE story
+6. Run `bun check`, `bun typecheck`, and `bun run test`
+7. Update PRD.json: `passes: true`
+8. Commit with detailed message (see format below)
 
 ## Commit Message Format
 

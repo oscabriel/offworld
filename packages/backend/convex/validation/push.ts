@@ -18,11 +18,11 @@ export const COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/;
 // Convex argument validators for push action
 export const pushArgs = {
 	fullName: v.string(),
-	skillName: v.string(),
-	skillDescription: v.string(),
-	skillContent: v.string(),
+	referenceName: v.string(),
+	referenceDescription: v.string(),
+	referenceContent: v.string(),
 	commitSha: v.string(),
-	analyzedAt: v.string(),
+	generatedAt: v.string(),
 };
 
 // Runtime validation result
@@ -38,11 +38,11 @@ export interface ValidationResult {
  */
 export function validatePushArgs(args: {
 	fullName: string;
-	skillName: string;
-	skillDescription: string;
-	skillContent: string;
+	referenceName: string;
+	referenceDescription: string;
+	referenceContent: string;
 	commitSha: string;
-	analyzedAt: string;
+	generatedAt: string;
 }): ValidationResult {
 	// fullName
 	if (args.fullName.length < FULLNAME_MIN || args.fullName.length > FULLNAME_MAX) {
@@ -56,40 +56,40 @@ export function validatePushArgs(args: {
 		return { valid: false, error: "Invalid repo format (expected owner/repo)", field: "fullName" };
 	}
 
-	// skillName
-	if (args.skillName.length < SKILLNAME_MIN || args.skillName.length > SKILLNAME_MAX) {
+	// referenceName
+	if (args.referenceName.length < SKILLNAME_MIN || args.referenceName.length > SKILLNAME_MAX) {
 		return {
 			valid: false,
-			error: `skillName must be ${SKILLNAME_MIN}-${SKILLNAME_MAX} chars`,
-			field: "skillName",
+			error: `referenceName must be ${SKILLNAME_MIN}-${SKILLNAME_MAX} chars`,
+			field: "referenceName",
 		};
 	}
-	if (!SKILLNAME_PATTERN.test(args.skillName)) {
-		return { valid: false, error: "Invalid skillName format", field: "skillName" };
+	if (!SKILLNAME_PATTERN.test(args.referenceName)) {
+		return { valid: false, error: "Invalid referenceName format", field: "referenceName" };
 	}
 
-	// skillDescription
-	if (args.skillDescription.length === 0 || args.skillDescription.length > DESCRIPTION_MAX) {
+	// referenceDescription
+	if (args.referenceDescription.length === 0 || args.referenceDescription.length > DESCRIPTION_MAX) {
 		return {
 			valid: false,
-			error: `skillDescription must be 1-${DESCRIPTION_MAX} chars`,
-			field: "skillDescription",
+			error: `referenceDescription must be 1-${DESCRIPTION_MAX} chars`,
+			field: "referenceDescription",
 		};
 	}
 
-	// skillContent
-	if (args.skillContent.length < CONTENT_MIN) {
+	// referenceContent
+	if (args.referenceContent.length < CONTENT_MIN) {
 		return {
 			valid: false,
-			error: `skillContent too short (min ${CONTENT_MIN} chars)`,
-			field: "skillContent",
+			error: `referenceContent too short (min ${CONTENT_MIN} chars)`,
+			field: "referenceContent",
 		};
 	}
-	if (args.skillContent.length > CONTENT_MAX) {
+	if (args.referenceContent.length > CONTENT_MAX) {
 		return {
 			valid: false,
-			error: `skillContent too large (max ${CONTENT_MAX / 1000}KB)`,
-			field: "skillContent",
+			error: `referenceContent too large (max ${CONTENT_MAX / 1000}KB)`,
+			field: "referenceContent",
 		};
 	}
 
@@ -101,16 +101,16 @@ export function validatePushArgs(args: {
 		return { valid: false, error: "Invalid commit SHA format", field: "commitSha" };
 	}
 
-	// analyzedAt
-	const timestamp = Date.parse(args.analyzedAt);
+	// generatedAt
+	const timestamp = Date.parse(args.generatedAt);
 	if (Number.isNaN(timestamp)) {
-		return { valid: false, error: "Invalid analyzedAt timestamp", field: "analyzedAt" };
+		return { valid: false, error: "Invalid generatedAt timestamp", field: "generatedAt" };
 	}
 	if (timestamp > Date.now() + 5 * 60_000) {
 		return {
 			valid: false,
-			error: "analyzedAt cannot be more than 5 minutes in the future",
-			field: "analyzedAt",
+			error: "generatedAt cannot be more than 5 minutes in the future",
+			field: "generatedAt",
 		};
 	}
 

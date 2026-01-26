@@ -3,11 +3,11 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUser } from "./auth";
 import { pushArgs, validatePushArgs } from "./validation/push";
-import { validateSkillContent } from "./validation/skillContent";
+import { validateReferenceContent } from "./validation/referenceContent";
 import { validateRepo, validateCommit } from "./validation/github";
 
 /**
- * Skill Convex Functions
+ * Reference Convex Functions
  * Public queries/mutations for CLI and web app
  */
 
@@ -16,8 +16,8 @@ import { validateRepo, validateCommit } from "./validation/github";
 // ============================================================================
 
 /**
- * Get skill by repository fullName (public)
- * Display skill on web
+ * Get reference by repository fullName (public)
+ * Display reference on web
  */
 export const get = query({
 	args: { fullName: v.string() },
@@ -30,18 +30,18 @@ export const get = query({
 		if (!repo) return null;
 
 		return await ctx.db
-			.query("skill")
+			.query("reference")
 			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.first();
 	},
 });
 
 /**
- * Get skill by repository fullName + skillName (public)
- * Display specific skill on web
+ * Get reference by repository fullName + referenceName (public)
+ * Display specific reference on web
  */
 export const getByName = query({
-	args: { fullName: v.string(), skillName: v.string() },
+	args: { fullName: v.string(), referenceName: v.string() },
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
@@ -51,16 +51,16 @@ export const getByName = query({
 		if (!repo) return null;
 
 		return await ctx.db
-			.query("skill")
-			.withIndex("by_repositoryId_skillName", (q) =>
-				q.eq("repositoryId", repo._id).eq("skillName", args.skillName),
+			.query("reference")
+			.withIndex("by_repositoryId_referenceName", (q) =>
+				q.eq("repositoryId", repo._id).eq("referenceName", args.referenceName),
 			)
 			.first();
 	},
 });
 
 /**
- * List all skills for a repository (public)
+ * List all references for a repository (public)
  */
 export const listByRepo = query({
 	args: { fullName: v.string() },
@@ -72,24 +72,24 @@ export const listByRepo = query({
 
 		if (!repo) return [];
 
-		const skills = await ctx.db
-			.query("skill")
+		const references = await ctx.db
+			.query("reference")
 			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.collect();
 
-		return skills.map((skill) => ({
-			skillName: skill.skillName,
-			skillDescription: skill.skillDescription,
-			analyzedAt: skill.analyzedAt,
-			commitSha: skill.commitSha,
-			pullCount: skill.pullCount,
-			isVerified: skill.isVerified,
+		return references.map((ref) => ({
+			referenceName: ref.referenceName,
+			referenceDescription: ref.referenceDescription,
+			generatedAt: ref.generatedAt,
+			commitSha: ref.commitSha,
+			pullCount: ref.pullCount,
+			isVerified: ref.isVerified,
 		}));
 	},
 });
 
 /**
- * List all skills sorted by pull count (public)
+ * List all references sorted by pull count (public)
  * Repo directory/explore page
  */
 export const list = query({
@@ -100,18 +100,18 @@ export const list = query({
 	handler: async (ctx, args) => {
 		const limit = args.limit ?? 50;
 
-		const skills = await ctx.db.query("skill").withIndex("by_pullCount").order("desc").take(limit);
+		const references = await ctx.db.query("reference").withIndex("by_pullCount").order("desc").take(limit);
 
 		// Join with repository data
 		const results = await Promise.all(
-			skills.map(async (skill) => {
-				const repo = await ctx.db.get(skill.repositoryId);
+			references.map(async (ref) => {
+				const repo = await ctx.db.get(ref.repositoryId);
 				return {
 					fullName: repo?.fullName ?? "unknown",
-					pullCount: skill.pullCount,
-					analyzedAt: skill.analyzedAt,
-					commitSha: skill.commitSha,
-					isVerified: skill.isVerified,
+					pullCount: ref.pullCount,
+					generatedAt: ref.generatedAt,
+					commitSha: ref.commitSha,
+					isVerified: ref.isVerified,
 				};
 			}),
 		);
@@ -121,7 +121,7 @@ export const list = query({
 });
 
 /**
- * List skills pushed by the current user
+ * List references pushed by the current user
  */
 export const listByCurrentUser = query({
 	args: {},
@@ -129,26 +129,26 @@ export const listByCurrentUser = query({
 		const user = await getAuthUser(ctx);
 		if (!user) return [];
 
-		const skills = await ctx.db
-			.query("skill")
+		const references = await ctx.db
+			.query("reference")
 			.withIndex("by_workosId", (q) => q.eq("workosId", user.workosId))
 			.order("desc")
 			.collect();
 
 		// Join with repository data
 		const results = await Promise.all(
-			skills.map(async (skill) => {
-				const repo = await ctx.db.get(skill.repositoryId);
+			references.map(async (ref) => {
+				const repo = await ctx.db.get(ref.repositoryId);
 				return {
 					fullName: repo?.fullName ?? "unknown",
 					owner: repo?.owner ?? "unknown",
 					name: repo?.name ?? "unknown",
-					skillName: skill.skillName,
-					skillDescription: skill.skillDescription,
-					pullCount: skill.pullCount,
-					analyzedAt: skill.analyzedAt,
-					commitSha: skill.commitSha,
-					isVerified: skill.isVerified,
+					referenceName: ref.referenceName,
+					referenceDescription: ref.referenceDescription,
+					pullCount: ref.pullCount,
+					generatedAt: ref.generatedAt,
+					commitSha: ref.commitSha,
+					isVerified: ref.isVerified,
 				};
 			}),
 		);
@@ -162,10 +162,10 @@ export const listByCurrentUser = query({
 // ============================================================================
 
 /**
- * Fetch skill for CLI pull (no pull count tracking)
+ * Fetch reference for CLI pull (no pull count tracking)
  */
 export const pull = query({
-	args: { fullName: v.string(), skillName: v.optional(v.string()) },
+	args: { fullName: v.string(), referenceName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
@@ -174,28 +174,28 @@ export const pull = query({
 
 		if (!repo) return null;
 
-		const skillName = args.skillName;
-		const skill = skillName
+		const referenceName = args.referenceName;
+		const ref = referenceName
 			? await ctx.db
-					.query("skill")
-					.withIndex("by_repositoryId_skillName", (q) =>
-						q.eq("repositoryId", repo._id).eq("skillName", skillName),
+					.query("reference")
+					.withIndex("by_repositoryId_referenceName", (q) =>
+						q.eq("repositoryId", repo._id).eq("referenceName", referenceName),
 					)
 					.first()
 			: await ctx.db
-					.query("skill")
+					.query("reference")
 					.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 					.first();
 
-		if (!skill) return null;
+		if (!ref) return null;
 
 		return {
 			fullName: repo.fullName,
-			skillName: skill.skillName,
-			skillDescription: skill.skillDescription,
-			skillContent: skill.skillContent,
-			commitSha: skill.commitSha,
-			analyzedAt: skill.analyzedAt,
+			referenceName: ref.referenceName,
+			referenceDescription: ref.referenceDescription,
+			referenceContent: ref.referenceContent,
+			commitSha: ref.commitSha,
+			generatedAt: ref.generatedAt,
 		};
 	},
 });
@@ -204,7 +204,7 @@ export const pull = query({
  * Lightweight existence check for CLI
  */
 export const check = query({
-	args: { fullName: v.string(), skillName: v.optional(v.string()) },
+	args: { fullName: v.string(), referenceName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
@@ -213,25 +213,25 @@ export const check = query({
 
 		if (!repo) return { exists: false as const };
 
-		const skillName = args.skillName;
-		const skill = skillName
+		const referenceName = args.referenceName;
+		const ref = referenceName
 			? await ctx.db
-					.query("skill")
-					.withIndex("by_repositoryId_skillName", (q) =>
-						q.eq("repositoryId", repo._id).eq("skillName", skillName),
+					.query("reference")
+					.withIndex("by_repositoryId_referenceName", (q) =>
+						q.eq("repositoryId", repo._id).eq("referenceName", referenceName),
 					)
 					.first()
 			: await ctx.db
-					.query("skill")
+					.query("reference")
 					.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 					.first();
 
-		if (!skill) return { exists: false as const };
+		if (!ref) return { exists: false as const };
 
 		return {
 			exists: true as const,
-			commitSha: skill.commitSha,
-			analyzedAt: skill.analyzedAt,
+			commitSha: ref.commitSha,
+			generatedAt: ref.generatedAt,
 		};
 	},
 });
@@ -243,7 +243,7 @@ export const check = query({
 export type PushError =
 	| "auth_required"
 	| "invalid_input"
-	| "invalid_skill"
+	| "invalid_reference"
 	| "repo_not_found"
 	| "low_stars"
 	| "private_repo"
@@ -259,7 +259,7 @@ export type PushResult = { success: true } | { success: false; error: PushError;
 // ============================================================================
 
 /**
- * Push skill - public action with full validation
+ * Push reference - public action with full validation
  */
 export const push = action({
 	args: pushArgs,
@@ -282,11 +282,11 @@ export const push = action({
 		}
 
 		// 3. Content validation (lightweight)
-		const contentResult = validateSkillContent(args.skillContent);
+		const contentResult = validateReferenceContent(args.referenceContent);
 		if (!contentResult.valid) {
 			return {
 				success: false,
-				error: "invalid_skill",
+				error: "invalid_reference",
 				message: contentResult.error,
 			};
 		}
@@ -316,7 +316,7 @@ export const push = action({
 		}
 
 		// 6. Delegate to internal mutation for DB operations
-		return await ctx.runMutation(internal.analyses.pushInternal, {
+		return await ctx.runMutation(internal.references.pushInternal, {
 			...args,
 			workosId,
 			repoStars: repoResult.stars,
@@ -335,17 +335,17 @@ export const push = action({
 export const pushInternal = internalMutation({
 	args: {
 		fullName: v.string(),
-		skillName: v.string(),
-		skillDescription: v.string(),
-		skillContent: v.string(),
+		referenceName: v.string(),
+		referenceDescription: v.string(),
+		referenceContent: v.string(),
 		commitSha: v.string(),
-		analyzedAt: v.string(),
+		generatedAt: v.string(),
 		workosId: v.string(),
 		repoStars: v.optional(v.number()),
 		repoDescription: v.optional(v.string()),
 	},
 	handler: async (ctx, args): Promise<PushResult> => {
-		const { workosId, repoStars, repoDescription, ...skillData } = args;
+		const { workosId, repoStars, repoDescription, ...referenceData } = args;
 		const now = new Date().toISOString();
 
 		// 1. Global rate limit: 20 pushes/day/user
@@ -409,7 +409,7 @@ export const pushInternal = internalMutation({
 
 		// 4. Immutability check: reject if (repositoryId, commitSha) exists
 		const existing = await ctx.db
-			.query("skill")
+			.query("reference")
 			.withIndex("by_repositoryId_commitSha", (q) =>
 				q.eq("repositoryId", repo._id).eq("commitSha", args.commitSha),
 			)
@@ -419,18 +419,18 @@ export const pushInternal = internalMutation({
 			return {
 				success: false,
 				error: "commit_already_exists",
-				message: "A skill already exists for this commit",
+				message: "A reference already exists for this commit",
 			};
 		}
 
-		// 5. Insert new skill (no updates, immutable by commit)
-		await ctx.db.insert("skill", {
+		// 5. Insert new reference (no updates, immutable by commit)
+		await ctx.db.insert("reference", {
 			repositoryId: repo._id,
-			skillName: skillData.skillName,
-			skillDescription: skillData.skillDescription,
-			skillContent: skillData.skillContent,
-			commitSha: skillData.commitSha,
-			analyzedAt: skillData.analyzedAt,
+			referenceName: referenceData.referenceName,
+			referenceDescription: referenceData.referenceDescription,
+			referenceContent: referenceData.referenceContent,
+			commitSha: referenceData.commitSha,
+			generatedAt: referenceData.generatedAt,
 			pullCount: 0,
 			isVerified: false,
 			workosId,
@@ -452,7 +452,7 @@ export const pushInternal = internalMutation({
  * Record a pull event - increments pullCount for display on repo pages
  */
 export const recordPull = mutation({
-	args: { fullName: v.string(), skillName: v.optional(v.string()) },
+	args: { fullName: v.string(), referenceName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
@@ -461,22 +461,22 @@ export const recordPull = mutation({
 
 		if (!repo) return;
 
-		const skillName = args.skillName;
-		const skill = skillName
+		const referenceName = args.referenceName;
+		const ref = referenceName
 			? await ctx.db
-					.query("skill")
-					.withIndex("by_repositoryId_skillName", (q) =>
-						q.eq("repositoryId", repo._id).eq("skillName", skillName),
+					.query("reference")
+					.withIndex("by_repositoryId_referenceName", (q) =>
+						q.eq("repositoryId", repo._id).eq("referenceName", referenceName),
 					)
 					.first()
 			: await ctx.db
-					.query("skill")
+					.query("reference")
 					.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 					.first();
 
-		if (skill) {
-			await ctx.db.patch(skill._id, {
-				pullCount: skill.pullCount + 1,
+		if (ref) {
+			await ctx.db.patch(ref._id, {
+				pullCount: ref.pullCount + 1,
 			});
 		}
 	},

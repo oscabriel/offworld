@@ -2,24 +2,24 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireAdmin } from "./auth";
 
-export const listAllAnalyses = query({
+export const listAllReferences = query({
 	args: {},
 	handler: async (ctx) => {
 		await requireAdmin(ctx);
 
-		const skills = await ctx.db.query("skill").order("desc").collect();
+		const references = await ctx.db.query("reference").order("desc").collect();
 
 		// Join with repository data
 		const results = await Promise.all(
-			skills.map(async (skill) => {
-				const repo = await ctx.db.get(skill.repositoryId);
+			references.map(async (ref) => {
+				const repo = await ctx.db.get(ref.repositoryId);
 				return {
-					_id: skill._id,
+					_id: ref._id,
 					fullName: repo?.fullName ?? "unknown",
-					pullCount: skill.pullCount,
-					analyzedAt: skill.analyzedAt,
-					commitSha: skill.commitSha,
-					isVerified: skill.isVerified,
+					pullCount: ref.pullCount,
+					generatedAt: ref.generatedAt,
+					commitSha: ref.commitSha,
+					isVerified: ref.isVerified,
 				};
 			}),
 		);
@@ -45,7 +45,7 @@ export const listAllUsers = query({
 	},
 });
 
-export const deleteAnalysis = mutation({
+export const deleteReference = mutation({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
 		await requireAdmin(ctx);
@@ -59,16 +59,16 @@ export const deleteAnalysis = mutation({
 			throw new Error("Repository not found");
 		}
 
-		const skill = await ctx.db
-			.query("skill")
+		const ref = await ctx.db
+			.query("reference")
 			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.first();
 
-		if (!skill) {
-			throw new Error("Skill not found");
+		if (!ref) {
+			throw new Error("Reference not found");
 		}
 
-		await ctx.db.delete(skill._id);
+		await ctx.db.delete(ref._id);
 		return { success: true };
 	},
 });
@@ -87,19 +87,19 @@ export const toggleVerified = mutation({
 			throw new Error("Repository not found");
 		}
 
-		const skill = await ctx.db
-			.query("skill")
+		const ref = await ctx.db
+			.query("reference")
 			.withIndex("by_repositoryId", (q) => q.eq("repositoryId", repo._id))
 			.first();
 
-		if (!skill) {
-			throw new Error("Skill not found");
+		if (!ref) {
+			throw new Error("Reference not found");
 		}
 
-		await ctx.db.patch(skill._id, {
-			isVerified: !skill.isVerified,
+		await ctx.db.patch(ref._id, {
+			isVerified: !ref.isVerified,
 		});
 
-		return { success: true, isVerified: !skill.isVerified };
+		return { success: true, isVerified: !ref.isVerified };
 	},
 });

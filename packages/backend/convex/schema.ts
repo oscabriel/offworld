@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 /**
  * Offworld Backend Schema
- * Convex schema for skill storage
+ * Convex schema for reference storage
  */
 
 export default defineSchema({
@@ -29,18 +29,18 @@ export default defineSchema({
 		.index("by_stars", ["stars"])
 		.index("by_fetchedAt", ["fetchedAt"]),
 
-	// Skill table - references repository
-	skill: defineTable({
+	// Reference table - references repository
+	reference: defineTable({
 		repositoryId: v.id("repository"),
 
-		// Skill content
-		skillName: v.string(),
-		skillDescription: v.string(),
-		skillContent: v.string(), // markdown
+		// Reference content
+		referenceName: v.string(),
+		referenceDescription: v.string(),
+		referenceContent: v.string(), // markdown
 
 		// Metadata
 		commitSha: v.string(),
-		analyzedAt: v.string(), // ISO timestamp
+		generatedAt: v.string(), // ISO timestamp
 
 		// Stats
 		pullCount: v.number(),
@@ -50,10 +50,10 @@ export default defineSchema({
 		workosId: v.optional(v.string()),
 	})
 		.index("by_repositoryId", ["repositoryId"])
-		.index("by_repositoryId_skillName", ["repositoryId", "skillName"])
+		.index("by_repositoryId_referenceName", ["repositoryId", "referenceName"])
 		.index("by_repositoryId_commitSha", ["repositoryId", "commitSha"]) // immutability check
 		.index("by_pullCount", ["pullCount"])
-		.index("by_analyzedAt", ["analyzedAt"])
+		.index("by_generatedAt", ["generatedAt"])
 		.index("by_workosId", ["workosId"]),
 
 	// Push logs for rate limiting

@@ -55,10 +55,11 @@ offworld/
 
 ### Backend (`packages/backend/convex/`)
 
-- `schema.ts` — Tables: analyses, pushLog, user
-- `analyses.ts` — CRUD for skill analyses
+- `schema.ts` — Tables: reference, repository, pushLog, user
+- `references.ts` — CRUD for references
 - `admin.ts` — Admin functions
 - `github.ts` — GitHub API queries
+- `validation/` — Push arg + content + GitHub validators
 
 ### Web (`apps/web/`)
 

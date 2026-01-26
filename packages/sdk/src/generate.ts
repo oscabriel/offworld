@@ -5,13 +5,14 @@
  * by delegating all codebase exploration to the AI agent via OpenCode.
  */
 
-import { mkdirSync, writeFileSync, lstatSync, unlinkSync, rmSync, symlinkSync } from "node:fs";
+import { mkdirSync, writeFileSync, lstatSync, unlinkSync, rmSync, symlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
-import { loadConfig, toSkillDirName, toMetaDirName } from "./config.js";
+import { loadConfig, toSkillDirName, toMetaDirName, toReferenceFileName } from "./config.js";
 import { getCommitSha } from "./clone.js";
 import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
+import { upsertGlobalMapEntry, readGlobalMap } from "./index-manager.js";
 
 // ============================================================================
 // Types
@@ -372,4 +373,146 @@ export function installSkill(repoName: string, skillContent: string, meta: Insta
 			ensureSymlink(skillDir, agentSkillDir);
 		}
 	}
+}
+
+// ============================================================================
+// Single-Skill Installation (US-005)
+// ============================================================================
+
+/**
+ * Static template for the global SKILL.md file.
+ * This is the single routing skill that all agents see.
+ */
+const GLOBAL_SKILL_TEMPLATE = `# Offworld Skills Router
+
+This is the global Offworld skill that routes queries to per-repository reference files.
+
+## How it works
+
+When you need documentation for a dependency:
+1. Run \`ow config show --json\` to get paths and map data
+2. Parse the map.json to find which reference file corresponds to your query
+3. Read the appropriate reference markdown from the references/ directory
+
+## Directory Structure
+
+\`\`\`
+~/.local/share/offworld/skill/offworld/
+├── SKILL.md (this file)
+├── assets/
+│   └── map.json (global map of all installed references)
+└── references/
+    ├── owner-repo.md (reference for owner/repo)
+    └── ...
+\`\`\`
+
+## Querying References
+
+Use \`ow config show --json\` to get:
+- \`paths.globalMap\`: Location of map.json
+- \`paths.referencesDir\`: Directory containing all reference files
+- \`paths.projectMap\`: Project-specific .offworld/map.json (if in a project)
+
+The map.json structure:
+\`\`\`json
+{
+  "repos": {
+    "owner/repo": {
+      "localPath": "/absolute/path/to/clone",
+      "references": ["owner-repo.md"],
+      "primary": "owner-repo.md",
+      "keywords": ["keyword1", "keyword2"],
+      "updatedAt": "2026-01-25"
+    }
+  }
+}
+\`\`\`
+`;
+
+/**
+ * Ensures the global SKILL.md exists and symlinks the offworld/ directory to all agent skill directories.
+ *
+ * Creates:
+ * - ~/.local/share/offworld/skill/offworld/SKILL.md (static routing template)
+ * - ~/.local/share/offworld/skill/offworld/assets/ (for map.json)
+ * - ~/.local/share/offworld/skill/offworld/references/ (for reference files)
+ * - Symlinks entire offworld/ directory to each agent's skill directory
+ */
+export function installGlobalSkill(): void {
+	const config = loadConfig();
+	
+	// Ensure offworld skill directory exists
+	mkdirSync(Paths.offworldSkillDir, { recursive: true });
+	mkdirSync(Paths.offworldAssetsDir, { recursive: true });
+	mkdirSync(Paths.offworldReferencesDir, { recursive: true });
+
+	// Write global SKILL.md if it doesn't exist
+	const skillPath = join(Paths.offworldSkillDir, "SKILL.md");
+	if (!existsSync(skillPath)) {
+		writeFileSync(skillPath, GLOBAL_SKILL_TEMPLATE, "utf-8");
+	}
+
+	// Symlink the entire offworld/ directory to each agent's skill directory
+	const configuredAgents = config.agents ?? [];
+	for (const agentName of configuredAgents) {
+		const agentConfig = agents[agentName];
+		if (agentConfig) {
+			const agentSkillDir = expandTilde(join(agentConfig.globalSkillsDir, "offworld"));
+			ensureSymlink(Paths.offworldSkillDir, agentSkillDir);
+		}
+	}
+}
+
+/**
+ * Install a reference file for a specific repository.
+ *
+ * Creates:
+ * - ~/.local/share/offworld/skill/offworld/references/{owner-repo}.md
+ * - ~/.local/share/offworld/meta/{owner-repo}/meta.json
+ * - Updates global map with reference info
+ *
+ * @param repoName - Qualified name (e.g., "tanstack/query")
+ * @param localPath - Absolute path to the cloned repository
+ * @param referenceContent - The generated reference markdown content
+ * @param meta - Metadata about the generation (analyzedAt, commitSha, version)
+ * @param keywords - Optional array of keywords for search/routing
+ */
+export function installReference(
+	repoName: string,
+	localPath: string,
+	referenceContent: string,
+	meta: InstallSkillMeta,
+	keywords?: string[],
+): void {
+	const referenceFileName = toReferenceFileName(repoName);
+	const metaDirName = toMetaDirName(repoName);
+
+	// Write reference file
+	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+	mkdirSync(Paths.offworldReferencesDir, { recursive: true });
+	writeFileSync(referencePath, referenceContent, "utf-8");
+
+	// Write meta.json
+	const metaDir = join(Paths.metaDir, metaDirName);
+	mkdirSync(metaDir, { recursive: true });
+	const metaJson = JSON.stringify(meta, null, 2);
+	writeFileSync(join(metaDir, "meta.json"), metaJson, "utf-8");
+
+	// Update global map
+	const map = readGlobalMap();
+	const existingEntry = map.repos[repoName];
+	const references = existingEntry?.references ?? [];
+	
+	// Add reference to list if not present
+	if (!references.includes(referenceFileName)) {
+		references.push(referenceFileName);
+	}
+
+	upsertGlobalMapEntry(repoName, {
+		localPath,
+		references,
+		primary: referenceFileName,
+		keywords: keywords ?? existingEntry?.keywords ?? [],
+		updatedAt: new Date().toISOString().split("T")[0] ?? "",
+	});
 }

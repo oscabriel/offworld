@@ -145,6 +145,7 @@ Skills are symlinked to:
 - **Map architecture**: Global map at `~/.local/share/offworld/skill/offworld/assets/map.json`, project maps at `.offworld/map.json`. Legacy index.json being phased out (US-003).
 - **Deprecated exports**: `index-manager.ts` maintains backward-compatible exports (`getIndex`, `updateIndex`, etc.) until US-006 migration completes.
 - **Generation**: US-004 refactored to generate reference markdown (no frontmatter), validate with `#` heading, return `referenceContent` + `commitSha`.
+- **Installation**: US-005 adds `installGlobalSkill()` (single routing SKILL.md + symlinks offworld/ dir to agents) and `installReference()` (per-repo reference files under `references/`, updates global map with references list + primary). Backward-compatible `generateSkillWithAI` and `getStateRoot` exports added for gradual migration.
 
 ## Project Skills
 

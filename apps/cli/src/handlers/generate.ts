@@ -96,17 +96,17 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const result = await generateSkillWithAI(repoPath, qualifiedName, {
 			provider,
 			model,
-			onDebug: (msg) => s.message(msg),
+			onDebug: (msg: string) => s.message(msg),
 		});
 		s.stop("Skill generated");
 
-		const { skillContent, commitSha } = result;
+		const { referenceContent, commitSha } = result;
 		const analyzedAt = new Date().toISOString();
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 
 		const skillPath = getSkillPath(qualifiedName);
 
-		installSkill(qualifiedName, skillContent, meta);
+		installSkill(qualifiedName, referenceContent, meta);
 
 		const entry = getIndexEntry(source.qualifiedName);
 		if (entry) {

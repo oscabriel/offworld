@@ -78,7 +78,7 @@ describe("RepoSourceSchema", () => {
 			owner: "tanstack",
 			repo: "router",
 			fullName: "tanstack/router",
-			qualifiedName: "github:tanstack/router",
+			qualifiedName: "github.com:tanstack/router",
 			cloneUrl: "https://github.com/tanstack/router.git",
 		};
 		const result = RepoSourceSchema.safeParse(remote);

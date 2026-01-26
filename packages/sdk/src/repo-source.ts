@@ -83,7 +83,7 @@ function parseHttpsUrl(input: string): RemoteRepoSource | null {
 		owner,
 		repo,
 		fullName: `${owner}/${repo}`,
-		qualifiedName: `${provider}:${owner}/${repo}`,
+		qualifiedName: `${host}:${owner}/${repo}`,
 		cloneUrl: buildCloneUrl(provider, owner, repo),
 	};
 }
@@ -107,7 +107,7 @@ function parseSshUrl(input: string): RemoteRepoSource | null {
 		owner,
 		repo,
 		fullName: `${owner}/${repo}`,
-		qualifiedName: `${provider}:${owner}/${repo}`,
+		qualifiedName: `${host}:${owner}/${repo}`,
 		cloneUrl: buildCloneUrl(provider, owner, repo),
 	};
 }
@@ -124,6 +124,7 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
 	if (!owner || !repo) return null;
 
 	const provider: GitProvider = "github";
+	const host = "github.com";
 
 	return {
 		type: "remote",
@@ -131,7 +132,7 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
 		owner,
 		repo,
 		fullName: `${owner}/${repo}`,
-		qualifiedName: `${provider}:${owner}/${repo}`,
+		qualifiedName: `${host}:${owner}/${repo}`,
 		cloneUrl: buildCloneUrl(provider, owner, repo),
 	};
 }

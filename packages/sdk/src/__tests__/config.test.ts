@@ -474,7 +474,7 @@ describe("config.ts", () => {
 	});
 
 	// =========================================================================
-	// toSkillDirName tests
+	// toReferenceFileName tests
 	// =========================================================================
 	describe("toReferenceFileName", () => {
 		it("collapses exact owner/repo match", () => {

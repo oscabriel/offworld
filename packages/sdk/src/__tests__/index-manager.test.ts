@@ -138,7 +138,7 @@ describe("index-manager.ts", () => {
 
 	const sampleMap: GlobalMap = {
 		repos: {
-			"github:tanstack/router": sampleEntry,
+			"github.com:tanstack/router": sampleEntry,
 		},
 	};
 
@@ -178,7 +178,7 @@ describe("index-manager.ts", () => {
 		it("returns empty map on schema error", () => {
 			addVirtualFile(
 				globalMapPath,
-				JSON.stringify({ repos: { "github:tanstack/router": { localPath: "/tmp" } } }),
+				JSON.stringify({ repos: { "github.com:tanstack/router": { localPath: "/tmp" } } }),
 			);
 
 			expect(readGlobalMap()).toEqual({ repos: {} });
@@ -204,18 +204,18 @@ describe("index-manager.ts", () => {
 
 	describe("upsertGlobalMapEntry", () => {
 		it("adds entry to empty map", () => {
-			upsertGlobalMapEntry("github:tanstack/router", sampleEntry);
+			upsertGlobalMapEntry("github.com:tanstack/router", sampleEntry);
 
 			const saved = virtualFs[normalizePath(globalMapPath)];
 			expect(saved).toBeDefined();
 			const parsed = JSON.parse(saved!.content) as GlobalMap;
-			expect(parsed.repos["github:tanstack/router"]).toEqual(sampleEntry);
+			expect(parsed.repos["github.com:tanstack/router"]).toEqual(sampleEntry);
 		});
 
 		it("preserves other entries", () => {
 			const existing: GlobalMap = {
 				repos: {
-					"github:other/repo": {
+					"github.com:other/repo": {
 						localPath: "/home/user/ow/github/other/repo",
 						references: ["other-repo.md"],
 						primary: "other-repo.md",
@@ -226,18 +226,18 @@ describe("index-manager.ts", () => {
 			};
 			addVirtualFile(globalMapPath, JSON.stringify(existing));
 
-			upsertGlobalMapEntry("github:tanstack/router", sampleEntry);
+			upsertGlobalMapEntry("github.com:tanstack/router", sampleEntry);
 
 			const saved = virtualFs[normalizePath(globalMapPath)];
 			const parsed = JSON.parse(saved!.content) as GlobalMap;
-			expect(parsed.repos["github:other/repo"]).toBeDefined();
-			expect(parsed.repos["github:tanstack/router"]).toBeDefined();
+			expect(parsed.repos["github.com:other/repo"]).toBeDefined();
+			expect(parsed.repos["github.com:tanstack/router"]).toBeDefined();
 		});
 	});
 
 	describe("removeGlobalMapEntry", () => {
 		it("returns false when entry missing", () => {
-			const result = removeGlobalMapEntry("github:missing/repo");
+			const result = removeGlobalMapEntry("github.com:missing/repo");
 
 			expect(result).toBe(false);
 			expect(mockWriteFileSync).not.toHaveBeenCalled();
@@ -246,12 +246,12 @@ describe("index-manager.ts", () => {
 		it("removes existing entry", () => {
 			addVirtualFile(globalMapPath, JSON.stringify(sampleMap));
 
-			const result = removeGlobalMapEntry("github:tanstack/router");
+			const result = removeGlobalMapEntry("github.com:tanstack/router");
 
 			expect(result).toBe(true);
 			const saved = virtualFs[normalizePath(globalMapPath)];
 			const parsed = JSON.parse(saved!.content) as GlobalMap;
-			expect(parsed.repos["github:tanstack/router"]).toBeUndefined();
+			expect(parsed.repos["github.com:tanstack/router"]).toBeUndefined();
 		});
 	});
 
@@ -259,7 +259,7 @@ describe("index-manager.ts", () => {
 		it("writes project map to .offworld/map.json", () => {
 			const projectRoot = "/home/user/project";
 			const entries = {
-				"github:tanstack/router": {
+				"github.com:tanstack/router": {
 					localPath: "/home/user/ow/github/tanstack/router",
 					reference: "tanstack-router.md",
 					keywords: [],
@@ -283,7 +283,7 @@ describe("index-manager.ts", () => {
 			expect(parsed.scope).toBe("project");
 			expect(parsed.version).toBe(1);
 			expect(parsed.globalMapPath).toBe(globalMapPath);
-			expect(parsed.repos["github:tanstack/router"]).toBeDefined();
+			expect(parsed.repos["github.com:tanstack/router"]).toBeDefined();
 		});
 	});
 });

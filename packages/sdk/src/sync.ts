@@ -146,9 +146,6 @@ export interface ReferenceData {
 	generatedAt: string;
 }
 
-/** @deprecated Use ReferenceData */
-export type AnalysisData = ReferenceData;
-
 /** Response from pull query */
 export interface PullResponse {
 	fullName: string;

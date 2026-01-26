@@ -51,13 +51,13 @@ const commands: Command[] = [
 			{ flag: "--shallow", description: "Use shallow clone (--depth 1)" },
 			{ flag: "--sparse", description: "Use sparse checkout (only src/, lib/, packages/, docs/)" },
 			{ flag: "--branch", description: "Branch to clone" },
-			{ flag: "--force, -f", description: "Force re-analysis" },
+			{ flag: "--force, -f", description: "Force re-generation" },
 			{ flag: "--model, -m", description: "Model override (provider/model)" },
 		],
 	},
 	{
 		name: "generate",
-		description: "Generate analysis locally (ignores remote)",
+		description: "Generate reference locally (ignores remote)",
 		usage: "ow generate <repo> [OPTIONS]",
 		aliases: ["gen"],
 		flags: [
@@ -67,7 +67,7 @@ const commands: Command[] = [
 	},
 	{
 		name: "push",
-		description: "Push local analysis to offworld.sh",
+		description: "Push local reference to offworld.sh",
 		usage: "ow push <repo>",
 	},
 	{
@@ -331,7 +331,7 @@ ow init
 This will:
 - Create config at \`~/.config/offworld/config.json\`
 - Set up the default clone directory (\`~/ow/\`)
-- Configure which agents to sync skills to
+- Configure which agents to sync references to
 
 #### Step 3: Verify the installation
 
@@ -347,13 +347,13 @@ ow project init
 
 This will:
 - Scan package.json (or other manifest files) for dependencies
-- Prompt the user to select which dependencies to create skills for
-- Fetch or generate skills for selected dependencies
-- Update AGENTS.md with a table of installed skills
+- Prompt the user to select which dependencies to create references for
+- Fetch or generate references for selected dependencies
+- Update AGENTS.md with a table of installed references
 
 #### Step 5: Verify setup
 
-List the installed skills:
+List the installed references:
 \`\`\`bash
 ow list
 \`\`\`

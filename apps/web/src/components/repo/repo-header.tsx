@@ -12,7 +12,7 @@ function formatStars(stars: number): string {
 interface RepoHeaderProps {
 	owner: string;
 	repo: string;
-	analysisData?: {
+	referenceData?: {
 		commitSha?: string;
 		pullCount?: number;
 		isVerified?: boolean;
@@ -28,11 +28,11 @@ interface RepoHeaderProps {
 export function RepoHeader({
 	owner,
 	repo,
-	analysisData,
+	referenceData,
 	githubMetadata,
 	loading,
 }: RepoHeaderProps) {
-	const hasAnalysis = analysisData !== null && analysisData !== undefined;
+	const hasReference = referenceData !== null && referenceData !== undefined;
 
 	return (
 		<header>
@@ -51,19 +51,19 @@ export function RepoHeader({
 							</a>
 						</h1>
 						<div className="text-muted-foreground flex flex-wrap items-center gap-5 font-mono text-sm">
-							{hasAnalysis && (
+							{hasReference && (
 								<>
 									<StatusBadge status="indexed" variant="compact" />
-									{analysisData.commitSha && (
-										<span>Commit: {analysisData.commitSha.slice(0, 7)}</span>
+									{referenceData.commitSha && (
+										<span>Commit: {referenceData.commitSha.slice(0, 7)}</span>
 									)}
-									{analysisData.pullCount !== undefined && (
-										<span>{analysisData.pullCount} pulls</span>
+									{referenceData.pullCount !== undefined && (
+										<span>{referenceData.pullCount} pulls</span>
 									)}
-									{analysisData.isVerified && <span className="text-green-500">Verified</span>}
+									{referenceData.isVerified && <span className="text-green-500">Verified</span>}
 								</>
 							)}
-							{!hasAnalysis && <StatusBadge status="not-indexed" variant="compact" />}
+							{!hasReference && <StatusBadge status="not-indexed" variant="compact" />}
 							{loading && <span className="bg-muted h-4 w-16 animate-pulse" />}
 							{!loading && githubMetadata?.stars !== undefined && (
 								<span>⭐ {formatStars(githubMetadata.stars)} stars</span>

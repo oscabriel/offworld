@@ -1,336 +1,390 @@
-# Offworld Single-Skill Refactor Plan
-
-## Goal
-
-Replace per-repo skills with a single global routing SKILL and per-repo reference files. Keep multi-agent distribution. All maps and routing are local-only.
-
-## Non-Goals
-
-- No migration or backwards compatibility.
-- No preservation of legacy skills or Convex data.
-- No project-level SKILL.md.
-
-## Fixed Decisions
-
-- One global SKILL.md per user at `~/.local/share/offworld/skill/offworld/SKILL.md`.
-- References are markdown files under `~/.local/share/offworld/skill/offworld/references/` (no frontmatter).
-- Canonical map is local-only at `~/.local/share/offworld/skill/offworld/assets/map.json`.
-- Project map is `./.offworld/map.json`.
-- Reference filename is `owner-repo.md` using existing `toSkillDirName` condense logic (drop `-reference` suffix).
-- Meta stored at `~/.local/share/offworld/meta/{owner-repo}/meta.json` (XDG-basedir compliant).
-- Web directory shows references, not skills; pull stats remain per reference.
-- Multi-agent distribution stays core: symlink the `offworld/` directory to each agent skill dir.
-
-## Architecture Overview (Target)
-
-```
-ow project init
-  -> parse manifests
-  -> resolve deps to repos
-  -> clone repos
-  -> generate references (OpenCode Analyze agent)
-  -> update assets/map.json (global)
-  -> write .offworld/map.json (project)
-  -> ensure global SKILL + symlinks
-```
+# Codebase Cleanup Plan (from CODE_AUDIT.md)
+
+## Phase: packages/types
+
+### packages/types/src/schemas.ts
+
+- L100: `export const AnalysisMetaSchema` -> `export const ReferenceMetaSchema`
+- L101: `analyzedAt` -> `referenceUpdatedAt`
+
+### packages/types/src/types.ts
+
+- L17: `AnalysisMetaSchema` import -> `ReferenceMetaSchema`
+- L42: `export type AnalysisMeta` -> `export type ReferenceMeta`
+- L50-54: delete deprecated `RepoIndex` and `RepoIndexEntry` types
+
+### packages/types/src/**tests**/schemas.test.ts
+
+- L408: `describe("AnalysisMetaSchema"` -> `describe("ReferenceMetaSchema"`
+- L410-425: `analyzedAt` -> `referenceUpdatedAt`
+
+## Phase: packages/sdk
+
+### packages/sdk/src/config.ts
+
+- L45-70: delete `toSkillDirName` function block
+- After L112: insert helper
+  ```ts
+  export function toReferenceName(repoName: string): string {
+  	return toReferenceFileName(repoName).replace(/\.md$/, "");
+  }
+  ```
+- L114-116: delete `getSkillPath`
+- L126-132: delete `getAnalysisPath`
+
+### packages/sdk/src/paths.ts
+
+- L55-59: `get skillsDir()` -> `return join(this.data, "skill", "offworld")`
+- L55 comment: "Skills directory" -> "Single-skill directory (legacy alias)"
+
+### packages/sdk/src/repo-source.ts
+
+- L10: add import `toReferenceFileName` from `./config.js`
+- L224: rename `getAnalysisPathForSource` -> `getReferenceFileNameForSource`
+- L225-229: return `toReferenceFileName(source.fullName)` for remote and `toReferenceFileName(source.name)` for local
+
+### packages/sdk/src/index-manager.ts
+
+- L26-58: delete deprecated legacy exports block
 
-## Local Layout (Target)
+### packages/sdk/src/index.ts
 
-```
-~/.local/share/offworld/skill/offworld/
-├── SKILL.md
-├── assets/
-│   └── map.json
-└── references/
-    ├── owner-repo.md
-    └── ...
-```
+- L13-17: delete deprecated `RepoIndex` / `RepoIndexEntry` exports
+- L25-35: remove `getAnalysisPath`, `getSkillPath`, `toSkillDirName` exports
+- L40-44: delete `getStateRoot`
+- L47-52: export `getReferenceFileNameForSource` (new name)
+- L60-67: remove deprecated index-manager exports
+- L70-75: remove `removeReferenceByName` export
+- L100-110: remove `InvalidSkillError` export
+- L116-121: remove `pullAnalysis`, `pullAnalysisByName`, `pushAnalysis`, `AnalysisData` exports
+- L156-164: remove `installSkill` export, rename `InstallSkillMeta` -> `InstallReferenceMeta`
+- L166-168: remove `generateSkillWithAI` alias
+- L199: export `appendReferencesSection` / `InstalledReference`
 
-## Data Model (Target)
+### packages/sdk/src/sync.ts
 
-Global map (local-only):
+- L8: `toSkillDirName` import -> `toReferenceName`
+- L223: `referenceName: toSkillDirName(fullName)` -> `referenceName: toReferenceName(fullName)`
+- L349: same as L223
+- L90-91: delete `InvalidSkillError` alias
+- L430-437: delete deprecated `pullAnalysis*` / `pushAnalysis` exports
 
-```json
-{
-	"repos": {
-		"owner/repo": {
-			"localPath": "/abs/path",
-			"references": ["owner-repo.md"],
-			"primary": "owner-repo.md",
-			"keywords": ["..."],
-			"updatedAt": "2026-01-25"
-		}
-	}
-}
-```
+### packages/sdk/src/generate.ts
 
-Project map:
+- L19: drop `toSkillDirName` import; add `toReferenceName` if used
+- L47-54: rename `InstallSkillMeta` -> `InstallReferenceMeta`; `analyzedAt` -> `referenceUpdatedAt`
+- L57: "Skill Generation" -> "Reference Generation"
+- L291: `const referenceName = toSkillDirName(repoName);` -> `const referenceName = toReferenceName(repoName);`
+- L355-384: delete legacy `installSkill` function
+- L494-499: change signature to
+  ```ts
+  export function installReference(
+  	qualifiedName: string,
+  	fullName: string,
+  	localPath: string,
+  	referenceContent: string,
+  	meta: InstallReferenceMeta,
+  	keywords?: string[],
+  ): void {
+  ```
+- L503: `toReferenceFileName(repoName)` -> `toReferenceFileName(fullName)`
+- L504: `toMetaDirName(repoName)` -> `toMetaDirName(fullName)`
+- L518-519: `map.repos[repoName]` -> `map.repos[qualifiedName]`
+- L527: `upsertGlobalMapEntry(repoName, {` -> `upsertGlobalMapEntry(qualifiedName, {`
+- L532: `new Date().toISOString().split("T")[0] ?? ""` -> `new Date().toISOString()`
 
-```json
-{
-	"version": 1,
-	"scope": "project",
-	"globalMapPath": "~/.local/share/offworld/skill/offworld/assets/map.json",
-	"repos": {
-		"owner/repo": {
-			"localPath": "/abs/path",
-			"reference": "owner-repo.md",
-			"keywords": ["..."]
-		}
-	}
-}
-```
+### packages/sdk/src/clone.ts
 
-## Step 1: Types and Schemas (`packages/types`)
+- L200: delete unused `getCommitSha(repoPath);`
+- L205-214: replace conditional map update with unconditional upsert using `source.qualifiedName`, empty refs when missing:
+  ```ts
+  upsertGlobalMapEntry(source.qualifiedName, {
+  	localPath: repoPath,
+  	references: hasReference ? [referenceFileName] : [],
+  	primary: hasReference ? referenceFileName : "",
+  	keywords: [],
+  	updatedAt: new Date().toISOString(),
+  });
+  ```
+- L406-409: remove `toReferenceFileName(qualifiedName)` removal; loop over `entry.references`
+- L412-415: derive meta dir from `entry.primary` (strip `.md`) and remove only if non-empty
 
-Update all types and zod schemas to represent references, not skills/analysis.
+### packages/sdk/src/repo-manager.ts
 
-Work:
+- L8-13: remove `stale` from `RepoStatusSummary`
+- L32-35: remove `stale` counter
+- L61-67: remove `stale` from return object
+- L20-23: remove `staleOnly?: boolean` from `UpdateAllOptions`
+- L170: `const { staleOnly = false, pattern, dryRun = false, unshallow = false, onProgress } = options;` -> `const { pattern, dryRun = false, unshallow = false, onProgress } = options;`
+- L193-197: delete the `if (staleOnly) { ... }` block
 
-- Add `GlobalMap` and `ProjectMap` types for map files.
-- Add `ReferenceData` for push/pull (fullName, referenceName, description, content, commitSha, generatedAt).
-- Remove/rename all `Skill*` and `Analysis*` types/schemas.
-- Update `RepoIndex` / `RepoIndexEntry` types to align with maps or remove if unused.
+### packages/sdk/src/agents-md.ts
 
-Acceptance:
+- L10: `InstalledSkill` -> `InstalledReference`
+- L13-15: `skill` field -> `reference` and update comments
+- L25-44: `generateSkillsTable` -> `generateReferencesTable`; update strings to "References" terminology
+- L54-69: `appendSkillsSection` -> `appendReferencesSection`; regex header -> `## Project References`
+- L75-91: update comments and param names to references; call `appendReferencesSection`
 
-- `packages/types/src/schemas.ts` exports new map/reference schemas only.
-- No `skill` or `analysis` types remain in types package.
-- Typecheck passes with updated imports in SDK/CLI/backend/web.
+### packages/sdk/src/ai/errors.ts
 
-## Step 2: XDG Paths and Naming (`packages/sdk`)
+- L4-13: rename `OpenCodeAnalysisError` -> `OpenCodeReferenceError`; update `_tag` and `this.name`
+- L20,31,52,73,95,116,138: update `extends OpenCodeAnalysisError` -> `extends OpenCodeReferenceError`
 
-Add Offworld single-skill path helpers and rename naming utilities.
+### packages/sdk/src/ai/opencode.ts
 
-Work:
+- L4-25: import/re-export `OpenCodeReferenceError` (replace `OpenCodeAnalysisError`)
+- L57: description "skill files" -> "reference files"
+- L401-404: `debug("Writing skill...")` -> `debug("Writing reference...")`
 
-- In `packages/sdk/src/paths.ts`, add:
-  - `offworldSkillDir` = `join(Paths.data, "skills", "offworld")`
-  - `offworldReferencesDir` = `join(offworldSkillDir, "references")`
-  - `offworldAssetsDir` = `join(offworldSkillDir, "assets")`
-  - `offworldGlobalMapPath` = `join(offworldAssetsDir, "map.json")`
-- Replace `toSkillDirName` in `packages/sdk/src/config.ts` with `toReferenceFileName` that returns `owner-repo.md` using current condense logic.
-- Keep `getMetaPath` using `Paths.data` and `toMetaDirName`.
+### packages/sdk/src/ai/index.ts
 
-Acceptance:
+- L5: export `OpenCodeReferenceError` instead of `OpenCodeAnalysisError`
+
+### packages/sdk/src/constants.ts
+
+- L87: comment "not useful for analysis" -> "not useful for reference generation"
+
+### packages/sdk/src/installation.ts
+
+- L294: replace `require("node:fs")` with top-level `writeFileSync` import
+
+### packages/sdk/src/**tests**/generate.test.ts
+
+- L11-19: mock `toReferenceFileName` returning `.md` names
+- L53: import `installReference` (drop `installSkill`)
+- L150-165: rename describe to `installReference`; update call signature + meta field `referenceUpdatedAt`
+
+### packages/sdk/src/**tests**/config.test.ts
+
+- L121: replace `toSkillDirName` import with `toReferenceFileName`
+- L508-539: rename describe to `toReferenceFileName`; update expected strings to `.md`
+
+### packages/sdk/src/**tests**/repo-source.test.ts
+
+- L273-295: rename to `getReferenceFileNameForSource`; expect `owner-repo.md` and `name.md`
+
+### packages/sdk/src/**tests**/mocks/fetch.ts
+
+- L129-145: rename params/fields to `reference*`; update endpoint to `/api/references/pull`
+- L151-163: update endpoint to `/api/references/check`; `analyzedAt` -> `generatedAt`
+
+## Phase: apps/cli
+
+### apps/cli/src/handlers/pull.ts
+
+- L10-11: `pullAnalysis*` imports -> `pullReference*`
+- L38-43: `analysisSource` -> `referenceSource`, `skillInstalled` -> `referenceInstalled`
+- L84-92: `saveRemoteReference` args/meta -> use `referenceUpdatedAt` and new `installReference(qualifiedName, referenceRepoName, ...)`
+- L71-72: `qualifiedName` -> `source.qualifiedName`; add `referenceRepoName` for `owner/repo`
+- L190,283,366,386: `analysisSource`/`skillInstalled` -> `referenceSource`/`referenceInstalled`
+- L259-262: `pullAnalysis*` calls -> `pullReference*`
+- L340-342: `analysisCommitSha` -> `referenceCommitSha`; `analyzedAt` -> `referenceUpdatedAt`
+
+### apps/cli/src/handlers/generate.ts
+
+- L22-26: `analysisPath` -> `referencePath`
+- L52-64: "analysis" wording -> "reference" wording
+- L87: `const qualifiedName = source.type === "remote" ? source.fullName : source.name;` -> `const qualifiedName = source.qualifiedName;`
+- L86-90: add `const referenceRepoName = source.type === "remote" ? source.fullName : source.name;`
+- L89: `generateReferenceWithAI(repoPath, qualifiedName, ...)` -> use `referenceRepoName`
+- L96-99: `analyzedAt` -> `referenceUpdatedAt`
+- L100: `getReferencePath(qualifiedName)` -> `getReferencePath(referenceRepoName)`
+- L102: `installReference(qualifiedName, repoPath, ...)` -> `installReference(qualifiedName, referenceRepoName, repoPath, ...)`
+- L108-109: return `referencePath` instead of `analysisPath`
+
+### apps/cli/src/handlers/shared.ts
+
+- L8-17: rename fields `analyzed` -> `hasReference`, `analyzedAt` -> `referenceUpdatedAt`, `hasSkill` -> `hasReference`; remove `isStale`
+- L26-32: `[analyzed]`/`[skill]` -> `[reference]` and `[no-reference]`
+- L43-45: drop `checkStale` param from `entryToListItem`
+- L66-77: remove stale-check block
+- L79-88: update returned fields to `hasReference`/`referenceUpdatedAt`
+
+### apps/cli/src/handlers/list.ts
+
+- L9-12: remove `stale?: boolean` from options
+- L25: drop `stale` from destructure
+- L33: "clone and analyze" -> "clone and generate a reference"
+- L38-49: remove stale filtering; call `entryToListItem(entry)`
+- L56-60: remove stale-specific messaging
+
+### apps/cli/src/handlers/repo.ts
+
+- L16-20: remove `stale?: boolean` from `RepoListOptions`
+- L31-35: remove `stale?: boolean` from `RepoUpdateOptions`
+- L61-66: remove `stale` from `RepoStatusResult`
+- L117: "clone and analyze" -> "clone and generate a reference"
+- L129: remove `isStale` assignment
+- L135-136: `analyzed/hasSkill` -> `hasReference`
+- L143-157: remove stale filtering + stale messaging
+- L168-171: remove `stale` gate and update error message to "Specify --all or a pattern"
+- L194: remove `staleOnly: stale` from `updateAllRepos` call
+- L323-333: remove stale output from status display
+- L487: "marked as not analyzed" -> "marked as not referenced"
+
+### apps/cli/src/handlers/project.ts
+
+- L2-13: add `readGlobalMap` and `writeProjectMap` imports from `@offworld/sdk`
+- L11: `InstalledSkill` -> `InstalledReference`
+- L26: "Generate skills" -> "Generate references"
+- L37: `skillsInstalled` -> `referencesInstalled`
+- L142: "Install skills" -> "Install references"
+- L153: "install skills" -> "install references"
+- L163: `InstalledSkill[]` -> `InstalledReference[]`
+- L179: `pullResult.skillInstalled` -> `pullResult.referenceInstalled`
+- L181-185: `skill:` -> `reference:` (use `toReferenceFileName`)
+- Before L197: insert project map write using global map data
+  ```ts
+  const map = readGlobalMap();
+  const projectEntries = Object.fromEntries(
+  	selected
+  		.filter((m) => m.repo)
+  		.map((m) => {
+  			const qualifiedName = `github:${m.repo}`;
+  			const entry = map.repos[qualifiedName];
+  			return [
+  				qualifiedName,
+  				{
+  					localPath: entry?.localPath ?? "",
+  					reference: toReferenceFileName(m.repo!),
+  					keywords: entry?.keywords ?? [],
+  				},
+  			];
+  		}),
+  );
+  writeProjectMap(projectRoot, projectEntries);
+  ```
+- L209-211: "skills" -> "references"
+- L216: return `referencesInstalled`
 
-- All offworld paths derived from XDG-basedir paths.
-- Reference filename is `owner-repo.md` with condensed owner/repo logic preserved.
+### apps/cli/src/handlers/init.ts
 
-## Step 3: Map Manager (`packages/sdk`)
+- L10: remove `getStateRoot` import; add `Paths`
+- L277: "install skills" -> "install references"
+- L306: `getStateRoot()` -> `Paths.state`
+- L327: "not analyzed" -> "not referenced"
 
-Replace index.json with map.json manager.
+### apps/cli/src/handlers/config.ts
 
-Work:
+- L254: "install skills" -> "install references"
 
-- Replace `packages/sdk/src/index-manager.ts` with map functions:
-  - `readGlobalMap`, `writeGlobalMap`, `upsertGlobalMapEntry`, `removeGlobalMapEntry`.
-  - `writeProjectMap(projectRoot, entries)`.
-- Remove usage of `Paths.state` for index.json.
+### apps/cli/src/handlers/push.ts
 
-Acceptance:
+- L11: `toSkillDirName` -> `toReferenceName`
+- L15: `pushAnalysis` -> `pushReference`
+- L22: `InvalidSkillError` -> `InvalidReferenceError`
+- L87: rename `loadLocalAnalysis` -> `loadLocalReference`
+- L101-105: `analyzedAt` -> `referenceUpdatedAt`; `referenceName` -> `toReferenceName(fullName)`
+- L170: "clone and analyze" -> "clone and generate a reference"
+- L186-196: rename `localAnalysis` -> `localReference`
+- L216: `pushAnalysis(...)` -> `pushReference(...)`
+- L238-249: "skills" -> "references"
+- L258-262: `InvalidSkillError` handling -> `InvalidReferenceError` + "reference" wording
 
-- Global map reads/writes only `assets/map.json`.
-- Project map writes only `./.offworld/map.json`.
+### apps/cli/src/handlers/remove.ts
 
-## Step 4: Reference Generation (`packages/sdk`)
+- L9: drop `removeReferenceByName` import; add `toReferenceFileName`
+- L14: `import { existsSync } from "node:fs";` -> `import { existsSync, rmSync } from "node:fs";`
+- L28-31: `skillPath` -> `referencePath`
+- L36-55: rename `skillPath` usages -> `referencePath`
+- L73-74: `${repoName.replace(/\//g, "-")}.md` -> `toReferenceFileName(repoName)`
+- L221: replace `removeReferenceByName(repoName)` with local delete block
+  ```ts
+  if (existsSync(referencePath)) rmSync(referencePath, { force: true });
+  if (existsSync(metaPath)) rmSync(metaPath, { recursive: true, force: true });
+  ```
+- L200/L228: `skillPath` -> `referencePath` in return payloads
 
-Reframe skill generation to reference generation using OpenCode Analyze agent.
+### apps/cli/src/index.ts
 
-Work:
+- L83/L335: remove `stale` flags from list/repo list inputs
+- L95/L348: remove `stale: input.stale` in handler calls
+- L357/L371: remove `stale` from repo update inputs and handler calls
 
-- Update `packages/sdk/src/generate.ts`:
-  - Prompt outputs reference markdown (no frontmatter).
-  - Rename `GenerateSkill*` types to `GenerateReference*`.
-  - Rename extraction/validation helpers to reference equivalents.
-  - Return `referenceContent` and `commitSha`.
-- Ensure prompt uses custom Analyze agent with focused reference goal.
+### apps/cli/src/**tests**/handlers.test.ts
 
-Acceptance:
+- L52-53: `pullAnalysis*` -> `pullReference*` mocks
+- L61: `pushAnalysis` -> `pushReference` mock
+- L64-70: `toSkillDirName` mock -> `toReferenceFileName`/`toReferenceName`
+- L175: `hasSkill` -> `hasReference`
+- L272/L298/L328/L358: `analysisSource` -> `referenceSource`
+- L503: `hasSkill` -> `hasReference`
 
-- Generated output is a markdown reference file with no YAML frontmatter.
-- Validation ensures minimal content length and structure (reference-specific).
+### apps/cli/package.json
 
-## Step 5: Install Global Skill + Reference Files (`packages/sdk`)
+- L4: description -> "reference" wording
+- L7/L13: keywords remove "analysis/skills"; add "reference"
 
-Add global skill install and per-repo reference install.
+### apps/cli/README.md
 
-Work:
+- L131-138: update `~/.local/share/offworld/skills/offworld/` -> `~/.local/share/offworld/skill/offworld/`
 
-- Add `installGlobalSkill()`:
-  - Ensure `~/.local/share/offworld/skill/offworld/SKILL.md` exists (static template).
-  - Symlink full `offworld/` directory into each agent skill dir.
-- Replace `installSkill` with `installReference`:
-  - Write reference to `references/{owner-repo}.md`.
-  - Write meta to `~/.local/share/offworld/meta/{owner-repo}/meta.json`.
-  - Update `assets/map.json` with refs list + primary.
+## Phase: apps/web
 
-Acceptance:
+### apps/web/src/routes/\_github/$owner/$repo/route.tsx
 
-- Agents see single `offworld` skill directory with all references under it.
-- Reference and meta files are written to XDG-compliant paths.
-- Global map updated on each install.
+- L5: `repoSkillsQuery` -> `repoReferencesQuery`
+- L21: update `ensureQueryData(repoReferencesQuery(...))`
 
-## Step 6: Clone + Repo Ops (`packages/sdk`)
+### apps/web/src/routes/\_github/$owner/$repo/index.tsx
 
-Update clone/index logic to map-based routing and single-skill model.
+- L11: `repoSkillsQuery` import -> `repoReferencesQuery`
+- L71-82: `analysisData` -> `referenceData`
+- L91-110: `analysisData` prop -> `referenceData`
 
-Work:
+### apps/web/src/components/repo/repo-header.tsx
 
-- Update `packages/sdk/src/clone.ts`:
-  - Replace `getSkillPath` checks with reference file checks.
-  - Update map entry on clone with `localPath` and reference info.
-- Update `packages/sdk/src/repo-manager.ts`:
-  - Replace all index.json usage with map manager.
-  - Remove `hasSkill` / `analyzedAt` fields.
-  - GC/prune logic removes refs and meta, not per-repo skills.
+- L12-19: `analysisData` -> `referenceData`
+- L35: `hasAnalysis` -> `hasReference`
+- L54-63: `analysisData` -> `referenceData`
+- L66: `!hasAnalysis` -> `!hasReference`
 
-Acceptance:
+### apps/web/src/components/admin/analysis-table.tsx
 
-- No `index.json` usage remains.
-- All repo state reflected via map.json + filesystem refs.
+- L22: `AnalysisTable` -> `ReferenceTable`
+- L61: column label "Analyzed" -> "Generated"
 
-## Step 7: Reference Matching (`packages/sdk`)
+### apps/web/src/routes/admin.tsx
 
-Rename skill matcher and adjust semantics.
+- L5: import `AnalysisTable` -> `ReferenceTable`
+- L58: `<AnalysisTable />` -> `<ReferenceTable />`
 
-Work:
+### apps/web/src/routes/cli.tsx
 
-- Rename `packages/sdk/src/skill-matcher.ts` -> `reference-matcher.ts` or update names in place.
-- `isReferenceInstalled` checks `offworld/references/{owner-repo}.md`.
-- Update status labels and callers to reference terminology.
+- L54: "Force re-analysis" -> "Force re-generation"
+- L60: "Generate analysis locally" -> "Generate reference locally"
+- L70: "Push local analysis" -> "Push local reference"
+- L334-352: replace "skills"/"analysis" wording with "references"
 
-Acceptance:
+### apps/web/src/routes/explore.tsx
 
-- Dependency resolution checks reference existence under offworld single-skill dir.
+- L27: "Shared skills" -> "Shared references"
+- L29: "Explore skills" -> "Explore references"
+- L46: "No skills" -> "No references"
 
-## Step 8: Sync API (`packages/sdk`)
+### apps/web/src/components/layout/breadcrumbs.tsx
 
-Rename sync interfaces and align with reference API.
+- L27: breadcrumb label "skills" -> "references"
 
-Work:
+### apps/web/e2e/analysis.spec.ts
 
-- Update `packages/sdk/src/sync.ts`:
-  - Rename `AnalysisData` -> `ReferenceData` and fields to `referenceName`, `referenceContent`, `generatedAt`.
-  - Update API calls to new Convex endpoints (`references.*`).
-  - Update error messages to reference terminology.
+- L3-41: replace "analysis" wording with "reference" in test names/selectors
 
-Acceptance:
+## Phase: apps/docs
 
-- SDK sync only speaks reference names/fields.
+### AGENTS.md
 
-## Step 9: CLI Routing + Flags (`apps/cli`)
+- L11-18, L143-148, L190-194: `~/.local/share/offworld/skills/offworld/` -> `~/.local/share/offworld/skill/offworld/`
 
-Refactor CLI surface to reference language and single-skill operations.
+### README.md
 
-Work:
+- L75-82: `~/.local/share/offworld/skills/offworld/` -> `~/.local/share/offworld/skill/offworld/`
 
-- Update `apps/cli/src/index.ts`:
-  - Rename flags `--skill` -> `--reference`, `--skill-only` -> `--reference-only`, `--without-skill` -> `--without-reference`.
-  - Update descriptions and examples.
-- Update handlers in `apps/cli/src/handlers/`:
-  - `pull`, `generate`, `push`, `rm`, `list`, `repo`, `project`, `config`.
-  - Generate references + update maps + install global skill.
-- Update `ow config show --json` output to include:
-  - `paths.skillDir`, `paths.referencesDir`, `paths.globalMap`, `paths.projectMap`.
+### packages/sdk/README.md
 
-Acceptance:
+- L23: "AGENTS.md skill table generation" -> "AGENTS.md reference table generation"
 
-- CLI commands no longer mention skills; all flags are reference-named.
-- `ow config show --json` returns map and refs paths for SKILL routing.
+### .github/workflows/release.yml
 
-## Step 10: Backend Schema + Functions (`packages/backend/convex`)
-
-Rename tables, queries, and validations to reference model.
-
-Work:
-
-- Update `packages/backend/convex/schema.ts`:
-  - Rename `skill` table to `reference`.
-  - Fields: `referenceName`, `referenceDescription`, `referenceContent`, `commitSha`, `generatedAt`, `pullCount`, `isVerified`, `workosId`.
-- Rename `packages/backend/convex/analyses.ts` -> `references.ts` and update all queries/actions/mutations.
-- Rename validation files: `skillContent.ts` -> `referenceContent.ts`; update push validation.
-- Update backend tests for references.
-
-Acceptance:
-
-- Convex schema contains `reference` table only (no `skill`).
-- All endpoints use reference names and fields.
-
-## Step 11: Web App (`apps/web`)
-
-Update routes, queries, and UI copy to references.
-
-Work:
-
-- Rename route file `apps/web/src/routes/_github/$owner/$repo/$skill.tsx` -> `$reference.tsx`.
-- Update repo page `apps/web/src/routes/_github/$owner/$repo/index.tsx` to list references.
-- Update `apps/web/src/routes/explore.tsx`, `apps/web/src/routes/profile.tsx`, `apps/web/src/components/home/*`, `apps/web/src/routes/cli.tsx` for reference language.
-- Regenerate `apps/web/src/routeTree.gen.ts`.
-
-Acceptance:
-
-- UI labels and routing reflect references everywhere.
-- Route params use `reference` (no `skill`).
-
-## Step 12: Docs (`apps/docs`)
-
-Update public docs and prompts to match single-skill model.
-
-Work:
-
-- Update `apps/docs/src/content/docs/setup-prompt.md` to reference generation and single SKILL.
-- Update any CLI docs referencing skills to references.
-
-Acceptance:
-
-- Docs describe single global SKILL and per-repo references only.
-
-## Step 13: Cleanup
-
-Remove legacy skill/analysis code paths.
-
-Work:
-
-- Delete unused modules tied to skills/analysis.
-- Remove old tests/mocks referencing skills.
-- Update any remaining strings, comments, and types.
-
-Acceptance:
-
-- No `skill`/`analysis` legacy naming remains except where required by external deps.
-
-## Step 14: Data Reset (Operator Action)
-
-Remove existing Convex data and local CLI data.
-
-Work:
-
-- Delete all existing Convex data (dev) to avoid legacy data conflicts.
-- Remove local CLI data dirs under `~/.local/share/offworld/` and `~/.local/state/offworld/`.
-
-Acceptance:
-
-- Fresh local install has only new single-skill files and maps.
-
-## Step 15: Verification
-
-Run project checks and ensure routing works with maps.
-
-Work:
-
-- Typecheck, tests, and build.
-- Verify `ow project init` writes project map and updates global map.
-- Verify `ow config show --json` output is consumed by SKILL routing steps.
-- Verify pull stats on web update per reference.
-
-Acceptance:
-
-- All checks pass.
-- End-to-end workflow works: clone -> reference -> map -> routing.
-
-## Additional Notes
-
-- Map is local-only; never pushed to web.
-- Single global SKILL is static and path-agnostic; all path discovery done via CLI output.
-- Symlinking the `offworld/` directory carries deep subdirs (references) automatically.
+- L209: description "analysis/skill" -> "reference"

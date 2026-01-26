@@ -1,277 +1,126 @@
 {
-	"branchName": "ralph/feature",
-	"userStories": [
-		{
-			"id": "US-001",
-			"title": "Refactor types to maps and references",
-			"priority": 1,
-			"description": "Replace skill/analysis schemas with GlobalMap, ProjectMap, and ReferenceData in the types package and update all imports to match.",
-			"acceptanceCriteria": [
-				"`packages/types/src/schemas.ts` exports only map/reference schemas",
-				"ReferenceData schema includes fullName, referenceName, description, content, commitSha, generatedAt",
-				"No Skill* or Analysis* schemas or types remain in packages/types",
-				"Typecheck passes after updating downstream imports"
-			],
-			"stepsToVerify": [
-				"rg \"Skill|Analysis\" packages/types/src",
-				"rg \"GlobalMap|ProjectMap|ReferenceData\" packages/types/src/schemas.ts",
-				"bun run typecheck"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-002",
-			"title": "Add offworld XDG paths and reference naming",
-			"priority": 2,
-			"description": "Introduce single-skill path helpers and replace skill dir naming with reference filename naming in the SDK config utilities.",
-			"acceptanceCriteria": [
-				"`packages/sdk/src/paths.ts` defines offworldSkillDir, offworldReferencesDir, offworldAssetsDir, offworldGlobalMapPath using Paths.data",
-				"`toReferenceFileName` returns owner-repo.md using existing condense logic",
-				"`getMetaPath` still uses Paths.data and toMetaDirName"
-			],
-			"stepsToVerify": [
-				"rg \"offworldSkillDir|offworldReferencesDir|offworldAssetsDir|offworldGlobalMapPath\" packages/sdk/src/paths.ts",
-				"rg \"toReferenceFileName\" packages/sdk/src/config.ts",
-				"rg \"getMetaPath\" packages/sdk/src/config.ts"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-003",
-			"title": "Replace index manager with map manager",
-			"priority": 3,
-			"description": "Switch from index.json to map.json management with global and project map helpers.",
-			"acceptanceCriteria": [
-				"Map helpers read/write only `assets/map.json` for the global map",
-				"Project map writes only `./.offworld/map.json`",
-				"Map helpers include readGlobalMap, writeGlobalMap, upsertGlobalMapEntry, removeGlobalMapEntry, writeProjectMap",
-				"No usage of index.json or Paths.state remains in SDK"
-			],
-			"stepsToVerify": [
-				"rg \"readGlobalMap|writeGlobalMap|upsertGlobalMapEntry|removeGlobalMapEntry|writeProjectMap\" packages/sdk/src/index-manager.ts",
-				"rg \"\.offworld/map\.json\" packages/sdk/src/index-manager.ts",
-				"rg \"index\.json|Paths\.state\" packages/sdk/src -g'*.ts'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-004",
-			"title": "Generate reference markdown instead of skills",
-			"priority": 4,
-			"description": "Update generation flow to produce reference markdown with no frontmatter and reference-specific validation.",
-			"acceptanceCriteria": [
-				"Generate types and helpers are renamed to GenerateReference* equivalents",
-				"Prompt explicitly requires markdown reference output with no YAML frontmatter",
-				"Generation returns referenceContent and commitSha",
-				"Validation enforces minimal length and required reference structure"
-			],
-			"stepsToVerify": [
-				"rg \"GenerateReference\" packages/sdk/src/generate.ts",
-				"rg \"referenceContent|commitSha\" packages/sdk/src/generate.ts",
-				"rg \"frontmatter|YAML\" packages/sdk/src/generate.ts"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-005",
-			"title": "Install global skill and per-repo references",
-			"priority": 5,
-			"description": "Add global SKILL install and per-repo reference installation with meta and map updates.",
-			"acceptanceCriteria": [
-				"installGlobalSkill ensures `~/.local/share/offworld/skill/offworld/SKILL.md` exists",
-				"Offworld directory is symlinked into each agent skill directory",
-				"installReference writes references/{owner-repo}.md and meta.json under ~/.local/share/offworld/meta/{owner-repo}",
-				"Global map updates include references list and primary reference"
-			],
-			"stepsToVerify": [
-				"rg \"installGlobalSkill|installReference\" packages/sdk/src -g'*.ts'",
-				"rg \"references\/.+\\.md\" packages/sdk/src -g'*.ts'",
-				"rg \"meta.json\" packages/sdk/src -g'*.ts'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-006",
-			"title": "Update clone and repo ops to map routing",
-			"priority": 6,
-			"description": "Refactor clone and repo-manager logic to use map.json and reference files instead of per-repo skills.",
-			"acceptanceCriteria": [
-				"clone flow checks for reference files rather than skill directories",
-				"repo-manager uses map manager APIs for state updates",
-				"Legacy hasSkill/analyzedAt fields are removed",
-				"GC/prune removes reference files and meta directories"
-			],
-			"stepsToVerify": [
-				"rg \"reference\" packages/sdk/src/clone.ts",
-				"rg \"index\\.json|hasSkill|analyzedAt\" packages/sdk/src -g'*.ts'",
-				"rg \"remove.*references|meta\" packages/sdk/src/repo-manager.ts"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-007",
-			"title": "Rename skill matcher to reference matcher",
-			"priority": 7,
-			"description": "Update dependency resolution to reference terminology and reference-file existence checks.",
-			"acceptanceCriteria": [
-				"Matcher module is renamed to reference-matcher.ts and exports isReferenceInstalled",
-				"isReferenceInstalled checks offworld/references/{owner-repo}.md",
-				"Status labels and call sites use reference language"
-			],
-			"stepsToVerify": [
-				"test -f packages/sdk/src/reference-matcher.ts",
-				"rg \"isReferenceInstalled\" packages/sdk/src/reference-matcher.ts",
-				"rg \"skill-matcher\" packages/sdk/src -g'*.ts'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-008",
-			"title": "Align SDK sync with reference API",
-			"priority": 8,
-			"description": "Rename sync types and fields to references and point to new Convex endpoints.",
-			"acceptanceCriteria": [
-				"sync.ts uses ReferenceData with referenceName, referenceContent, generatedAt",
-				"Sync API calls target references.* endpoints",
-				"Error messages use reference terminology"
-			],
-			"stepsToVerify": [
-				"rg \"ReferenceData|referenceName|referenceContent|generatedAt\" packages/sdk/src/sync.ts",
-				"rg \"references\\.\" packages/sdk/src/sync.ts",
-				"rg \"skill|analysis\" packages/sdk/src/sync.ts"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-009",
-			"title": "Refactor CLI flags and handlers to references",
-			"priority": 9,
-			"description": "Update CLI surface area to reference naming and ensure config JSON exposes new paths.",
-			"acceptanceCriteria": [
-				"Flags are renamed to --reference, --reference-only, --without-reference",
-				"CLI help and examples use reference wording",
-				"Handlers generate references, update maps, and install global skill",
-				"`ow config show --json` includes paths.skillDir, paths.referencesDir, paths.globalMap, paths.projectMap"
-			],
-			"stepsToVerify": [
-				"rg \"--reference|--reference-only|--without-reference\" apps/cli/src/index.ts",
-				"rg \"skill\" apps/cli/src/index.ts",
-				"rg \"paths\\.(skillDir|referencesDir|globalMap|projectMap)\" apps/cli/src/handlers -g'*.ts'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-010",
-			"title": "Rename Convex schema and functions to references",
-			"priority": 10,
-			"description": "Update backend table, validators, and functions to the reference model.",
-			"acceptanceCriteria": [
-				"schema.ts defines a reference table with referenceName, referenceDescription, referenceContent, commitSha, generatedAt, pullCount, isVerified, workosId",
-				"analyses.ts is replaced by references.ts with updated queries/mutations/actions",
-				"referenceContent.ts validation replaces skillContent.ts",
-				"Backend tests reference reference terminology"
-			],
-			"stepsToVerify": [
-				"rg \"table\\(\\\"reference\\\"\\)\" packages/backend/convex/schema.ts",
-				"rg \"referenceName|referenceDescription|referenceContent|commitSha|generatedAt|pullCount|isVerified|workosId\" packages/backend/convex/schema.ts",
-				"test -f packages/backend/convex/references.ts",
-				"test ! -f packages/backend/convex/analyses.ts",
-				"test -f packages/backend/convex/validation/referenceContent.ts",
-				"test ! -f packages/backend/convex/validation/skillContent.ts"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-011",
-			"title": "Update web routes and UI copy to references",
-			"priority": 11,
-			"description": "Rename skill routes and replace UI copy to reference language across the web app.",
-			"acceptanceCriteria": [
-				"Route file is renamed from $skill.tsx to $reference.tsx",
-				"Repo pages list references and route params use reference",
-				"Explore/profile/home/cli pages use reference terminology",
-				"routeTree.gen.ts reflects the reference route param"
-			],
-			"stepsToVerify": [
-				"test -f apps/web/src/routes/_github/$owner_.$repo/$reference.tsx",
-				"test ! -f apps/web/src/routes/_github/$owner_.$repo/$skill.tsx",
-				"rg \"reference\" apps/web/src/routeTree.gen.ts",
-				"rg \"skill\" apps/web/src -g'*.tsx'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-012",
-			"title": "Update docs for single-skill references",
-			"priority": 12,
-			"description": "Revise docs to describe the single global SKILL and per-repo references.",
-			"acceptanceCriteria": [
-				"setup-prompt.md describes a single global SKILL and per-repo references",
-				"CLI docs use reference terminology",
-				"Docs do not describe per-repo skills or legacy analysis flows"
-			],
-			"stepsToVerify": [
-				"rg \"single global SKILL|per-repo reference\" apps/docs/src/content/docs/setup-prompt.md",
-				"rg \"reference\" apps/docs/src/content/docs -g'*.md'",
-				"rg \"per-repo skill|analysis\" apps/docs/src/content/docs -g'*.md'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-013",
-			"title": "Remove legacy skill/analysis modules",
-			"priority": 13,
-			"description": "Delete legacy files and tests tied to skills/analysis that are no longer used.",
-			"acceptanceCriteria": [
-				"Legacy files are removed: packages/sdk/src/skill-matcher.ts, packages/backend/convex/analyses.ts, packages/backend/convex/skillContent.ts",
-				"No tests or mocks reference skill/analysis concepts",
-				"Only required occurrences of the word skill remain (path SKILL.md or offworld/skill)"
-			],
-			"stepsToVerify": [
-				"test ! -f packages/sdk/src/skill-matcher.ts",
-				"test ! -f packages/backend/convex/analyses.ts",
-				"test ! -f packages/backend/convex/skillContent.ts",
-				"rg \"skill|analysis\" packages -g'*.test.*'"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-014",
-			"title": "Reset local and Convex data for new model",
-			"priority": 14,
-			"description": "Clear legacy local data directories and dev Convex data to avoid conflicts.",
-			"acceptanceCriteria": [
-				"~/.local/share/offworld and ~/.local/state/offworld are removed",
-				"Convex dev data contains no legacy or reference rows",
-				"Fresh install produces only single-skill files and maps"
-			],
-			"stepsToVerify": [
-				"test ! -d ~/.local/share/offworld",
-				"test ! -d ~/.local/state/offworld",
-				"bunx convex data list"
-			],
-			"passes": true
-		},
-		{
-			"id": "US-015",
-			"title": "Run automated checks and workflow verification",
-			"priority": 15,
-			"description": "Validate typecheck/tests/build and map-routing workflow with CLI commands.",
-			"acceptanceCriteria": [
-				"bun run typecheck, test, and build all pass",
-				"ow project init writes .offworld/map.json and updates the global map",
-				"ow config show --json exposes map and reference paths"
-			],
-			"stepsToVerify": [
-				"bun run typecheck",
-				"bun run test",
-				"bun run build",
-				"ow project init <local-repo-path>",
-				"test -f .offworld/map.json",
-				"test -f ~/.local/share/offworld/skill/offworld/assets/map.json",
-				"ow config show --json"
-			],
-			"passes": true
-		}
-	]
+  "branchName": "ralph/feature",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Rename analysis meta types to reference meta",
+      "priority": 1,
+      "description": "Acceptance criteria: ReferenceMetaSchema exported in packages/types/src/schemas.ts with referenceUpdatedAt field; packages/types/src/types.ts exports ReferenceMeta and removes RepoIndex types; packages/types/src/__tests__/schemas.test.ts uses ReferenceMetaSchema and referenceUpdatedAt.",
+      "stepsToVerify": [
+        "bun run test",
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-002",
+      "title": "Align SDK config/path helpers to reference naming",
+      "priority": 1,
+      "description": "Acceptance criteria: packages/sdk/src/config.ts removes toSkillDirName/getSkillPath/getAnalysisPath and adds toReferenceName; packages/sdk/src/paths.ts skillsDir points to skill/offworld legacy alias; packages/sdk/src/repo-source.ts exposes getReferenceFileNameForSource using toReferenceFileName; packages/sdk/src/index-manager.ts legacy exports removed; packages/sdk/src/index.ts removes deprecated exports and re-exports getReferenceFileNameForSource and InstalledReference.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-003",
+      "title": "Fix SDK sync reference name usage",
+      "priority": 1,
+      "description": "Acceptance criteria: packages/sdk/src/sync.ts uses toReferenceName for API referenceName in checkRemote/pullReference; deprecated analysis exports and InvalidSkillError alias removed; public API exports only reference-based names.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-004",
+      "title": "Normalize SDK generate/clone map updates",
+      "priority": 1,
+      "description": "Acceptance criteria: packages/sdk/src/generate.ts uses InstallReferenceMeta with referenceUpdatedAt, removes installSkill, installReference accepts qualifiedName/fullName, stores map under qualifiedName, and uses full ISO updatedAt; packages/sdk/src/clone.ts always upserts map entries with qualifiedName and only deletes reference/meta files using entry.references/entry.primary.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-005",
+      "title": "Remove stale-only flow in repo manager",
+      "priority": 2,
+      "description": "Acceptance criteria: packages/sdk/src/repo-manager.ts removes stale fields from summaries/options, drops staleOnly filtering, and status results no longer report stale counts.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-006",
+      "title": "Update SDK reference terminology in agents and AI",
+      "priority": 2,
+      "description": "Acceptance criteria: packages/sdk/src/agents-md.ts uses InstalledReference and reference naming for table/section generation; packages/sdk/src/ai/errors.ts defines OpenCodeReferenceError and derived classes extend it; packages/sdk/src/ai/opencode.ts and ai/index.ts re-export OpenCodeReferenceError and update logs; packages/sdk/src/constants.ts comment references reference generation; packages/sdk/src/installation.ts uses top-level writeFileSync import.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-007",
+      "title": "Update SDK tests and fetch mocks for reference naming",
+      "priority": 2,
+      "description": "Acceptance criteria: packages/sdk/src/__tests__/generate.test.ts uses installReference and referenceUpdatedAt; config.test.ts validates toReferenceFileName outputs; repo-source.test.ts asserts getReferenceFileNameForSource; mocks/fetch.ts uses /api/references endpoints and reference fields.",
+      "stepsToVerify": [
+        "bun run test"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-008",
+      "title": "Align CLI pull/generate/shared/list/repo handlers to references",
+      "priority": 1,
+      "description": "Acceptance criteria: apps/cli/src/handlers/pull.ts uses pullReference APIs, referenceSource/referenceInstalled, and installReference with qualifiedName + referenceRepoName; generate.ts uses qualifiedName and referenceRepoName consistently; shared.ts uses hasReference/referenceUpdatedAt and removes stale checks; list.ts and repo.ts remove stale filters and use reference wording in output.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-009",
+      "title": "Complete CLI project/init/push/remove wiring for references",
+      "priority": 1,
+      "description": "Acceptance criteria: apps/cli/src/handlers/project.ts writes .offworld/map.json using readGlobalMap/writeProjectMap and returns referencesInstalled; init.ts uses Paths.state and reference wording; config.ts prompt references references; push.ts uses toReferenceName/pushReference and referenceUpdatedAt; remove.ts uses toReferenceFileName and local delete block; apps/cli/src/index.ts removes stale flags from inputs.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-010",
+      "title": "Refresh CLI tests and docs for reference terminology",
+      "priority": 2,
+      "description": "Acceptance criteria: apps/cli/src/__tests__/handlers.test.ts mocks pullReference/pushReference and reference fields; apps/cli/package.json keywords/description use reference wording; apps/cli/README.md path examples use skill/offworld.",
+      "stepsToVerify": [
+        "bun run test"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-011",
+      "title": "Update web routes/components to reference naming",
+      "priority": 2,
+      "description": "Acceptance criteria: apps/web routes use repoReferencesQuery and referenceData props; repo header uses hasReference/referenceData; admin table renamed ReferenceTable with Generated column; cli/explore/breadcrumbs copy uses references; apps/web/e2e/analysis.spec.ts asserts reference copy.",
+      "stepsToVerify": [
+        "bun run typecheck"
+      ],
+      "passes": false
+    },
+    {
+      "id": "US-012",
+      "title": "Update root docs and workflow wording",
+      "priority": 3,
+      "description": "Acceptance criteria: AGENTS.md, README.md, packages/sdk/README.md, and .github/workflows/release.yml use skill/offworld path and reference terminology.",
+      "stepsToVerify": [
+        "bun run check"
+      ],
+      "passes": false
+    }
+  ]
 }

@@ -25,7 +25,7 @@ export interface ProjectInitOptions {
 	deps?: string;
 	/** Comma-separated deps to exclude */
 	skip?: string;
-	/** Generate skills for deps without existing ones */
+	/** Generate references for deps without existing ones */
 	generate?: boolean;
 	/** Show what would be done without doing it */
 	dryRun?: boolean;
@@ -141,7 +141,7 @@ export async function projectInitHandler(
 
 	if (!options.yes && !options.dryRun) {
 		const confirm = await p.confirm({
-			message: `Install skills for ${selected.length} dependencies?`,
+			message: `Install references for ${selected.length} dependencies?`,
 		});
 
 		if (p.isCancel(confirm) || !confirm) {
@@ -152,7 +152,7 @@ export async function projectInitHandler(
 
 	if (options.dryRun) {
 		p.log.info("");
-		p.log.info("Dry run - would install skills for:");
+		p.log.info("Dry run - would install references for:");
 		for (const match of selected) {
 			p.log.info(`  - ${match.dep} (${match.repo})`);
 		}
@@ -201,7 +201,7 @@ export async function projectInitHandler(
 		selected
 			.filter((m) => m.repo)
 			.map((m) => {
-				const qualifiedName = `github:${m.repo}`;
+				const qualifiedName = `github.com:${m.repo}`;
 				const entry = map.repos[qualifiedName];
 				return [
 					qualifiedName,

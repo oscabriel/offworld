@@ -69,7 +69,10 @@ export function validatePushArgs(args: {
 	}
 
 	// referenceDescription
-	if (args.referenceDescription.length === 0 || args.referenceDescription.length > DESCRIPTION_MAX) {
+	if (
+		args.referenceDescription.length === 0 ||
+		args.referenceDescription.length > DESCRIPTION_MAX
+	) {
 		return {
 			valid: false,
 			error: `referenceDescription must be 1-${DESCRIPTION_MAX} chars`,

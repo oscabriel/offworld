@@ -164,6 +164,7 @@ Skills are symlinked to:
 **Blocker for typecheck:** CLI handlers (`remove.ts`, `repo.ts`, `pull.ts`, `generate.ts`, `push.ts`, `project.ts`) still reference `getIndexEntry`, `getSkillPath`, `toSkillDirName`, `getAllAgentConfigs`. These must be refactored for single-skill model in US-009.
 
 **Pattern for CLI migration:**
+
 - Replace `getIndexEntry(qualifiedName)` with `readGlobalMap().repos[qualifiedName]`
 - Replace `entry.fullName` with `qualifiedName` (map keys are qualified names)
 - Remove symlink management (single-skill model has no per-repo symlinks)
@@ -182,6 +183,7 @@ Skills are symlinked to:
 - **Backend stub**: API calls still target `api.analyses.*` with field mapping until US-010 renames backend endpoints to `api.references.*`.
 
 ### Patterns
+
 - When renaming types/functions across SDK boundaries, provide deprecated aliases to avoid breaking downstream consumers.
 - TODO comments mark temporary backend compatibility shims with US story IDs for removal.
 - Field mapping (`skillName` → `referenceName`, `analyzedAt` → `generatedAt`) in SDK keeps CLI working until backend migration.
@@ -196,6 +198,7 @@ Skills are symlinked to:
 - Verified no legacy "per-repo skill" or "analysis" wording remains in docs.
 
 ### Test Status
+
 - Typecheck passes.
 - Tests fail in `apps/cli/__tests__/handlers.test.ts` and `packages/sdk/__tests__/clone.test.ts` and `packages/sdk/__tests__/index-manager.test.ts` due to legacy test expectations (US-013 cleanup needed).
 

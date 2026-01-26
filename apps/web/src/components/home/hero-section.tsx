@@ -38,8 +38,7 @@ export function HeroSection() {
 				</h1>
 
 				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-xl">
-					A skill file and a CLI tool that give your coding agents a map to find and search within
-					any open source library.
+					CLI tool that gives your coding agents instant, up-to-date context on any open source repo.
 				</p>
 			</div>
 

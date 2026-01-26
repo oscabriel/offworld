@@ -4,99 +4,94 @@
 
 import * as p from "@clack/prompts";
 import {
-  detectInstallMethod,
-  getCurrentVersion,
-  fetchLatestVersion,
-  executeUpgrade,
-  type InstallMethod,
+	detectInstallMethod,
+	getCurrentVersion,
+	fetchLatestVersion,
+	executeUpgrade,
+	type InstallMethod,
 } from "@offworld/sdk";
 import { createSpinner } from "../utils/spinner.js";
 
 export interface UpgradeOptions {
-  target?: string;
-  method?: InstallMethod;
+	target?: string;
+	method?: InstallMethod;
 }
 
 export interface UpgradeResult {
-  success: boolean;
-  from?: string;
-  to?: string;
-  message?: string;
+	success: boolean;
+	from?: string;
+	to?: string;
+	message?: string;
 }
 
-export async function upgradeHandler(
-  options: UpgradeOptions,
-): Promise<UpgradeResult> {
-  const { target, method: methodOverride } = options;
+export async function upgradeHandler(options: UpgradeOptions): Promise<UpgradeResult> {
+	const { target, method: methodOverride } = options;
 
-  try {
-    const s = createSpinner();
+	try {
+		const s = createSpinner();
 
-    // Detect installation method
-    s.start("Detecting installation method...");
-    const method = methodOverride ?? detectInstallMethod();
-    s.stop(`Installation method: ${method}`);
+		// Detect installation method
+		s.start("Detecting installation method...");
+		const method = methodOverride ?? detectInstallMethod();
+		s.stop(`Installation method: ${method}`);
 
-    if (method === "unknown") {
-      const confirm = await p.confirm({
-        message:
-          "Could not detect installation method. Attempt curl-based upgrade?",
-        initialValue: false,
-      });
+		if (method === "unknown") {
+			const confirm = await p.confirm({
+				message: "Could not detect installation method. Attempt curl-based upgrade?",
+				initialValue: false,
+			});
 
-      if (p.isCancel(confirm) || !confirm) {
-        p.log.info("Aborted.");
-        return { success: false, message: "Unknown installation method" };
-      }
-    }
+			if (p.isCancel(confirm) || !confirm) {
+				p.log.info("Aborted.");
+				return { success: false, message: "Unknown installation method" };
+			}
+		}
 
-    const effectiveMethod = method === "unknown" ? "curl" : method;
+		const effectiveMethod = method === "unknown" ? "curl" : method;
 
-    // Get current version
-    const currentVersion = getCurrentVersion();
-    p.log.info(`Current version: ${currentVersion}`);
+		// Get current version
+		const currentVersion = getCurrentVersion();
+		p.log.info(`Current version: ${currentVersion}`);
 
-    // Determine target version
-    let targetVersion = target;
-    if (!targetVersion) {
-      s.start("Fetching latest version...");
-      const latest = await fetchLatestVersion(effectiveMethod);
-      s.stop(
-        latest ? `Latest version: ${latest}` : "Could not fetch latest version",
-      );
+		// Determine target version
+		let targetVersion = target;
+		if (!targetVersion) {
+			s.start("Fetching latest version...");
+			const latest = await fetchLatestVersion(effectiveMethod);
+			s.stop(latest ? `Latest version: ${latest}` : "Could not fetch latest version");
 
-      if (!latest) {
-        p.log.error("Failed to fetch latest version");
-        return { success: false, message: "Failed to fetch latest version" };
-      }
-      targetVersion = latest;
-    }
+			if (!latest) {
+				p.log.error("Failed to fetch latest version");
+				return { success: false, message: "Failed to fetch latest version" };
+			}
+			targetVersion = latest;
+		}
 
-    // Normalize version (remove 'v' prefix if provided)
-    targetVersion = targetVersion.replace(/^v/, "");
+		// Normalize version (remove 'v' prefix if provided)
+		targetVersion = targetVersion.replace(/^v/, "");
 
-    // Check if already on target version
-    if (currentVersion === targetVersion) {
-      p.log.success(`Already on version ${targetVersion}`);
-      return { success: true, from: currentVersion, to: targetVersion };
-    }
+		// Check if already on target version
+		if (currentVersion === targetVersion) {
+			p.log.success(`Already on version ${targetVersion}`);
+			return { success: true, from: currentVersion, to: targetVersion };
+		}
 
-    p.log.info(`Upgrading from ${currentVersion} to ${targetVersion}...`);
+		p.log.info(`Upgrading from ${currentVersion} to ${targetVersion}...`);
 
-    // Execute upgrade
-    await executeUpgrade(effectiveMethod, targetVersion);
+		// Execute upgrade
+		await executeUpgrade(effectiveMethod, targetVersion);
 
-    p.log.success(`Successfully upgraded to ${targetVersion}`);
-    p.log.info("Restart your terminal or run 'ow --version' to verify.");
+		p.log.success(`Successfully upgraded to ${targetVersion}`);
+		p.log.info("Restart your terminal or run 'ow --version' to verify.");
 
-    return {
-      success: true,
-      from: currentVersion,
-      to: targetVersion,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    p.log.error(message);
-    return { success: false, message };
-  }
+		return {
+			success: true,
+			from: currentVersion,
+			to: targetVersion,
+		};
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		p.log.error(message);
+		return { success: false, message };
+	}
 }

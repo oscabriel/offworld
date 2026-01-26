@@ -138,11 +138,11 @@ After running `ow project init`, AGENTS.md will have a section like this:
 
 References installed for this project's dependencies:
 
-| Dependency      | Reference       | Path                                                       |
-| --------------- | --------------- | ---------------------------------------------------------- |
-| react           | facebook-react  | ~/.local/share/offworld/skill/offworld/references/facebook-react.md    |
+| Dependency      | Reference         | Path                                                                   |
+| --------------- | ----------------- | ---------------------------------------------------------------------- |
+| react           | facebook-react    | ~/.local/share/offworld/skill/offworld/references/facebook-react.md    |
 | convex          | get-convex-convex | ~/.local/share/offworld/skill/offworld/references/get-convex-convex.md |
-| tanstack-router | tanstack-router | ~/.local/share/offworld/skill/offworld/references/tanstack-router.md   |
+| tanstack-router | tanstack-router   | ~/.local/share/offworld/skill/offworld/references/tanstack-router.md   |
 
 To update references, run: `ow pull <dependency>`
 To regenerate all: `ow project init --all --generate`

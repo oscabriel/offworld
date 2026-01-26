@@ -285,7 +285,10 @@ export async function pullReferenceByName(
  * @param token - Authentication token
  * @returns Push result
  */
-export async function pushReference(reference: ReferenceData, token: string): Promise<PushResponse> {
+export async function pushReference(
+	reference: ReferenceData,
+	token: string,
+): Promise<PushResponse> {
 	const client = createClient(token);
 	try {
 		const result = await client.action(api.references.push, {

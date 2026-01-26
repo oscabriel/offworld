@@ -1,18 +1,25 @@
 export {
 	type Config,
 	type RepoSource,
-	type RepoIndex,
-	type RepoIndexEntry,
+	type GlobalMap,
+	type GlobalMapRepoEntry,
+	type ProjectMap,
+	type ProjectMapRepoEntry,
 	type FileIndexEntry,
 	type FileIndex,
 	type FileRole,
 } from "@offworld/types";
 
+// Deprecated exports for backwards compatibility (TODO: remove after US-006)
+/** @deprecated */
+export type RepoIndex = { version: number; repos: Record<string, any> };
+/** @deprecated */
+export type RepoIndexEntry = any;
+
 export { VERSION, DEFAULT_IGNORE_PATTERNS } from "./constants.js";
 
 export {
 	getMetaRoot,
-	getStateRoot,
 	getRepoRoot,
 	getRepoPath,
 	getAnalysisPath,
@@ -36,13 +43,19 @@ export {
 } from "./repo-source.js";
 
 export {
-	getIndexPath,
+	readGlobalMap,
+	writeGlobalMap,
+	upsertGlobalMapEntry,
+	removeGlobalMapEntry,
+	writeProjectMap,
+	// Deprecated (TODO: remove after US-006)
 	getIndex,
 	saveIndex,
 	updateIndex,
 	removeFromIndex,
 	getIndexEntry,
 	listIndexedRepos,
+	getIndexPath,
 } from "./index-manager.js";
 
 export {

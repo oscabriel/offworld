@@ -16,10 +16,6 @@ export function getMetaRoot(): string {
 	return Paths.data;
 }
 
-export function getStateRoot(): string {
-	return Paths.state;
-}
-
 export function getRepoRoot(config?: Config): string {
 	const root = config?.repoRoot ?? Paths.defaultRepoRoot;
 	return expandTilde(root);

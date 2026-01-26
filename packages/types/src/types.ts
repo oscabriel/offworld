@@ -46,3 +46,9 @@ export type GlobalMapRepoEntry = z.infer<typeof GlobalMapRepoEntrySchema>;
 export type GlobalMap = z.infer<typeof GlobalMapSchema>;
 export type ProjectMapRepoEntry = z.infer<typeof ProjectMapRepoEntrySchema>;
 export type ProjectMap = z.infer<typeof ProjectMapSchema>;
+
+// Deprecated legacy types (TODO: remove after US-006)
+/** @deprecated Use GlobalMap instead */
+export type RepoIndex = { version: number; repos: Record<string, any> };
+/** @deprecated Use GlobalMapRepoEntry instead */
+export type RepoIndexEntry = any;

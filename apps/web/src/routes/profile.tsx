@@ -69,12 +69,16 @@ function ProfileComponent() {
 				<div className="border-border bg-card flex items-start justify-between gap-5 border p-5">
 					<div className="space-y-5">
 						<div className="space-y-1">
-							<p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">Name</p>
+							<p className="text-muted-foreground font-mono text-xs tracking-widest uppercase">
+								Name
+							</p>
 							<p className="font-serif text-lg">{user.name || "Not set"}</p>
 						</div>
 
 						<div className="space-y-1">
-							<p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">Email</p>
+							<p className="text-muted-foreground font-mono text-xs tracking-widest uppercase">
+								Email
+							</p>
 							<p className="font-mono text-sm">{user.email}</p>
 						</div>
 					</div>
@@ -102,16 +106,16 @@ function ProfileComponent() {
 							<table className="w-full">
 								<thead>
 									<tr className="border-primary/10 border-b">
-										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs uppercase tracking-widest">
+										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs tracking-widest uppercase">
 											Repository
 										</th>
-										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs uppercase tracking-widest">
+										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs tracking-widest uppercase">
 											Skill
 										</th>
-										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs uppercase tracking-widest">
+										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs tracking-widest uppercase">
 											Pulls
 										</th>
-										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs uppercase tracking-widest">
+										<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs tracking-widest uppercase">
 											Pushed
 										</th>
 									</tr>
@@ -119,7 +123,10 @@ function ProfileComponent() {
 								<tbody>
 									<TooltipProvider>
 										{pushedSkills.map((skill) => (
-											<tr key={`${skill.fullName}-${skill.skillName}`} className="border-primary/5 border-b last:border-b-0">
+											<tr
+												key={`${skill.fullName}-${skill.skillName}`}
+												className="border-primary/5 border-b last:border-b-0"
+											>
 												<td className="px-5 py-4">
 													<Link
 														to="/$owner/$repo"

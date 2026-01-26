@@ -158,7 +158,7 @@
         "rg \"skill\" apps/cli/src/index.ts",
         "rg \"paths\\.(skillDir|referencesDir|globalMap|projectMap)\" apps/cli/src/handlers -g'*.ts'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-010",

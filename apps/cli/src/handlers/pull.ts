@@ -27,7 +27,7 @@ import { createSpinner } from "../utils/spinner";
 
 export interface PullOptions {
 	repo: string;
-	skill?: string;
+	reference?: string;
 	shallow?: boolean;
 	sparse?: boolean;
 	branch?: string;
@@ -104,16 +104,16 @@ function parseModelFlag(model?: string): { provider?: string; model?: string } {
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
 	const { repo, shallow = false, sparse = false, branch, force = false, verbose = false } = options;
-	const skillName = options.skill?.trim() || undefined;
+	const referenceName = options.reference?.trim() || undefined;
 	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
-	const isSkillOverride = Boolean(skillName);
+	const isReferenceOverride = Boolean(referenceName);
 
 	const s = createSpinner();
 
 	if (verbose) {
 		p.log.info(
-			`[verbose] Options: repo=${repo}, skill=${skillName ?? "default"}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
+			`[verbose] Options: repo=${repo}, reference=${referenceName ?? "default"}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
 		);
 	}
 
@@ -172,18 +172,18 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		const currentSha = getCommitSha(repoPath);
 		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
 
-		if (isSkillOverride && source.type !== "remote") {
-			throw new Error("--skill can only be used with remote repositories");
+		if (isReferenceOverride && source.type !== "remote") {
+			throw new Error("--reference can only be used with remote repositories");
 		}
-		if (isSkillOverride && !skillName) {
-			throw new Error("--skill requires a skill name");
+		if (isReferenceOverride && !referenceName) {
+			throw new Error("--reference requires a reference name");
 		}
-		const requiredSkillName = skillName ?? "";
+		const requiredReferenceName = referenceName ?? "";
 
 		// Check for cached analysis first
-		if (!force && !isSkillOverride && hasValidCache(source, currentSha)) {
+		if (!force && !isReferenceOverride && hasValidCache(source, currentSha)) {
 			verboseLog("Using cached analysis", verbose);
-			s.stop("Using cached skill");
+			s.stop("Using cached reference");
 
 			return {
 				success: true,
@@ -194,13 +194,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 
 		// Check remote API for remote repos (with SHA comparison)
-		if (source.type === "remote" && (!force || isSkillOverride)) {
+		if (source.type === "remote" && (!force || isReferenceOverride)) {
 			verboseLog(`Checking offworld.sh for analysis: ${source.fullName}`, verbose);
 			s.start("Checking offworld.sh for analysis...");
 
 			try {
-				const remoteCheck = isSkillOverride
-					? await checkRemoteByName(source.fullName, requiredSkillName)
+				const remoteCheck = isReferenceOverride
+					? await checkRemoteByName(source.fullName, requiredReferenceName)
 					: await checkRemote(source.fullName);
 
 				if (remoteCheck.exists && remoteCheck.commitSha) {
@@ -215,34 +215,34 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						remoteShaNorm === currentShaNorm ||
 						(commitDistance !== null && commitDistance <= MAX_COMMIT_DISTANCE);
 
-					const shouldDownload = isSkillOverride || isWithinThreshold;
+					const shouldDownload = isReferenceOverride || isWithinThreshold;
 
 					if (shouldDownload) {
-						if (!isSkillOverride) {
+						if (!isReferenceOverride) {
 							if (commitDistance === 0 || remoteShaNorm === currentShaNorm) {
 								verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
-								s.stop("Remote skill found (exact match)");
+								s.stop("Remote reference found (exact match)");
 							} else if (commitDistance !== null) {
 								verboseLog(
-									`Remote skill is ${commitDistance} commits behind (within ${MAX_COMMIT_DISTANCE} threshold)`,
+									`Remote reference is ${commitDistance} commits behind (within ${MAX_COMMIT_DISTANCE} threshold)`,
 									verbose,
 								);
-								s.stop(`Remote skill found (${commitDistance} commits behind)`);
+								s.stop(`Remote reference found (${commitDistance} commits behind)`);
 							} else {
-								verboseLog("Remote skill found (commit distance unknown)", verbose);
-								s.stop("Remote skill found");
+								verboseLog("Remote reference found (commit distance unknown)", verbose);
+								s.stop("Remote reference found");
 							}
 						} else {
-							s.stop("Remote skill found");
+							s.stop("Remote reference found");
 						}
 
-						const previewUrl = skillName
-							? `https://offworld.sh/${source.fullName}/${encodeURIComponent(skillName)}`
+						const previewUrl = referenceName
+							? `https://offworld.sh/${source.fullName}/${encodeURIComponent(referenceName)}`
 							: `https://offworld.sh/${source.fullName}`;
 						p.log.info(`Preview: ${previewUrl}`);
 
 						const useRemote = await p.confirm({
-							message: "Download this skill from offworld.sh?",
+							message: "Download this reference from offworld.sh?",
 							initialValue: true,
 						});
 
@@ -251,40 +251,40 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						}
 
 						if (!useRemote) {
-							if (isSkillOverride) {
-								throw new Error("Remote skill download declined");
+							if (isReferenceOverride) {
+								throw new Error("Remote reference download declined");
 							}
-							p.log.info("Skipping remote skill, generating locally...");
+							p.log.info("Skipping remote reference, generating locally...");
 						} else {
-							s.start("Downloading remote skill...");
-							const remoteAnalysis = isSkillOverride
-								? await pullAnalysisByName(source.fullName, requiredSkillName)
+							s.start("Downloading remote reference...");
+							const remoteAnalysis = isReferenceOverride
+								? await pullAnalysisByName(source.fullName, requiredReferenceName)
 								: await pullAnalysis(source.fullName);
 
 							if (remoteAnalysis) {
-								s.stop("Downloaded remote skill");
+								s.stop("Downloaded remote reference");
 
 								saveRemoteAnalysis(
 									source.fullName,
-									remoteAnalysis.skillContent,
+									remoteAnalysis.referenceContent,
 									remoteAnalysis.commitSha,
-									remoteAnalysis.analyzedAt ?? new Date().toISOString(),
+									remoteAnalysis.generatedAt ?? new Date().toISOString(),
 								);
 
 								const entry = getIndexEntry(source.qualifiedName);
 								if (entry) {
 									updateIndex({
 										...entry,
-										analyzedAt: remoteAnalysis.analyzedAt,
+										analyzedAt: remoteAnalysis.generatedAt,
 										commitSha: remoteAnalysis.commitSha,
 										hasSkill: true,
 									});
 								}
 
 								p.log.success(
-									skillName
-										? `Skill installed (${skillName}) for: ${qualifiedName}`
-										: `Skill installed for: ${qualifiedName}`,
+									referenceName
+										? `Reference installed (${referenceName}) for: ${qualifiedName}`
+										: `Reference installed for: ${qualifiedName}`,
 								);
 
 								return {
@@ -294,8 +294,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 									skillInstalled: true,
 								};
 							}
-							if (isSkillOverride) {
-								throw new Error("Remote skill download failed");
+							if (isReferenceOverride) {
+								throw new Error("Remote reference download failed");
 							}
 							s.stop("Remote download failed, generating locally...");
 						}
@@ -303,10 +303,10 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						const distanceInfo =
 							commitDistance !== null ? ` (${commitDistance} commits behind)` : "";
 						verboseLog(
-							`Remote skill too outdated${distanceInfo}, threshold is ${MAX_COMMIT_DISTANCE}`,
+							`Remote reference too outdated${distanceInfo}, threshold is ${MAX_COMMIT_DISTANCE}`,
 							verbose,
 						);
-						s.stop(`Remote skill outdated${distanceInfo}`);
+						s.stop(`Remote reference outdated${distanceInfo}`);
 					}
 				} else {
 					s.stop("No remote analysis found");
@@ -316,22 +316,22 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					`Remote check failed: ${err instanceof Error ? err.message : "Unknown"}`,
 					verbose,
 				);
-				if (isSkillOverride) {
+				if (isReferenceOverride) {
 					throw err instanceof Error ? err : new Error("Remote check failed");
 				}
 				s.stop("Remote check failed, continuing locally");
 			}
 		}
 
-		if (isSkillOverride) {
-			throw new Error(`Skill not found on offworld.sh: ${skillName}`);
+		if (isReferenceOverride) {
+			throw new Error(`Reference not found on offworld.sh: ${referenceName}`);
 		}
 
 		// Generate locally using AI
-		verboseLog(`Starting AI skill generation for: ${repoPath}`, verbose);
+		verboseLog(`Starting AI reference generation for: ${repoPath}`, verbose);
 
 		if (!verbose) {
-			s.start("Generating skill with AI...");
+			s.start("Generating reference with AI...");
 		}
 
 		try {
@@ -354,9 +354,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			installSkillToFS(qualifiedName, referenceContent, meta);
 
 			if (!verbose) {
-				s.stop("Skill generated");
+				s.stop("Reference generated");
 			} else {
-				p.log.success("Skill generated");
+				p.log.success("Reference generated");
 			}
 
 			const entry = getIndexEntry(source.qualifiedName);
@@ -369,13 +369,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				});
 			}
 
-			p.log.success(`Skill installed for: ${qualifiedName}`);
+			p.log.success(`Reference installed for: ${qualifiedName}`);
 
 			if (source.type === "remote") {
 				const authData = loadAuthData();
 				if (authData?.token) {
 					p.log.info(
-						`Run 'ow push ${source.fullName}' to share this skill to https://offworld.sh.`,
+						`Run 'ow push ${source.fullName}' to share this reference to https://offworld.sh.`,
 					);
 				}
 			}
@@ -388,13 +388,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			};
 		} catch (err) {
 			if (!verbose) {
-				s.stop("Skill generation failed");
+				s.stop("Reference generation failed");
 			}
 			const errMessage = err instanceof Error ? err.message : "Unknown error";
-			p.log.error(`Failed to generate skill: ${errMessage}`);
+			p.log.error(`Failed to generate reference: ${errMessage}`);
 
 			// Local generation failure should be a hard failure (exit 1)
-			throw new Error(`Skill generation failed: ${errMessage}`);
+			throw new Error(`Reference generation failed: ${errMessage}`);
 		}
 	} catch (error) {
 		s.stop("Failed");

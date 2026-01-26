@@ -47,6 +47,7 @@ vi.mock("@offworld/sdk", () => ({
 	updateIndex: vi.fn(),
 	getIndexEntry: vi.fn(),
 	listRepos: vi.fn(),
+	readGlobalMap: vi.fn(),
 	pullAnalysis: vi.fn(),
 	pullAnalysisByName: vi.fn(),
 	checkRemote: vi.fn(),
@@ -86,6 +87,7 @@ import {
 	getMetaRoot,
 	getIndexEntry,
 	listRepos,
+	readGlobalMap,
 	pullAnalysis,
 	checkRemote,
 	generateSkillWithAI,
@@ -116,6 +118,7 @@ describe("CLI handlers", () => {
 	const mockCanPushToWeb = canPushToWeb as ReturnType<typeof vi.fn>;
 	const mockGetIndexEntry = getIndexEntry as ReturnType<typeof vi.fn>;
 	const mockListRepos = listRepos as ReturnType<typeof vi.fn>;
+	const mockReadGlobalMap = readGlobalMap as ReturnType<typeof vi.fn>;
 	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
 	const mockCheckRemote = checkRemote as ReturnType<typeof vi.fn>;
 	const mockGetCommitDistance = getCommitDistance as ReturnType<typeof vi.fn>;
@@ -468,22 +471,42 @@ describe("CLI handlers", () => {
 	// =========================================================================
 	describe("listHandler", () => {
 		it("formats repo list correctly", async () => {
-			mockListRepos.mockReturnValue([mockIndexEntry]);
+			mockListRepos.mockReturnValue(["github:tanstack/router"]);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
-			mockGetCommitSha.mockReturnValue("abc123");
 
 			const result = await listHandler({});
 
 			expect(result.repos).toHaveLength(1);
-			expect(result.repos[0]!.fullName).toBe("tanstack/router");
+			expect(result.repos[0]!.fullName).toBe("github:tanstack/router");
 			expect(result.repos[0]!.analyzed).toBe(true);
 			expect(result.repos[0]!.hasSkill).toBe(true);
 		});
 
 		it("outputs JSON with --json flag", async () => {
-			mockListRepos.mockReturnValue([mockIndexEntry]);
+			mockListRepos.mockReturnValue(["github:tanstack/router"]);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
-			mockGetCommitSha.mockReturnValue("abc123");
 
 			const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -495,16 +518,26 @@ describe("CLI handlers", () => {
 		});
 
 		it("filters stale repos with --stale flag", async () => {
-			const staleEntry: RepoIndexEntry = {
-				...mockIndexEntry,
-				commitSha: "old123",
-			};
-			mockListRepos.mockReturnValue([staleEntry, mockIndexEntry]);
-			mockExistsSync.mockReturnValue(true);
-			mockGetCommitSha.mockImplementation((path: string) => {
-				// First call returns different SHA (stale), second returns same (current)
-				return path.includes("tanstack") ? "new456" : "abc123";
+			mockListRepos.mockReturnValue(["github:tanstack/router", "github:tanstack/query"]);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+					"github:tanstack/query": {
+						localPath: "/home/user/ow/github/tanstack/query",
+						references: ["tanstack-query.md"],
+						primary: "tanstack-query.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
 			});
+			mockExistsSync.mockReturnValue(true);
 
 			const result = await listHandler({ stale: true });
 
@@ -537,7 +570,17 @@ describe("CLI handlers", () => {
 	describe("rmHandler", () => {
 		it("prompts for confirmation (mocked)", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
 			mockConfirm.mockResolvedValue(true);
 			mockRemoveRepo.mockResolvedValue(true);
@@ -549,7 +592,17 @@ describe("CLI handlers", () => {
 
 		it("skips prompt with -y flag", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
 			mockRemoveRepo.mockResolvedValue(true);
 
@@ -561,7 +614,17 @@ describe("CLI handlers", () => {
 
 		it("shows dry run output without deleting", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
 
 			const result = await rmHandler({ repo: "tanstack/router", dryRun: true });
@@ -572,28 +635,48 @@ describe("CLI handlers", () => {
 
 		it("calls removeRepo with repoOnly option", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
 			mockRemoveRepo.mockResolvedValue(true);
 
 			await rmHandler({ repo: "tanstack/router", yes: true, repoOnly: true });
 
 			expect(mockRemoveRepo).toHaveBeenCalledWith("github:tanstack/router", {
-				skillOnly: false,
+				referenceOnly: false,
 				repoOnly: true,
 			});
 		});
 
-		it("calls removeRepo with skillOnly option", async () => {
+		it("calls removeRepo with referenceOnly option", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
-			mockGetIndexEntry.mockReturnValue(mockIndexEntry);
+			mockReadGlobalMap.mockReturnValue({
+				repos: {
+					"github:tanstack/router": {
+						localPath: "/home/user/ow/github/tanstack/router",
+						references: ["tanstack-router.md"],
+						primary: "tanstack-router.md",
+						keywords: [],
+						updatedAt: "2026-01-25",
+					},
+				},
+			});
 			mockExistsSync.mockReturnValue(true);
 			mockRemoveRepo.mockResolvedValue(true);
 
-			await rmHandler({ repo: "tanstack/router", yes: true, skillOnly: true });
+			await rmHandler({ repo: "tanstack/router", yes: true, referenceOnly: true });
 
 			expect(mockRemoveRepo).toHaveBeenCalledWith("github:tanstack/router", {
-				skillOnly: true,
+				referenceOnly: true,
 				repoOnly: false,
 			});
 		});

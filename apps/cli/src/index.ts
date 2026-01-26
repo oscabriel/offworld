@@ -34,11 +34,11 @@ export const router = os.router({
 		.input(
 			z.object({
 				repo: z.string().describe("repo").meta({ positional: true }),
-				skill: z
+				reference: z
 					.string()
 					.optional()
-					.describe("Skill name to pull (defaults to owner-repo-reference)")
-					.meta({ alias: "s" }),
+					.describe("Reference name to pull (defaults to owner-repo)")
+					.meta({ alias: "r" }),
 				shallow: z
 					.boolean()
 					.default(false)
@@ -49,7 +49,7 @@ export const router = os.router({
 					.default(false)
 					.describe("Use sparse checkout (only src/, lib/, packages/, docs/)"),
 				branch: z.string().optional().describe("Branch to clone"),
-				force: z.boolean().default(false).describe("Force re-analysis").meta({ alias: "f" }),
+				force: z.boolean().default(false).describe("Force re-generation").meta({ alias: "f" }),
 				verbose: z.boolean().default(false).describe("Show detailed output"),
 				model: z
 					.string()
@@ -59,13 +59,13 @@ export const router = os.router({
 			}),
 		)
 		.meta({
-			description: "Clone a repository and fetch or generate its analysis",
+			description: "Clone a repository and fetch or generate its reference",
 			negateBooleans: true,
 		})
 		.handler(async ({ input }) => {
 			await pullHandler({
 				repo: input.repo,
-				skill: input.skill,
+				reference: input.reference,
 				shallow: input.shallow,
 				sparse: input.sparse,
 				branch: input.branch,
@@ -114,7 +114,7 @@ export const router = os.router({
 			}),
 		)
 		.meta({
-			description: "Generate analysis locally (ignores remote)",
+			description: "Generate reference locally (ignores remote)",
 			aliases: { command: ["gen"] },
 		})
 		.handler(async ({ input }) => {
@@ -132,7 +132,7 @@ export const router = os.router({
 			}),
 		)
 		.meta({
-			description: "Push local analysis to offworld.sh",
+			description: "Push local reference to offworld.sh",
 		})
 		.handler(async ({ input }) => {
 			await pushHandler({
@@ -145,20 +145,20 @@ export const router = os.router({
 			z.object({
 				repo: z.string().describe("repo").meta({ positional: true }),
 				yes: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "y" }),
-				skillOnly: z.boolean().default(false).describe("Only remove skill files (keep repo)"),
-				repoOnly: z.boolean().default(false).describe("Only remove cloned repo (keep skill)"),
+				referenceOnly: z.boolean().default(false).describe("Only remove reference files (keep repo)"),
+				repoOnly: z.boolean().default(false).describe("Only remove cloned repo (keep reference)"),
 				dryRun: z.boolean().default(false).describe("Show what would be done").meta({ alias: "d" }),
 			}),
 		)
 		.meta({
-			description: "Remove a cloned repository and its analysis",
+			description: "Remove a cloned repository and its reference",
 			aliases: { command: ["rm"] },
 		})
 		.handler(async ({ input }) => {
 			await rmHandler({
 				repo: input.repo,
 				yes: input.yes,
-				skillOnly: input.skillOnly,
+				referenceOnly: input.referenceOnly,
 				repoOnly: input.repoOnly,
 				dryRun: input.dryRun,
 			});
@@ -213,7 +213,7 @@ Valid keys:
   repoRoot        (string)  Where to clone repos (e.g., ~/ow)
   defaultShallow  (boolean) Use shallow clone by default (true/false)
   defaultModel    (string)  AI provider/model (e.g., anthropic/claude-sonnet-4-20250514)
-  agents          (list)    Comma-separated agents (e.g., opencode,claude-code)`,
+  agents          (list)    Comma-separated agents (e.g., claude-code,opencode)`,
 			})
 			.handler(async ({ input }) => {
 				await configSetHandler({ key: input.key, value: input.value });
@@ -250,7 +250,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 
 		agents: os
 			.input(z.object({}))
-			.meta({ description: "Interactively select agents for skill installation" })
+			.meta({ description: "Interactively select agents for reference installation" })
 			.handler(async () => {
 				await configAgentsHandler();
 			}),
@@ -297,7 +297,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 					generate: z
 						.boolean()
 						.default(false)
-						.describe("Generate skills for deps without existing ones")
+						.describe("Generate references for deps without existing ones")
 						.meta({ alias: "g" }),
 					dryRun: z
 						.boolean()
@@ -308,7 +308,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 				}),
 			)
 			.meta({
-				description: "Scan manifest, install skills, update AGENTS.md",
+				description: "Scan manifest, install references, update AGENTS.md",
 				default: true,
 			})
 			.handler(async ({ input }) => {
@@ -411,8 +411,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 						.string()
 						.optional()
 						.describe("Remove repos not accessed in N days (e.g. '30d')"),
-					unanalyzed: z.boolean().default(false).describe("Remove repos without analysis"),
-					withoutSkill: z.boolean().default(false).describe("Remove repos without skills"),
+					withoutReference: z.boolean().default(false).describe("Remove repos without references"),
 					dryRun: z
 						.boolean()
 						.default(false)
@@ -425,8 +424,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 			.handler(async ({ input }) => {
 				await repoGcHandler({
 					olderThan: input.olderThan,
-					unanalyzed: input.unanalyzed,
-					withoutSkill: input.withoutSkill,
+					withoutReference: input.withoutReference,
 					dryRun: input.dryRun,
 					yes: input.yes,
 				});
@@ -471,7 +469,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 		.input(
 			z.object({
 				keepConfig: z.boolean().default(false).describe("Keep configuration files"),
-				keepData: z.boolean().default(false).describe("Keep data files (skills, repos)"),
+				keepData: z.boolean().default(false).describe("Keep data files (references, repos)"),
 				dryRun: z
 					.boolean()
 					.default(false)
@@ -513,7 +511,7 @@ const normalizeRootHelp = (help: string) =>
 export function createOwCli() {
 	const cli = createCli({
 		router: router as any,
-		description: "Offworld CLI - Repository analysis and skill generation for AI coding agents",
+		description: "Offworld CLI - Repository reference generation for AI coding agents",
 	} as any);
 
 	const buildProgram: typeof cli.buildProgram = (runParams) => {

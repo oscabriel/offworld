@@ -9,9 +9,11 @@ import {
 	getConfigPath,
 	detectInstalledAgents,
 	getAllAgentConfigs,
+	Paths,
 } from "@offworld/sdk";
 import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
+import { join } from "node:path";
 
 const VALID_KEYS = ["repoRoot", "defaultShallow", "defaultModel", "agents"] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
@@ -36,7 +38,16 @@ export async function configShowHandler(options: ConfigShowOptions): Promise<Con
 	const config = loadConfig();
 
 	if (options.json) {
-		console.log(JSON.stringify(config, null, 2));
+		const output = {
+			...config,
+			paths: {
+				skillDir: join(Paths.data, "skill", "offworld"),
+				referencesDir: join(Paths.data, "skill", "offworld", "references"),
+				globalMap: join(Paths.data, "skill", "offworld", "assets", "map.json"),
+				projectMap: ".offworld/map.json",
+			},
+		};
+		console.log(JSON.stringify(output, null, 2));
 	} else {
 		p.log.info("Current configuration:\n");
 		for (const [key, value] of Object.entries(config)) {

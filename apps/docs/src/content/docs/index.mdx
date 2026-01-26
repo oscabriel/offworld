@@ -1,39 +1,67 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: Offworld
+description: One skill for your whole stack. Reference knowledge for AI coding agents.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: One skill for your whole stack. Reference knowledge for AI coding agents.
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Quickstart
+      link: /guides/quickstart/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
+    - text: AI Agent Integration
+      link: /agents/
+      icon: rocket
       variant: minimal
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-## Next steps
+## Three Ways to Use Offworld
+
+<CardGrid>
+	<Card title="CLI for Humans" icon="terminal">
+		Run commands directly in your terminal to manage references and skills.
+		```bash
+		ow pull tanstack/router
+		ow project init
+		```
+	</Card>
+	<Card title="Skill for Agents" icon="rocket">
+		Install the skill so agents can access reference knowledge autonomously.
+		```bash
+		ow init  # Symlinks skill to all agents
+		```
+	</Card>
+	<Card title="Project Integration" icon="document">
+		Scan your project's dependencies and inject relevant references into AGENTS.md.
+		```bash
+		ow project init
+		```
+	</Card>
+</CardGrid>
+
+## Why Offworld?
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="AI-Native Design" icon="rocket">
+		Built for coding agents. References are optimized for LLM consumption with the right level of detail.
 	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a sidebar on this page.
+	<Card title="One Skill, All Agents" icon="puzzle">
+		Single skill installation works with Claude Code, Cursor, Amp, OpenCode, Codex, and Gemini.
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Dependency-Aware" icon="magnifier">
+		Scans your package.json, Cargo.toml, or go.mod and installs only the references you need.
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Community References" icon="open-book">
+		Browse and share references on offworld.sh. Pull from the community or push your own.
 	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+</CardGrid>
+
+## Next Steps
+
+<CardGrid>
+	<LinkCard title="Quickstart" description="Install Offworld and pull your first reference in 2 minutes." href="/guides/quickstart/" />
+	<LinkCard title="AI Agent Integration" description="Set up Offworld with Claude Code, Cursor, Amp, and more." href="/agents/" />
+	<LinkCard title="CLI Reference" description="Full command documentation for the ow CLI." href="/reference/cli/" />
+	<LinkCard title="Browse References" description="Explore shared references on offworld.sh." href="https://offworld.sh/explore" />
 </CardGrid>

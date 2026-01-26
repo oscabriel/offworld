@@ -73,7 +73,7 @@ ow project init
 ### Local Layout
 
 ```
-~/.local/share/offworld/skills/offworld/
+~/.local/share/offworld/skill/offworld/
 ├── SKILL.md           # Static routing skill
 ├── assets/
 │   └── map.json       # Canonical clone map

@@ -30,17 +30,12 @@ export default defineConfig({
 					items: [
 						{ label: "Introduction", slug: "index" },
 						{ label: "Quickstart", slug: "guides/quickstart" },
+						{ label: "AI Agent Integration", slug: "agents" },
 					],
 				},
 				{
-					label: "AI Agents",
-					items: [
-						{ label: "Agent Integration", slug: "agents" },
-						{ label: "Claude Code", slug: "agents/claude-code" },
-						{ label: "Cursor", slug: "agents/cursor" },
-						{ label: "Amp", slug: "agents/amp" },
-						{ label: "OpenCode", slug: "agents/opencode" },
-					],
+					label: "Concepts",
+					items: [{ label: "How Offworld Works", slug: "concepts" }],
 				},
 				{
 					label: "Reference",

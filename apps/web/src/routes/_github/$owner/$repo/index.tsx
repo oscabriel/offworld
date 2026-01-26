@@ -88,13 +88,13 @@ function RepoReferencesPage() {
 	if (references.length === 0) {
 		return (
 			<div className="flex flex-1 flex-col">
-			<RepoHeader
-				owner={owner}
-				repo={repo}
-				referenceData={null}
-				githubMetadata={githubMetadata}
-				loading={metadataLoading}
-			/>
+				<RepoHeader
+					owner={owner}
+					repo={repo}
+					referenceData={null}
+					githubMetadata={githubMetadata}
+					loading={metadataLoading}
+				/>
 				<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 					<EmptyState owner={owner} repo={repo} />
 				</div>

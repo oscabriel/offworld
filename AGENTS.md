@@ -9,7 +9,7 @@ Turborepo monorepo: CLI (`ow`), web app (offworld.sh), docs, TUI.
 ### Single-Skill Model
 
 ```
-~/.local/share/offworld/skills/offworld/
+~/.local/share/offworld/skill/offworld/
 ├── SKILL.md           # Static routing skill
 ├── assets/
 │   └── map.json       # Canonical clone map
@@ -140,14 +140,14 @@ bun run test             # Run tests
 
 ## DATA PATHS
 
-| Purpose      | Location                                                  |
-| ------------ | --------------------------------------------------------- |
-| Config       | `~/.config/offworld/config.json`                          |
-| Global skill | `~/.local/share/offworld/skills/offworld/`                |
-| Global map   | `~/.local/share/offworld/skills/offworld/assets/map.json` |
-| References   | `~/.local/share/offworld/skills/offworld/references/`     |
-| Project map  | `./.offworld/map.json`                                    |
-| Cloned repos | `~/ow/` (configurable)                                    |
+| Purpose      | Location                                                 |
+| ------------ | -------------------------------------------------------- |
+| Config       | `~/.config/offworld/config.json`                         |
+| Global skill | `~/.local/share/offworld/skill/offworld/`                |
+| Global map   | `~/.local/share/offworld/skill/offworld/assets/map.json` |
+| References   | `~/.local/share/offworld/skill/offworld/references/`     |
+| Project map  | `./.offworld/map.json`                                   |
+| Cloned repos | `~/ow/` (configurable)                                   |
 
 ## AGENTS SUPPORTED
 
@@ -187,11 +187,11 @@ Single skill symlinked to:
 
 References installed for this project's dependencies:
 
-| Dependency | Reference               | Path                                                                       |
-| ---------- | ----------------------- | -------------------------------------------------------------------------- |
-| zod        | colinhacks-zod.md       | ~/.local/share/offworld/skills/offworld/references/colinhacks-zod.md       |
-| typescript | microsoft-TypeScript.md | ~/.local/share/offworld/skills/offworld/references/microsoft-TypeScript.md |
-| vitest     | vitest-dev-vitest.md    | ~/.local/share/offworld/skills/offworld/references/vitest-dev-vitest.md    |
+| Dependency | Reference               | Path                                                                      |
+| ---------- | ----------------------- | ------------------------------------------------------------------------- |
+| zod        | colinhacks-zod.md       | ~/.local/share/offworld/skill/offworld/references/colinhacks-zod.md       |
+| typescript | microsoft-TypeScript.md | ~/.local/share/offworld/skill/offworld/references/microsoft-TypeScript.md |
+| vitest     | vitest-dev-vitest.md    | ~/.local/share/offworld/skill/offworld/references/vitest-dev-vitest.md    |
 
 To update references: `ow pull <dependency>`
 To regenerate all: `ow project init --all --generate`

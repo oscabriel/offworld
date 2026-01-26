@@ -186,6 +186,19 @@ Skills are symlinked to:
 - TODO comments mark temporary backend compatibility shims with US story IDs for removal.
 - Field mapping (`skillName` → `referenceName`, `analyzedAt` → `generatedAt`) in SDK keeps CLI working until backend migration.
 
+## US-012 Implementation Notes
+
+### Docs Updated to Single-Skill + References
+
+- `apps/docs/src/content/docs/setup-prompt.md`: All wording changed from "skills" to "references". Updated paths to reflect single global SKILL at `~/.local/share/offworld/skill/offworld/SKILL.md` and per-repo references under `references/` subdirectory.
+- AGENTS.md section renamed "Project References" (was "Project Skills").
+- Table output shows condensed reference filenames (e.g., `facebook-react.md`).
+- Verified no legacy "per-repo skill" or "analysis" wording remains in docs.
+
+### Test Status
+- Typecheck passes.
+- Tests fail in `apps/cli/__tests__/handlers.test.ts` and `packages/sdk/__tests__/clone.test.ts` and `packages/sdk/__tests__/index-manager.test.ts` due to legacy test expectations (US-013 cleanup needed).
+
 ## Project Skills
 
 Skills installed for this project's dependencies:

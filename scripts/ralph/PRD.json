@@ -215,7 +215,7 @@
         "rg \"reference\" apps/docs/src/content/docs -g'*.md'",
         "rg \"per-repo skill|analysis\" apps/docs/src/content/docs -g'*.md'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-013",

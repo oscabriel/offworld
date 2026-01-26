@@ -12,10 +12,10 @@ import {
 	LocalRepoSourceSchema,
 	ProjectTypeSchema,
 	RemoteRepoSourceSchema,
-	RepoIndexEntrySchema,
-	RepoIndexSchema,
 	RepoSourceSchema,
-	SkillSchema,
+	ReferenceDataSchema,
+	GlobalMapSchema,
+	ProjectMapSchema,
 } from "../schemas.js";
 
 describe("ConfigSchema", () => {
@@ -245,75 +245,83 @@ describe("EntitySchema", () => {
 	});
 });
 
-describe("SkillSchema", () => {
-	it("validates skill with all fields", () => {
-		const skill = {
-			name: "tanstack-router",
-			description: "Expert on TanStack Router for type-safe routing",
-			quickPaths: [
-				{
-					path: "packages/router/src",
-					description: "Core router implementation",
-				},
-			],
-			searchPatterns: [
-				{
-					find: "router instantiation",
-					pattern: "createRouter",
-					path: "packages/router/src",
-				},
-			],
-			whenToUse: [
-				"User asks about file-based routing",
-				"Need client-side navigation",
-				"Building a single-page application",
-				"Want type-safe route params",
-				"Implementing route guards",
-			],
-			bestPractices: ["Use type-safe route params"],
-			commonPatterns: [{ name: "Basic route", steps: ["Define route", "Add component"] }],
+describe("ReferenceDataSchema", () => {
+	it("validates complete reference data", () => {
+		const data = {
+			fullName: "tanstack/router",
+			referenceName: "tanstack-router.md",
+			description: "TanStack Router reference",
+			content: "# TanStack Router\n\nA router library.",
+			commitSha: "abc123def456",
+			generatedAt: "2026-01-25T12:00:00Z",
 		};
-		const result = SkillSchema.safeParse(skill);
+		const result = ReferenceDataSchema.safeParse(data);
 		expect(result.success).toBe(true);
 	});
 
-	it("accepts minimal skill with only required fields", () => {
-		const minimal = {
-			name: "minimal",
-			description: "Minimal skill with only required fields",
-		};
-		const result = SkillSchema.safeParse(minimal);
-		expect(result.success).toBe(true);
-	});
-
-	it("rejects skill missing name", () => {
+	it("rejects missing required fields", () => {
 		const incomplete = {
-			description: "Missing name field",
+			fullName: "tanstack/router",
+			referenceName: "tanstack-router.md",
 		};
-		const result = SkillSchema.safeParse(incomplete);
+		const result = ReferenceDataSchema.safeParse(incomplete);
 		expect(result.success).toBe(false);
 	});
+});
 
-	it("rejects skill missing description", () => {
-		const incomplete = {
-			name: "no-description",
+describe("GlobalMapSchema", () => {
+	it("validates global map with entries", () => {
+		const map = {
+			repos: {
+				"tanstack/router": {
+					localPath: "/home/user/ow/tanstack-router",
+					references: ["tanstack-router.md"],
+					primary: "tanstack-router.md",
+					keywords: ["router", "typescript"],
+					updatedAt: "2026-01-25",
+				},
+			},
 		};
-		const result = SkillSchema.safeParse(incomplete);
-		expect(result.success).toBe(false);
+		const result = GlobalMapSchema.safeParse(map);
+		expect(result.success).toBe(true);
 	});
 
-	it("accepts empty arrays for optional collection fields", () => {
-		const skill = {
-			name: "with-empty-arrays",
-			description: "Skill with empty optional arrays",
-			quickPaths: [],
-			searchPatterns: [],
-			whenToUse: [],
-			bestPractices: [],
-			commonPatterns: [],
-		};
-		const result = SkillSchema.safeParse(skill);
+	it("accepts empty repos", () => {
+		const map = { repos: {} };
+		const result = GlobalMapSchema.safeParse(map);
 		expect(result.success).toBe(true);
+	});
+});
+
+describe("ProjectMapSchema", () => {
+	it("validates project map", () => {
+		const map = {
+			version: 1,
+			scope: "project",
+			globalMapPath: "~/.local/share/offworld/skill/offworld/assets/map.json",
+			repos: {
+				"tanstack/router": {
+					localPath: "/home/user/ow/tanstack-router",
+					reference: "tanstack-router.md",
+					keywords: ["router"],
+				},
+			},
+		};
+		const result = ProjectMapSchema.safeParse(map);
+		expect(result.success).toBe(true);
+	});
+
+	it("applies default version", () => {
+		const map = {
+			scope: "project",
+			globalMapPath: "~/.local/share/offworld/skill/offworld/assets/map.json",
+			repos: {},
+		};
+		const result = ProjectMapSchema.safeParse(map);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.version).toBe(1);
+		}
 	});
 });
 
@@ -428,68 +436,4 @@ describe("AnalysisMetaSchema", () => {
 	});
 });
 
-describe("RepoIndexEntrySchema", () => {
-	it("validates complete entry", () => {
-		const entry = {
-			fullName: "tanstack/router",
-			qualifiedName: "github:tanstack/router",
-			localPath: "/home/user/ow/github/tanstack/router",
-			analyzedAt: "2026-01-09T12:00:00Z",
-			commitSha: "abc123",
-			hasSkill: true,
-		};
-		const result = RepoIndexEntrySchema.safeParse(entry);
-		expect(result.success).toBe(true);
-	});
 
-	it("accepts entry without optional fields", () => {
-		const entry = {
-			fullName: "myrepo",
-			qualifiedName: "local:abc123",
-			localPath: "/home/user/projects/myrepo",
-		};
-		const result = RepoIndexEntrySchema.safeParse(entry);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.hasSkill).toBe(false);
-		}
-	});
-});
-
-describe("RepoIndexSchema", () => {
-	it("validates index with repos", () => {
-		const index = {
-			version: "1",
-			repos: {
-				"github:tanstack/router": {
-					fullName: "tanstack/router",
-					qualifiedName: "github:tanstack/router",
-					localPath: "/home/user/ow/github/tanstack/router",
-					hasSkill: true,
-				},
-			},
-		};
-		const result = RepoIndexSchema.safeParse(index);
-		expect(result.success).toBe(true);
-	});
-
-	it("accepts empty repos", () => {
-		const index = {
-			version: "1",
-			repos: {},
-		};
-		const result = RepoIndexSchema.safeParse(index);
-		expect(result.success).toBe(true);
-	});
-
-	it("applies default version", () => {
-		const index = {
-			repos: {},
-		};
-		const result = RepoIndexSchema.safeParse(index);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.version).toBe("1");
-		}
-	});
-});

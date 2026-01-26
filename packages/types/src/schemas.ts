@@ -104,90 +104,54 @@ export const AnalysisMetaSchema = z.object({
 	tokenCost: z.number().optional(),
 });
 
-export const QuickPathSchema = z.object({
-	path: z.string(),
-	description: z.string(),
-});
-
-export const SearchPatternSchema = z.object({
-	find: z.string(),
-	pattern: z.string(),
-	path: z.string(),
-});
-
-export const CommonPatternSchema = z.object({
-	name: z.string(),
-	steps: z.array(z.string()),
-});
-
-export const ImportPatternSchema = z.object({
-	import: z.string(),
-	purpose: z.string(),
-});
-
-export const TroubleshootingEntrySchema = z.object({
-	symptom: z.string(),
-	cause: z.string(),
-	fix: z.string(),
-});
-
-export const ArchitectureConceptSchema = z.object({
-	name: z.string(),
-	purpose: z.string(),
-	location: z.string(),
-});
-
-export const ExtensionPointSchema = z.object({
-	type: z.string(),
-	interface: z.string(),
-	purpose: z.string(),
-	example: z.string().optional(),
-});
-
-export const CodebaseMapEntrySchema = z.object({
-	path: z.string(),
-	purpose: z.string(),
-	exports: z.array(z.string()).optional(),
-});
-
-export const SkillSchema = z.object({
-	// Required fields
-	name: z.string(),
-	description: z.string(),
-	// Core skill fields (now optional for AI-only approach)
-	whenToUse: z.array(z.string()).optional(),
-	bestPractices: z.array(z.string()).optional(),
-	commonPatterns: z.array(CommonPatternSchema).optional(),
-	// Legacy fields for API compatibility (optional)
-	basePaths: z
-		.object({
-			repo: z.string(),
-			analysis: z.string(),
-		})
-		.optional(),
-	quickPaths: z.array(QuickPathSchema).optional(),
-	searchPatterns: z.array(SearchPatternSchema).optional(),
-	importPatterns: z.array(ImportPatternSchema).optional(),
-	quickStartCode: z.string().optional(),
-	commonOperations: z.array(z.string()).optional(),
-	troubleshooting: z.array(TroubleshootingEntrySchema).optional(),
-	architecture: z.array(ArchitectureConceptSchema).optional(),
-	extensionPoints: z.array(ExtensionPointSchema).optional(),
-	codebaseMap: z.array(CodebaseMapEntrySchema).optional(),
-});
-
-export const RepoIndexEntrySchema = z.object({
+/**
+ * Data payload for push/pull operations.
+ * Replaces legacy AnalysisData/SkillData.
+ */
+export const ReferenceDataSchema = z.object({
 	fullName: z.string(),
-	qualifiedName: z.string(),
-	localPath: z.string(),
-	analyzedAt: z.string().optional(),
-	commitSha: z.string().optional(),
-	hasSkill: z.boolean().default(false),
+	referenceName: z.string(),
+	description: z.string(),
+	content: z.string(),
+	commitSha: z.string(),
+	generatedAt: z.string(),
 });
 
-export const RepoIndexSchema = z.object({
-	version: z.string().default("1"),
-	repos: z.record(z.string(), RepoIndexEntrySchema),
+/**
+ * Entry for a single repo in the global map.
+ */
+export const GlobalMapRepoEntrySchema = z.object({
+	localPath: z.string(),
+	references: z.array(z.string()),
+	primary: z.string(),
+	keywords: z.array(z.string()).default([]),
+	updatedAt: z.string(),
+});
+
+/**
+ * Global map (local-only, at ~/.local/share/offworld/skill/offworld/assets/map.json).
+ */
+export const GlobalMapSchema = z.object({
+	repos: z.record(z.string(), GlobalMapRepoEntrySchema),
+});
+
+/**
+ * Entry for a single repo in a project map.
+ */
+export const ProjectMapRepoEntrySchema = z.object({
+	localPath: z.string(),
+	reference: z.string(),
+	keywords: z.array(z.string()).default([]),
+});
+
+/**
+ * Project map (at ./.offworld/map.json).
+ */
+export const ProjectMapSchema = z.object({
+	version: z.number().default(1),
+	scope: z.literal("project"),
+	globalMapPath: z.string(),
+	repos: z.record(z.string(), ProjectMapRepoEntrySchema),
 });
 
 /**

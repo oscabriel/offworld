@@ -1,0 +1,154 @@
+---
+title: Config & Auth
+description: Configuration and authentication commands.
+---
+
+## Configuration
+
+### ow config show
+
+Show current configuration.
+
+```bash
+ow config show [options]
+```
+
+| Option   | Description                               |
+| -------- | ----------------------------------------- |
+| `--json` | Output as JSON (includes skill path info) |
+
+JSON output includes path hints for the skill:
+
+```json
+{
+	"paths": {
+		"skillDir": "~/.local/share/offworld/skills/offworld",
+		"globalMap": "~/.local/share/offworld/skills/offworld/assets/map.json",
+		"referencesDir": "~/.local/share/offworld/skills/offworld/references",
+		"projectMap": "/abs/path/to/repo/.offworld/map.json"
+	}
+}
+```
+
+### ow config set
+
+Set a configuration value.
+
+```bash
+ow config set <key> <value>
+```
+
+| Key              | Type    | Example                                                         |
+| ---------------- | ------- | --------------------------------------------------------------- |
+| `repoRoot`       | string  | `ow config set repoRoot ~/repos`                                |
+| `defaultShallow` | boolean | `ow config set defaultShallow true`                             |
+| `defaultModel`   | string  | `ow config set defaultModel anthropic/claude-sonnet-4-20250514` |
+| `agents`         | list    | `ow config set agents opencode,claude-code`                     |
+
+### ow config get
+
+Get a configuration value.
+
+```bash
+ow config get <key>
+```
+
+### ow config reset
+
+Reset configuration to defaults.
+
+```bash
+ow config reset
+```
+
+### ow config path
+
+Show config file location.
+
+```bash
+ow config path
+```
+
+### ow config agents
+
+Interactive agent selection. Opens a multiselect prompt for choosing which agents to symlink.
+
+```bash
+ow config agents
+```
+
+## Authentication
+
+### ow auth login
+
+Start device flow login for offworld.sh.
+
+```bash
+ow auth login
+```
+
+### ow auth logout
+
+Clear stored credentials.
+
+```bash
+ow auth logout
+```
+
+### ow auth status
+
+Check authentication status.
+
+```bash
+ow auth status
+```
+
+## System Commands
+
+### ow upgrade
+
+Upgrade the CLI to the latest version.
+
+```bash
+ow upgrade [target] [options]
+```
+
+| Option     | Description                                        |
+| ---------- | -------------------------------------------------- |
+| `[target]` | Version to upgrade to                              |
+| `--method` | Force method: `curl`, `npm`, `pnpm`, `bun`, `brew` |
+
+```bash
+ow upgrade
+ow upgrade 0.2.0
+ow upgrade -m npm
+```
+
+### ow uninstall
+
+Uninstall Offworld and remove related files.
+
+```bash
+ow uninstall [options]
+```
+
+| Option          | Description                              |
+| --------------- | ---------------------------------------- |
+| `--keep-config` | Keep configuration files                 |
+| `--keep-data`   | Keep data files (skill, map, references) |
+| `--dry-run`     | Show what would be removed               |
+| `--force`       | Skip confirmation                        |
+
+```bash
+ow uninstall
+ow uninstall --dry-run
+ow uninstall --keep-config --keep-data
+```
+
+## Exit Codes
+
+| Code | Meaning           |
+| ---- | ----------------- |
+| `0`  | Success           |
+| `1`  | General error     |
+| `2`  | Invalid arguments |

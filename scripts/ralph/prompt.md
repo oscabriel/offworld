@@ -31,13 +31,13 @@ feat: [ID] - [Title]
 
 ## Stop Condition
 
-After completing ONE story:
+Before doing any work, if ALL stories pass, reply:
+<promise>COMPLETE</promise>
+
+If all stories do not pass, after completing ONE story:
 
 1. Update PRD.json (`passes: true`)
 2. Commit with detailed message
 3. **STOP IMMEDIATELY** - do not start next story
 
 The loop runner will start a fresh session for the next story.
-
-If ALL stories pass, reply:
-<promise>COMPLETE</promise>

@@ -1,602 +1,336 @@
-# Project-Level Init Plan
+# Offworld Single-Skill Refactor Plan
 
-**Status:** Proposed  
-**Created:** 2026-01-21  
-**Problem:** `ow init` needs better project-level skill setup without adding config file clutter
+## Goal
 
-## Problem Statement
+Replace per-repo skills with a single global routing SKILL and per-repo reference files. Keep multi-agent distribution. All maps and routing are local-only.
 
-Two distinct init flows needed:
+## Non-Goals
 
-1. **Global init** (`ow init`) - One-time setup: AI provider, repo root, agents
-2. **Project init** (`ow project init`) - Per-project: scan manifest, install skills, update AGENTS.md
+- No migration or backwards compatibility.
+- No preservation of legacy skills or Convex data.
+- No project-level SKILL.md.
 
-Both should:
+## Fixed Decisions
 
-- Work interactively for humans
-- Support non-interactive flags for agent automation
-- **NOT** create branded config files in projects
+- One global SKILL.md per user at `~/.local/share/offworld/skill/offworld/SKILL.md`.
+- References are markdown files under `~/.local/share/offworld/skill/offworld/references/` (no frontmatter).
+- Canonical map is local-only at `~/.local/share/offworld/skill/offworld/assets/map.json`.
+- Project map is `./.offworld/map.json`.
+- Reference filename is `owner-repo.md` using existing `toSkillDirName` condense logic (drop `-reference` suffix).
+- Meta stored at `~/.local/share/offworld/meta/{owner-repo}/meta.json` (XDG-basedir compliant).
+- Web directory shows references, not skills; pull stats remain per reference.
+- Multi-agent distribution stays core: symlink the `offworld/` directory to each agent skill dir.
 
-## Command Namespace: `ow project`
-
-Following the pattern of `ow auth login`, `ow config get`, etc., project-level commands live under `ow project`:
-
-| Command                   | Description                                     |
-| ------------------------- | ----------------------------------------------- |
-| `ow project init`         | Scan manifest, install skills, update AGENTS.md |
-| `ow project status`       | Show project's skills and their state           |
-| `ow project sync`         | Re-scan manifest, add new deps, flag removed    |
-| `ow project add <dep>`    | Manually add skill for a dep not in manifest    |
-| `ow project remove <dep>` | Remove skill reference from AGENTS.md           |
-
-**v1 scope:** `ow project init` only. Others are future enhancements.
-
-## Research Findings
-
-### opencode (anomalyco)
-
-- Config precedence: remote → global → env path → project (findUp) → env content
-- Project tracking: ID from git root commit hash, worktree/sandboxes tracked in XDG data storage
-- Skills: loaded from `.opencode/{skill,skills}/**/SKILL.md` and `.claude/skills/**/SKILL.md`
-- `/init` marks project initialized in project storage
-
-### better-context
-
-- Global: `~/.config/btca/btca.config.jsonc`
-- Project: `./btca.config.jsonc` in cwd
-- Merges global + project; project overrides by name
-- **Setup prompt pattern**: scan package.json → propose resources → confirm → write config + update AGENTS.md
-
-### External Patterns
-
-- cosmiconfig: cascading config search (package.json → rc files → config dir)
-- AI tooling: per-project dirs (`.opencode/`, `.claude/`, `.cursor/`, `.cline/`)
-- Minimal footprint tools: write to existing files only (AGENTS.md)
-
-## Current State in Offworld
-
-| Component      | Location                                               | Status     |
-| -------------- | ------------------------------------------------------ | ---------- |
-| Global config  | `~/.config/offworld/config.json`                       | Keep       |
-| Project config | `.offworld/project.json`                               | **Remove** |
-| Skill storage  | `~/.local/share/offworld/skills/{name}/SKILL.md`       | Keep       |
-| Agent symlinks | `~/.claude/skills/`, `~/.config/opencode/skill/`, etc. | Keep       |
-| Init handler   | `apps/cli/src/handlers/init.ts`                        | Modify     |
-
-## Command Structure
-
-### `ow init` — Global Setup (one-time)
-
-```
-ow init [options]
-
-Options:
-  --model <provider/model>   AI provider and model (e.g., opencode/claude-sonnet-4-5)
-  --repo-root <path>         Where to clone repos (default: ~/ow)
-  --agents <list>            Comma-separated agents (opencode,claude-code,cursor,...)
-  --yes, -y                  Skip confirmations
-  --force                    Reconfigure even if config exists
-```
-
-**Model format:** `{provider}/{model}` — mirrors opencode CLI pattern
-
-- `opencode/claude-sonnet-4-5`
-- `anthropic/claude-sonnet-4-5-20250929`
-- `openai/gpt-5.2`
-
-**Behavior:**
-
-- If global config exists AND in a project directory:
-
-  ```
-  Global config already exists at ~/.config/offworld/config.json
-
-  Did you mean to run project setup? Use:
-    ow project init
-
-  To reconfigure global settings, use:
-    ow init --force
-  ```
-
-- If global config exists AND NOT in a project:
-  ```
-  Already configured. Use --force to reconfigure.
-  ```
-
-### `ow project init` — Project Setup (per-project)
-
-```
-ow project init [options]
-
-Options:
-  --all                 Select all detected dependencies
-  --deps <list>         Comma-separated deps to include (skip selection)
-  --skip <list>         Comma-separated deps to exclude
-  --generate            Generate skills for deps without existing ones
-  --dry-run             Show what would be done without doing it
-  --yes, -y             Skip confirmations
-```
-
-**Behavior:**
-
-- Requires global config to exist (prompt to run `ow init` first if missing)
-- Scans manifest, resolves repos, prompts for selection, installs skills, updates AGENTS.md
-
-## Flows
-
-### Global Init Flow (`ow init`)
-
-```
-ow init
-    │
-    ├─1─► Check if config exists
-    │     ├── exists + in project → suggest `ow project init`
-    │     └── exists + not in project → suggest --force
-    │
-    ├─2─► Prompt: repo root (default ~/ow)
-    │
-    ├─3─► Prompt: AI provider (opencode recommended)
-    │
-    ├─4─► Prompt: model selection (filtered by provider)
-    │
-    ├─5─► Auto-detect installed agents
-    │
-    ├─6─► Prompt: confirm/modify agent selection
-    │
-    └─7─► Write ~/.config/offworld/config.json
-          (stores as ai.provider + ai.model internally)
-```
-
-**Note:** Interactive mode prompts provider then model separately for UX.
-Non-interactive `--model` flag accepts combined `provider/model` format.
-
-### Project Init Flow (`ow project init`)
+## Architecture Overview (Target)
 
 ```
 ow project init
-    │
-    ├─1─► Check global config exists
-    │     └── missing → error: "Run 'ow init' first"
-    │
-    ├─2─► Detect project root (git or cwd)
-    │
-    ├─3─► Scan dependency manifests
-    │     ├── package.json (npm/bun/yarn)
-    │     ├── pyproject.toml (python)
-    │     ├── Cargo.toml (rust)
-    │     ├── go.mod (go)
-    │     └── requirements.txt (python fallback)
-    │
-    ├─4─► Resolve dependency → repo mapping
-    │     ├── Tier 1: KNOWN_MAPPINGS lookup
-    │     ├── Tier 2: npm registry fallback
-    │     └── Tier 3: Prompt user for unknowns
-    │
-    ├─5─► Match to skill availability
-    │     ├── installed (skill exists locally)
-    │     ├── available (can pull from registry)
-    │     └── generate (needs AI generation)
-    │
-    ├─6─► Present checklist to user
-    │     [x] react (installed)
-    │     [x] convex (available - will pull)
-    │     [ ] some-obscure-lib (generate new)
-    │     [ ] internal-lib (skip)
-    │
-    ├─7─► For each selected dependency:
-    │     ├── If installed → no-op
-    │     ├── If available → pull skill
-    │     └── If generate → pull + generate skill
-    │
-    └─8─► Update AGENTS.md + agent-specific files
-          ├── Create file if missing
-          ├── Append/update "## Project Skills" section
-          └── List skills with file path references
+  -> parse manifests
+  -> resolve deps to repos
+  -> clone repos
+  -> generate references (OpenCode Analyze agent)
+  -> update assets/map.json (global)
+  -> write .offworld/map.json (project)
+  -> ensure global SKILL + symlinks
 ```
 
-## Agent-Friendly Onboarding
-
-### Quick Copy-Paste Prompt
-
-For users to paste into their AI agent:
+## Local Layout (Target)
 
 ```
-Set up offworld for this project:
-
-1. Check if offworld CLI is installed: `ow --version`
-   - If not installed: `bun install -g offworld` (or npm/pnpm)
-
-2. Check if global config exists: `ow config get`
-   - If "No config found": run `ow init --model opencode/claude-sonnet-4-5 --yes`
-
-3. Run project setup: `ow project init --all --generate --yes`
-
-4. Verify: Check that AGENTS.md now has a "## Project Skills" section
-
-Report what was installed and any errors encountered.
+~/.local/share/offworld/skill/offworld/
+├── SKILL.md
+├── assets/
+│   └── map.json
+└── references/
+    ├── owner-repo.md
+    └── ...
 ```
 
-### Detailed Agent Instructions
-
-For agents that need more context (e.g., in AGENTS.md of offworld docs):
-
-```markdown
-## offworld Setup
-
-When a user asks to "set up offworld" or "add skills for this project":
-
-### Prerequisites Check
-
-1. Verify CLI installed: `ow --version`
-   - Install if missing: `bun install -g offworld`
-
-2. Verify global config: `ow config get`
-   - If missing, run global init (see below)
-
-### Global Init (one-time)
-
-If no global config exists:
-\`\`\`bash
-ow init --model opencode/claude-sonnet-4-5 --yes
-\`\`\`
-
-Or interactive for user control:
-\`\`\`bash
-ow init
-\`\`\`
-
-### Project Init (per-project)
-
-For autonomous setup (all deps, generate missing skills):
-\`\`\`bash
-ow project init --all --generate --yes
-\`\`\`
-
-For selective setup (let user choose):
-\`\`\`bash
-ow project init
-\`\`\`
-
-For specific deps only:
-\`\`\`bash
-ow project init --deps react,convex,tanstack-router --generate --yes
-\`\`\`
-
-### Dry Run
-
-To preview without changes:
-\`\`\`bash
-ow project init --dry-run
-\`\`\`
-
-### What Gets Created
-
-- Skills installed to: `~/.local/share/offworld/skills/`
-- Symlinks created in agent dirs: `~/.claude/skills/`, `~/.config/opencode/skill/`, etc.
-- AGENTS.md updated with "## Project Skills" section
-- Agent-specific files updated if they exist (CLAUDE.md, etc.)
-
-### No Project Files Created
-
-offworld does NOT create config files in your project. Skills are global;
-project awareness is captured in AGENTS.md only.
-```
-
-### Example: Full Autonomous Setup
-
-User pastes this prompt:
-
-```
-Set up offworld for this project. Install the CLI if needed, configure it with
-OpenCode as the provider, scan my dependencies, and install skills for everything
-you find. Use autonomous flags to avoid prompts.
-```
-
-Agent executes:
-
-```bash
-# 1. Check/install CLI
-which ow || bun install -g offworld
-
-# 2. Global init if needed
-ow config get 2>/dev/null || ow init --model opencode/claude-sonnet-4-5 --yes
-
-# 3. Project init
-ow project init --all --generate --yes
-```
-
-Agent reports:
-
-```
-offworld setup complete:
-- Installed CLI via bun
-- Configured with OpenCode provider
-- Found 12 dependencies in package.json
-- Installed 8 skills (4 already existed, 4 generated)
-- Updated AGENTS.md with skill references
-
-Installed skills:
-  - react (facebook/react)
-  - convex (get-convex/convex)
-  - tanstack-router (tanstack/router)
-  - ... etc
-```
-
-### AGENTS.md Output Format
-
-```markdown
-## Project Skills
-
-Skills installed for this project's dependencies:
-
-| Dependency      | Skill           | Path                                                       |
-| --------------- | --------------- | ---------------------------------------------------------- |
-| react           | react           | ~/.local/share/offworld/skills/facebook-react-reference    |
-| convex          | convex          | ~/.local/share/offworld/skills/get-convex-convex-reference |
-| tanstack-router | tanstack-router | ~/.local/share/offworld/skills/tanstack-router-reference   |
-
-To update skills, run: `ow pull <dependency>`
-To regenerate all: `ow project init --all --generate`
-```
-
-### Reproducibility Without Config
-
-**Option A: Accept the limitation (recommended for v1)**
-
-- Skills are "fire and forget"
-- Users who want reproducibility commit AGENTS.md
-- Re-run `ow init` to restore
-
-**Option B: Hidden comment marker**
-
-```markdown
-<!-- offworld:skills react,convex,tanstack-router -->
-```
-
-- Enables future `ow sync` to read back skill list
-- Fragile if user edits/removes comment
-
-**Option C: Global project registry**
-
-- Store project→skill mappings in `~/.local/state/offworld/projects.json`
-- Keyed by absolute path (breaks across machines)
-- No project file, but machine-readable
-
-## Implementation Tasks
-
-### Phase 1: Command Restructure
-
-1. Split `apps/cli/src/handlers/init.ts`
-   - Keep `initHandler()` for global setup only
-   - Remove `setupProjectLinks()` and `OffworldProjectConfig`
-   - Add detection: if config exists + in project → suggest `ow project init`
-   - Add `--force` flag to allow reconfiguration
-
-2. Create `apps/cli/src/handlers/project.ts`
-   - New `projectInitHandler(options: ProjectInitOptions)`
-   - Options: `all`, `deps`, `skip`, `generate`, `dryRun`, `yes`
-   - Structure for future `project status`, `project sync`, etc.
-
-3. Update `apps/cli/src/index.ts`
-   - Add `project` command group with `init` subcommand
-
-### Phase 2: Manifest Scanning
-
-4. Create `packages/sdk/src/manifest.ts`
-   - `detectManifestType(dir: string): ManifestType`
-   - `parseDependencies(dir: string): Dependency[]`
-   - Support: package.json, pyproject.toml, Cargo.toml, go.mod, requirements.txt
-
-### Phase 3: Dependency → Repo Resolution
-
-5. Create `packages/sdk/src/dep-mappings.ts`
-   - `KNOWN_MAPPINGS: Record<string, string>` - hardcoded top 50-100 deps
-   - `resolveFromNpm(packageName: string): Promise<string | null>` - npm registry fallback
-   - `resolveDependencyRepo(dep: string): Promise<ResolvedDep>`
-
-### Phase 4: Skill Matching
-
-6. Add skill index query to SDK
-   - `matchDependenciesToSkills(deps: ResolvedDep[]): SkillMatch[]`
-   - Return: `{ dep, repo, status: 'installed' | 'available' | 'generate' | 'unknown' }`
-
-### Phase 5: AGENTS.md Update
-
-7. Create `packages/sdk/src/agents-md.ts`
-   - `updateAgentFiles(projectRoot: string, skills: InstalledSkill[])`
-   - `appendSkillsSection(filePath: string, skills: InstalledSkill[])`
-   - Handle existing sections (find + replace, or append)
-   - Support AGENTS.md + agent-specific files (CLAUDE.md, etc.)
-
-### Phase 6: Integration
-
-8. Wire up `initProjectHandler`
-   - Scan manifest → resolve repos → match skills → prompt selection
-   - Batch install: `pullHandler()` for each
-   - Update AGENTS.md + agent files
-   - Report summary
-
-### Phase 7: Agent Onboarding Docs
-
-9. Create `apps/docs/src/content/docs/setup-prompt.md`
-   - Quick copy-paste prompt
-   - Detailed agent instructions
-   - Examples for autonomous and interactive modes
-
-### Phase 8: Cleanup
-
-10. Remove deprecated code
-    - Delete `.offworld/project.json` references
-    - Remove `OffworldProjectConfig` interface
-    - Update tests
-
-## File Changes
-
-| File                                         | Change                                                                |
-| -------------------------------------------- | --------------------------------------------------------------------- |
-| `packages/sdk/src/manifest.ts`               | **New** - Dependency manifest parsing                                 |
-| `packages/sdk/src/dep-mappings.ts`           | **New** - Dependency name → repo resolution                           |
-| `packages/sdk/src/agents-md.ts`              | **New** - AGENTS.md manipulation                                      |
-| `packages/sdk/src/index.ts`                  | Export new modules                                                    |
-| `apps/cli/src/handlers/init.ts`              | **Modify** - Global only; remove project linking; add `--force`       |
-| `apps/cli/src/handlers/project.ts`           | **New** - Project command handlers (`init`, future: `status`, `sync`) |
-| `apps/cli/src/handlers/index.ts`             | Export new handlers                                                   |
-| `apps/cli/src/index.ts`                      | **Modify** - Add `project` command group                              |
-| `apps/docs/src/content/docs/setup-prompt.md` | **New** - Agent onboarding prompt                                     |
-
-## Resolved Questions
-
-1. **Which AGENTS.md to update?**
-   - **Decision:** Both AGENTS.md (generic) AND agent-specific files if they exist (CLAUDE.md, etc.)
-
-2. **Dependency name → repo mapping?**
-   - **Decision:** Three-tier resolution (see below)
-
-3. **Regenerate on re-run?**
-   - **Decision:** Show diff, ask to confirm changes
-
-4. **Monorepo support?**
-   - **Decision:** Scan root manifest only for v1; `--recursive` flag for later
-
-## Dependency → Repo Mapping Strategy
-
-**Research finding:** better-context delegates this to AI (agent suggests URLs during setup). They also ship hardcoded defaults for popular libs.
-
-**Our approach: Three-tier resolution**
-
-### Tier 1: Hardcoded Mapping (~50-100 popular deps)
-
-Create `packages/sdk/src/dep-mappings.ts`:
-
-```typescript
-export const KNOWN_MAPPINGS: Record<string, string> = {
-	// React ecosystem
-	react: "facebook/react",
-	"react-dom": "facebook/react",
-	next: "vercel/next.js",
-	remix: "remix-run/remix",
-
-	// Vue ecosystem
-	vue: "vuejs/core",
-	nuxt: "nuxt/nuxt",
-
-	// Svelte ecosystem
-	svelte: "sveltejs/svelte",
-	sveltekit: "sveltejs/kit",
-	"@sveltejs/kit": "sveltejs/kit",
-
-	// State management
-	"@tanstack/query": "tanstack/query",
-	"@tanstack/router": "tanstack/router",
-	zustand: "pmndrs/zustand",
-	jotai: "pmndrs/jotai",
-
-	// Backend
-	express: "expressjs/express",
-	hono: "honojs/hono",
-	fastify: "fastify/fastify",
-	trpc: "trpc/trpc",
-	"@trpc/server": "trpc/trpc",
-
-	// Database
-	"drizzle-orm": "drizzle-team/drizzle-orm",
-	prisma: "prisma/prisma",
-	"@prisma/client": "prisma/prisma",
-
-	// Validation
-	zod: "colinhacks/zod",
-	valibot: "fabian-hiller/valibot",
-
-	// Styling
-	tailwindcss: "tailwindlabs/tailwindcss",
-
-	// Convex
-	convex: "get-convex/convex-backend",
-
-	// ... etc
-};
-```
-
-### Tier 2: npm Registry Fallback
-
-Query npm registry for `repository.url`:
-
-```typescript
-async function resolveFromNpm(packageName: string): Promise<string | null> {
-	const res = await fetch(`https://registry.npmjs.org/${packageName}`);
-	if (!res.ok) return null;
-	const data = await res.json();
-	const repoUrl = data.repository?.url;
-	if (!repoUrl) return null;
-	// Parse "git+https://github.com/owner/repo.git" → "owner/repo"
-	return parseGitHubUrl(repoUrl);
+## Data Model (Target)
+
+Global map (local-only):
+
+```json
+{
+	"repos": {
+		"owner/repo": {
+			"localPath": "/abs/path",
+			"references": ["owner-repo.md"],
+			"primary": "owner-repo.md",
+			"keywords": ["..."],
+			"updatedAt": "2026-01-25"
+		}
+	}
 }
 ```
 
-### Tier 3: Prompt User
+Project map:
 
-For unresolved deps:
-
-```
-? I found these dependencies but couldn't determine their GitHub repos:
-  - internal-utils
-  - @company/shared-lib
-
-  Enter repo (owner/repo) or press Enter to skip:
-  internal-utils: [skip]
-  @company/shared-lib: [skip]
-```
-
-### Mapping Flow
-
-```
-dependency name
-    │
-    ├─► Check KNOWN_MAPPINGS → found? → use it
-    │
-    ├─► Query npm registry → has repo? → use it
-    │
-    └─► Prompt user → entered? → use it
-                    → skipped? → exclude from skills
+```json
+{
+	"version": 1,
+	"scope": "project",
+	"globalMapPath": "~/.local/share/offworld/skill/offworld/assets/map.json",
+	"repos": {
+		"owner/repo": {
+			"localPath": "/abs/path",
+			"reference": "owner-repo.md",
+			"keywords": ["..."]
+		}
+	}
+}
 ```
 
-## Success Criteria
+## Step 1: Types and Schemas (`packages/types`)
 
-### Global Init (`ow init`)
+Update all types and zod schemas to represent references, not skills/analysis.
 
-- [ ] First run creates `~/.config/offworld/config.json`
-- [ ] If config exists + in project: prompts to use `ow project init`
-- [ ] If config exists + not in project: suggests `--force`
-- [ ] `--force` allows reconfiguration
-- [ ] All prompts skippable via flags (`--model provider/model`, `--repo-root`, `--agents`, `--yes`)
+Work:
 
-### Project Init (`ow project init`)
+- Add `GlobalMap` and `ProjectMap` types for map files.
+- Add `ReferenceData` for push/pull (fullName, referenceName, description, content, commitSha, generatedAt).
+- Remove/rename all `Skill*` and `Analysis*` types/schemas.
+- Update `RepoIndex` / `RepoIndexEntry` types to align with maps or remove if unused.
 
-- [ ] Fails gracefully if no global config (tells user to run `ow init` first)
-- [ ] Scans package.json (and other manifests)
-- [ ] Resolves dependency names to GitHub repos (3-tier)
-- [ ] Shows checklist with skill availability status
-- [ ] Installs selected skills to global skill dir
-- [ ] Updates AGENTS.md with "## Project Skills" section
-- [ ] Updates agent-specific files if they exist (CLAUDE.md, etc.)
-- [ ] No `.offworld/` directory or config file created in project
-- [ ] `--all` selects all dependencies automatically
-- [ ] `--deps` allows explicit list
-- [ ] `--generate` enables AI generation for missing skills
-- [ ] `--dry-run` previews without changes
-- [ ] Re-running shows diff and asks to confirm changes
+Acceptance:
 
-### Agent Automation
+- `packages/types/src/schemas.ts` exports new map/reference schemas only.
+- No `skill` or `analysis` types remain in types package.
+- Typecheck passes with updated imports in SDK/CLI/backend/web.
 
-- [ ] Full autonomous setup possible with flags only
-- [ ] Setup prompt documented for copy-paste use
-- [ ] Exit codes are meaningful (0 success, 1 error)
+## Step 2: XDG Paths and Naming (`packages/sdk`)
 
-## Risks
+Add Offworld single-skill path helpers and rename naming utilities.
 
-| Risk                                   | Mitigation                                            |
-| -------------------------------------- | ----------------------------------------------------- |
-| AGENTS.md format varies by project     | Use consistent markdown; append don't replace         |
-| User edits AGENTS.md, breaks structure | Use comment markers; be resilient to missing sections |
-| Dependency→repo mapping incomplete     | Start with top 100; prompt for unknowns               |
-| No reproducibility for teams           | Document limitation; recommend committing AGENTS.md   |
+Work:
+
+- In `packages/sdk/src/paths.ts`, add:
+  - `offworldSkillDir` = `join(Paths.data, "skills", "offworld")`
+  - `offworldReferencesDir` = `join(offworldSkillDir, "references")`
+  - `offworldAssetsDir` = `join(offworldSkillDir, "assets")`
+  - `offworldGlobalMapPath` = `join(offworldAssetsDir, "map.json")`
+- Replace `toSkillDirName` in `packages/sdk/src/config.ts` with `toReferenceFileName` that returns `owner-repo.md` using current condense logic.
+- Keep `getMetaPath` using `Paths.data` and `toMetaDirName`.
+
+Acceptance:
+
+- All offworld paths derived from XDG-basedir paths.
+- Reference filename is `owner-repo.md` with condensed owner/repo logic preserved.
+
+## Step 3: Map Manager (`packages/sdk`)
+
+Replace index.json with map.json manager.
+
+Work:
+
+- Replace `packages/sdk/src/index-manager.ts` with map functions:
+  - `readGlobalMap`, `writeGlobalMap`, `upsertGlobalMapEntry`, `removeGlobalMapEntry`.
+  - `writeProjectMap(projectRoot, entries)`.
+- Remove usage of `Paths.state` for index.json.
+
+Acceptance:
+
+- Global map reads/writes only `assets/map.json`.
+- Project map writes only `./.offworld/map.json`.
+
+## Step 4: Reference Generation (`packages/sdk`)
+
+Reframe skill generation to reference generation using OpenCode Analyze agent.
+
+Work:
+
+- Update `packages/sdk/src/generate.ts`:
+  - Prompt outputs reference markdown (no frontmatter).
+  - Rename `GenerateSkill*` types to `GenerateReference*`.
+  - Rename extraction/validation helpers to reference equivalents.
+  - Return `referenceContent` and `commitSha`.
+- Ensure prompt uses custom Analyze agent with focused reference goal.
+
+Acceptance:
+
+- Generated output is a markdown reference file with no YAML frontmatter.
+- Validation ensures minimal content length and structure (reference-specific).
+
+## Step 5: Install Global Skill + Reference Files (`packages/sdk`)
+
+Add global skill install and per-repo reference install.
+
+Work:
+
+- Add `installGlobalSkill()`:
+  - Ensure `~/.local/share/offworld/skill/offworld/SKILL.md` exists (static template).
+  - Symlink full `offworld/` directory into each agent skill dir.
+- Replace `installSkill` with `installReference`:
+  - Write reference to `references/{owner-repo}.md`.
+  - Write meta to `~/.local/share/offworld/meta/{owner-repo}/meta.json`.
+  - Update `assets/map.json` with refs list + primary.
+
+Acceptance:
+
+- Agents see single `offworld` skill directory with all references under it.
+- Reference and meta files are written to XDG-compliant paths.
+- Global map updated on each install.
+
+## Step 6: Clone + Repo Ops (`packages/sdk`)
+
+Update clone/index logic to map-based routing and single-skill model.
+
+Work:
+
+- Update `packages/sdk/src/clone.ts`:
+  - Replace `getSkillPath` checks with reference file checks.
+  - Update map entry on clone with `localPath` and reference info.
+- Update `packages/sdk/src/repo-manager.ts`:
+  - Replace all index.json usage with map manager.
+  - Remove `hasSkill` / `analyzedAt` fields.
+  - GC/prune logic removes refs and meta, not per-repo skills.
+
+Acceptance:
+
+- No `index.json` usage remains.
+- All repo state reflected via map.json + filesystem refs.
+
+## Step 7: Reference Matching (`packages/sdk`)
+
+Rename skill matcher and adjust semantics.
+
+Work:
+
+- Rename `packages/sdk/src/skill-matcher.ts` -> `reference-matcher.ts` or update names in place.
+- `isReferenceInstalled` checks `offworld/references/{owner-repo}.md`.
+- Update status labels and callers to reference terminology.
+
+Acceptance:
+
+- Dependency resolution checks reference existence under offworld single-skill dir.
+
+## Step 8: Sync API (`packages/sdk`)
+
+Rename sync interfaces and align with reference API.
+
+Work:
+
+- Update `packages/sdk/src/sync.ts`:
+  - Rename `AnalysisData` -> `ReferenceData` and fields to `referenceName`, `referenceContent`, `generatedAt`.
+  - Update API calls to new Convex endpoints (`references.*`).
+  - Update error messages to reference terminology.
+
+Acceptance:
+
+- SDK sync only speaks reference names/fields.
+
+## Step 9: CLI Routing + Flags (`apps/cli`)
+
+Refactor CLI surface to reference language and single-skill operations.
+
+Work:
+
+- Update `apps/cli/src/index.ts`:
+  - Rename flags `--skill` -> `--reference`, `--skill-only` -> `--reference-only`, `--without-skill` -> `--without-reference`.
+  - Update descriptions and examples.
+- Update handlers in `apps/cli/src/handlers/`:
+  - `pull`, `generate`, `push`, `rm`, `list`, `repo`, `project`, `config`.
+  - Generate references + update maps + install global skill.
+- Update `ow config show --json` output to include:
+  - `paths.skillDir`, `paths.referencesDir`, `paths.globalMap`, `paths.projectMap`.
+
+Acceptance:
+
+- CLI commands no longer mention skills; all flags are reference-named.
+- `ow config show --json` returns map and refs paths for SKILL routing.
+
+## Step 10: Backend Schema + Functions (`packages/backend/convex`)
+
+Rename tables, queries, and validations to reference model.
+
+Work:
+
+- Update `packages/backend/convex/schema.ts`:
+  - Rename `skill` table to `reference`.
+  - Fields: `referenceName`, `referenceDescription`, `referenceContent`, `commitSha`, `generatedAt`, `pullCount`, `isVerified`, `workosId`.
+- Rename `packages/backend/convex/analyses.ts` -> `references.ts` and update all queries/actions/mutations.
+- Rename validation files: `skillContent.ts` -> `referenceContent.ts`; update push validation.
+- Update backend tests for references.
+
+Acceptance:
+
+- Convex schema contains `reference` table only (no `skill`).
+- All endpoints use reference names and fields.
+
+## Step 11: Web App (`apps/web`)
+
+Update routes, queries, and UI copy to references.
+
+Work:
+
+- Rename route file `apps/web/src/routes/_github/$owner/$repo/$skill.tsx` -> `$reference.tsx`.
+- Update repo page `apps/web/src/routes/_github/$owner/$repo/index.tsx` to list references.
+- Update `apps/web/src/routes/explore.tsx`, `apps/web/src/routes/profile.tsx`, `apps/web/src/components/home/*`, `apps/web/src/routes/cli.tsx` for reference language.
+- Regenerate `apps/web/src/routeTree.gen.ts`.
+
+Acceptance:
+
+- UI labels and routing reflect references everywhere.
+- Route params use `reference` (no `skill`).
+
+## Step 12: Docs (`apps/docs`)
+
+Update public docs and prompts to match single-skill model.
+
+Work:
+
+- Update `apps/docs/src/content/docs/setup-prompt.md` to reference generation and single SKILL.
+- Update any CLI docs referencing skills to references.
+
+Acceptance:
+
+- Docs describe single global SKILL and per-repo references only.
+
+## Step 13: Cleanup
+
+Remove legacy skill/analysis code paths.
+
+Work:
+
+- Delete unused modules tied to skills/analysis.
+- Remove old tests/mocks referencing skills.
+- Update any remaining strings, comments, and types.
+
+Acceptance:
+
+- No `skill`/`analysis` legacy naming remains except where required by external deps.
+
+## Step 14: Data Reset (Operator Action)
+
+Remove existing Convex data and local CLI data.
+
+Work:
+
+- Delete all existing Convex data (dev) to avoid legacy data conflicts.
+- Remove local CLI data dirs under `~/.local/share/offworld/` and `~/.local/state/offworld/`.
+
+Acceptance:
+
+- Fresh local install has only new single-skill files and maps.
+
+## Step 15: Verification
+
+Run project checks and ensure routing works with maps.
+
+Work:
+
+- Typecheck, tests, and build.
+- Verify `ow project init` writes project map and updates global map.
+- Verify `ow config show --json` output is consumed by SKILL routing steps.
+- Verify pull stats on web update per reference.
+
+Acceptance:
+
+- All checks pass.
+- End-to-end workflow works: clone -> reference -> map -> routing.
+
+## Additional Notes
+
+- Map is local-only; never pushed to web.
+- Single global SKILL is static and path-agnostic; all path discovery done via CLI output.
+- Symlinking the `offworld/` directory carries deep subdirs (references) automatically.

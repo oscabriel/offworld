@@ -98,7 +98,7 @@ import {
 	loadAuthData,
 	canPushToWeb,
 } from "@offworld/sdk";
-import type { RemoteRepoSource, LocalRepoSource, Config, RepoIndexEntry } from "@offworld/types";
+import type { RemoteRepoSource, LocalRepoSource, Config, GlobalMapRepoEntry } from "@offworld/types";
 
 // Import handlers after mocks
 import { pullHandler } from "../handlers/pull.js";
@@ -166,13 +166,12 @@ describe("CLI handlers", () => {
 		generatedAt: "2026-01-09T12:00:00Z",
 	};
 
-	const mockIndexEntry: RepoIndexEntry = {
-		fullName: "tanstack/router",
-		qualifiedName: "github:tanstack/router",
+	const mockIndexEntry: GlobalMapRepoEntry = {
 		localPath: "/home/user/ow/github/tanstack/router",
-		analyzedAt: "2026-01-09T12:00:00Z",
-		commitSha: "abc123",
-		hasSkill: true,
+		references: ["tanstack-router.md"],
+		primary: "tanstack-router.md",
+		keywords: [],
+		updatedAt: "2026-01-09T12:00:00Z",
 	};
 
 	beforeEach(() => {

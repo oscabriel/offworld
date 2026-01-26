@@ -14,7 +14,7 @@ import type {
 	FileRoleSchema,
 	FileIndexEntrySchema,
 	FileIndexSchema,
-	AnalysisMetaSchema,
+	ReferenceMetaSchema,
 	ReferenceDataSchema,
 	GlobalMapRepoEntrySchema,
 	GlobalMapSchema,
@@ -39,16 +39,10 @@ export type Architecture = z.infer<typeof ArchitectureSchema>;
 export type FileRole = z.infer<typeof FileRoleSchema>;
 export type FileIndexEntry = z.infer<typeof FileIndexEntrySchema>;
 export type FileIndex = z.infer<typeof FileIndexSchema>;
-export type AnalysisMeta = z.infer<typeof AnalysisMetaSchema>;
+export type ReferenceMeta = z.infer<typeof ReferenceMetaSchema>;
 
 export type ReferenceData = z.infer<typeof ReferenceDataSchema>;
 export type GlobalMapRepoEntry = z.infer<typeof GlobalMapRepoEntrySchema>;
 export type GlobalMap = z.infer<typeof GlobalMapSchema>;
 export type ProjectMapRepoEntry = z.infer<typeof ProjectMapRepoEntrySchema>;
 export type ProjectMap = z.infer<typeof ProjectMapSchema>;
-
-// Deprecated legacy types (TODO: remove after US-006)
-/** @deprecated Use GlobalMap instead */
-export type RepoIndex = { version: number; repos: Record<string, any> };
-/** @deprecated Use GlobalMapRepoEntry instead */
-export type RepoIndexEntry = any;

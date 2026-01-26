@@ -10,12 +10,19 @@ vi.mock("../clone.js", () => ({
 
 vi.mock("../config.js", () => ({
 	loadConfig: vi.fn(),
-	toSkillDirName: vi.fn((repoName: string) => {
+	toReferenceName: vi.fn((repoName: string) => {
 		if (repoName.includes("/")) {
 			const [owner, repo] = repoName.split("/");
-			return `${owner}-${repo}-reference`;
+			return `${owner}-${repo}`;
 		}
-		return `${repoName}-reference`;
+		return repoName;
+	}),
+	toReferenceFileName: vi.fn((repoName: string) => {
+		if (repoName.includes("/")) {
+			const [owner, repo] = repoName.split("/");
+			return `${owner}-${repo}.md`;
+		}
+		return `${repoName}.md`;
 	}),
 	toMetaDirName: vi.fn((repoName: string) => {
 		if (repoName.includes("/")) {

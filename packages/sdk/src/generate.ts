@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
-import { loadConfig, toSkillDirName, toMetaDirName, toReferenceFileName } from "./config.js";
+import { loadConfig, toReferenceName, toMetaDirName, toReferenceFileName } from "./config.js";
 import { getCommitSha } from "./clone.js";
 import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
@@ -288,7 +288,7 @@ export async function generateReferenceWithAI(
 	onDebug?.(`Commit SHA: ${commitSha}`);
 
 	// Generate the reference name in owner-repo format
-	const referenceName = toSkillDirName(repoName);
+	const referenceName = toReferenceName(repoName);
 	onDebug?.(`Reference name: ${referenceName}`);
 
 	const promptOptions: StreamPromptOptions = {
@@ -354,7 +354,7 @@ function ensureSymlink(target: string, linkPath: string): void {
  */
 export function installSkill(repoName: string, skillContent: string, meta: InstallSkillMeta): void {
 	const config = loadConfig();
-	const skillDirName = toSkillDirName(repoName);
+	const skillDirName = toReferenceName(repoName);
 	const metaDirName = toMetaDirName(repoName);
 
 	// Skill directory (agent-facing)

@@ -31,13 +31,13 @@ ow list
 
 ### Core
 
-| Command              | Description                         |
-| -------------------- | ----------------------------------- |
-| `ow pull <repo>`     | Clone repo and generate reference   |
-| `ow generate <repo>` | Generate reference locally          |
-| `ow push <repo>`     | Upload reference to offworld.sh     |
-| `ow list`            | List managed repos                  |
-| `ow remove <repo>`   | Remove repo and/or reference        |
+| Command              | Description                       |
+| -------------------- | --------------------------------- |
+| `ow pull <repo>`     | Clone repo and generate reference |
+| `ow generate <repo>` | Generate reference locally        |
+| `ow push <repo>`     | Upload reference to offworld.sh   |
+| `ow list`            | List managed repos                |
+| `ow remove <repo>`   | Remove repo and/or reference      |
 
 ### Configuration
 
@@ -51,14 +51,14 @@ ow list
 
 ### Repository Management
 
-| Command                | Description                |
-| ---------------------- | -------------------------- |
-| `ow repo list`         | List managed repos         |
-| `ow repo update --all` | Update all repos           |
-| `ow repo prune`        | Remove stale map entries   |
-| `ow repo status`       | Show repo summary          |
-| `ow repo gc`           | Garbage collect old repos  |
-| `ow repo discover`     | Index existing repos       |
+| Command                | Description               |
+| ---------------------- | ------------------------- |
+| `ow repo list`         | List managed repos        |
+| `ow repo update --all` | Update all repos          |
+| `ow repo prune`        | Remove stale map entries  |
+| `ow repo status`       | Show repo summary         |
+| `ow repo gc`           | Garbage collect old repos |
+| `ow repo discover`     | Index existing repos      |
 
 ### Project
 
@@ -132,12 +132,12 @@ ow list
 
 ```json
 {
-  "paths": {
-    "skillDir": "~/.local/share/offworld/skills/offworld",
-    "globalMap": "~/.local/share/offworld/skills/offworld/assets/map.json",
-    "referencesDir": "~/.local/share/offworld/skills/offworld/references",
-    "projectMap": "/abs/path/to/repo/.offworld/map.json"
-  }
+	"paths": {
+		"skillDir": "~/.local/share/offworld/skills/offworld",
+		"globalMap": "~/.local/share/offworld/skills/offworld/assets/map.json",
+		"referencesDir": "~/.local/share/offworld/skills/offworld/references",
+		"projectMap": "/abs/path/to/repo/.offworld/map.json"
+	}
 }
 ```
 
@@ -154,10 +154,10 @@ Single skill symlinked to:
 
 ## Environment Variables
 
-| Variable            | Description                          |
-| ------------------- | ------------------------------------ |
+| Variable            | Description                             |
+| ------------------- | --------------------------------------- |
 | `ANTHROPIC_API_KEY` | Required for local reference generation |
-| `WORKOS_CLIENT_ID`  | Required for `ow auth login`         |
+| `WORKOS_CLIENT_ID`  | Required for `ow auth login`            |
 
 ## License
 

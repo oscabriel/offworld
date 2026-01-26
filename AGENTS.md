@@ -126,28 +126,28 @@ bun run test             # Run tests
 
 ## CLI COMMANDS
 
-| Command              | Handler       | Description                     |
-| -------------------- | ------------- | ------------------------------- |
-| `ow pull <repo>`     | `pull.ts`     | Clone + generate reference      |
-| `ow generate <repo>` | `generate.ts` | Force local AI generation       |
-| `ow push <repo>`     | `push.ts`     | Upload to offworld.sh           |
-| `ow list`            | `list.ts`     | List managed repos              |
-| `ow rm <repo>`       | `remove.ts`   | Remove repo + reference         |
-| `ow init`            | `init.ts`     | Interactive global setup        |
-| `ow project init`    | `project.ts`  | Scan deps, install references   |
-| `ow config *`        | `config.ts`   | Config management               |
-| `ow auth *`          | `auth.ts`     | WorkOS authentication           |
+| Command              | Handler       | Description                   |
+| -------------------- | ------------- | ----------------------------- |
+| `ow pull <repo>`     | `pull.ts`     | Clone + generate reference    |
+| `ow generate <repo>` | `generate.ts` | Force local AI generation     |
+| `ow push <repo>`     | `push.ts`     | Upload to offworld.sh         |
+| `ow list`            | `list.ts`     | List managed repos            |
+| `ow rm <repo>`       | `remove.ts`   | Remove repo + reference       |
+| `ow init`            | `init.ts`     | Interactive global setup      |
+| `ow project init`    | `project.ts`  | Scan deps, install references |
+| `ow config *`        | `config.ts`   | Config management             |
+| `ow auth *`          | `auth.ts`     | WorkOS authentication         |
 
 ## DATA PATHS
 
-| Purpose      | Location                                                    |
-| ------------ | ----------------------------------------------------------- |
-| Config       | `~/.config/offworld/config.json`                            |
-| Global skill | `~/.local/share/offworld/skills/offworld/`                  |
-| Global map   | `~/.local/share/offworld/skills/offworld/assets/map.json`   |
-| References   | `~/.local/share/offworld/skills/offworld/references/`       |
-| Project map  | `./.offworld/map.json`                                      |
-| Cloned repos | `~/ow/` (configurable)                                      |
+| Purpose      | Location                                                  |
+| ------------ | --------------------------------------------------------- |
+| Config       | `~/.config/offworld/config.json`                          |
+| Global skill | `~/.local/share/offworld/skills/offworld/`                |
+| Global map   | `~/.local/share/offworld/skills/offworld/assets/map.json` |
+| References   | `~/.local/share/offworld/skills/offworld/references/`     |
+| Project map  | `./.offworld/map.json`                                    |
+| Cloned repos | `~/ow/` (configurable)                                    |
 
 ## AGENTS SUPPORTED
 
@@ -187,11 +187,11 @@ Single skill symlinked to:
 
 References installed for this project's dependencies:
 
-| Dependency | Reference            | Path                                                             |
-| ---------- | -------------------- | ---------------------------------------------------------------- |
-| zod        | colinhacks-zod.md    | ~/.local/share/offworld/skills/offworld/references/colinhacks-zod.md |
+| Dependency | Reference               | Path                                                                       |
+| ---------- | ----------------------- | -------------------------------------------------------------------------- |
+| zod        | colinhacks-zod.md       | ~/.local/share/offworld/skills/offworld/references/colinhacks-zod.md       |
 | typescript | microsoft-TypeScript.md | ~/.local/share/offworld/skills/offworld/references/microsoft-TypeScript.md |
-| vitest     | vitest-dev-vitest.md | ~/.local/share/offworld/skills/offworld/references/vitest-dev-vitest.md |
+| vitest     | vitest-dev-vitest.md    | ~/.local/share/offworld/skills/offworld/references/vitest-dev-vitest.md    |
 
 To update references: `ow pull <dependency>`
 To regenerate all: `ow project init --all --generate`

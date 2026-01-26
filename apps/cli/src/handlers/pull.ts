@@ -263,13 +263,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							if (remoteAnalysis) {
 								s.stop("Downloaded remote reference");
 
-							saveRemoteReference(
-								source.fullName,
-								repoPath,
-								remoteAnalysis.referenceContent,
-								remoteAnalysis.commitSha,
-								remoteAnalysis.generatedAt ?? new Date().toISOString(),
-							);
+								saveRemoteReference(
+									source.fullName,
+									repoPath,
+									remoteAnalysis.referenceContent,
+									remoteAnalysis.commitSha,
+									remoteAnalysis.generatedAt ?? new Date().toISOString(),
+								);
 
 								p.log.success(
 									referenceName

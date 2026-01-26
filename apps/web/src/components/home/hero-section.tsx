@@ -38,7 +38,8 @@ export function HeroSection() {
 				</h1>
 
 				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-xl">
-					CLI tool that gives your coding agents instant, up-to-date context on any open source repo.
+					CLI tool that gives your coding agents instant, up-to-date context on any open source
+					repo.
 				</p>
 			</div>
 

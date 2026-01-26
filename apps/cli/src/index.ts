@@ -80,7 +80,6 @@ export const router = os.router({
 			z.object({
 				json: z.boolean().default(false).describe("Output as JSON"),
 				paths: z.boolean().default(false).describe("Show full paths"),
-				stale: z.boolean().default(false).describe("Only show stale repos"),
 				pattern: z.string().optional().describe("Filter by pattern (e.g. 'react-*')"),
 			}),
 		)
@@ -92,7 +91,6 @@ export const router = os.router({
 			await repoListHandler({
 				json: input.json,
 				paths: input.paths,
-				stale: input.stale,
 				pattern: input.pattern,
 			});
 		}),
@@ -332,7 +330,6 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 				z.object({
 					json: z.boolean().default(false).describe("Output as JSON"),
 					paths: z.boolean().default(false).describe("Show full paths"),
-					stale: z.boolean().default(false).describe("Only show stale repos"),
 					pattern: z.string().optional().describe("Filter by pattern (e.g. 'react-*')"),
 				}),
 			)
@@ -345,7 +342,6 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 				await repoListHandler({
 					json: input.json,
 					paths: input.paths,
-					stale: input.stale,
 					pattern: input.pattern,
 				});
 			}),
@@ -354,7 +350,6 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 			.input(
 				z.object({
 					all: z.boolean().default(false).describe("Update all repos"),
-					stale: z.boolean().default(false).describe("Only update stale repos"),
 					pattern: z.string().optional().describe("Filter by pattern"),
 					dryRun: z
 						.boolean()
@@ -368,7 +363,6 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 			.handler(async ({ input }) => {
 				await repoUpdateHandler({
 					all: input.all,
-					stale: input.stale,
 					pattern: input.pattern,
 					dryRun: input.dryRun,
 					unshallow: input.unshallow,

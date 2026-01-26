@@ -6,7 +6,7 @@ import { existsSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { execFileSync, spawn } from "node:child_process";
 import type { Config, RemoteRepoSource } from "@offworld/types";
-import { getRepoPath, getMetaPath, loadConfig, toReferenceFileName } from "./config.js";
+import { getRepoPath, loadConfig, toReferenceFileName } from "./config.js";
 import { readGlobalMap, upsertGlobalMapEntry, removeGlobalMapEntry } from "./index-manager.js";
 import { Paths } from "./paths.js";
 
@@ -197,21 +197,18 @@ export async function cloneRepo(
 		throw err;
 	}
 
-	getCommitSha(repoPath);
 	const referenceFileName = toReferenceFileName(source.fullName);
 	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 	const hasReference = existsSync(referencePath);
 
-	// Update global map (only if reference exists)
-	if (hasReference) {
-		upsertGlobalMapEntry(source.fullName, {
-			localPath: repoPath,
-			references: [referenceFileName],
-			primary: referenceFileName,
-			keywords: [],
-			updatedAt: new Date().toISOString(),
-		});
-	}
+	// Update global map unconditionally
+	upsertGlobalMapEntry(source.qualifiedName, {
+		localPath: repoPath,
+		references: hasReference ? [referenceFileName] : [],
+		primary: hasReference ? referenceFileName : "",
+		keywords: [],
+		updatedAt: new Date().toISOString(),
+	});
 
 	return repoPath;
 }
@@ -313,7 +310,7 @@ export interface UpdateOptions {
 /**
  * Update a cloned repository by running git fetch and pull.
  *
- * @param qualifiedName - The qualified name of the repo (e.g., "github:owner/repo")
+ * @param qualifiedName - The qualified name of the repo (e.g., "github.com:owner/repo")
  * @param options - Update options
  * @returns Update result with commit SHAs
  * @throws RepoNotFoundError if repo not in index
@@ -403,16 +400,20 @@ export async function removeRepo(
 
 	if (removeReferenceFiles) {
 		// Remove reference files
-		const referenceFileName = toReferenceFileName(qualifiedName);
-		const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
-		if (existsSync(referencePath)) {
-			rmSync(referencePath, { force: true });
+		for (const referenceFileName of entry.references) {
+			const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+			if (existsSync(referencePath)) {
+				rmSync(referencePath, { force: true });
+			}
 		}
 
-		// Remove meta directory
-		const metaPath = getMetaPath(qualifiedName);
-		if (existsSync(metaPath)) {
-			rmSync(metaPath, { recursive: true, force: true });
+		// Remove meta directory (only if primary reference exists)
+		if (entry.primary) {
+			const metaDirName = entry.primary.replace(/\.md$/, "");
+			const metaPath = join(Paths.metaDir, metaDirName);
+			if (existsSync(metaPath)) {
+				rmSync(metaPath, { recursive: true, force: true });
+			}
 		}
 	}
 
@@ -427,29 +428,6 @@ export async function removeRepo(
 	}
 
 	return true;
-}
-
-/**
- * Remove a reference by repo name
- * @deprecated Use removeRepo with referenceOnly option instead
- */
-export function removeReferenceByName(repoName: string): boolean {
-	const referenceFileName = toReferenceFileName(repoName);
-	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
-	const metaPath = getMetaPath(repoName);
-	let removed = false;
-
-	if (existsSync(referencePath)) {
-		rmSync(referencePath, { force: true });
-		removed = true;
-	}
-
-	if (existsSync(metaPath)) {
-		rmSync(metaPath, { recursive: true, force: true });
-		removed = true;
-	}
-
-	return removed;
 }
 
 // ============================================================================

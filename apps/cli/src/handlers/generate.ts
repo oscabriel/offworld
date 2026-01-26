@@ -21,7 +21,7 @@ export interface GenerateOptions {
 
 export interface GenerateResult {
 	success: boolean;
-	analysisPath?: string;
+	referencePath?: string;
 	message?: string;
 }
 
@@ -49,7 +49,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		let repoPath: string;
 
 		if (source.type === "remote" && !force) {
-			s.start("Checking for existing remote analysis...");
+			s.start("Checking for existing remote reference...");
 			const remoteCheck = await checkRemote(source.fullName);
 
 			if (remoteCheck.exists) {
@@ -60,7 +60,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 					message: "Remote reference exists. Use --force to override.",
 				};
 			}
-			s.stop("No remote analysis found");
+			s.stop("No remote reference found");
 		}
 
 		if (source.type === "remote") {
@@ -83,10 +83,10 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 
 		s.start("Generating reference with AI...");
 
-		// Use fullName for remote repos (e.g. 'tanstack/query'), name for local repos
-		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
+		const qualifiedName = source.qualifiedName;
+		const referenceRepoName = source.type === "remote" ? source.fullName : source.name;
 
-		const result = await generateReferenceWithAI(repoPath, qualifiedName, {
+		const result = await generateReferenceWithAI(repoPath, referenceRepoName, {
 			provider,
 			model,
 			onDebug: (msg: string) => s.message(msg),
@@ -94,19 +94,19 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		s.stop("Reference generated");
 
 		const { referenceContent, commitSha } = result;
-		const analyzedAt = new Date().toISOString();
-		const meta = { analyzedAt, commitSha, version: "0.1.0" };
+		const referenceUpdatedAt = new Date().toISOString();
+		const meta = { referenceUpdatedAt, commitSha, version: "0.1.0" };
 
-		const referencePath = getReferencePath(qualifiedName);
+		const referencePath = getReferencePath(referenceRepoName);
 
-		installReference(qualifiedName, repoPath, referenceContent, meta);
+		installReference(qualifiedName, referenceRepoName, repoPath, referenceContent, meta);
 
 		p.log.success(`Reference saved to: ${referencePath}`);
 		p.log.info(`Reference installed for: ${qualifiedName}`);
 
 		return {
 			success: true,
-			analysisPath: referencePath,
+			referencePath,
 		};
 	} catch (error) {
 		s.stop("Failed");

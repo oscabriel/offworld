@@ -112,13 +112,11 @@ import {
 	getMetaRoot,
 	getRepoRoot,
 	getRepoPath,
-	getAnalysisPath,
-	getSkillPath,
 	getMetaPath,
 	getConfigPath,
 	loadConfig,
 	saveConfig,
-	toSkillDirName,
+	toReferenceFileName,
 } from "../config.js";
 
 describe("config.ts", () => {
@@ -249,23 +247,6 @@ describe("config.ts", () => {
 	});
 
 	// =========================================================================
-	// getSkillPath tests
-	// =========================================================================
-	describe("getSkillPath", () => {
-		it("returns {meta}/skills/owner-repo-reference for owner/repo", () => {
-			const result = getSkillPath("tanstack/router");
-			expect(result).toBe(
-				join(home, ".local", "share", "offworld", "skills", "tanstack-router-reference"),
-			);
-		});
-
-		it("handles single name (no slash) gracefully", () => {
-			const result = getSkillPath("invalid");
-			expect(result).toBe(join(home, ".local", "share", "offworld", "skills", "invalid-reference"));
-		});
-	});
-
-	// =========================================================================
 	// getMetaPath tests
 	// =========================================================================
 	describe("getMetaPath", () => {
@@ -277,16 +258,6 @@ describe("config.ts", () => {
 		it("handles single name (no slash) gracefully", () => {
 			const result = getMetaPath("invalid");
 			expect(result).toBe(join(home, ".local", "share", "offworld", "meta", "invalid"));
-		});
-	});
-
-	// =========================================================================
-	// getAnalysisPath tests (deprecated, delegates to getSkillPath)
-	// =========================================================================
-	describe("getAnalysisPath", () => {
-		it("delegates to getSkillPath", () => {
-			const result = getAnalysisPath("tanstack/router");
-			expect(result).toBe(getSkillPath("tanstack/router"));
 		});
 	});
 
@@ -503,40 +474,40 @@ describe("config.ts", () => {
 	});
 
 	// =========================================================================
-	// toSkillDirName tests
+	// toReferenceFileName tests
 	// =========================================================================
-	describe("toSkillDirName", () => {
+	describe("toReferenceFileName", () => {
 		it("collapses exact owner/repo match", () => {
-			expect(toSkillDirName("better-auth/better-auth")).toBe("better-auth-reference");
+			expect(toReferenceFileName("better-auth/better-auth")).toBe("better-auth.md");
 		});
 
 		it("collapses when repo part is contained in owner", () => {
-			expect(toSkillDirName("honojs/hono")).toBe("hono-reference");
-			expect(toSkillDirName("get-convex/convex-backend")).toBe("convex-backend-reference");
-			expect(toSkillDirName("get-convex/convex-helpers")).toBe("convex-helpers-reference");
-			expect(toSkillDirName("alchemy-run/alchemy")).toBe("alchemy-reference");
-			expect(toSkillDirName("vitest-dev/vitest")).toBe("vitest-reference");
-			expect(toSkillDirName("use-gesture/gesture")).toBe("gesture-reference");
+			expect(toReferenceFileName("honojs/hono")).toBe("hono.md");
+			expect(toReferenceFileName("get-convex/convex-backend")).toBe("convex-backend.md");
+			expect(toReferenceFileName("get-convex/convex-helpers")).toBe("convex-helpers.md");
+			expect(toReferenceFileName("alchemy-run/alchemy")).toBe("alchemy.md");
+			expect(toReferenceFileName("vitest-dev/vitest")).toBe("vitest.md");
+			expect(toReferenceFileName("use-gesture/gesture")).toBe("gesture.md");
 		});
 
 		it("keeps owner when no repo part is contained in owner", () => {
-			expect(toSkillDirName("tanstack/query")).toBe("tanstack-query-reference");
-			expect(toSkillDirName("tanstack/router")).toBe("tanstack-router-reference");
-			expect(toSkillDirName("vercel/ai")).toBe("vercel-ai-reference");
+			expect(toReferenceFileName("tanstack/query")).toBe("tanstack-query.md");
+			expect(toReferenceFileName("tanstack/router")).toBe("tanstack-router.md");
+			expect(toReferenceFileName("vercel/ai")).toBe("vercel-ai.md");
 		});
 
 		it("ignores short parts (< 3 chars) to avoid false positives", () => {
 			// "ai" is only 2 chars, so vercel/ai should not collapse
-			expect(toSkillDirName("vercel/ai")).toBe("vercel-ai-reference");
+			expect(toReferenceFileName("vercel/ai")).toBe("vercel-ai.md");
 		});
 
 		it("handles simple repo name without slash", () => {
-			expect(toSkillDirName("my-lib")).toBe("my-lib-reference");
+			expect(toReferenceFileName("my-lib")).toBe("my-lib.md");
 		});
 
 		it("is case insensitive for matching", () => {
-			expect(toSkillDirName("HonoJS/Hono")).toBe("Hono-reference");
-			expect(toSkillDirName("Get-Convex/Convex-Backend")).toBe("Convex-Backend-reference");
+			expect(toReferenceFileName("HonoJS/Hono")).toBe("Hono.md");
+			expect(toReferenceFileName("Get-Convex/Convex-Backend")).toBe("Convex-Backend.md");
 		});
 	});
 });

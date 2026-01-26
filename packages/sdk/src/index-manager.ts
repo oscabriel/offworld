@@ -18,50 +18,6 @@ import {
 } from "@offworld/types";
 import { Paths } from "./paths.js";
 
-// ============================================================================
-// DEPRECATED LEGACY EXPORTS (for backwards compatibility during migration)
-// TODO: Remove these after US-006 (clone/repo-manager migration)
-// ============================================================================
-
-/** @deprecated Use readGlobalMap() instead */
-export function getIndex() {
-	return { version: 1, repos: {} };
-}
-
-/** @deprecated Use writeGlobalMap() instead */
-export function saveIndex(_index: any) {
-	// no-op for now
-}
-
-/** @deprecated Use upsertGlobalMapEntry() instead */
-export function updateIndex(_entry: any) {
-	// no-op for now
-}
-
-/** @deprecated Use removeGlobalMapEntry() instead */
-export function removeFromIndex(_qualifiedName: string): boolean {
-	return false;
-}
-
-/** @deprecated Use readGlobalMap() and access repos directly */
-export function getIndexEntry(_qualifiedName: string): any {
-	return undefined;
-}
-
-/** @deprecated Use readGlobalMap() and Object.values(map.repos) */
-export function listIndexedRepos(): any[] {
-	return [];
-}
-
-/** @deprecated Use Paths.offworldGlobalMapPath instead */
-export function getIndexPath(): string {
-	return Paths.offworldGlobalMapPath;
-}
-
-// ============================================================================
-// End deprecated exports
-// ============================================================================
-
 /**
  * Reads the global map from ~/.local/share/offworld/skill/offworld/assets/map.json
  * Returns empty map if file doesn't exist or is invalid

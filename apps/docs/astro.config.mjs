@@ -2,26 +2,54 @@ import alchemy from "alchemy/cloudflare/astro";
 import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
+import { rehypeWrapTables } from "./src/plugins/rehype-wrap-tables";
 
 // https://astro.build/config
 export default defineConfig({
+	markdown: {
+		rehypePlugins: [rehypeWrapTables],
+	},
+	site: "https://offworld.sh",
 	output: "server",
 	adapter: alchemy(),
 	integrations: [
 		starlight({
-			title: "My Docs",
-			social: [{ icon: "github", label: "GitHub", href: "https://github.com/withastro/starlight" }],
+			title: "Offworld",
+			customCss: [
+				"@fontsource/sorts-mill-goudy/400.css",
+				"@fontsource/geist-mono/400.css",
+				"@fontsource/geist-mono/500.css",
+				"./src/styles/custom.css",
+			],
+			social: [
+				{ icon: "github", label: "GitHub", href: "https://github.com/oscabriel/offworld" },
+				{ icon: "x.com", label: "Twitter", href: "https://x.com/offaboreal" },
+			],
+			editLink: {
+				baseUrl: "https://github.com/oscabriel/offworld/edit/main/apps/docs/",
+			},
 			sidebar: [
 				{
-					label: "Guides",
+					label: "Getting Started",
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: "Example Guide", slug: "guides/example" },
+						{ label: "Introduction", slug: "index" },
+						{ label: "Quickstart", slug: "guides/quickstart" },
+					],
+				},
+				{
+					label: "Usage",
+					items: [
+						{ label: "Agent Integration", slug: "agents" },
+						{ label: "How It Works", slug: "concepts" },
 					],
 				},
 				{
 					label: "Reference",
-					autogenerate: { directory: "reference" },
+					items: [
+						{ label: "CLI Commands", slug: "reference/cli" },
+						{ label: "Repo Commands", slug: "reference/repo-commands" },
+						{ label: "Config & Auth", slug: "reference/config-auth" },
+					],
 				},
 			],
 		}),

@@ -13,7 +13,7 @@ vi.mock("node:fs", () => ({
 import { existsSync, statSync } from "node:fs";
 import {
 	parseRepoInput,
-	getAnalysisPathForSource,
+	getReferenceFileNameForSource,
 	PathNotFoundError,
 	NotGitRepoError,
 	RepoSourceError,
@@ -44,7 +44,7 @@ describe("repo-source.ts", () => {
 				expect(result.owner).toBe("tanstack");
 				expect(result.repo).toBe("router");
 				expect(result.fullName).toBe("tanstack/router");
-				expect(result.qualifiedName).toBe("github:tanstack/router");
+				expect(result.qualifiedName).toBe("github.com:tanstack/router");
 				expect(result.cloneUrl).toBe("https://github.com/tanstack/router.git");
 			}
 		});
@@ -103,7 +103,7 @@ describe("repo-source.ts", () => {
 				expect(result.provider).toBe("gitlab");
 				expect(result.owner).toBe("group");
 				expect(result.repo).toBe("project");
-				expect(result.qualifiedName).toBe("gitlab:group/project");
+				expect(result.qualifiedName).toBe("gitlab.com:group/project");
 				expect(result.cloneUrl).toBe("https://gitlab.com/group/project.git");
 			}
 		});
@@ -116,7 +116,7 @@ describe("repo-source.ts", () => {
 				expect(result.provider).toBe("bitbucket");
 				expect(result.owner).toBe("team");
 				expect(result.repo).toBe("repo");
-				expect(result.qualifiedName).toBe("bitbucket:team/repo");
+				expect(result.qualifiedName).toBe("bitbucket.org:team/repo");
 				expect(result.cloneUrl).toBe("https://bitbucket.org/team/repo.git");
 			}
 		});
@@ -146,7 +146,7 @@ describe("repo-source.ts", () => {
 				expect(result.owner).toBe("tanstack");
 				expect(result.repo).toBe("router");
 				expect(result.fullName).toBe("tanstack/router");
-				expect(result.qualifiedName).toBe("github:tanstack/router");
+				expect(result.qualifiedName).toBe("github.com:tanstack/router");
 			}
 		});
 
@@ -246,15 +246,15 @@ describe("repo-source.ts", () => {
 	// qualifiedName format verification
 	// =========================================================================
 	describe("qualifiedName format", () => {
-		it("is 'provider:owner/repo' for remote", () => {
+		it("is 'host:owner/repo' for remote", () => {
 			const github = parseRepoInput("tanstack/router");
-			expect(github.qualifiedName).toBe("github:tanstack/router");
+			expect(github.qualifiedName).toBe("github.com:tanstack/router");
 
 			const gitlab = parseRepoInput("https://gitlab.com/group/proj");
-			expect(gitlab.qualifiedName).toBe("gitlab:group/proj");
+			expect(gitlab.qualifiedName).toBe("gitlab.com:group/proj");
 
 			const bitbucket = parseRepoInput("https://bitbucket.org/team/repo");
-			expect(bitbucket.qualifiedName).toBe("bitbucket:team/repo");
+			expect(bitbucket.qualifiedName).toBe("bitbucket.org:team/repo");
 		});
 
 		it("is 'local:hash' for local", () => {
@@ -268,31 +268,31 @@ describe("repo-source.ts", () => {
 	});
 
 	// =========================================================================
-	// getAnalysisPathForSource tests
+	// getReferenceFileNameForSource tests
 	// =========================================================================
-	describe("getAnalysisPathForSource", () => {
-		it("returns owner-repo-reference format for remote", () => {
+	describe("getReferenceFileNameForSource", () => {
+		it("returns owner-repo.md format for remote", () => {
 			const source = parseRepoInput("tanstack/router");
-			const result = getAnalysisPathForSource(source);
+			const result = getReferenceFileNameForSource(source);
 
-			expect(result).toBe("tanstack-router-reference");
+			expect(result).toBe("tanstack-router.md");
 		});
 
-		it("returns owner-repo-reference format for gitlab", () => {
+		it("returns owner-repo.md format for gitlab", () => {
 			const source = parseRepoInput("https://gitlab.com/group/project");
-			const result = getAnalysisPathForSource(source);
+			const result = getReferenceFileNameForSource(source);
 
-			expect(result).toBe("group-project-reference");
+			expect(result).toBe("group-project.md");
 		});
 
-		it("returns name-reference format for local", () => {
+		it("returns name.md format for local", () => {
 			mockExistsSync.mockReturnValue(true);
 			mockStatSync.mockReturnValue({ isDirectory: () => true });
 
 			const source = parseRepoInput("/some/path");
-			const result = getAnalysisPathForSource(source);
+			const result = getReferenceFileNameForSource(source);
 
-			expect(result).toMatch(/^path-reference$/);
+			expect(result).toMatch(/^path\.md$/);
 		});
 	});
 

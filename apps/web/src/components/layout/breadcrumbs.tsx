@@ -24,7 +24,7 @@ export function Breadcrumbs() {
 				<Breadcrumb>
 					<BreadcrumbList className="font-mono">
 						<BreadcrumbItem>
-							<BreadcrumbLink render={<Link to="/explore" />}>skills</BreadcrumbLink>
+							<BreadcrumbLink render={<Link to="/explore" />}>references</BreadcrumbLink>
 						</BreadcrumbItem>
 						{crumbs.map((crumb: Crumb, i: number) => (
 							<Fragment key={crumb.to}>

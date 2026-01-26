@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { RepoHeader } from "@/components/repo/repo-header";
 import { Card } from "@/components/ui/card";
 
-import { repoSkillsQuery } from "./route";
+import { repoReferencesQuery } from "./route";
 
 export const Route = createFileRoute("/_github/$owner/$repo/")({
 	component: RepoReferencesPage,
@@ -69,11 +69,11 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 function RepoReferencesPage() {
 	const { owner, repo } = Route.useParams();
 	const { data: references, isLoading: referencesLoading } = useSuspenseQuery(
-		repoSkillsQuery(owner, repo),
+		repoReferencesQuery(owner, repo),
 	);
 
 	const primaryReference = references[0] ?? null;
-	const analysisData = primaryReference
+	const referenceData = primaryReference
 		? {
 				commitSha: primaryReference.commitSha,
 				pullCount: primaryReference.pullCount,
@@ -91,7 +91,7 @@ function RepoReferencesPage() {
 				<RepoHeader
 					owner={owner}
 					repo={repo}
-					analysisData={null}
+					referenceData={null}
 					githubMetadata={githubMetadata}
 					loading={metadataLoading}
 				/>
@@ -107,7 +107,7 @@ function RepoReferencesPage() {
 			<RepoHeader
 				owner={owner}
 				repo={repo}
-				analysisData={analysisData}
+				referenceData={referenceData}
 				githubMetadata={githubMetadata}
 				loading={referencesLoading || metadataLoading}
 			/>

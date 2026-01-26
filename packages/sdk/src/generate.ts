@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
-import { loadConfig, toSkillDirName, toMetaDirName, toReferenceFileName } from "./config.js";
+import { loadConfig, toReferenceName, toMetaDirName, toReferenceFileName } from "./config.js";
 import { getCommitSha } from "./clone.js";
 import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
@@ -44,9 +44,9 @@ export interface GenerateReferenceResult {
 	commitSha: string;
 }
 
-export interface InstallSkillMeta {
+export interface InstallReferenceMeta {
 	/** ISO timestamp when the reference was generated */
-	analyzedAt: string;
+	referenceUpdatedAt: string;
 	/** Git commit SHA at time of generation */
 	commitSha: string;
 	/** SDK version used for generation */
@@ -54,7 +54,7 @@ export interface InstallSkillMeta {
 }
 
 // ============================================================================
-// Skill Generation
+// Reference Generation
 // ============================================================================
 
 function createReferenceGenerationPrompt(referenceName: string): string {
@@ -288,7 +288,7 @@ export async function generateReferenceWithAI(
 	onDebug?.(`Commit SHA: ${commitSha}`);
 
 	// Generate the reference name in owner-repo format
-	const referenceName = toSkillDirName(repoName);
+	const referenceName = toReferenceName(repoName);
 	onDebug?.(`Reference name: ${referenceName}`);
 
 	const promptOptions: StreamPromptOptions = {
@@ -338,49 +338,6 @@ function ensureSymlink(target: string, linkPath: string): void {
 	const linkDir = join(linkPath, "..");
 	mkdirSync(linkDir, { recursive: true });
 	symlinkSync(target, linkPath, "dir");
-}
-
-/**
- * Install a generated reference to the filesystem (legacy per-repo install).
- *
- * Creates:
- * - ~/.local/share/offworld/skills/{name}-reference/SKILL.md
- * - ~/.local/share/offworld/meta/{name}/meta.json
- * - Symlinks to agent directories based on config.agents
- *
- * @param repoName - Qualified name (e.g., "tanstack/query" or "my-local-repo")
- * @param skillContent - The generated reference content
- * @param meta - Metadata about the generation (analyzedAt, commitSha, version)
- */
-export function installSkill(repoName: string, skillContent: string, meta: InstallSkillMeta): void {
-	const config = loadConfig();
-	const skillDirName = toSkillDirName(repoName);
-	const metaDirName = toMetaDirName(repoName);
-
-	// Skill directory (agent-facing)
-	const skillDir = join(Paths.data, "skills", skillDirName);
-	mkdirSync(skillDir, { recursive: true });
-
-	// Meta directory (internal)
-	const metaDir = join(Paths.data, "meta", metaDirName);
-	mkdirSync(metaDir, { recursive: true });
-
-	// Write SKILL.md
-	writeFileSync(join(skillDir, "SKILL.md"), skillContent, "utf-8");
-
-	// Write meta.json
-	const metaJson = JSON.stringify(meta, null, 2);
-	writeFileSync(join(metaDir, "meta.json"), metaJson, "utf-8");
-
-	// Create symlinks for configured agents
-	const configuredAgents = config.agents ?? [];
-	for (const agentName of configuredAgents) {
-		const agentConfig = agents[agentName];
-		if (agentConfig) {
-			const agentSkillDir = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
-			ensureSymlink(skillDir, agentSkillDir);
-		}
-	}
 }
 
 // ============================================================================
@@ -485,23 +442,25 @@ export function installGlobalSkill(): void {
  * - ~/.local/share/offworld/meta/{owner-repo}/meta.json
  * - Updates global map with reference info
  *
- * @param repoName - Qualified name (e.g., "tanstack/query")
+ * @param qualifiedName - Qualified key for map storage (e.g., "github.com:owner/repo" or "local:name")
+ * @param fullName - Full repo name for file naming (e.g., "owner/repo")
  * @param localPath - Absolute path to the cloned repository
  * @param referenceContent - The generated reference markdown content
- * @param meta - Metadata about the generation (analyzedAt, commitSha, version)
+ * @param meta - Metadata about the generation (referenceUpdatedAt, commitSha, version)
  * @param keywords - Optional array of keywords for search/routing
  */
 export function installReference(
-	repoName: string,
+	qualifiedName: string,
+	fullName: string,
 	localPath: string,
 	referenceContent: string,
-	meta: InstallSkillMeta,
+	meta: InstallReferenceMeta,
 	keywords?: string[],
 ): void {
 	installGlobalSkill();
 
-	const referenceFileName = toReferenceFileName(repoName);
-	const metaDirName = toMetaDirName(repoName);
+	const referenceFileName = toReferenceFileName(fullName);
+	const metaDirName = toMetaDirName(fullName);
 
 	// Write reference file
 	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
@@ -516,7 +475,7 @@ export function installReference(
 
 	// Update global map
 	const map = readGlobalMap();
-	const existingEntry = map.repos[repoName];
+	const existingEntry = map.repos[qualifiedName];
 	const references = existingEntry?.references ?? [];
 
 	// Add reference to list if not present
@@ -524,11 +483,11 @@ export function installReference(
 		references.push(referenceFileName);
 	}
 
-	upsertGlobalMapEntry(repoName, {
+	upsertGlobalMapEntry(qualifiedName, {
 		localPath,
 		references,
 		primary: referenceFileName,
 		keywords: keywords ?? existingEntry?.keywords ?? [],
-		updatedAt: new Date().toISOString().split("T")[0] ?? "",
+		updatedAt: new Date().toISOString(),
 	});
 }

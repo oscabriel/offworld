@@ -2,13 +2,12 @@ import { existsSync, statSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { updateRepo, GitError } from "./clone.js";
 import { readGlobalMap, removeGlobalMapEntry, upsertGlobalMapEntry } from "./index-manager.js";
-import { getMetaPath, loadConfig, getRepoRoot } from "./config.js";
+import { loadConfig, getRepoRoot } from "./config.js";
 import { Paths } from "./paths.js";
 
 export interface RepoStatusSummary {
 	total: number;
 	withReference: number;
-	stale: number;
 	missing: number;
 	diskBytes: number;
 }
@@ -18,7 +17,6 @@ export interface RepoStatusOptions {
 }
 
 export interface UpdateAllOptions {
-	staleOnly?: boolean;
 	pattern?: string;
 	dryRun?: boolean;
 	/** Convert shallow clones to full clones */
@@ -130,7 +128,6 @@ export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<Re
 	const total = qualifiedNames.length;
 
 	let withReference = 0;
-	let stale = 0;
 	let missing = 0;
 	let diskBytes = 0;
 
@@ -161,14 +158,13 @@ export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<Re
 	return {
 		total,
 		withReference,
-		stale,
 		missing,
 		diskBytes,
 	};
 }
 
 export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<UpdateAllResult> {
-	const { staleOnly = false, pattern, dryRun = false, unshallow = false, onProgress } = options;
+	const { pattern, dryRun = false, unshallow = false, onProgress } = options;
 
 	const map = readGlobalMap();
 	const qualifiedNames = Object.keys(map.repos);
@@ -187,13 +183,6 @@ export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<Up
 		if (!existsSync(entry.localPath)) {
 			skipped.push(qualifiedName);
 			onProgress?.(qualifiedName, "skipped", "missing on disk");
-			continue;
-		}
-
-		// Stale check removed (no commitSha tracking)
-		if (staleOnly) {
-			skipped.push(qualifiedName);
-			onProgress?.(qualifiedName, "skipped", "stale check not available");
 			continue;
 		}
 
@@ -347,10 +336,13 @@ export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
 				}
 			}
 
-			// Remove meta
-			const metaPath = getMetaPath(qualifiedName);
-			if (existsSync(metaPath)) {
-				rmSync(metaPath, { recursive: true, force: true });
+			// Remove meta (derive from primary reference filename)
+			if (entry.primary) {
+				const metaDirName = entry.primary.replace(/\.md$/, "");
+				const metaPath = join(Paths.metaDir, metaDirName);
+				if (existsSync(metaPath)) {
+					rmSync(metaPath, { recursive: true, force: true });
+				}
 			}
 
 			removeGlobalMapEntry(qualifiedName);

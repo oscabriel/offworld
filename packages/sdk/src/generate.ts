@@ -5,7 +5,15 @@
  * by delegating all codebase exploration to the AI agent via OpenCode.
  */
 
-import { mkdirSync, writeFileSync, lstatSync, unlinkSync, rmSync, symlinkSync, existsSync } from "node:fs";
+import {
+	mkdirSync,
+	writeFileSync,
+	lstatSync,
+	unlinkSync,
+	rmSync,
+	symlinkSync,
+	existsSync,
+} from "node:fs";
 import { join } from "node:path";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
 import { loadConfig, toSkillDirName, toMetaDirName, toReferenceFileName } from "./config.js";
@@ -440,7 +448,7 @@ The map.json structure:
  */
 export function installGlobalSkill(): void {
 	const config = loadConfig();
-	
+
 	// Ensure offworld skill directory exists
 	mkdirSync(Paths.offworldSkillDir, { recursive: true });
 	mkdirSync(Paths.offworldAssetsDir, { recursive: true });
@@ -502,7 +510,7 @@ export function installReference(
 	const map = readGlobalMap();
 	const existingEntry = map.repos[repoName];
 	const references = existingEntry?.references ?? [];
-	
+
 	// Add reference to list if not present
 	if (!references.includes(referenceFileName)) {
 		references.push(referenceFileName);

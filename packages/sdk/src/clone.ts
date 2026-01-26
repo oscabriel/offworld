@@ -7,11 +7,7 @@ import { dirname, join } from "node:path";
 import { execFileSync, spawn } from "node:child_process";
 import type { Config, RemoteRepoSource } from "@offworld/types";
 import { getRepoPath, getMetaPath, loadConfig, toReferenceFileName } from "./config.js";
-import {
-	readGlobalMap,
-	upsertGlobalMapEntry,
-	removeGlobalMapEntry,
-} from "./index-manager.js";
+import { readGlobalMap, upsertGlobalMapEntry, removeGlobalMapEntry } from "./index-manager.js";
 import { Paths } from "./paths.js";
 
 // ============================================================================

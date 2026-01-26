@@ -435,5 +435,3 @@ describe("AnalysisMetaSchema", () => {
 		expect(result.success).toBe(false);
 	});
 });
-
-

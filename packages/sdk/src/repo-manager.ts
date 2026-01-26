@@ -296,12 +296,7 @@ export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResul
 }
 
 export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
-	const {
-		olderThanDays,
-		withoutReference = false,
-		dryRun = false,
-		onProgress,
-	} = options;
+	const { olderThanDays, withoutReference = false, dryRun = false, onProgress } = options;
 
 	const map = readGlobalMap();
 	const qualifiedNames = Object.keys(map.repos);

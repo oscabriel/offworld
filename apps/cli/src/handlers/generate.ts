@@ -5,12 +5,10 @@ import {
 	isRepoCloned,
 	getClonedRepoPath,
 	checkRemote,
-	generateSkillWithAI,
-	installSkill,
+	generateReferenceWithAI,
+	installReference,
 	loadConfig,
-	getSkillPath,
-	updateIndex,
-	getIndexEntry,
+	getReferencePath,
 } from "@offworld/sdk";
 import { createSpinner } from "../utils/spinner";
 
@@ -83,42 +81,32 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			repoPath = source.path;
 		}
 
-		s.start("Generating skill with AI...");
+		s.start("Generating reference with AI...");
 
 		// Use fullName for remote repos (e.g. 'tanstack/query'), name for local repos
 		const qualifiedName = source.type === "remote" ? source.fullName : source.name;
 
-		const result = await generateSkillWithAI(repoPath, qualifiedName, {
+		const result = await generateReferenceWithAI(repoPath, qualifiedName, {
 			provider,
 			model,
 			onDebug: (msg: string) => s.message(msg),
 		});
-		s.stop("Skill generated");
+		s.stop("Reference generated");
 
 		const { referenceContent, commitSha } = result;
 		const analyzedAt = new Date().toISOString();
 		const meta = { analyzedAt, commitSha, version: "0.1.0" };
 
-		const skillPath = getSkillPath(qualifiedName);
+		const referencePath = getReferencePath(qualifiedName);
 
-		installSkill(qualifiedName, referenceContent, meta);
+		installReference(qualifiedName, repoPath, referenceContent, meta);
 
-		const entry = getIndexEntry(source.qualifiedName);
-		if (entry) {
-			updateIndex({
-				...entry,
-				analyzedAt,
-				commitSha,
-				hasSkill: true,
-			});
-		}
-
-		p.log.success(`Skill saved to: ${skillPath}`);
-		p.log.info(`Skill installed for: ${qualifiedName}`);
+		p.log.success(`Reference saved to: ${referencePath}`);
+		p.log.info(`Reference installed for: ${qualifiedName}`);
 
 		return {
 			success: true,
-			analysisPath: skillPath,
+			analysisPath: referencePath,
 		};
 	} catch (error) {
 		s.stop("Failed");

@@ -14,11 +14,9 @@ import {
 	loadConfig,
 	loadAuthData,
 	getMetaPath,
-	updateIndex,
-	getIndexEntry,
 	RepoExistsError,
-	generateSkillWithAI,
-	installSkill as installSkillToFS,
+	generateReferenceWithAI,
+	installReference,
 } from "@offworld/sdk";
 import type { RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
@@ -83,14 +81,15 @@ function hasValidCache(source: RepoSource, currentSha: string): boolean {
  * Save remote reference to local filesystem.
  * Remote reference comes with pre-generated reference content.
  */
-function saveRemoteAnalysis(
+function saveRemoteReference(
 	repoName: string,
-	skillContent: string,
+	localPath: string,
+	referenceContent: string,
 	commitSha: string,
 	analyzedAt: string,
 ): void {
 	const meta = { analyzedAt, commitSha, version: "0.1.0" };
-	installSkillToFS(repoName, skillContent, meta);
+	installReference(repoName, localPath, referenceContent, meta);
 }
 
 function parseModelFlag(model?: string): { provider?: string; model?: string } {
@@ -264,22 +263,13 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							if (remoteAnalysis) {
 								s.stop("Downloaded remote reference");
 
-								saveRemoteAnalysis(
-									source.fullName,
-									remoteAnalysis.referenceContent,
-									remoteAnalysis.commitSha,
-									remoteAnalysis.generatedAt ?? new Date().toISOString(),
-								);
-
-								const entry = getIndexEntry(source.qualifiedName);
-								if (entry) {
-									updateIndex({
-										...entry,
-										analyzedAt: remoteAnalysis.generatedAt,
-										commitSha: remoteAnalysis.commitSha,
-										hasSkill: true,
-									});
-								}
+							saveRemoteReference(
+								source.fullName,
+								repoPath,
+								remoteAnalysis.referenceContent,
+								remoteAnalysis.commitSha,
+								remoteAnalysis.generatedAt ?? new Date().toISOString(),
+							);
 
 								p.log.success(
 									referenceName
@@ -341,7 +331,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					}
 				: (msg: string) => s.message(msg);
 
-			const result = await generateSkillWithAI(repoPath, qualifiedName, {
+			const result = await generateReferenceWithAI(repoPath, qualifiedName, {
 				provider,
 				model,
 				onDebug,
@@ -351,22 +341,12 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const analyzedAt = new Date().toISOString();
 			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
 
-			installSkillToFS(qualifiedName, referenceContent, meta);
+			installReference(qualifiedName, repoPath, referenceContent, meta);
 
 			if (!verbose) {
 				s.stop("Reference generated");
 			} else {
 				p.log.success("Reference generated");
-			}
-
-			const entry = getIndexEntry(source.qualifiedName);
-			if (entry) {
-				updateIndex({
-					...entry,
-					analyzedAt,
-					commitSha: analysisCommitSha,
-					hasSkill: true,
-				});
 			}
 
 			p.log.success(`Reference installed for: ${qualifiedName}`);

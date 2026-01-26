@@ -6,7 +6,8 @@ import {
 	resolveDependencyRepo,
 	matchDependenciesToReferences,
 	updateAgentFiles,
-	getSkillPath,
+	getReferencePath,
+	toReferenceFileName,
 	type InstalledSkill,
 	type ReferenceMatch,
 } from "@offworld/sdk";
@@ -176,11 +177,11 @@ export async function projectInitHandler(
 			});
 
 			if (pullResult.success && pullResult.skillInstalled) {
-				const skillPath = getSkillPath(match.repo);
+				const referencePath = getReferencePath(match.repo);
 				installed.push({
 					dependency: match.dep,
-					skill: match.repo.replace("/", "-"),
-					path: skillPath,
+					skill: toReferenceFileName(match.repo),
+					path: referencePath,
 				});
 			} else {
 				p.log.warn(`Failed to install reference for ${match.dep}`);

@@ -240,7 +240,7 @@ describe("CLI handlers", () => {
 			expect(result.success).toBe(true);
 		});
 
-		it("tries remote analysis before local generation", async () => {
+		it("tries remote reference before local generation", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
@@ -266,7 +266,7 @@ describe("CLI handlers", () => {
 			expect(result.analysisSource).toBe("remote");
 		});
 
-		it("falls back to local generation when no remote analysis exists", async () => {
+		it("falls back to local generation when no remote reference exists", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(false);
 			mockCloneRepo.mockResolvedValue("/home/user/ow/github/tanstack/router");
@@ -318,7 +318,7 @@ describe("CLI handlers", () => {
 			expect(result.analysisSource).toBe("local");
 		});
 
-		it("uses cached analysis when available", async () => {
+		it("uses cached reference when available", async () => {
 			mockParseRepoInput.mockReturnValue(mockGitHubSource);
 			mockIsRepoCloned.mockReturnValue(true);
 			mockGetClonedRepoPath.mockReturnValue("/home/user/ow/github/tanstack/router");
@@ -384,7 +384,7 @@ describe("CLI handlers", () => {
 
 			expect(mockCheckRemote).toHaveBeenCalledWith("tanstack/router");
 			expect(result.success).toBe(false);
-			expect(result.message).toContain("Remote analysis exists");
+			expect(result.message).toContain("Remote reference exists");
 		});
 
 		it("proceeds with --force flag", async () => {

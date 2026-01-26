@@ -48,8 +48,8 @@ export interface PushResult {
 // ============================================================================
 
 /**
- * Load local skill data from the AI-only format.
- * Format: SKILL.md + meta.json
+ * Load local reference data from the reference format.
+ * Format: reference file + meta.json
  */
 function loadLocalAnalysis(metaDir: string, skillDir: string): ReferenceData | null {
 	const skillMdPath = join(skillDir, "SKILL.md");
@@ -99,7 +99,7 @@ function loadLocalAnalysis(metaDir: string, skillDir: string): ReferenceData | n
 
 /**
  * Main push handler
- * Uploads local analysis to offworld.sh
+ * Uploads local reference to offworld.sh
  */
 export async function pushHandler(options: PushOptions): Promise<PushResult> {
 	const { repo } = options;
@@ -143,25 +143,25 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			return { success: false, message: "Repository not cloned locally" };
 		}
 
-		// Step 5: Load local analysis
-		s.start("Loading local analysis...");
+		// Step 5: Load local reference
+		s.start("Loading local reference...");
 		const metaDir = getMetaPath(source.fullName);
 		const skillDir = getSkillPath(source.fullName);
 
 		if (!existsSync(metaDir)) {
-			s.stop("No analysis found");
-			p.log.error(`No analysis found for ${source.fullName}.`);
-			p.log.info(`Run 'ow generate ${source.fullName}' to generate analysis.`);
-			return { success: false, message: "No local analysis found" };
+			s.stop("No reference found");
+			p.log.error(`No reference found for ${source.fullName}.`);
+			p.log.info(`Run 'ow generate ${source.fullName}' to generate reference.`);
+			return { success: false, message: "No local reference found" };
 		}
 
 		const localAnalysis = loadLocalAnalysis(metaDir, skillDir);
 
 		if (!localAnalysis) {
-			s.stop("Invalid analysis");
-			p.log.error("Local analysis is incomplete or corrupted.");
+			s.stop("Invalid reference");
+			p.log.error("Local reference is incomplete or corrupted.");
 			p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
-			return { success: false, message: "Local analysis incomplete" };
+			return { success: false, message: "Local reference incomplete" };
 		}
 
 		localAnalysis.fullName = source.fullName;
@@ -171,16 +171,16 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		if (repoPath) {
 			const currentSha = getCommitSha(repoPath);
 			if (currentSha !== localAnalysis.commitSha) {
-				s.stop("Analysis outdated");
-				p.log.warn("Local analysis was generated for a different commit.");
-				p.log.info(`Analysis: ${localAnalysis.commitSha.slice(0, 7)}`);
+				s.stop("Reference outdated");
+				p.log.warn("Local reference was generated for a different commit.");
+				p.log.info(`Reference: ${localAnalysis.commitSha.slice(0, 7)}`);
 				p.log.info(`Current:  ${currentSha.slice(0, 7)}`);
 				p.log.info(`Run 'ow generate ${source.fullName} --force' to regenerate.`);
-				return { success: false, message: "Analysis outdated - run generate to update" };
+				return { success: false, message: "Reference outdated - run generate to update" };
 			}
 		}
 
-		s.stop("Analysis loaded");
+		s.stop("Reference loaded");
 
 		// Step 6: Push to offworld.sh (all validation happens server-side)
 		s.start("Uploading to offworld.sh...");
@@ -188,10 +188,10 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			const result = await pushAnalysis(localAnalysis, token);
 
 			if (result.success) {
-				s.stop("Analysis uploaded!");
-				p.log.success(`Successfully pushed analysis for ${source.fullName}`);
+				s.stop("Reference uploaded!");
+				p.log.success(`Successfully pushed reference for ${source.fullName}`);
 				p.log.info(`View at: https://offworld.sh/${source.owner}/${source.repo}`);
-				return { success: true, message: "Analysis pushed successfully" };
+				return { success: true, message: "Reference pushed successfully" };
 			}
 			s.stop("Upload failed");
 			p.log.error(result.message || "Unknown error during upload");

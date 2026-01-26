@@ -233,7 +233,7 @@
         "test ! -f packages/backend/convex/skillContent.ts",
         "rg \"skill|analysis\" packages -g'*.test.*'"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-014",

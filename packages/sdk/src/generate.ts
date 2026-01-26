@@ -1,7 +1,7 @@
 /**
- * Simplified AI-only skill generation
+ * Simplified AI-only reference generation
  *
- * This module provides a streamlined approach to generating SKILL.md files
+ * This module provides a streamlined approach to generating reference files
  * by delegating all codebase exploration to the AI agent via OpenCode.
  */
 
@@ -37,9 +37,9 @@ export interface GenerateReferenceResult {
 }
 
 export interface InstallSkillMeta {
-	/** ISO timestamp when the skill was analyzed */
+	/** ISO timestamp when the reference was generated */
 	analyzedAt: string;
-	/** Git commit SHA at time of analysis */
+	/** Git commit SHA at time of generation */
 	commitSha: string;
 	/** SDK version used for generation */
 	version: string;
@@ -333,15 +333,15 @@ function ensureSymlink(target: string, linkPath: string): void {
 }
 
 /**
- * Install a generated skill to the filesystem.
+ * Install a generated reference to the filesystem (legacy per-repo install).
  *
  * Creates:
  * - ~/.local/share/offworld/skills/{name}-reference/SKILL.md
  * - ~/.local/share/offworld/meta/{name}/meta.json
- * - Symlinks to agent skill directories based on config.agents
+ * - Symlinks to agent directories based on config.agents
  *
  * @param repoName - Qualified name (e.g., "tanstack/query" or "my-local-repo")
- * @param skillContent - The generated SKILL.md content
+ * @param skillContent - The generated reference content
  * @param meta - Metadata about the generation (analyzedAt, commitSha, version)
  */
 export function installSkill(repoName: string, skillContent: string, meta: InstallSkillMeta): void {

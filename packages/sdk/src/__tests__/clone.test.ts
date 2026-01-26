@@ -746,12 +746,12 @@ describe("removeRepo", () => {
 		});
 	});
 
-	it("removes skill directory", async () => {
+	it("removes reference directory", async () => {
 		const { rmSync } = await import("node:fs");
 
 		await removeRepo("github:tanstack/router");
 
-		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("skills"), {
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), {
 			recursive: true,
 			force: true,
 		});

@@ -157,7 +157,7 @@ export async function projectInitHandler(
 		return { success: true, message: "Dry run complete" };
 	}
 
-	p.log.step(`Installing ${selected.length} skills...`);
+	p.log.step(`Installing ${selected.length} references...`);
 
 	const installed: InstalledSkill[] = [];
 	let failedCount = 0;
@@ -166,7 +166,7 @@ export async function projectInitHandler(
 		try {
 			if (!match.repo) continue;
 
-			p.log.info(`Installing skill for ${match.dep}...`);
+			p.log.info(`Installing reference for ${match.dep}...`);
 
 			const pullResult = await pullHandler({
 				repo: match.repo,
@@ -183,7 +183,7 @@ export async function projectInitHandler(
 					path: skillPath,
 				});
 			} else {
-				p.log.warn(`Failed to install skill for ${match.dep}`);
+				p.log.warn(`Failed to install reference for ${match.dep}`);
 				failedCount++;
 			}
 		} catch (error) {

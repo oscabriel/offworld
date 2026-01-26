@@ -33,12 +33,24 @@ let tempMetaRoot: string;
 vi.mock("../../config.js", () => ({
 	loadConfig: () => ({
 		repoRoot: tempRepoRoot,
-		skillDir: join(tempDir, "skill"),
+		offworldDir: join(tempDir, "offworld"),
 	}),
 	getMetaRoot: () => tempMetaRoot,
 	getRepoPath: (fullName: string, provider: string) => join(tempRepoRoot, provider, fullName),
-	getSkillPath: (fullName: string) => join(tempMetaRoot, "skills", fullName.replace("/", "-")),
+	getReferencePath: (fullName: string) => join(tempMetaRoot, "references", fullName.replace("/", "-") + ".md"),
 	getMetaPath: (fullName: string) => join(tempMetaRoot, "meta", fullName.replace("/", "-")),
+	toReferenceFileName: (fullName: string) => fullName.replace("/", "-") + ".md",
+}));
+
+// Mock Paths to avoid XDG-basedir issues
+vi.mock("../../paths.js", () => ({
+	Paths: {
+		get offworldReferencesDir() { return join(tempDir, "offworld", "references"); },
+		get offworldAssetsDir() { return join(tempDir, "offworld", "assets"); },
+		get offworldGlobalMapPath() { return join(tempDir, "offworld", "assets", "map.json"); },
+		get offworldSkillDir() { return join(tempDir, "offworld"); },
+	},
+	expandTilde: (path: string) => path,
 }));
 
 // Mock index-manager to avoid polluting real index
@@ -47,6 +59,8 @@ vi.mock("../../index-manager.js", () => ({
 	listIndexedRepos: vi.fn(() => []),
 	removeFromIndex: vi.fn(),
 	updateIndex: vi.fn(),
+	upsertGlobalMapEntry: vi.fn(),
+	readGlobalMap: vi.fn(() => ({ repos: {} })),
 }));
 
 // Import after mocking

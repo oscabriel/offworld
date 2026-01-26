@@ -166,7 +166,7 @@ export interface PullResponse {
 export interface CheckResponse {
 	exists: boolean;
 	commitSha?: string;
-	analyzedAt?: string;
+	generatedAt?: string;
 }
 
 /** Response from push mutation */
@@ -218,10 +218,9 @@ function createClient(token?: string): ConvexHttpClient {
 export async function pullReference(fullName: string): Promise<PullResponse | null> {
 	const client = createClient();
 	try {
-		// TODO: US-010 will add api.references - using analyses temporarily
 		let result = await client.query(api.references.pull, {
 			fullName,
-			skillName: toSkillDirName(fullName),
+			referenceName: toSkillDirName(fullName),
 		});
 		if (!result) {
 			result = await client.query(api.references.pull, { fullName });
@@ -232,14 +231,13 @@ export async function pullReference(fullName: string): Promise<PullResponse | nu
 			.mutation(api.references.recordPull, { fullName, referenceName: result.referenceName })
 			.catch(() => {});
 
-		// Map response fields from skill* to reference*
 		return {
 			fullName: result.fullName,
-			referenceName: result.skillName,
-			referenceDescription: result.skillDescription,
-			referenceContent: result.skillContent,
+			referenceName: result.referenceName,
+			referenceDescription: result.referenceDescription,
+			referenceContent: result.referenceContent,
 			commitSha: result.commitSha,
-			generatedAt: result.analyzedAt,
+			generatedAt: result.generatedAt,
 		};
 	} catch (error) {
 		throw new NetworkError(
@@ -260,20 +258,18 @@ export async function pullReferenceByName(
 ): Promise<PullResponse | null> {
 	const client = createClient();
 	try {
-		// TODO: US-010 will add api.references - using analyses temporarily
 		const result = await client.query(api.references.pull, { fullName, referenceName });
 		if (!result) return null;
 
 		client.mutation(api.references.recordPull, { fullName, referenceName }).catch(() => {});
 
-		// Map response fields from skill* to reference*
 		return {
 			fullName: result.fullName,
-			referenceName: result.skillName,
-			referenceDescription: result.skillDescription,
-			referenceContent: result.skillContent,
+			referenceName: result.referenceName,
+			referenceDescription: result.referenceDescription,
+			referenceContent: result.referenceContent,
 			commitSha: result.commitSha,
-			generatedAt: result.analyzedAt,
+			generatedAt: result.generatedAt,
 		};
 	} catch (error) {
 		throw new NetworkError(
@@ -292,14 +288,13 @@ export async function pullReferenceByName(
 export async function pushReference(reference: ReferenceData, token: string): Promise<PushResponse> {
 	const client = createClient(token);
 	try {
-		// TODO: US-010 will add api.references - using analyses temporarily
 		const result = await client.action(api.references.push, {
 			fullName: reference.fullName,
-			skillName: reference.referenceName,
-			skillDescription: reference.referenceDescription,
-			skillContent: reference.referenceContent,
+			referenceName: reference.referenceName,
+			referenceDescription: reference.referenceDescription,
+			referenceContent: reference.referenceContent,
 			commitSha: reference.commitSha,
-			analyzedAt: reference.generatedAt,
+			generatedAt: reference.generatedAt,
 		});
 
 		if (!result.success) {
@@ -312,7 +307,7 @@ export async function pushReference(reference: ReferenceData, token: string): Pr
 					throw new CommitExistsError(result.message);
 				case "invalid_input":
 					throw new InvalidInputError(result.message ?? "Invalid input");
-				case "invalid_skill":
+				case "invalid_reference":
 					throw new InvalidReferenceError(result.message ?? "Invalid reference content");
 				case "repo_not_found":
 					throw new RepoNotFoundError(result.message);
@@ -346,10 +341,9 @@ export async function pushReference(reference: ReferenceData, token: string): Pr
 export async function checkRemote(fullName: string): Promise<CheckResponse> {
 	const client = createClient();
 	try {
-		// TODO: US-010 will add api.references - using analyses temporarily
 		let result = await client.query(api.references.check, {
 			fullName,
-			skillName: toSkillDirName(fullName),
+			referenceName: toSkillDirName(fullName),
 		});
 		if (!result.exists) {
 			result = await client.query(api.references.check, { fullName });
@@ -360,7 +354,7 @@ export async function checkRemote(fullName: string): Promise<CheckResponse> {
 		return {
 			exists: true,
 			commitSha: result.commitSha,
-			analyzedAt: result.analyzedAt,
+			generatedAt: result.generatedAt,
 		};
 	} catch (error) {
 		throw new NetworkError(
@@ -381,7 +375,6 @@ export async function checkRemoteByName(
 ): Promise<CheckResponse> {
 	const client = createClient();
 	try {
-		// TODO: US-010 will add api.references - using analyses temporarily
 		const result = await client.query(api.references.check, { fullName, referenceName });
 		if (!result.exists) {
 			return { exists: false };
@@ -389,7 +382,7 @@ export async function checkRemoteByName(
 		return {
 			exists: true,
 			commitSha: result.commitSha,
-			analyzedAt: result.analyzedAt,
+			generatedAt: result.generatedAt,
 		};
 	} catch (error) {
 		throw new NetworkError(

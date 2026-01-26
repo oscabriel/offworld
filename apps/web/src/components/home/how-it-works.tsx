@@ -20,11 +20,11 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">02</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							Generate Skill from Source
+							Generate Reference from Source
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Agent explores the codebase and creates a SKILL.md with common patterns, API
-							references, and best practices.
+							Agent explores the codebase and creates reference docs with common patterns, API
+							details, and best practices.
 						</p>
 					</div>
 				</div>
@@ -49,7 +49,7 @@ export function HowItWorks() {
 							Query Your Clones
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Ask your agent to load a skill and explore any cloned repo—get file summaries, search
+							Ask your agent to load a reference and explore any cloned repo—get file summaries, search
 							code, or answer questions about the source.
 						</p>
 					</div>

@@ -532,7 +532,8 @@ function CliPage() {
 								</div>
 								<div>
 									<p className="mb-3 font-mono">
-										<span className="text-muted-foreground">3.</span> Use the reference in your agent
+										<span className="text-muted-foreground">3.</span> Use the reference in your
+										agent
 									</p>
 									<CopyableBlock
 										title="Example prompt"

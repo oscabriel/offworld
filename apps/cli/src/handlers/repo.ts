@@ -61,7 +61,6 @@ export interface RepoStatusOptions {
 export interface RepoStatusResult {
 	total: number;
 	withReference: number;
-	stale: number;
 	missing: number;
 	diskMB: number;
 }
@@ -191,7 +190,6 @@ export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<Rep
 	spinner.start(dryRun ? `Checking ${total} repos...` : `${action} ${total} repos...`);
 
 	const result = await updateAllRepos({
-		staleOnly: stale,
 		pattern,
 		dryRun,
 		unshallow,
@@ -320,7 +318,6 @@ export async function repoStatusHandler(options: RepoStatusOptions): Promise<Rep
 	const output: RepoStatusResult = {
 		total: status.total,
 		withReference: status.withReference,
-		stale: status.stale,
 		missing: status.missing,
 		diskMB: Math.round(status.diskBytes / (1024 * 1024)),
 	};
@@ -330,7 +327,6 @@ export async function repoStatusHandler(options: RepoStatusOptions): Promise<Rep
 	} else {
 		p.log.info(`Managed repos: ${status.total}`);
 		p.log.info(`  With reference: ${status.withReference}`);
-		p.log.info(`  Stale: ${status.stale}`);
 		p.log.info(`  Missing: ${status.missing}`);
 		p.log.info(`  Disk usage: ${formatBytes(status.diskBytes)}`);
 	}

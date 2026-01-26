@@ -39,7 +39,7 @@
 			"priority": 2,
 			"description": "Acceptance criteria: packages/sdk/src/repo-manager.ts removes stale fields from summaries/options, drops staleOnly filtering, and status results no longer report stale counts.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-006",

@@ -4,11 +4,11 @@ import {
 	loadConfig,
 	parseDependencies,
 	resolveDependencyRepo,
-	matchDependenciesToSkills,
+	matchDependenciesToReferences,
 	updateAgentFiles,
 	getSkillPath,
 	type InstalledSkill,
-	type SkillMatch,
+	type ReferenceMatch,
 } from "@offworld/sdk";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -105,9 +105,9 @@ export async function projectInitHandler(
 		return { success: true, message: "No resolvable dependencies" };
 	}
 
-	const matches = matchDependenciesToSkills(filtered);
+	const matches = matchDependenciesToReferences(filtered);
 
-	let selected: SkillMatch[];
+	let selected: ReferenceMatch[];
 	if (options.all || options.deps) {
 		selected = matches;
 	} else {
@@ -117,7 +117,7 @@ export async function projectInitHandler(
 		});
 
 		const selectedResult = await p.multiselect({
-			message: "Select dependencies to install skills for:",
+			message: "Select dependencies to install references for:",
 			options: checklistOptions,
 			required: false,
 		});
@@ -127,7 +127,7 @@ export async function projectInitHandler(
 			return { success: false, message: "Cancelled by user" };
 		}
 
-		selected = selectedResult as SkillMatch[];
+		selected = selectedResult as ReferenceMatch[];
 	}
 
 	if (selected.length === 0) {

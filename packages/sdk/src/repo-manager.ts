@@ -1,15 +1,13 @@
 import { existsSync, statSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { listRepos, updateRepo, getCommitSha, GitError } from "./clone.js";
-import { removeFromIndex, getIndex, updateIndex } from "./index-manager.js";
-import { getSkillPath, getMetaPath, loadConfig, getRepoRoot, toSkillDirName } from "./config.js";
-import { getAllAgentConfigs } from "./agents.js";
-import { expandTilde } from "./paths.js";
+import { updateRepo, GitError } from "./clone.js";
+import { readGlobalMap, removeGlobalMapEntry, upsertGlobalMapEntry } from "./index-manager.js";
+import { getMetaPath, loadConfig, getRepoRoot } from "./config.js";
+import { Paths } from "./paths.js";
 
 export interface RepoStatusSummary {
 	total: number;
-	analyzed: number;
-	withSkill: number;
+	withReference: number;
 	stale: number;
 	missing: number;
 	diskBytes: number;
@@ -51,8 +49,7 @@ export interface PruneResult {
 
 export interface GcOptions {
 	olderThanDays?: number;
-	unanalyzed?: boolean;
-	withoutSkill?: boolean;
+	withoutReference?: boolean;
 	dryRun?: boolean;
 	onProgress?: (repo: string, reason: string, sizeBytes?: number) => void;
 }
@@ -62,17 +59,7 @@ export interface GcResult {
 	freedBytes: number;
 }
 
-function isRepoStale(entry: any): boolean {
-	if (!entry.commitSha || !existsSync(entry.localPath)) {
-		return false;
-	}
-	try {
-		const currentSha = getCommitSha(entry.localPath);
-		return currentSha !== entry.commitSha;
-	} catch {
-		return false;
-	}
-}
+// Removed: stale check no longer uses commitSha in map
 
 function getDirSize(dirPath: string): number {
 	if (!existsSync(dirPath)) return 0;
@@ -138,48 +125,42 @@ const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resol
 
 export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<RepoStatusSummary> {
 	const { onProgress } = options;
-	const repos = listRepos();
-	const total = repos.length;
+	const map = readGlobalMap();
+	const qualifiedNames = Object.keys(map.repos);
+	const total = qualifiedNames.length;
 
-	let analyzed = 0;
-	let withSkill = 0;
+	let withReference = 0;
 	let stale = 0;
 	let missing = 0;
 	let diskBytes = 0;
 
-	for (let i = 0; i < repos.length; i++) {
-		const repo = repos[i]!;
-		onProgress?.(i + 1, total, repo.fullName);
+	for (let i = 0; i < qualifiedNames.length; i++) {
+		const qualifiedName = qualifiedNames[i]!;
+		const entry = map.repos[qualifiedName]!;
+		onProgress?.(i + 1, total, qualifiedName);
 
 		// Yield to event loop to allow Ctrl+C
 		await yieldToEventLoop();
 
-		const exists = existsSync(repo.localPath);
+		const exists = existsSync(entry.localPath);
 
 		if (!exists) {
 			missing++;
 			continue;
 		}
 
-		if (repo.analyzedAt) {
-			analyzed++;
+		if (entry.references.length > 0) {
+			withReference++;
 		}
 
-		if (repo.hasSkill) {
-			withSkill++;
-		}
+		// Stale check removed (no commitSha tracking in map)
 
-		if (isRepoStale(repo)) {
-			stale++;
-		}
-
-		diskBytes += getDirSize(repo.localPath);
+		diskBytes += getDirSize(entry.localPath);
 	}
 
 	return {
 		total,
-		analyzed,
-		withSkill,
+		withReference,
 		stale,
 		missing,
 		diskBytes,
@@ -189,57 +170,61 @@ export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<Re
 export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<UpdateAllResult> {
 	const { staleOnly = false, pattern, dryRun = false, unshallow = false, onProgress } = options;
 
-	const repos = listRepos();
+	const map = readGlobalMap();
+	const qualifiedNames = Object.keys(map.repos);
 	const updated: string[] = [];
 	const skipped: string[] = [];
 	const unshallowed: string[] = [];
 	const errors: Array<{ repo: string; error: string }> = [];
 
-	for (const repo of repos) {
-		if (pattern && !matchesPattern(repo.fullName, pattern)) {
+	for (const qualifiedName of qualifiedNames) {
+		const entry = map.repos[qualifiedName]!;
+
+		if (pattern && !matchesPattern(qualifiedName, pattern)) {
 			continue;
 		}
 
-		if (!existsSync(repo.localPath)) {
-			skipped.push(repo.qualifiedName);
-			onProgress?.(repo.fullName, "skipped", "missing on disk");
+		if (!existsSync(entry.localPath)) {
+			skipped.push(qualifiedName);
+			onProgress?.(qualifiedName, "skipped", "missing on disk");
 			continue;
 		}
 
-		if (staleOnly && !isRepoStale(repo)) {
-			skipped.push(repo.qualifiedName);
-			onProgress?.(repo.fullName, "skipped", "up to date");
+		// Stale check removed (no commitSha tracking)
+		if (staleOnly) {
+			skipped.push(qualifiedName);
+			onProgress?.(qualifiedName, "skipped", "stale check not available");
 			continue;
 		}
 
 		if (dryRun) {
-			updated.push(repo.qualifiedName);
-			onProgress?.(repo.fullName, "updated", "would update");
+			updated.push(qualifiedName);
+			onProgress?.(qualifiedName, "updated", "would update");
 			continue;
 		}
 
-		onProgress?.(repo.fullName, "updating");
+		onProgress?.(qualifiedName, "updating");
 		try {
-			const result = await updateRepo(repo.qualifiedName, { unshallow });
+			const result = await updateRepo(qualifiedName, { unshallow });
 			if (result.unshallowed) {
-				unshallowed.push(repo.qualifiedName);
-				onProgress?.(repo.fullName, "unshallowed", "converted to full clone");
+				unshallowed.push(qualifiedName);
+				onProgress?.(qualifiedName, "unshallowed", "converted to full clone");
 			}
 			if (result.updated) {
-				updated.push(repo.qualifiedName);
+				updated.push(qualifiedName);
 				onProgress?.(
-					repo.fullName,
+					qualifiedName,
 					"updated",
 					`${result.previousSha.slice(0, 7)} → ${result.currentSha.slice(0, 7)}`,
 				);
 			} else if (!result.unshallowed) {
-				skipped.push(repo.qualifiedName);
-				onProgress?.(repo.fullName, "skipped", "already up to date");
+				skipped.push(qualifiedName);
+				onProgress?.(qualifiedName, "skipped", "already up to date");
 			}
 		} catch (err) {
 			const message = err instanceof GitError ? err.message : String(err);
-			errors.push({ repo: repo.qualifiedName, error: message });
-			onProgress?.(repo.fullName, "error", message);
+			errors.push({ repo: qualifiedName, error: message });
+			onProgress?.(qualifiedName, "error", message);
 		}
 	}
 
@@ -249,19 +234,21 @@ export async function updateAllRepos(options: UpdateAllOptions = {}): Promise<Up
 export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResult> {
 	const { dryRun = false, onProgress } = options;
 
-	const repos = listRepos();
+	const map = readGlobalMap();
+	const qualifiedNames = Object.keys(map.repos);
 	const removedFromIndex: string[] = [];
 	const orphanedDirs: string[] = [];
 
-	for (const repo of repos) {
+	for (const qualifiedName of qualifiedNames) {
+		const entry = map.repos[qualifiedName]!;
 		await yieldToEventLoop();
 
-		if (!existsSync(repo.localPath)) {
-			onProgress?.(repo.fullName, "missing on disk");
-			removedFromIndex.push(repo.qualifiedName);
+		if (!existsSync(entry.localPath)) {
+			onProgress?.(qualifiedName, "missing on disk");
+			removedFromIndex.push(qualifiedName);
 
 			if (!dryRun) {
-				removeFromIndex(repo.qualifiedName);
+				removeGlobalMapEntry(qualifiedName);
 			}
 		}
 	}
@@ -270,8 +257,7 @@ export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResul
 	const repoRoot = getRepoRoot(config);
 
 	if (existsSync(repoRoot)) {
-		const index = getIndex();
-		const indexedPaths = new Set(Object.values(index.repos).map((r: any) => r.localPath));
+		const indexedPaths = new Set(Object.values(map.repos).map((r) => r.localPath));
 
 		try {
 			const providers = readdirSync(repoRoot, { withFileTypes: true });
@@ -295,7 +281,7 @@ export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResul
 
 						if (!indexedPaths.has(repoPath)) {
 							const fullName = `${owner.name}/${repoName.name}`;
-							onProgress?.(fullName, "not in index");
+							onProgress?.(fullName, "not in map");
 							orphanedDirs.push(repoPath);
 						}
 					}
@@ -312,13 +298,13 @@ export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResul
 export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
 	const {
 		olderThanDays,
-		unanalyzed = false,
-		withoutSkill = false,
+		withoutReference = false,
 		dryRun = false,
 		onProgress,
 	} = options;
 
-	const repos = listRepos();
+	const map = readGlobalMap();
+	const qualifiedNames = Object.keys(map.repos);
 	const removed: Array<{ repo: string; reason: string; sizeBytes: number }> = [];
 	let freedBytes = 0;
 
@@ -327,75 +313,59 @@ export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
 		? new Date(now.getTime() - olderThanDays * 24 * 60 * 60 * 1000)
 		: null;
 
-	for (const repo of repos) {
+	for (const qualifiedName of qualifiedNames) {
+		const entry = map.repos[qualifiedName]!;
 		await yieldToEventLoop();
 
-		if (!existsSync(repo.localPath)) continue;
+		if (!existsSync(entry.localPath)) continue;
 
 		let shouldRemove = false;
 		let reason = "";
 
 		if (cutoffDate) {
-			const lastAccess = getLastAccessTime(repo.localPath);
+			const lastAccess = getLastAccessTime(entry.localPath);
 			if (lastAccess && lastAccess < cutoffDate) {
 				shouldRemove = true;
 				reason = `not accessed in ${olderThanDays}+ days`;
 			}
 		}
 
-		if (unanalyzed && !repo.analyzedAt) {
+		if (withoutReference && entry.references.length === 0) {
 			shouldRemove = true;
-			reason = reason ? `${reason}, unanalyzed` : "unanalyzed";
-		}
-
-		if (withoutSkill && !repo.hasSkill) {
-			shouldRemove = true;
-			reason = reason ? `${reason}, no skill` : "no skill";
+			reason = reason ? `${reason}, no reference` : "no reference";
 		}
 
 		if (!shouldRemove) continue;
 
-		const sizeBytes = getDirSize(repo.localPath);
-		onProgress?.(repo.fullName, reason, sizeBytes);
+		const sizeBytes = getDirSize(entry.localPath);
+		onProgress?.(qualifiedName, reason, sizeBytes);
 
 		if (!dryRun) {
-			rmSync(repo.localPath, { recursive: true, force: true });
+			// Remove repo
+			rmSync(entry.localPath, { recursive: true, force: true });
 
-			const skillPath = getSkillPath(repo.fullName);
-			if (existsSync(skillPath)) {
-				rmSync(skillPath, { recursive: true, force: true });
+			// Remove reference files
+			for (const refFile of entry.references) {
+				const refPath = join(Paths.offworldReferencesDir, refFile);
+				if (existsSync(refPath)) {
+					rmSync(refPath, { force: true });
+				}
 			}
 
-			const metaPath = getMetaPath(repo.fullName);
+			// Remove meta
+			const metaPath = getMetaPath(qualifiedName);
 			if (existsSync(metaPath)) {
 				rmSync(metaPath, { recursive: true, force: true });
 			}
 
-			removeAgentSymlinks(repo.fullName);
-			removeFromIndex(repo.qualifiedName);
+			removeGlobalMapEntry(qualifiedName);
 		}
 
-		removed.push({ repo: repo.qualifiedName, reason, sizeBytes });
+		removed.push({ repo: qualifiedName, reason, sizeBytes });
 		freedBytes += sizeBytes;
 	}
 
 	return { removed, freedBytes };
-}
-
-function removeAgentSymlinks(repoName: string): void {
-	const config = loadConfig();
-	const skillDirName = toSkillDirName(repoName);
-
-	const configuredAgents = config.agents ?? [];
-	for (const agentName of configuredAgents) {
-		const agentConfig = getAllAgentConfigs().find((c) => c.name === agentName);
-		if (agentConfig) {
-			const agentSkillPath = expandTilde(join(agentConfig.globalSkillsDir, skillDirName));
-			if (existsSync(agentSkillPath)) {
-				rmSync(agentSkillPath, { recursive: true, force: true });
-			}
-		}
-	}
 }
 
 export interface DiscoverOptions {
@@ -421,8 +391,8 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 		return { discovered, alreadyIndexed };
 	}
 
-	const index = getIndex();
-	const indexedPaths = new Set(Object.values(index.repos).map((r: any) => r.localPath));
+	const map = readGlobalMap();
+	const indexedPaths = new Set(Object.values(map.repos).map((r) => r.localPath));
 
 	try {
 		const providers = readdirSync(repoRoot, { withFileTypes: true });
@@ -455,21 +425,14 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 					onProgress?.(fullName, provider.name);
 
 					if (!dryRun) {
-						let commitSha: string | undefined;
-						try {
-							commitSha = getCommitSha(repoPath);
-						} catch {
-							// Can't get commit SHA
-						}
-
-					const entry: any = {
-						fullName,
-						qualifiedName,
-						localPath: repoPath,
-						commitSha,
-						hasSkill: false,
-					};
-						updateIndex(entry);
+						// Add to map with empty references
+						upsertGlobalMapEntry(qualifiedName, {
+							localPath: repoPath,
+							references: [],
+							primary: "",
+							keywords: [],
+							updatedAt: new Date().toISOString(),
+						});
 					}
 
 					discovered.push({ fullName, qualifiedName, localPath: repoPath });

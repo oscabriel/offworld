@@ -59,8 +59,7 @@ export interface RepoStatusOptions {
 
 export interface RepoStatusResult {
 	total: number;
-	analyzed: number;
-	withSkill: number;
+	withReference: number;
 	stale: number;
 	missing: number;
 	diskMB: number;
@@ -68,8 +67,7 @@ export interface RepoStatusResult {
 
 export interface RepoGcOptions {
 	olderThan?: string;
-	unanalyzed?: boolean;
-	withoutSkill?: boolean;
+	withoutReference?: boolean;
 	dryRun?: boolean;
 	yes?: boolean;
 }

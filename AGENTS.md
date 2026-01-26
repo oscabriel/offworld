@@ -147,6 +147,26 @@ Skills are symlinked to:
 - **Generation**: US-004 refactored to generate reference markdown (no frontmatter), validate with `#` heading, return `referenceContent` + `commitSha`.
 - **Installation**: US-005 adds `installGlobalSkill()` (single routing SKILL.md + symlinks offworld/ dir to agents) and `installReference()` (per-repo reference files under `references/`, updates global map with references list + primary). Backward-compatible `generateSkillWithAI` and `getStateRoot` exports added for gradual migration.
 
+## US-006 Implementation Notes
+
+### SDK Changes Complete
+
+- `clone.ts`: Replaced skill checks with reference file checks in `offworld/references/`. Updated map entries on clone with `upsertGlobalMapEntry`.
+- `repo-manager.ts`: Migrated all functions (`getRepoStatus`, `updateAllRepos`, `pruneRepos`, `gcRepos`, `discoverRepos`) from index.json to map.json. Removed `hasSkill`/`analyzedAt` fields. GC now removes reference files and meta directories.
+- `listRepos()`: Now returns `string[]` (qualified names) instead of `RepoIndexEntry[]`.
+- `removeRepo()`: Options changed from `skillOnly/repoOnly` to `referenceOnly/repoOnly`.
+- Tests updated for reference terminology.
+
+### CLI Handlers Need Follow-up (Out of US-006 Scope)
+
+**Blocker for typecheck:** CLI handlers (`remove.ts`, `repo.ts`, `pull.ts`, `generate.ts`, `push.ts`, `project.ts`) still reference `getIndexEntry`, `getSkillPath`, `toSkillDirName`, `getAllAgentConfigs`. These must be refactored for single-skill model in US-009.
+
+**Pattern for CLI migration:**
+- Replace `getIndexEntry(qualifiedName)` with `readGlobalMap().repos[qualifiedName]`
+- Replace `entry.fullName` with `qualifiedName` (map keys are qualified names)
+- Remove symlink management (single-skill model has no per-repo symlinks)
+- Replace skill path refs with `Paths.offworldReferencesDir + toReferenceFileName(qualifiedName)`
+
 ## Project Skills
 
 Skills installed for this project's dependencies:

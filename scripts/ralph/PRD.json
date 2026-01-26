@@ -103,10 +103,10 @@
       ],
       "stepsToVerify": [
         "rg \"reference\" packages/sdk/src/clone.ts",
-        "rg \"index\.json|hasSkill|analyzedAt\" packages/sdk/src -g'*.ts'",
+        "rg \"index\\.json|hasSkill|analyzedAt\" packages/sdk/src -g'*.ts'",
         "rg \"remove.*references|meta\" packages/sdk/src/repo-manager.ts"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-007",

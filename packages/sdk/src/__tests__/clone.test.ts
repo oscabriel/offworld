@@ -788,19 +788,16 @@ describe("removeRepo", () => {
 		expect(result).toBe(true);
 	});
 
-	it("with skillOnly keeps repo directory", async () => {
+	it("with referenceOnly keeps repo directory", async () => {
 		const { rmSync } = await import("node:fs");
 
-		await removeRepo("github:tanstack/router", { skillOnly: true });
+		await removeRepo("github:tanstack/router", { referenceOnly: true });
 
 		expect(rmSync).not.toHaveBeenCalledWith(mockIndexEntry.localPath, expect.anything());
-		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("skills"), {
-			recursive: true,
-			force: true,
-		});
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), expect.anything());
 	});
 
-	it("with repoOnly keeps skill files", async () => {
+	it("with repoOnly keeps reference files", async () => {
 		const { rmSync } = await import("node:fs");
 
 		await removeRepo("github:tanstack/router", { repoOnly: true });
@@ -809,15 +806,18 @@ describe("removeRepo", () => {
 			recursive: true,
 			force: true,
 		});
-		expect(rmSync).not.toHaveBeenCalledWith(expect.stringContaining("skills"), expect.anything());
+		expect(rmSync).not.toHaveBeenCalledWith(expect.stringContaining("references"), expect.anything());
 	});
 
-	it("with skillOnly updates hasSkill in index instead of removing", async () => {
-		const { updateIndex } = await import("../index-manager.js");
+	it("with referenceOnly clears references in map", async () => {
+		const { upsertGlobalMapEntry } = await import("../index-manager.js");
 
-		await removeRepo("github:tanstack/router", { skillOnly: true });
+		await removeRepo("github:tanstack/router", { referenceOnly: true });
 
-		expect(updateIndex).toHaveBeenCalledWith(expect.objectContaining({ hasSkill: false }));
+		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({ references: [] }),
+		);
 	});
 });
 

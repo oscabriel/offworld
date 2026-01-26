@@ -51,6 +51,7 @@ export default defineSchema({
 	})
 		.index("by_repositoryId", ["repositoryId"])
 		.index("by_repositoryId_skillName", ["repositoryId", "skillName"])
+		.index("by_repositoryId_commitSha", ["repositoryId", "commitSha"]) // immutability check
 		.index("by_pullCount", ["pullCount"])
 		.index("by_analyzedAt", ["analyzedAt"])
 		.index("by_workosId", ["workosId"]),

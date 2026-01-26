@@ -31,7 +31,7 @@
 			"priority": 1,
 			"description": "Acceptance criteria: packages/sdk/src/generate.ts uses InstallReferenceMeta with referenceUpdatedAt, removes installSkill, installReference accepts qualifiedName/fullName, stores map under qualifiedName, and uses full ISO updatedAt; packages/sdk/src/clone.ts always upserts map entries with qualifiedName and only deletes reference/meta files using entry.references/entry.primary.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-005",

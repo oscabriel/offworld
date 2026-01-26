@@ -57,7 +57,7 @@ vi.mock("node:fs", () => ({
 import { streamPrompt } from "../ai/opencode.js";
 import { getCommitSha } from "../clone.js";
 import { loadConfig } from "../config.js";
-import { generateReferenceWithAI, installSkill } from "../generate.js";
+import { generateReferenceWithAI, installReference } from "../generate.js";
 
 const mockStreamPrompt = streamPrompt as ReturnType<typeof vi.fn>;
 const mockGetCommitSha = getCommitSha as ReturnType<typeof vi.fn>;
@@ -154,7 +154,7 @@ ${"Content ".repeat(100)}
 	});
 });
 
-describe("installSkill", () => {
+describe("installReference", () => {
 	beforeEach(() => {
 		mockLoadConfig.mockReturnValue({
 			agents: [],
@@ -163,8 +163,8 @@ describe("installSkill", () => {
 
 	it("should accept valid arguments", () => {
 		expect(() => {
-			installSkill("test/repo", "---\nname: Test\n---\n# Test\nContent", {
-				analyzedAt: new Date().toISOString(),
+			installReference("github:test/repo", "test/repo", "/path/to/repo", "# Test\nContent", {
+				referenceUpdatedAt: new Date().toISOString(),
 				commitSha: "abc123",
 				version: "0.1.0",
 			});

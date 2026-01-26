@@ -46,7 +46,9 @@ function formatFullDate(isoString: string) {
 
 function ProfileComponent() {
 	const { data: user } = useSuspenseQuery(convexQuery(api.auth.getCurrentUserSafe, {}));
-	const { data: pushedReferences } = useSuspenseQuery(convexQuery(api.references.listByCurrentUser, {}));
+	const { data: pushedReferences } = useSuspenseQuery(
+		convexQuery(api.references.listByCurrentUser, {}),
+	);
 
 	const { signOut } = useAuth();
 
@@ -94,10 +96,10 @@ function ProfileComponent() {
 
 					{pushedReferences.length === 0 ? (
 						<div className="bg-background border-primary/10 border p-8 text-center">
-							<p className="text-muted-foreground font-mono text-sm">
+							<p className="text-muted-foreground font-mono text-base">
 								You haven't pushed any references yet.
 							</p>
-							<p className="text-muted-foreground mt-2 font-mono text-xs">
+							<p className="text-muted-foreground mt-2 font-mono text-sm">
 								Use <code className="text-primary">ow push &lt;repo&gt;</code> to share a reference.
 							</p>
 						</div>
@@ -144,7 +146,9 @@ function ProfileComponent() {
 												</td>
 												<td className="text-muted-foreground px-5 py-4 font-mono text-sm">
 													<Tooltip>
-														<TooltipTrigger>{formatRelativeDate(reference.generatedAt)}</TooltipTrigger>
+														<TooltipTrigger>
+															{formatRelativeDate(reference.generatedAt)}
+														</TooltipTrigger>
 														<TooltipContent>{formatFullDate(reference.generatedAt)}</TooltipContent>
 													</Tooltip>
 												</td>

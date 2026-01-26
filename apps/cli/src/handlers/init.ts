@@ -11,6 +11,7 @@ import {
 	detectInstalledAgents,
 	getAllAgentConfigs,
 	getAuthStatus,
+	installGlobalSkill,
 	listProviders,
 	getProvider,
 	validateProviderModel,
@@ -296,6 +297,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 	try {
 		saveConfig(newConfig);
+		installGlobalSkill();
 
 		p.log.success("Configuration saved!");
 		p.log.info(`  Config file: ${configPath}`);

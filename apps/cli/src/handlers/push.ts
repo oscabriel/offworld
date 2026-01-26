@@ -7,7 +7,8 @@ import {
 	parseRepoInput,
 	getToken,
 	getMetaPath,
-	getSkillPath,
+	getReferencePath,
+	toSkillDirName,
 	getCommitSha,
 	getClonedRepoPath,
 	isRepoCloned,
@@ -47,44 +48,71 @@ export interface PushResult {
 // Helper Functions
 // ============================================================================
 
+const DESCRIPTION_MAX = 200;
+
+function extractDescription(referenceContent: string, fallback: string): string {
+	const lines = referenceContent.split(/\r?\n/);
+	let sawTitle = false;
+	let description = "";
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]?.trim() ?? "";
+		if (!line) continue;
+		if (line.startsWith("# ")) {
+			sawTitle = true;
+			continue;
+		}
+		if (!sawTitle || line.startsWith("#")) continue;
+
+		description = line;
+		for (let j = i + 1; j < lines.length; j++) {
+			const next = lines[j]?.trim() ?? "";
+			if (!next || next.startsWith("#")) break;
+			description += ` ${next}`;
+		}
+		break;
+	}
+
+	description = description.replace(/\s+/g, " ").trim();
+	if (!description) description = fallback;
+	if (description.length > DESCRIPTION_MAX) description = description.slice(0, DESCRIPTION_MAX).trim();
+	if (!description) description = fallback.slice(0, DESCRIPTION_MAX);
+	return description;
+}
+
 /**
  * Load local reference data from the reference format.
  * Format: reference file + meta.json
  */
-function loadLocalAnalysis(metaDir: string, skillDir: string): ReferenceData | null {
-	const skillMdPath = join(skillDir, "SKILL.md");
+function loadLocalAnalysis(
+	metaDir: string,
+	referencePath: string,
+	fullName: string,
+): ReferenceData | null {
 	const metaPath = join(metaDir, "meta.json");
 
 	// Check required files for new format
-	if (!existsSync(skillMdPath) || !existsSync(metaPath)) {
+	if (!existsSync(referencePath) || !existsSync(metaPath)) {
 		return null;
 	}
 
 	try {
-		const skillContent = readFileSync(skillMdPath, "utf-8");
+		const referenceContent = readFileSync(referencePath, "utf-8");
 		const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as {
 			commitSha: string;
 			analyzedAt: string;
 		};
-
-		// Extract name and description from SKILL.md frontmatter
-		const frontmatterMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
-		let name = "unknown";
-		let description = "";
-
-		if (frontmatterMatch?.[1]) {
-			const frontmatter = frontmatterMatch[1];
-			const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
-			const descMatch = frontmatter.match(/^description:\s*(.+)$/m);
-			if (nameMatch?.[1]) name = nameMatch[1].trim();
-			if (descMatch?.[1]) description = descMatch[1].trim();
-		}
+		const referenceName = toSkillDirName(fullName);
+		const referenceDescription = extractDescription(
+			referenceContent,
+			`Reference for ${fullName}`,
+		);
 
 		return {
 			fullName: "",
-			referenceName: name,
-			referenceDescription: description,
-			referenceContent: skillContent,
+			referenceName,
+			referenceDescription,
+			referenceContent,
 			commitSha: meta.commitSha,
 			generatedAt: meta.analyzedAt,
 		};
@@ -146,16 +174,16 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 		// Step 5: Load local reference
 		s.start("Loading local reference...");
 		const metaDir = getMetaPath(source.fullName);
-		const skillDir = getSkillPath(source.fullName);
+		const referencePath = getReferencePath(source.fullName);
 
-		if (!existsSync(metaDir)) {
+		if (!existsSync(metaDir) || !existsSync(referencePath)) {
 			s.stop("No reference found");
 			p.log.error(`No reference found for ${source.fullName}.`);
 			p.log.info(`Run 'ow generate ${source.fullName}' to generate reference.`);
 			return { success: false, message: "No local reference found" };
 		}
 
-		const localAnalysis = loadLocalAnalysis(metaDir, skillDir);
+		const localAnalysis = loadLocalAnalysis(metaDir, referencePath, source.fullName);
 
 		if (!localAnalysis) {
 			s.stop("Invalid reference");

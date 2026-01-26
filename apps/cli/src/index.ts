@@ -23,6 +23,8 @@ import {
 	repoStatusHandler,
 	repoGcHandler,
 	repoDiscoverHandler,
+	upgradeHandler,
+	uninstallHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -449,6 +451,46 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 				});
 			}),
 	}),
+
+	upgrade: os
+		.input(
+			z.object({
+				target: z.string().optional().describe("Version to upgrade to"),
+			}),
+		)
+		.meta({
+			description: "Upgrade offworld to latest or specific version",
+		})
+		.handler(async ({ input }) => {
+			await upgradeHandler({
+				target: input.target,
+			});
+		}),
+
+	uninstall: os
+		.input(
+			z.object({
+				keepConfig: z.boolean().default(false).describe("Keep configuration files"),
+				keepData: z.boolean().default(false).describe("Keep data files (skills, repos)"),
+				dryRun: z
+					.boolean()
+					.default(false)
+					.describe("Show what would be removed")
+					.meta({ alias: "d" }),
+				force: z.boolean().default(false).describe("Skip confirmation").meta({ alias: "f" }),
+			}),
+		)
+		.meta({
+			description: "Uninstall offworld and remove related files",
+		})
+		.handler(async ({ input }) => {
+			await uninstallHandler({
+				keepConfig: input.keepConfig,
+				keepData: input.keepData,
+				dryRun: input.dryRun,
+				force: input.force,
+			});
+		}),
 });
 
 const stripSecondaryDescription = (help: string) =>

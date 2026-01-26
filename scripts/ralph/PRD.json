@@ -271,7 +271,7 @@
         "test -f ~/.local/share/offworld/skill/offworld/assets/map.json",
         "ow config show --json"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

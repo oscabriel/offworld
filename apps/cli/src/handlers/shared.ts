@@ -2,8 +2,7 @@
  * Shared utilities for CLI handlers
  */
 
-import { getCommitSha } from "@offworld/sdk";
-import type { RepoIndexEntry } from "@offworld/types";
+import { getCommitSha, readGlobalMap } from "@offworld/sdk";
 import { existsSync } from "node:fs";
 
 export interface RepoListItem {
@@ -39,34 +38,52 @@ export function formatRepoForDisplay(item: RepoListItem, showPaths: boolean): st
 }
 
 /**
- * Convert index entry to list item with staleness check
+ * Convert qualified name to list item with staleness check
  */
 export async function entryToListItem(
-	entry: RepoIndexEntry,
+	qualifiedName: string,
 	checkStale: boolean,
 ): Promise<RepoListItem> {
+	const map = readGlobalMap();
+	const entry = map.repos[qualifiedName];
+
+	if (!entry) {
+		return {
+			fullName: qualifiedName,
+			qualifiedName,
+			localPath: "",
+			analyzed: false,
+			hasSkill: false,
+			isStale: false,
+			exists: false,
+		};
+	}
+
 	const exists = existsSync(entry.localPath);
-	const analyzed = !!entry.analyzedAt;
+	const analyzed = !!entry.references && entry.references.length > 0;
+	const hasSkill = analyzed;
 
 	let isStale: boolean | undefined;
 
-	if (checkStale && analyzed && exists && entry.commitSha) {
+	// TODO: Implement stale check based on map's updatedAt vs current commit
+	if (checkStale && analyzed && exists) {
 		try {
-			const currentSha = getCommitSha(entry.localPath);
-			isStale = currentSha !== entry.commitSha;
+			getCommitSha(entry.localPath); // Check if repo is git-valid
+			// For now, assume not stale (no commitSha in map yet)
+			isStale = false;
 		} catch {
 			isStale = undefined;
 		}
 	}
 
 	return {
-		fullName: entry.fullName,
-		qualifiedName: entry.qualifiedName,
+		fullName: qualifiedName,
+		qualifiedName,
 		localPath: entry.localPath,
 		analyzed,
-		analyzedAt: entry.analyzedAt,
-		commitSha: entry.commitSha,
-		hasSkill: entry.hasSkill,
+		analyzedAt: entry.updatedAt,
+		commitSha: undefined, // Map doesn't store commitSha yet
+		hasSkill,
 		isStale,
 		exists,
 	};

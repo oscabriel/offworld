@@ -6,12 +6,12 @@ import * as p from "@clack/prompts";
 import {
 	parseRepoInput,
 	removeRepo,
-	removeReferenceByName,
+	toReferenceFileName,
 	readGlobalMap,
 	getMetaPath,
 	Paths,
 } from "@offworld/sdk";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
 
@@ -27,7 +27,7 @@ export interface RmResult {
 	success: boolean;
 	removed?: {
 		repoPath?: string;
-		skillPath?: string;
+		referencePath?: string;
 		symlinkPaths?: string[];
 	};
 	message?: string;
@@ -35,7 +35,7 @@ export interface RmResult {
 
 function getAffectedPathsFromMap(qualifiedName: string): {
 	repoPath?: string;
-	skillPath?: string;
+	referencePath?: string;
 	symlinkPaths: string[];
 } | null {
 	const map = readGlobalMap();
@@ -52,7 +52,7 @@ function getAffectedPathsFromMap(qualifiedName: string): {
 
 	return {
 		repoPath: existsSync(repoPath) ? repoPath : undefined,
-		skillPath: referencePath && existsSync(referencePath) ? referencePath : undefined,
+		referencePath: referencePath && existsSync(referencePath) ? referencePath : undefined,
 		symlinkPaths: [],
 	};
 }
@@ -93,12 +93,12 @@ export async function rmHandler(options: RmOptions): Promise<RmResult> {
 		if (dryRun || !yes) {
 			p.log.info("The following will be removed:");
 
-			if (!referenceOnly && affected.repoPath) {
-				console.log(`  Repository: ${affected.repoPath}`);
-			}
-			if (!repoOnly && affected.skillPath) {
-				console.log(`  Reference: ${affected.skillPath}`);
-			}
+		if (!referenceOnly && affected.repoPath) {
+			console.log(`  Repository: ${affected.repoPath}`);
+		}
+		if (!repoOnly && affected.referencePath) {
+			console.log(`  Reference: ${affected.referencePath}`);
+		}
 			console.log("");
 		}
 
@@ -170,7 +170,7 @@ async function handleReferenceOnlyRemoval(
 	yes: boolean,
 	dryRun: boolean,
 ): Promise<RmResult> {
-	const referenceFileName = `${repoName.replace(/\//g, "-")}.md`;
+	const referenceFileName = toReferenceFileName(repoName);
 	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 	const metaPath = getMetaPath(repoName);
 
@@ -197,7 +197,7 @@ async function handleReferenceOnlyRemoval(
 		p.log.info("Dry run - no files were deleted.");
 		return {
 			success: true,
-			removed: { skillPath: referencePath },
+			removed: { referencePath },
 		};
 	}
 
@@ -218,20 +218,13 @@ async function handleReferenceOnlyRemoval(
 	const s = createSpinner();
 	s.start("Removing reference files...");
 
-	const removed = removeReferenceByName(repoName);
+	if (existsSync(referencePath)) rmSync(referencePath, { force: true });
+	if (existsSync(metaPath)) rmSync(metaPath, { recursive: true, force: true });
 
-	if (removed) {
-		s.stop("Reference files removed");
-		p.log.success(`Removed reference files for: ${repoName}`);
-		return {
-			success: true,
-			removed: { skillPath: referencePath },
-		};
-	} else {
-		s.stop("Failed to remove");
-		return {
-			success: false,
-			message: "Failed to remove reference files",
-		};
-	}
+	s.stop("Reference files removed");
+	p.log.success(`Removed reference files for: ${repoName}`);
+	return {
+		success: true,
+		removed: { referencePath },
+	};
 }

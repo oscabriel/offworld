@@ -73,6 +73,7 @@ Enter plan mode. Using the Offworld references for this project, create a plan t
 ```
 
 Claude will:
+
 - Load relevant references
 - Create an ordered implementation plan
 - Execute each step systematically
@@ -115,11 +116,13 @@ ow init  # Re-symlink
 ### Skill not recognized
 
 1. Check the symlink exists:
+
    ```bash
    ls -la ~/.claude/skills/offworld
    ```
 
 2. Verify it points to the correct location:
+
    ```bash
    readlink ~/.claude/skills/offworld
    # Should show: ~/.local/share/offworld/skills/offworld

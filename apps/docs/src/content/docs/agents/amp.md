@@ -83,7 +83,7 @@ For complex implementations:
 ```
 Using subagents and Offworld references, implement in parallel:
 - API routes with Hono (use hono reference)
-- Database schema with Drizzle (use drizzle-orm reference)  
+- Database schema with Drizzle (use drizzle-orm reference)
 - Type-safe client with tRPC (use trpc reference)
 ```
 
@@ -106,10 +106,10 @@ Offworld automatically adds a reference table to your project's `AGENTS.md`:
 ```markdown
 ## Project References
 
-| Dependency | Reference | Path |
-|------------|-----------|------|
-| zod | colinhacks-zod.md | ~/.local/share/offworld/skills/offworld/references/colinhacks-zod.md |
-| hono | honojs-hono.md | ~/.local/share/offworld/skills/offworld/references/honojs-hono.md |
+| Dependency | Reference         | Path                                                                 |
+| ---------- | ----------------- | -------------------------------------------------------------------- |
+| zod        | colinhacks-zod.md | ~/.local/share/offworld/skills/offworld/references/colinhacks-zod.md |
+| hono       | honojs-hono.md    | ~/.local/share/offworld/skills/offworld/references/honojs-hono.md    |
 ```
 
 This helps Amp understand which references are available without loading the full skill.
@@ -119,11 +119,13 @@ This helps Amp understand which references are available without loading the ful
 ### Skill not appearing
 
 1. Check the symlink:
+
    ```bash
    ls -la ~/.config/agents/skills/offworld
    ```
 
 2. Verify the target exists:
+
    ```bash
    ls ~/.local/share/offworld/skills/offworld/SKILL.md
    ```

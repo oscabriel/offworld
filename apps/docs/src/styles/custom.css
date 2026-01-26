@@ -1,0 +1,147 @@
+/* Offworld Docs Theme
+ * Aligned with apps/web/src/index.css design system
+ * Uses OKLCH colors, Sorts Mill Goudy + Geist Mono fonts, 0 border-radius
+ */
+
+/* Light mode */
+:root {
+	/* Accent colors - using primary/foreground from web app */
+	--sl-color-accent-low: oklch(0.9067 0 0); /* secondary */
+	--sl-color-accent: oklch(0.2178 0 0); /* primary */
+	--sl-color-accent-high: oklch(0.1722 0 0); /* darker than primary */
+
+	/* Gray scale - from web app */
+	--sl-color-white: oklch(1 0 0);
+	--sl-color-gray-1: oklch(0.9702 0 0); /* background */
+	--sl-color-gray-2: oklch(0.9067 0 0); /* secondary/muted */
+	--sl-color-gray-3: oklch(0.8452 0 0); /* border */
+	--sl-color-gray-4: oklch(0.5103 0 0); /* muted-foreground */
+	--sl-color-gray-5: oklch(0.3715 0 0);
+	--sl-color-gray-6: oklch(0.2178 0 0); /* foreground */
+	--sl-color-black: oklch(0.1722 0 0);
+
+	/* Typography - Geist Mono for body, Sorts Mill Goudy for headings */
+	--sl-font: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	--sl-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Dark mode */
+:root[data-theme="dark"] {
+	/* Accent colors - warm yellowish tones from web app dark mode */
+	--sl-color-accent-low: oklch(0.2178 0.0041 106.8174);
+	--sl-color-accent: oklch(0.9927 0.0364 107.0448); /* primary in dark */
+	--sl-color-accent-high: oklch(1 0.04 107);
+
+	/* Gray scale - warm tones matching dark mode */
+	--sl-color-white: oklch(0.9927 0.0364 107.0448); /* foreground */
+	--sl-color-gray-1: oklch(0.6357 0.0218 107.0046); /* muted-foreground */
+	--sl-color-gray-2: oklch(0.4856 0.0171 107.0202); /* secondary/border */
+	--sl-color-gray-3: oklch(0.3715 0.01 107);
+	--sl-color-gray-4: oklch(0.3092 0.008 107);
+	--sl-color-gray-5: oklch(0.2178 0.0041 106.8174); /* card */
+	--sl-color-gray-6: oklch(0.1722 0.0041 106.8174); /* background */
+	--sl-color-black: oklch(0.12 0.003 107);
+}
+
+/* Remove border radius everywhere */
+* {
+	border-radius: 0 !important;
+}
+
+/* Remove box shadows */
+.sl-markdown-content,
+.starlight-aside,
+.card,
+[class*="card"] {
+	box-shadow: none !important;
+}
+
+/* Code blocks styling */
+.sl-markdown-content pre {
+	border: 1px solid var(--sl-color-gray-3);
+	border-radius: 0 !important;
+}
+
+.sl-markdown-content code {
+	font-family: var(--sl-font-mono);
+	border-radius: 0 !important;
+}
+
+/* Inline code */
+.sl-markdown-content :not(pre) > code {
+	background: var(--sl-color-gray-2);
+	border: 1px solid var(--sl-color-gray-3);
+	padding: 0.125rem 0.375rem;
+}
+
+/* Links - underline style from web app */
+.sl-markdown-content a {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.sl-markdown-content a:hover {
+	text-decoration-thickness: 2px;
+}
+
+/* Tables */
+.sl-markdown-content table {
+	border: 1px solid var(--sl-color-gray-3);
+}
+
+.sl-markdown-content th,
+.sl-markdown-content td {
+	border: 1px solid var(--sl-color-gray-3);
+}
+
+/* Blockquotes */
+.sl-markdown-content blockquote {
+	border-left: 4px solid var(--sl-color-accent);
+	font-style: italic;
+}
+
+/* Sidebar styling */
+nav.sidebar {
+	border-right: 1px solid var(--sl-color-gray-3);
+}
+
+/* Search input */
+site-search button {
+	border-radius: 0 !important;
+}
+
+/* Cards on splash pages */
+.card-grid .card {
+	border: 1px solid var(--sl-color-gray-3);
+	border-radius: 0 !important;
+}
+
+/* Hero section */
+.hero {
+	border-bottom: 1px solid var(--sl-color-gray-3);
+}
+
+/* Scrollbar styling - matches web app */
+::-webkit-scrollbar {
+	width: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--sl-color-gray-3);
+	border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* Selection styling */
+::selection {
+	background-color: var(--sl-color-accent);
+	color: var(--sl-color-white);
+}
+
+:root[data-theme="dark"] ::selection {
+	background-color: var(--sl-color-gray-2);
+	color: var(--sl-color-white);
+}

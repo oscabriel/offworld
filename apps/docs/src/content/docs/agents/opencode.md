@@ -96,6 +96,7 @@ ow init
 ### Skill not loading
 
 1. Verify symlink:
+
    ```bash
    ls -la ~/.config/opencode/skill/offworld
    ```

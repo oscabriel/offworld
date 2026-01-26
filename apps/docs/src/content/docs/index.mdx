@@ -20,23 +20,16 @@ import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 <CardGrid>
 	<Card title="CLI for Humans" icon="terminal">
-		Run commands directly in your terminal to manage references and skills.
-		```bash
-		ow pull tanstack/router
-		ow project init
-		```
+		Run commands directly in your terminal to manage references and skills. ```bash ow pull
+		tanstack/router ow project init ```
 	</Card>
 	<Card title="Skill for Agents" icon="rocket">
-		Install the skill so agents can access reference knowledge autonomously.
-		```bash
-		ow init  # Symlinks skill to all agents
-		```
+		Install the skill so agents can access reference knowledge autonomously. ```bash ow init #
+		Symlinks skill to all agents ```
 	</Card>
 	<Card title="Project Integration" icon="document">
-		Scan your project's dependencies and inject relevant references into AGENTS.md.
-		```bash
-		ow project init
-		```
+		Scan your project's dependencies and inject relevant references into AGENTS.md. ```bash ow
+		project init ```
 	</Card>
 </CardGrid>
 
@@ -44,7 +37,8 @@ import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 <CardGrid stagger>
 	<Card title="AI-Native Design" icon="rocket">
-		Built for coding agents. References are optimized for LLM consumption with the right level of detail.
+		Built for coding agents. References are optimized for LLM consumption with the right level of
+		detail.
 	</Card>
 	<Card title="One Skill, All Agents" icon="puzzle">
 		Single skill installation works with Claude Code, Cursor, Amp, OpenCode, Codex, and Gemini.
@@ -60,8 +54,24 @@ import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 ## Next Steps
 
 <CardGrid>
-	<LinkCard title="Quickstart" description="Install Offworld and pull your first reference in 2 minutes." href="/guides/quickstart/" />
-	<LinkCard title="AI Agent Integration" description="Set up Offworld with Claude Code, Cursor, Amp, and more." href="/agents/" />
-	<LinkCard title="CLI Reference" description="Full command documentation for the ow CLI." href="/reference/cli/" />
-	<LinkCard title="Browse References" description="Explore shared references on offworld.sh." href="https://offworld.sh/explore" />
+	<LinkCard
+		title="Quickstart"
+		description="Install Offworld and pull your first reference in 2 minutes."
+		href="/guides/quickstart/"
+	/>
+	<LinkCard
+		title="AI Agent Integration"
+		description="Set up Offworld with Claude Code, Cursor, Amp, and more."
+		href="/agents/"
+	/>
+	<LinkCard
+		title="CLI Reference"
+		description="Full command documentation for the ow CLI."
+		href="/reference/cli/"
+	/>
+	<LinkCard
+		title="Browse References"
+		description="Explore shared references on offworld.sh."
+		href="https://offworld.sh/explore"
+	/>
 </CardGrid>

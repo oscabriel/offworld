@@ -7,8 +7,8 @@ import {
 	getCommitSha,
 	getCommitDistance,
 	parseRepoInput,
-	pullAnalysis,
-	pullAnalysisByName,
+	pullReference,
+	pullReferenceByName,
 	checkRemote,
 	checkRemoteByName,
 	loadConfig,
@@ -38,8 +38,8 @@ export interface PullOptions {
 export interface PullResult {
 	success: boolean;
 	repoPath: string;
-	analysisSource: "remote" | "local" | "cached";
-	skillInstalled: boolean;
+	referenceSource: "remote" | "local" | "cached";
+	referenceInstalled: boolean;
 	message?: string;
 }
 
@@ -58,7 +58,9 @@ function getLocalMetaDir(source: RepoSource): string {
 	return getMetaPath(name);
 }
 
-function loadLocalMeta(source: RepoSource): { commitSha?: string; analyzedAt?: string } | null {
+function loadLocalMeta(
+	source: RepoSource,
+): { commitSha?: string; referenceUpdatedAt?: string } | null {
 	const metaDir = getLocalMetaDir(source);
 	const metaPath = join(metaDir, "meta.json");
 	if (!existsSync(metaPath)) {
@@ -82,14 +84,15 @@ function hasValidCache(source: RepoSource, currentSha: string): boolean {
  * Remote reference comes with pre-generated reference content.
  */
 function saveRemoteReference(
-	repoName: string,
+	qualifiedName: string,
+	referenceRepoName: string,
 	localPath: string,
 	referenceContent: string,
 	commitSha: string,
-	analyzedAt: string,
+	referenceUpdatedAt: string,
 ): void {
-	const meta = { analyzedAt, commitSha, version: "0.1.0" };
-	installReference(repoName, localPath, referenceContent, meta);
+	const meta = { referenceUpdatedAt, commitSha, version: "0.1.0" };
+	installReference(qualifiedName, referenceRepoName, localPath, referenceContent, meta);
 }
 
 function parseModelFlag(model?: string): { provider?: string; model?: string } {
@@ -187,8 +190,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			return {
 				success: true,
 				repoPath,
-				analysisSource: "cached",
-				skillInstalled: true,
+				referenceSource: "cached",
+				referenceInstalled: true,
 			};
 		}
 
@@ -256,19 +259,20 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							p.log.info("Skipping remote reference, generating locally...");
 						} else {
 							s.start("Downloading remote reference...");
-							const remoteAnalysis = isReferenceOverride
-								? await pullAnalysisByName(source.fullName, requiredReferenceName)
-								: await pullAnalysis(source.fullName);
+							const remoteReference = isReferenceOverride
+								? await pullReferenceByName(source.fullName, requiredReferenceName)
+								: await pullReference(source.fullName);
 
-							if (remoteAnalysis) {
+							if (remoteReference) {
 								s.stop("Downloaded remote reference");
 
 								saveRemoteReference(
+									source.qualifiedName,
 									source.fullName,
 									repoPath,
-									remoteAnalysis.referenceContent,
-									remoteAnalysis.commitSha,
-									remoteAnalysis.generatedAt ?? new Date().toISOString(),
+									remoteReference.referenceContent,
+									remoteReference.commitSha,
+									remoteReference.generatedAt ?? new Date().toISOString(),
 								);
 
 								p.log.success(
@@ -280,8 +284,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 								return {
 									success: true,
 									repoPath,
-									analysisSource: "remote",
-									skillInstalled: true,
+									referenceSource: "remote",
+									referenceInstalled: true,
 								};
 							}
 							if (isReferenceOverride) {
@@ -337,11 +341,12 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				onDebug,
 			});
 
-			const { referenceContent, commitSha: analysisCommitSha } = result;
-			const analyzedAt = new Date().toISOString();
-			const meta = { analyzedAt, commitSha: analysisCommitSha, version: "0.1.0" };
+			const { referenceContent, commitSha: referenceCommitSha } = result;
+			const referenceUpdatedAt = new Date().toISOString();
+			const meta = { referenceUpdatedAt, commitSha: referenceCommitSha, version: "0.1.0" };
+			const referenceRepoName = source.type === "remote" ? source.fullName : source.name;
 
-			installReference(qualifiedName, repoPath, referenceContent, meta);
+			installReference(source.qualifiedName, referenceRepoName, repoPath, referenceContent, meta);
 
 			if (!verbose) {
 				s.stop("Reference generated");
@@ -363,8 +368,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			return {
 				success: true,
 				repoPath,
-				analysisSource: "local",
-				skillInstalled: true,
+				referenceSource: "local",
+				referenceInstalled: true,
 			};
 		} catch (err) {
 			if (!verbose) {
@@ -383,8 +388,8 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		return {
 			success: false,
 			repoPath: "",
-			analysisSource: "local",
-			skillInstalled: false,
+			referenceSource: "local",
+			referenceInstalled: false,
 			message,
 		};
 	}

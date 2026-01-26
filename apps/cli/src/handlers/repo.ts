@@ -16,7 +16,6 @@ import { formatRepoForDisplay, type RepoListItem } from "./shared.js";
 export interface RepoListOptions {
 	json?: boolean;
 	paths?: boolean;
-	stale?: boolean;
 	pattern?: string;
 }
 
@@ -28,7 +27,6 @@ export interface RepoListResult {
 
 export interface RepoUpdateOptions {
 	all?: boolean;
-	stale?: boolean;
 	pattern?: string;
 	dryRun?: boolean;
 	/** Convert shallow clones to full clones */
@@ -105,7 +103,7 @@ function matchesPattern(name: string, pattern: string): boolean {
 }
 
 export async function repoListHandler(options: RepoListOptions): Promise<RepoListResult> {
-	const { json = false, paths = false, stale = false, pattern } = options;
+	const { json = false, paths = false, pattern } = options;
 
 	const qualifiedNames = listRepos();
 	const map = readGlobalMap();
@@ -113,7 +111,7 @@ export async function repoListHandler(options: RepoListOptions): Promise<RepoLis
 	if (qualifiedNames.length === 0) {
 		if (!json) {
 			p.log.info("No repositories cloned yet.");
-			p.log.info("Use 'ow pull <repo>' to clone and analyze a repository.");
+			p.log.info("Use 'ow pull <repo>' to clone and generate a reference.");
 		}
 		return { repos: [] };
 	}
@@ -125,49 +123,41 @@ export async function repoListHandler(options: RepoListOptions): Promise<RepoLis
 		if (pattern && !matchesPattern(qName, pattern)) continue;
 
 		const exists = existsSync(entry.localPath);
-		const isStale = undefined; // Simplified - full staleness check TBD
+		const hasReference = !!entry.primary;
 
 		items.push({
 			fullName: qName,
 			qualifiedName: qName,
 			localPath: entry.localPath,
-			analyzed: !!entry.primary,
-			hasSkill: !!entry.primary,
-			isStale,
+			hasReference,
+			referenceUpdatedAt: entry.updatedAt,
 			exists,
 		});
 	}
 
-	let filteredItems = items;
-	if (stale) {
-		filteredItems = items.filter((item) => item.isStale === true);
-	}
-
 	if (json) {
-		console.log(JSON.stringify(filteredItems, null, 2));
+		console.log(JSON.stringify(items, null, 2));
 	} else {
-		if (filteredItems.length === 0) {
-			if (stale) {
-				p.log.info("No stale repositories found.");
-			} else if (pattern) {
+		if (items.length === 0) {
+			if (pattern) {
 				p.log.info(`No repositories matching "${pattern}".`);
 			}
 		} else {
-			p.log.info(`Found ${filteredItems.length} ${stale ? "stale " : ""}repositories:\n`);
-			for (const item of filteredItems) {
+			p.log.info(`Found ${items.length} repositories:\n`);
+			for (const item of items) {
 				console.log(formatRepoForDisplay(item, paths));
 			}
 		}
 	}
 
-	return { repos: filteredItems };
+	return { repos: items };
 }
 
 export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<RepoUpdateResult> {
-	const { all = false, stale = false, pattern, dryRun = false, unshallow = false } = options;
+	const { all = false, pattern, dryRun = false, unshallow = false } = options;
 
-	if (!all && !stale && !pattern) {
-		p.log.error("Specify --all, --stale, or a pattern to update.");
+	if (!all && !pattern) {
+		p.log.error("Specify --all or a pattern to update.");
 		return { updated: [], skipped: [], unshallowed: [], errors: [] };
 	}
 
@@ -480,7 +470,7 @@ export async function repoDiscoverHandler(
 
 	if (shouldProceed) {
 		const result = await discoverRepos({ repoRoot });
-		p.log.success(`Added ${result.discovered.length} repos to index (marked as not analyzed)`);
+		p.log.success(`Added ${result.discovered.length} repos to index (marked as not referenced)`);
 		return { discovered: result.discovered.length, alreadyIndexed: result.alreadyIndexed };
 	}
 

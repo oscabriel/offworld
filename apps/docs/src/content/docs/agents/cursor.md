@@ -94,6 +94,7 @@ Cursor should automatically detect skills in `~/.cursor/skills/`. If not, check 
 ### Skill not loading
 
 1. Verify the symlink:
+
    ```bash
    ls -la ~/.cursor/skills/offworld
    ```

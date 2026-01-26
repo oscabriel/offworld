@@ -49,8 +49,8 @@ vi.mock("@offworld/sdk", () => ({
 	getIndexEntry: vi.fn(),
 	listRepos: vi.fn(),
 	readGlobalMap: vi.fn(),
-	pullAnalysis: vi.fn(),
-	pullAnalysisByName: vi.fn(),
+	pullReference: vi.fn(),
+	pullReferenceByName: vi.fn(),
 	checkRemote: vi.fn(),
 	checkRemoteByName: vi.fn(),
 	checkStaleness: vi.fn(),
@@ -61,12 +61,17 @@ vi.mock("@offworld/sdk", () => ({
 	pushAnalysis: vi.fn(),
 	getAllAgentConfigs: vi.fn(() => []),
 	expandTilde: vi.fn((path: string) => path),
-	toSkillDirName: vi.fn((repoName: string) => {
+	toReferenceFileName: vi.fn((repoName: string) => {
 		if (repoName.includes("/")) {
-			const [owner, repo] = repoName.split("/");
-			return `${owner}-${repo}-reference`;
+			return `${repoName.replace(/\//g, "-")}.md`;
 		}
-		return `${repoName}-reference`;
+		return `${repoName}.md`;
+	}),
+	toReferenceName: vi.fn((repoName: string) => {
+		if (repoName.includes("/")) {
+			return repoName.replace(/\//g, "-");
+		}
+		return repoName;
 	}),
 	Paths: {
 		offworldReferencesDir: "/mock/references",
@@ -89,10 +94,9 @@ import {
 	getReferencePath,
 	getMetaPath,
 	getMetaRoot,
-	getIndexEntry,
 	listRepos,
 	readGlobalMap,
-	pullAnalysis,
+	pullReference,
 	checkRemote,
 	generateReferenceWithAI,
 	loadAuthData,
@@ -125,10 +129,9 @@ describe("CLI handlers", () => {
 	const mockGetMetaRoot = getMetaRoot as ReturnType<typeof vi.fn>;
 	const mockLoadAuthData = loadAuthData as ReturnType<typeof vi.fn>;
 	const mockCanPushToWeb = canPushToWeb as ReturnType<typeof vi.fn>;
-	const mockGetIndexEntry = getIndexEntry as ReturnType<typeof vi.fn>;
 	const mockListRepos = listRepos as ReturnType<typeof vi.fn>;
 	const mockReadGlobalMap = readGlobalMap as ReturnType<typeof vi.fn>;
-	const mockPullAnalysis = pullAnalysis as ReturnType<typeof vi.fn>;
+	const mockPullReference = pullReference as ReturnType<typeof vi.fn>;
 	const mockCheckRemote = checkRemote as ReturnType<typeof vi.fn>;
 	const mockGetCommitDistance = getCommitDistance as ReturnType<typeof vi.fn>;
 	const mockGenerateReferenceWithAI = generateReferenceWithAI as ReturnType<typeof vi.fn>;

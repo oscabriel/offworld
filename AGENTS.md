@@ -218,6 +218,20 @@ Skills are symlinked to:
 - Integration tests fail due to missing runtime Paths mock setup — fixed with Paths getter mocks.
 - Full test suite passes after mocking Paths in integration tests.
 
+## US-014 Implementation Notes
+
+### Data Reset Complete
+
+- **Local data removal**: Deleted `~/.local/share/offworld` and `~/.local/state/offworld` directories to clear legacy data.
+- **Convex dev state**: Reference table confirmed empty (no legacy or stale rows).
+- **Fresh start**: Next install will create only single-skill files and maps per new architecture.
+
+### Patterns
+
+- Hard reset needed when data model changes fundamentally (per-repo → single-skill model).
+- Convex tables cleaned implicitly by schema migration (US-010 already migrated to `reference` table).
+- XDG-basedir paths (`~/.local/share`, `~/.local/state`) are the canonical locations for user data and state.
+
 ## Project Skills
 
 Skills installed for this project's dependencies:

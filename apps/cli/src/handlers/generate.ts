@@ -55,17 +55,12 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			const remoteCheck = await checkRemote(source.fullName);
 
 			if (remoteCheck.exists) {
-				s.stop("Remote analysis exists");
-				p.log.warn(
-					`Remote analysis already exists for ${source.fullName} (commit: ${remoteCheck.commitSha?.slice(0, 7)})`,
-				);
-				p.log.info("Use --force to generate a new local analysis anyway.");
-				p.log.info("Or use 'ow pull' to fetch the existing analysis.");
-
-				return {
-					success: false,
-					message: "Remote analysis exists. Use --force to override.",
-				};
+			s.stop("Remote reference exists");
+			// Always use --force to override if desired
+			return {
+				success: false,
+				message: "Remote reference exists. Use --force to override.",
+			};
 			}
 			s.stop("No remote analysis found");
 		}

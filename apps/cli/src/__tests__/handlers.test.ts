@@ -81,7 +81,6 @@ import {
 	cloneRepo,
 	updateRepo,
 	removeRepo,
-	removeReferenceByName,
 	isRepoCloned,
 	getClonedRepoPath,
 	getCommitSha,
@@ -308,7 +307,9 @@ describe("CLI handlers", () => {
 				currentSha: "def456",
 			});
 			mockCheckRemote.mockResolvedValue({ exists: true, commitSha: "abc123" });
-			mockGetSkillPath.mockReturnValue("/home/user/.local/share/offworld/skills/tanstack-router-reference");
+			mockGetSkillPath.mockReturnValue(
+				"/home/user/.local/share/offworld/skills/tanstack-router-reference",
+			);
 			mockGetMetaPath.mockReturnValue("/home/user/.local/share/offworld/meta/tanstack-router");
 			mockLoadAuthData.mockReturnValue(null);
 			mockCanPushToWeb.mockResolvedValue({ allowed: false, reason: "not authenticated" });

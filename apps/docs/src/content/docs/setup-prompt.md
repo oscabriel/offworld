@@ -18,14 +18,14 @@ Set up offworld for this project:
 
 3. Run project setup: `ow project init --all --generate --yes`
 
-4. Verify: Check that AGENTS.md now has a "## Project Skills" section
+4. Verify: Check that AGENTS.md now has a "## Project References" section
 
 Report what was installed and any errors encountered.
 ```
 
 ## Detailed Agent Instructions
 
-When a user asks to "set up offworld" or "add skills for this project":
+When a user asks to "set up offworld" or "add references for this project":
 
 ### Prerequisites Check
 
@@ -51,7 +51,7 @@ ow init
 
 ### Project Init (per-project)
 
-For autonomous setup (all deps, generate missing skills):
+For autonomous setup (all deps, generate missing references):
 
 ```bash
 ow project init --all --generate --yes
@@ -79,14 +79,15 @@ ow project init --dry-run
 
 ### What Gets Created
 
-- Skills installed to: `~/.local/share/offworld/skills/`
-- Symlinks created in agent dirs: `~/.claude/skills/`, `~/.config/opencode/skill/`, etc.
-- AGENTS.md updated with "## Project Skills" section
+- Single global SKILL installed to: `~/.local/share/offworld/skill/offworld/SKILL.md`
+- Per-repo references installed to: `~/.local/share/offworld/skill/offworld/references/`
+- Offworld directory symlinked to agent dirs: `~/.claude/skills/`, `~/.config/opencode/skill/`, etc.
+- AGENTS.md updated with "## Project References" section
 - Agent-specific files updated if they exist (CLAUDE.md, etc.)
 
 ### No Project Files Created
 
-offworld does NOT create config files in your project. Skills are global; project awareness is captured in AGENTS.md only.
+offworld does NOT create config files in your project. References are global; project awareness is captured in AGENTS.md only.
 
 ## Example: Full Autonomous Setup
 
@@ -94,7 +95,7 @@ User pastes this prompt:
 
 ```
 Set up offworld for this project. Install the CLI if needed, configure it with
-OpenCode as the provider, scan my dependencies, and install skills for everything
+OpenCode as the provider, scan my dependencies, and install references for everything
 you find. Use autonomous flags to avoid prompts.
 ```
 
@@ -118,10 +119,10 @@ offworld setup complete:
 - Installed CLI via bun
 - Configured with OpenCode provider
 - Found 12 dependencies in package.json
-- Installed 8 skills (4 already existed, 4 generated)
-- Updated AGENTS.md with skill references
+- Installed 8 references (4 already existed, 4 generated)
+- Updated AGENTS.md with reference list
 
-Installed skills:
+Installed references:
   - react (facebook/react)
   - convex (get-convex/convex)
   - tanstack-router (tanstack/router)
@@ -133,16 +134,16 @@ Installed skills:
 After running `ow project init`, AGENTS.md will have a section like this:
 
 ```markdown
-## Project Skills
+## Project References
 
-Skills installed for this project's dependencies:
+References installed for this project's dependencies:
 
-| Dependency      | Skill           | Path                                                       |
+| Dependency      | Reference       | Path                                                       |
 | --------------- | --------------- | ---------------------------------------------------------- |
-| react           | react           | ~/.local/share/offworld/skills/facebook-react-reference    |
-| convex          | convex          | ~/.local/share/offworld/skills/get-convex-convex-reference |
-| tanstack-router | tanstack-router | ~/.local/share/offworld/skills/tanstack-router-reference   |
+| react           | facebook-react  | ~/.local/share/offworld/skill/offworld/references/facebook-react.md    |
+| convex          | get-convex-convex | ~/.local/share/offworld/skill/offworld/references/get-convex-convex.md |
+| tanstack-router | tanstack-router | ~/.local/share/offworld/skill/offworld/references/tanstack-router.md   |
 
-To update skills, run: `ow pull <dependency>`
+To update references, run: `ow pull <dependency>`
 To regenerate all: `ow project init --all --generate`
 ```

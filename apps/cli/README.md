@@ -1,29 +1,30 @@
 # Offworld CLI
 
-Repository analysis and skill generation for AI coding agents.
+One skill for your whole stack.
 
 ## Installation
 
 ```bash
-npm install -g offworld
-# or
 bun add -g offworld
+# or
+npm install -g offworld
 ```
 
 ## Quick Start
 
 ```bash
-# Initialize config (interactive)
+# Initialize config
 ow init
 
-# Clone and analyze a repo
+# Install references for project deps
+cd your-project
+ow project init
+
+# Pull a specific repo
 ow pull tanstack/router
 
 # List managed repos
 ow list
-
-# Generate skill locally (ignores remote)
-ow generate owner/repo --force
 ```
 
 ## Commands
@@ -32,11 +33,11 @@ ow generate owner/repo --force
 
 | Command              | Description                         |
 | -------------------- | ----------------------------------- |
-| `ow pull <repo>`     | Clone repo and fetch/generate skill |
-| `ow generate <repo>` | Generate skill locally              |
-| `ow push <repo>`     | Upload skill to offworld.sh         |
+| `ow pull <repo>`     | Clone repo and generate reference   |
+| `ow generate <repo>` | Generate reference locally          |
+| `ow push <repo>`     | Upload reference to offworld.sh     |
 | `ow list`            | List managed repos                  |
-| `ow remove <repo>`   | Remove repo and/or skill            |
+| `ow remove <repo>`   | Remove repo and/or reference        |
 
 ### Configuration
 
@@ -54,16 +55,16 @@ ow generate owner/repo --force
 | ---------------------- | -------------------------- |
 | `ow repo list`         | List managed repos         |
 | `ow repo update --all` | Update all repos           |
-| `ow repo prune`        | Remove stale index entries |
+| `ow repo prune`        | Remove stale map entries   |
 | `ow repo status`       | Show repo summary          |
 | `ow repo gc`           | Garbage collect old repos  |
 | `ow repo discover`     | Index existing repos       |
 
 ### Project
 
-| Command           | Description               |
-| ----------------- | ------------------------- |
-| `ow project init` | Scan deps, install skills |
+| Command           | Description                   |
+| ----------------- | ----------------------------- |
+| `ow project init` | Scan deps, install references |
 
 ### Authentication
 
@@ -78,13 +79,13 @@ ow generate owner/repo --force
 ### `ow pull`
 
 ```
+--reference, -r   Reference filename override
 --shallow         Use shallow clone (--depth 1)
 --sparse          Sparse checkout (src/, lib/, packages/, docs/)
 --branch <name>   Branch to clone
---force, -f       Force re-analysis
+--force, -f       Force regeneration
 --verbose         Detailed output
 --model, -m       Model override (provider/model)
---skill, -s       Skill name to pull
 ```
 
 ### `ow list`
@@ -99,10 +100,21 @@ ow generate owner/repo --force
 ### `ow remove`
 
 ```
---yes, -y         Skip confirmation
---skill-only      Only remove skill files
---repo-only       Only remove cloned repo
---dry-run, -d     Show what would be done
+--yes, -y           Skip confirmation
+--reference-only    Only remove reference files
+--repo-only         Only remove cloned repo
+--dry-run, -d       Show what would be done
+```
+
+### `ow project init`
+
+```
+--all             Select all deps
+--deps            Comma-separated deps
+--skip            Deps to exclude
+--generate, -g    Generate references for new deps
+--dry-run, -d     Preview only
+--yes, -y         Skip confirmations
 ```
 
 ## Config Keys
@@ -114,12 +126,27 @@ ow generate owner/repo --force
 | `defaultModel`   | string  | AI model (e.g., `anthropic/claude-sonnet-4-20250514`) |
 | `agents`         | list    | Comma-separated agent names                           |
 
+## Path Discovery
+
+`ow config show --json` returns paths used by the routing skill:
+
+```json
+{
+  "paths": {
+    "skillDir": "~/.local/share/offworld/skills/offworld",
+    "globalMap": "~/.local/share/offworld/skills/offworld/assets/map.json",
+    "referencesDir": "~/.local/share/offworld/skills/offworld/references",
+    "projectMap": "/abs/path/to/repo/.offworld/map.json"
+  }
+}
+```
+
 ## Supported Agents
 
-Skills are installed to:
+Single skill symlinked to:
 
-- **Claude Code**: `~/.config/Claude/skill/`
-- **Opencode**: `~/.claude/skills/`
+- **OpenCode**: `~/.config/opencode/skill/`
+- **Claude Code**: `~/.claude/skills/`
 - **Codex**: `~/.codex/skills/`
 - **Amp**: `~/.config/agents/skills/`
 - **Antigravity**: `~/.gemini/antigravity/skills/`
@@ -127,10 +154,10 @@ Skills are installed to:
 
 ## Environment Variables
 
-| Variable            | Description                         |
-| ------------------- | ----------------------------------- |
-| `ANTHROPIC_API_KEY` | Required for local skill generation |
-| `WORKOS_CLIENT_ID`  | Required for `ow auth login`        |
+| Variable            | Description                          |
+| ------------------- | ------------------------------------ |
+| `ANTHROPIC_API_KEY` | Required for local reference generation |
+| `WORKOS_CLIENT_ID`  | Required for `ow auth login`         |
 
 ## License
 

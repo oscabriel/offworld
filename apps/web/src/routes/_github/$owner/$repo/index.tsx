@@ -2,7 +2,7 @@ import { convexAction } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, Copy, Terminal } from "lucide-react";
+import { Check, ChevronRight, Copy, Terminal } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { RepoHeader } from "@/components/repo/repo-header";
@@ -133,9 +133,10 @@ function RepoSkillsPage() {
 											<Link
 												to="/$owner/$repo/$skill"
 												params={{ owner, repo, skill: skill.skillName }}
-												className="hover:text-muted-foreground font-serif text-lg transition-colors"
+												className="group/link hover:text-muted-foreground inline-flex items-center gap-1 font-serif text-lg transition-colors"
 											>
 												{skill.skillName}
+												<ChevronRight className="size-4 opacity-0 transition-opacity group-hover/link:opacity-100" />
 											</Link>
 										</td>
 										<td className="text-muted-foreground max-w-md truncate px-5 py-3 font-mono text-sm">

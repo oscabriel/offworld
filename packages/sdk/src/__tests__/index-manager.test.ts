@@ -4,9 +4,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
+import type { GlobalMap, GlobalMapRepoEntry } from "@offworld/types";
 
 // ============================================================================
-// Virtual file system state (inline due to vi.mock hoisting)
+// Virtual file system state
 // ============================================================================
 
 interface VirtualFile {
@@ -17,6 +18,10 @@ interface VirtualFile {
 
 const virtualFs: Record<string, VirtualFile> = {};
 const createdDirs = new Set<string>();
+
+function normalizePath(path: string): string {
+	return path.replace(/\\/g, "/");
+}
 
 function clearVirtualFs(): void {
 	for (const key of Object.keys(virtualFs)) {
@@ -30,7 +35,7 @@ function addVirtualFile(
 	content: string,
 	options?: { isDirectory?: boolean; permissions?: number },
 ): void {
-	const normalized = path.replace(/\\/g, "/");
+	const normalized = normalizePath(path);
 	virtualFs[normalized] = {
 		content,
 		isDirectory: options?.isDirectory ?? false,
@@ -38,24 +43,22 @@ function addVirtualFile(
 	};
 }
 
-// initVirtualFs available for future use but not currently needed
-// function initVirtualFs(files: Record<string, string | { content: string; isDirectory?: boolean; permissions?: number }>): void { ... }
-
-function getVirtualFs(): Record<string, VirtualFile> {
-	return { ...virtualFs };
-}
+const globalMapPath = vi.hoisted(
+	() => "/home/user/.local/share/offworld/skill/offworld/assets/map.json",
+);
+const globalMapDir = vi.hoisted(() => "/home/user/.local/share/offworld/skill/offworld/assets");
 
 // ============================================================================
-// Mock node:fs before importing index-manager module
+// Mock node:fs before importing module
 // ============================================================================
 
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn((path: string) => {
-		const normalized = path.replace(/\\/g, "/");
+		const normalized = normalizePath(path);
 		return normalized in virtualFs || createdDirs.has(normalized);
 	}),
 	readFileSync: vi.fn((path: string, _encoding?: string) => {
-		const normalized = path.replace(/\\/g, "/");
+		const normalized = normalizePath(path);
 		const file = virtualFs[normalized];
 		if (!file) {
 			const error = new Error(
@@ -79,8 +82,7 @@ vi.mock("node:fs", () => ({
 		return file.content;
 	}),
 	writeFileSync: vi.fn((path: string, content: string, _encoding?: string) => {
-		const normalized = path.replace(/\\/g, "/");
-		// Check if parent dir exists or was created
+		const normalized = normalizePath(path);
 		const parentDir = normalized.substring(0, normalized.lastIndexOf("/"));
 		if (parentDir && !(parentDir in virtualFs) && !createdDirs.has(parentDir)) {
 			const error = new Error(
@@ -92,7 +94,7 @@ vi.mock("node:fs", () => ({
 		virtualFs[normalized] = { content, isDirectory: false, permissions: 0o644 };
 	}),
 	mkdirSync: vi.fn((path: string, options?: { recursive?: boolean }) => {
-		const normalized = path.replace(/\\/g, "/");
+		const normalized = normalizePath(path);
 		if (options?.recursive) {
 			const parts = normalized.split("/").filter(Boolean);
 			let current = "";
@@ -106,43 +108,35 @@ vi.mock("node:fs", () => ({
 	}),
 }));
 
-vi.mock("../config.js", () => ({
-	getStateRoot: vi.fn(() => "/home/user/.local/state/offworld"),
-}));
-
-vi.mock("../constants.js", () => ({
-	VERSION: "0.1.0",
+vi.mock("../paths.js", () => ({
+	Paths: {
+		offworldGlobalMapPath: globalMapPath,
+	},
 }));
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import {
 	getIndexPath,
-	getIndex,
-	saveIndex,
-	updateIndex,
-	removeFromIndex,
-	getIndexEntry,
-	listIndexedRepos,
+	readGlobalMap,
+	writeGlobalMap,
+	upsertGlobalMapEntry,
+	removeGlobalMapEntry,
+	writeProjectMap,
 } from "../index-manager.js";
-import type { RepoIndex, RepoIndexEntry } from "@offworld/types";
 
 describe("index-manager.ts", () => {
 	const mockWriteFileSync = writeFileSync as ReturnType<typeof vi.fn>;
 	const mockMkdirSync = mkdirSync as ReturnType<typeof vi.fn>;
 
-	const stateRoot = "/home/user/.local/state/offworld";
-	const indexPath = join(stateRoot, "index.json").replace(/\\/g, "/");
-
-	const sampleEntry: RepoIndexEntry = {
-		fullName: "tanstack/router",
-		qualifiedName: "github:tanstack/router",
+	const sampleEntry: GlobalMapRepoEntry = {
 		localPath: "/home/user/ow/github/tanstack/router",
-		commitSha: "abc123",
-		hasSkill: false,
+		references: ["tanstack-router.md"],
+		primary: "tanstack-router.md",
+		keywords: ["router"],
+		updatedAt: "2026-01-25T00:00:00Z",
 	};
 
-	const sampleIndex: RepoIndex = {
-		version: 1,
+	const sampleMap: GlobalMap = {
 		repos: {
 			"github:tanstack/router": sampleEntry,
 		},
@@ -158,458 +152,138 @@ describe("index-manager.ts", () => {
 		clearVirtualFs();
 	});
 
-	// =========================================================================
-	// getIndexPath tests
-	// =========================================================================
 	describe("getIndexPath", () => {
-		it("returns path to ~/.local/state/offworld/index.json", () => {
-			const result = getIndexPath();
-			expect(result).toBe("/home/user/.local/state/offworld/index.json");
+		it("returns global map path", () => {
+			expect(getIndexPath()).toBe(globalMapPath);
 		});
 	});
 
-	// =========================================================================
-	// getIndex tests - Real JSON parsing
-	// =========================================================================
-	describe("getIndex", () => {
-		it("returns empty index when file missing", () => {
-			// Virtual FS is empty
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
+	describe("readGlobalMap", () => {
+		it("returns empty map when file missing", () => {
+			expect(readGlobalMap()).toEqual({ repos: {} });
 		});
 
-		it("parses existing index.json", () => {
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
+		it("reads valid map", () => {
+			addVirtualFile(globalMapPath, JSON.stringify(sampleMap));
 
-			const result = getIndex();
-
-			// Deprecated function now returns empty stub
-			expect(result.version).toBe(1);
-			expect(result.repos).toEqual({});
+			expect(readGlobalMap()).toEqual(sampleMap);
 		});
 
-		// =====================================================================
-		// Malformed JSON tests (T2.2 requirement)
-		// =====================================================================
-		it("returns empty index on JSON parse error - invalid syntax", () => {
-			addVirtualFile(indexPath, "invalid json {{{");
+		it("returns empty map on invalid JSON", () => {
+			addVirtualFile(globalMapPath, "{not json");
 
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
+			expect(readGlobalMap()).toEqual({ repos: {} });
 		});
 
-		it("returns empty index on JSON parse error - truncated JSON", () => {
-			addVirtualFile(indexPath, '{"version": "0.1.0", "repos": {');
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index on JSON parse error - empty file", () => {
-			addVirtualFile(indexPath, "");
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index on JSON parse error - null content", () => {
-			addVirtualFile(indexPath, "null");
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index on JSON parse error - array instead of object", () => {
-			addVirtualFile(indexPath, '["not", "an", "index"]');
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index on schema validation error - missing repos", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: 1 }));
-
-			const result = getIndex();
-
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index on schema validation error - invalid structure", () => {
-			addVirtualFile(indexPath, JSON.stringify({ invalid: "structure" }));
-
-			const result = getIndex();
-
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index on schema validation error - wrong repos type", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: 1, repos: "not-an-object" }));
-
-			const result = getIndex();
-
-			expect(result.repos).toEqual({});
-		});
-
-		// =====================================================================
-		// Permission scenario tests (T2.2 requirement)
-		// =====================================================================
-		it("returns empty index on permission denied", () => {
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex), { permissions: 0o000 });
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
-		});
-
-		it("returns empty index when path is a directory", () => {
-			addVirtualFile(indexPath, "", { isDirectory: true });
-
-			const result = getIndex();
-
-			expect(result.version).toBe("0.1.0");
-			expect(result.repos).toEqual({});
-		});
-	});
-
-	// =========================================================================
-	// saveIndex tests - Directory creation logic
-	// =========================================================================
-	describe("saveIndex", () => {
-		it("writes valid JSON", () => {
-			// Pre-create the directory
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-
-			saveIndex(sampleIndex);
-
-			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			expect(() => JSON.parse(content as string)).not.toThrow();
-		});
-
-		// =====================================================================
-		// Directory creation tests (T2.2 requirement)
-		// =====================================================================
-		it("creates directory recursively if missing", () => {
-			// Virtual FS is empty
-
-			saveIndex(sampleIndex);
-
-			expect(mockMkdirSync).toHaveBeenCalledWith(stateRoot, { recursive: true });
-		});
-
-		it("does not create directory if it already exists", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-
-			saveIndex(sampleIndex);
-
-			expect(mockMkdirSync).not.toHaveBeenCalled();
-		});
-
-		it("writes to correct path", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-
-			saveIndex(sampleIndex);
-
-			expect(mockWriteFileSync).toHaveBeenCalledWith(
-				"/home/user/.local/state/offworld/index.json",
-				expect.any(String),
-				"utf-8",
+		it("returns empty map on schema error", () => {
+			addVirtualFile(
+				globalMapPath,
+				JSON.stringify({ repos: { "github:tanstack/router": { localPath: "/tmp" } } }),
 			);
-		});
 
-		it("verifies actual file content after save", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-
-			saveIndex(sampleIndex);
-
-			const fs = getVirtualFs();
-			const savedFile = fs[indexPath];
-			expect(savedFile).toBeDefined();
-			const parsed = JSON.parse(savedFile!.content) as RepoIndex;
-			expect(parsed.version).toBe("0.1.0");
-			expect(parsed.repos["github:tanstack/router"]).toBeDefined();
-		});
-
-		it("formats JSON with indentation", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-
-			saveIndex(sampleIndex);
-
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			expect(content).toContain("\n"); // Has newlines from JSON.stringify(_, null, 2)
+			expect(readGlobalMap()).toEqual({ repos: {} });
 		});
 	});
 
-	// =========================================================================
-	// updateIndex tests
-	// =========================================================================
-	describe("updateIndex", () => {
-		it("adds new repo entry to empty index", () => {
-			// Virtual FS empty - no existing index
+	describe("writeGlobalMap", () => {
+		it("creates directory when missing", () => {
+			writeGlobalMap(sampleMap);
 
-			updateIndex(sampleEntry);
-
-			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.repos["github:tanstack/router"]).toBeDefined();
-			expect(written.repos["github:tanstack/router"]!.commitSha).toBe("abc123");
+			expect(mockMkdirSync).toHaveBeenCalledWith(globalMapDir, { recursive: true });
 		});
 
-		it("updates existing repo entry", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
+		it("writes validated JSON", () => {
+			writeGlobalMap(sampleMap);
 
-			const updatedEntry: RepoIndexEntry = {
-				...sampleEntry,
-				commitSha: "newsha456",
-				hasSkill: true,
-			};
+			expect(mockWriteFileSync).toHaveBeenCalledWith(globalMapPath, expect.any(String), "utf-8");
+			const saved = virtualFs[normalizePath(globalMapPath)];
+			expect(saved).toBeDefined();
+			expect(JSON.parse(saved!.content)).toEqual(sampleMap);
+		});
+	});
 
-			updateIndex(updatedEntry);
+	describe("upsertGlobalMapEntry", () => {
+		it("adds entry to empty map", () => {
+			upsertGlobalMapEntry("github:tanstack/router", sampleEntry);
 
-			expect(mockWriteFileSync).toHaveBeenCalled();
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.repos["github:tanstack/router"]!.commitSha).toBe("newsha456");
-			expect(written.repos["github:tanstack/router"]!.hasSkill).toBe(true);
+			const saved = virtualFs[normalizePath(globalMapPath)];
+			expect(saved).toBeDefined();
+			const parsed = JSON.parse(saved!.content) as GlobalMap;
+			expect(parsed.repos["github:tanstack/router"]).toEqual(sampleEntry);
 		});
 
-		it("preserves other entries when updating", () => {
-			const existingIndex: RepoIndex = {
-				version: 1,
+		it("preserves other entries", () => {
+			const existing: GlobalMap = {
 				repos: {
 					"github:other/repo": {
-						fullName: "other/repo",
-						qualifiedName: "github:other/repo",
 						localPath: "/home/user/ow/github/other/repo",
-						hasSkill: false,
+						references: ["other-repo.md"],
+						primary: "other-repo.md",
+						keywords: [],
+						updatedAt: "2026-01-24T00:00:00Z",
 					},
 				},
 			};
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-			addVirtualFile(indexPath, JSON.stringify(existingIndex));
+			addVirtualFile(globalMapPath, JSON.stringify(existing));
 
-			updateIndex(sampleEntry);
+			upsertGlobalMapEntry("github:tanstack/router", sampleEntry);
 
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.repos["github:other/repo"]).toBeDefined();
-			expect(written.repos["github:tanstack/router"]).toBeDefined();
-		});
-
-		it("creates directory if missing when adding entry", () => {
-			// Virtual FS empty
-
-			updateIndex(sampleEntry);
-
-			expect(mockMkdirSync).toHaveBeenCalledWith(stateRoot, { recursive: true });
+			const saved = virtualFs[normalizePath(globalMapPath)];
+			const parsed = JSON.parse(saved!.content) as GlobalMap;
+			expect(parsed.repos["github:other/repo"]).toBeDefined();
+			expect(parsed.repos["github:tanstack/router"]).toBeDefined();
 		});
 	});
 
-	// =========================================================================
-	// removeFromIndex tests
-	// =========================================================================
-	describe("removeFromIndex", () => {
-		it("removes existing entry and returns true", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
+	describe("removeGlobalMapEntry", () => {
+		it("returns false when entry missing", () => {
+			const result = removeGlobalMapEntry("github:missing/repo");
 
-			const result = removeFromIndex("github:tanstack/router");
+			expect(result).toBe(false);
+			expect(mockWriteFileSync).not.toHaveBeenCalled();
+		});
+
+		it("removes existing entry", () => {
+			addVirtualFile(globalMapPath, JSON.stringify(sampleMap));
+
+			const result = removeGlobalMapEntry("github:tanstack/router");
 
 			expect(result).toBe(true);
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.repos["github:tanstack/router"]).toBeUndefined();
+			const saved = virtualFs[normalizePath(globalMapPath)];
+			const parsed = JSON.parse(saved!.content) as GlobalMap;
+			expect(parsed.repos["github:tanstack/router"]).toBeUndefined();
 		});
+	});
 
-		it("returns false if entry not found", () => {
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
-
-			const result = removeFromIndex("github:nonexistent/repo");
-
-			expect(result).toBe(false);
-		});
-
-		it("returns false when index file does not exist", () => {
-			// Virtual FS empty - no index file
-
-			const result = removeFromIndex("github:nonexistent/repo");
-
-			expect(result).toBe(false);
-		});
-
-		it("preserves other entries when removing", () => {
-			const multiIndex: RepoIndex = {
-				version: 1,
-				repos: {
-					"github:tanstack/router": sampleEntry,
-					"github:vercel/ai": {
-						fullName: "vercel/ai",
-						qualifiedName: "github:vercel/ai",
-						localPath: "/home/user/ow/github/vercel/ai",
-						hasSkill: true,
-					},
+	describe("writeProjectMap", () => {
+		it("writes project map to .offworld/map.json", () => {
+			const projectRoot = "/home/user/project";
+			const entries = {
+				"github:tanstack/router": {
+					localPath: "/home/user/ow/github/tanstack/router",
+					reference: "tanstack-router.md",
+					keywords: [],
 				},
 			};
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-			addVirtualFile(indexPath, JSON.stringify(multiIndex));
 
-			removeFromIndex("github:tanstack/router");
+			writeProjectMap(projectRoot, entries);
 
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.repos["github:tanstack/router"]).toBeUndefined();
-			expect(written.repos["github:vercel/ai"]).toBeDefined();
-		});
-	});
-
-	// =========================================================================
-	// getIndexEntry tests
-	// =========================================================================
-	describe("getIndexEntry", () => {
-		it("returns entry if exists", () => {
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
-
-			const result = getIndexEntry("github:tanstack/router");
-
-			expect(result).toBeDefined();
-			expect(result?.fullName).toBe("tanstack/router");
-		});
-
-		it("returns undefined if not found", () => {
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
-
-			const result = getIndexEntry("github:nonexistent/repo");
-
-			expect(result).toBeUndefined();
-		});
-
-		it("returns undefined when index file does not exist", () => {
-			// Virtual FS empty
-
-			const result = getIndexEntry("github:tanstack/router");
-
-			expect(result).toBeUndefined();
-		});
-
-		it("returns all fields from entry", () => {
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
-
-			const result = getIndexEntry("github:tanstack/router");
-
-			expect(result?.fullName).toBe("tanstack/router");
-			expect(result?.qualifiedName).toBe("github:tanstack/router");
-			expect(result?.localPath).toBe("/home/user/ow/github/tanstack/router");
-			expect(result?.commitSha).toBe("abc123");
-			expect(result?.hasSkill).toBe(false);
-		});
-	});
-
-	// =========================================================================
-	// listIndexedRepos tests
-	// =========================================================================
-	describe("listIndexedRepos", () => {
-		it("returns all repo entries as array", () => {
-			const multiIndex: RepoIndex = {
-				version: 1,
-				repos: {
-					"github:tanstack/router": sampleEntry,
-					"github:vercel/ai": {
-						fullName: "vercel/ai",
-						qualifiedName: "github:vercel/ai",
-						localPath: "/home/user/ow/github/vercel/ai",
-						hasSkill: true,
-					},
-				},
+			expect(mockMkdirSync).toHaveBeenCalledWith(join(projectRoot, ".offworld"), {
+				recursive: true,
+			});
+			const projectMapPath = normalizePath(join(projectRoot, ".offworld", "map.json"));
+			const saved = virtualFs[projectMapPath];
+			expect(saved).toBeDefined();
+			const parsed = JSON.parse(saved!.content) as {
+				version: number;
+				scope: string;
+				globalMapPath: string;
+				repos: typeof entries;
 			};
-			addVirtualFile(indexPath, JSON.stringify(multiIndex));
-
-			const result = listIndexedRepos();
-
-			expect(result).toHaveLength(2);
-			expect(result.map((r) => r.fullName)).toContain("tanstack/router");
-			expect(result.map((r) => r.fullName)).toContain("vercel/ai");
-		});
-
-		it("returns empty array when no repos", () => {
-			// Virtual FS empty - no index file
-
-			const result = listIndexedRepos();
-
-			expect(result).toEqual([]);
-		});
-
-		it("returns empty array when index has empty repos", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: 1, repos: {} }));
-
-			const result = listIndexedRepos();
-
-			expect(result).toEqual([]);
-		});
-
-		it("returns entries with all fields populated", () => {
-			addVirtualFile(indexPath, JSON.stringify(sampleIndex));
-
-			const result = listIndexedRepos();
-
-			expect(result).toHaveLength(1);
-			expect(result[0]!.fullName).toBe("tanstack/router");
-			expect(result[0]!.qualifiedName).toBe("github:tanstack/router");
-			expect(result[0]!.localPath).toBe("/home/user/ow/github/tanstack/router");
-		});
-	});
-
-	// =========================================================================
-	// Version field tests
-	// =========================================================================
-	describe("version field", () => {
-		it("is set correctly on save", () => {
-			updateIndex(sampleEntry);
-
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.version).toBe("0.1.0");
-		});
-
-		it("updates version when saving", () => {
-			const oldIndex: RepoIndex = {
-				version: 1, // old version
-				repos: {},
-			};
-			addVirtualFile(stateRoot, "", { isDirectory: true });
-			addVirtualFile(indexPath, JSON.stringify(oldIndex));
-
-			updateIndex(sampleEntry);
-
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.version).toBe("0.1.0"); // updated to current
-		});
-
-		it("preserves version from constants", () => {
-			addVirtualFile(indexPath, JSON.stringify({ version: "9.9.9", repos: {} }));
-
-			updateIndex(sampleEntry);
-
-			const [, content] = mockWriteFileSync.mock.calls[0]!;
-			const written = JSON.parse(content as string) as RepoIndex;
-			expect(written.version).toBe("0.1.0"); // Always uses VERSION constant
+			expect(parsed.scope).toBe("project");
+			expect(parsed.version).toBe(1);
+			expect(parsed.globalMapPath).toBe(globalMapPath);
+			expect(parsed.repos["github:tanstack/router"]).toBeDefined();
 		});
 	});
 });

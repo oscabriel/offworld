@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { RemoteRepoSource, RepoIndexEntry } from "@offworld/types";
+import type { GlobalMapRepoEntry, RemoteRepoSource } from "@offworld/types";
 
 // ============================================================================
 // Virtual file system state (module-scoped for mock access)
@@ -289,41 +289,52 @@ vi.mock("node:child_process", () => ({
 	}),
 }));
 
-const mockMetaRoot = join(homedir(), ".local", "share", "offworld");
-const mockRepoRoot = join(homedir(), "ow");
+const mockMetaRoot = vi.hoisted(() => "/mock/offworld");
+const mockRepoRoot = vi.hoisted(() => "/mock/ow");
+const mockReferencesRoot = vi.hoisted(() => "/mock/references");
 
-vi.mock("../config.js", () => ({
-	loadConfig: vi.fn(() => ({
-		repoRoot: "~/ow",
-		defaultShallow: true,
-		agents: [],
-	})),
-	getRepoPath: vi.fn((fullName: string, provider: string) => {
-		return join(mockRepoRoot, provider, fullName);
-	}),
-	getSkillPath: vi.fn((fullName: string) => {
-		const [owner, repo] = fullName.split("/");
-		return join(mockMetaRoot, "skills", `${owner}-${repo}-reference`);
-	}),
-	getMetaPath: vi.fn((fullName: string) => {
-		const [owner, repo] = fullName.split("/");
-		return join(mockMetaRoot, "meta", `${owner}-${repo}`);
-	}),
+vi.mock("../paths.js", () => ({
+	Paths: {
+		offworldReferencesDir: mockReferencesRoot,
+	},
 }));
 
-// Index state
-const indexEntries: Record<string, RepoIndexEntry> = {};
+vi.mock("../config.js", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("../config.js")>();
+	return {
+		...actual,
+		loadConfig: vi.fn(() => ({
+			repoRoot: "~/ow",
+			defaultShallow: true,
+			agents: [],
+		})),
+		getRepoPath: vi.fn((fullName: string, provider: string) => {
+			return join(mockRepoRoot, provider, fullName);
+		}),
+		getSkillPath: vi.fn((fullName: string) => {
+			const [owner, repo] = fullName.split("/");
+			return join(mockMetaRoot, "skills", `${owner}-${repo}-reference`);
+		}),
+		getMetaPath: vi.fn((fullName: string) => {
+			return join(mockMetaRoot, "meta", actual.toMetaDirName(fullName));
+		}),
+	};
+});
+
+// Map state
+const mapEntries: Record<string, GlobalMapRepoEntry> = {};
 
 vi.mock("../index-manager.js", () => ({
-	getIndexEntry: vi.fn((qualifiedName: string) => {
-		return indexEntries[qualifiedName] ?? null;
+	readGlobalMap: vi.fn(() => ({ repos: { ...mapEntries } })),
+	upsertGlobalMapEntry: vi.fn((qualifiedName: string, entry: GlobalMapRepoEntry) => {
+		mapEntries[qualifiedName] = entry;
 	}),
-	listIndexedRepos: vi.fn(() => Object.values(indexEntries)),
-	removeFromIndex: vi.fn((qualifiedName: string) => {
-		delete indexEntries[qualifiedName];
-	}),
-	updateIndex: vi.fn((entry: RepoIndexEntry) => {
-		indexEntries[entry.qualifiedName] = entry;
+	removeGlobalMapEntry: vi.fn((qualifiedName: string) => {
+		if (!(qualifiedName in mapEntries)) {
+			return false;
+		}
+		delete mapEntries[qualifiedName];
+		return true;
 	}),
 }));
 
@@ -355,12 +366,12 @@ const mockSource: RemoteRepoSource = {
 	cloneUrl: "https://github.com/tanstack/router.git",
 };
 
-const mockIndexEntry: RepoIndexEntry = {
-	fullName: "tanstack/router",
-	qualifiedName: "github:tanstack/router",
+const mockMapEntry: GlobalMapRepoEntry = {
 	localPath: join(mockRepoRoot, "github", "tanstack/router"),
-	commitSha: "abc123",
-	hasSkill: false,
+	references: ["tanstack-router.md"],
+	primary: "tanstack-router.md",
+	keywords: [],
+	updatedAt: "2026-01-25T00:00:00Z",
 };
 
 // ============================================================================
@@ -371,9 +382,9 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	clearVirtualFs();
 	resetGitMock();
-	// Clear index entries
-	for (const key of Object.keys(indexEntries)) {
-		delete indexEntries[key];
+	// Clear map entries
+	for (const key of Object.keys(mapEntries)) {
+		delete mapEntries[key];
 	}
 });
 
@@ -431,15 +442,20 @@ describe("cloneRepo", () => {
 		await expect(cloneRepo(mockSource)).rejects.toThrow(RepoExistsError);
 	});
 
-	it("updates index after successful clone", async () => {
-		const { updateIndex } = await import("../index-manager.js");
+	it("updates map after successful clone when reference exists", async () => {
+		const { upsertGlobalMapEntry } = await import("../index-manager.js");
+		const { toReferenceFileName } = await import("../config.js");
+		const referenceFileName = toReferenceFileName(mockSource.fullName);
+		addVirtualPath(join(mockReferencesRoot, referenceFileName));
 
 		await cloneRepo(mockSource);
 
-		expect(updateIndex).toHaveBeenCalledWith(
+		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
+			mockSource.fullName,
 			expect.objectContaining({
-				fullName: "tanstack/router",
-				qualifiedName: "github:tanstack/router",
+				localPath: mockMapEntry.localPath,
+				references: [referenceFileName],
+				primary: referenceFileName,
 			}),
 		);
 	});
@@ -579,7 +595,7 @@ describe("cloneRepo", () => {
 
 			await expect(cloneRepo(mockSource)).rejects.toThrow(GitError);
 
-			expect(indexEntries[mockSource.qualifiedName]).toBeUndefined();
+			expect(mapEntries[mockSource.fullName]).toBeUndefined();
 		});
 
 		it("cleans up empty owner directory on clone failure", async () => {
@@ -595,15 +611,18 @@ describe("cloneRepo", () => {
 			expect(rmSync).toHaveBeenCalledWith(ownerDir, { recursive: true, force: true });
 		});
 
-		it("index contains correct commit SHA after successful clone", async () => {
+		it("creates map entry when reference exists", async () => {
+			const { toReferenceFileName } = await import("../config.js");
 			configureGitMock({
 				revParse: { sha: "newsha789xyz", shouldSucceed: true },
 			});
+			const referenceFileName = toReferenceFileName(mockSource.fullName);
+			addVirtualPath(join(mockReferencesRoot, referenceFileName));
 
 			await cloneRepo(mockSource);
 
-			expect(indexEntries[mockSource.qualifiedName]).toBeDefined();
-			expect(indexEntries[mockSource.qualifiedName]?.commitSha).toBe("newsha789xyz");
+			expect(mapEntries[mockSource.fullName]).toBeDefined();
+			expect(mapEntries[mockSource.fullName]?.references).toEqual([referenceFileName]);
 		});
 	});
 });
@@ -615,8 +634,8 @@ describe("cloneRepo", () => {
 describe("updateRepo", () => {
 	beforeEach(() => {
 		// Setup: add repo to index and filesystem
-		indexEntries[mockIndexEntry.qualifiedName] = { ...mockIndexEntry };
-		addVirtualPath(mockIndexEntry.localPath, true);
+		mapEntries[mockSource.qualifiedName] = { ...mockMapEntry };
+		addVirtualPath(mockMapEntry.localPath, true);
 	});
 
 	it("calls git fetch then git pull", async () => {
@@ -666,17 +685,19 @@ describe("updateRepo", () => {
 		expect(result.currentSha).toBe("sameSha");
 	});
 
-	it("updates index with new commit SHA", async () => {
-		const { updateIndex } = await import("../index-manager.js");
+	it("updates map entry timestamp", async () => {
+		const { upsertGlobalMapEntry } = await import("../index-manager.js");
 		configureGitMock({
 			revParse: { shas: ["old", "newCommitSha"], shouldSucceed: true },
 		});
 
 		await updateRepo("github:tanstack/router");
 
-		expect(updateIndex).toHaveBeenCalledWith(
+		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
+			"github:tanstack/router",
 			expect.objectContaining({
-				commitSha: "newCommitSha",
+				localPath: mockMapEntry.localPath,
+				updatedAt: expect.any(String),
 			}),
 		);
 	});
@@ -726,12 +747,13 @@ describe("updateRepo", () => {
 // ============================================================================
 
 describe("removeRepo", () => {
-	beforeEach(() => {
-		indexEntries[mockIndexEntry.qualifiedName] = { ...mockIndexEntry };
-		addVirtualPath(mockIndexEntry.localPath, true);
-		const skillPath = join(mockMetaRoot, "skills", "tanstack-router-reference");
-		const metaPath = join(mockMetaRoot, "meta", "tanstack-router");
-		addVirtualPath(skillPath, true);
+	beforeEach(async () => {
+		mapEntries[mockSource.qualifiedName] = { ...mockMapEntry };
+		addVirtualPath(mockMapEntry.localPath, true);
+		const { toReferenceFileName, getMetaPath } = await import("../config.js");
+		const referenceFileName = toReferenceFileName(mockSource.qualifiedName);
+		addVirtualPath(join(mockReferencesRoot, referenceFileName));
+		const metaPath = getMetaPath(mockSource.qualifiedName);
 		addVirtualPath(metaPath, true);
 	});
 
@@ -740,19 +762,18 @@ describe("removeRepo", () => {
 
 		await removeRepo("github:tanstack/router");
 
-		expect(rmSync).toHaveBeenCalledWith(mockIndexEntry.localPath, {
+		expect(rmSync).toHaveBeenCalledWith(mockMapEntry.localPath, {
 			recursive: true,
 			force: true,
 		});
 	});
 
-	it("removes reference directory", async () => {
+	it("removes reference file", async () => {
 		const { rmSync } = await import("node:fs");
 
 		await removeRepo("github:tanstack/router");
 
 		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), {
-			recursive: true,
 			force: true,
 		});
 	});
@@ -768,12 +789,12 @@ describe("removeRepo", () => {
 		});
 	});
 
-	it("updates index after removal", async () => {
-		const { removeFromIndex } = await import("../index-manager.js");
+	it("updates map after removal", async () => {
+		const { removeGlobalMapEntry } = await import("../index-manager.js");
 
 		await removeRepo("github:tanstack/router");
 
-		expect(removeFromIndex).toHaveBeenCalledWith("github:tanstack/router");
+		expect(removeGlobalMapEntry).toHaveBeenCalledWith("github:tanstack/router");
 	});
 
 	it("returns false if not in index", async () => {
@@ -793,8 +814,14 @@ describe("removeRepo", () => {
 
 		await removeRepo("github:tanstack/router", { referenceOnly: true });
 
-		expect(rmSync).not.toHaveBeenCalledWith(mockIndexEntry.localPath, expect.anything());
-		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), expect.anything());
+		expect(rmSync).not.toHaveBeenCalledWith(mockMapEntry.localPath, expect.anything());
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("references"), {
+			force: true,
+		});
+		expect(rmSync).toHaveBeenCalledWith(expect.stringContaining("meta"), {
+			recursive: true,
+			force: true,
+		});
 	});
 
 	it("with repoOnly keeps reference files", async () => {
@@ -802,11 +829,15 @@ describe("removeRepo", () => {
 
 		await removeRepo("github:tanstack/router", { repoOnly: true });
 
-		expect(rmSync).toHaveBeenCalledWith(mockIndexEntry.localPath, {
+		expect(rmSync).toHaveBeenCalledWith(mockMapEntry.localPath, {
 			recursive: true,
 			force: true,
 		});
-		expect(rmSync).not.toHaveBeenCalledWith(expect.stringContaining("references"), expect.anything());
+		expect(rmSync).not.toHaveBeenCalledWith(
+			expect.stringContaining("references"),
+			expect.anything(),
+		);
+		expect(rmSync).not.toHaveBeenCalledWith(expect.stringContaining("meta"), expect.anything());
 	});
 
 	it("with referenceOnly clears references in map", async () => {
@@ -815,8 +846,8 @@ describe("removeRepo", () => {
 		await removeRepo("github:tanstack/router", { referenceOnly: true });
 
 		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
-			expect.any(String),
-			expect.objectContaining({ references: [] }),
+			"github:tanstack/router",
+			expect.objectContaining({ references: [], primary: "" }),
 		);
 	});
 });
@@ -827,11 +858,11 @@ describe("removeRepo", () => {
 
 describe("listRepos", () => {
 	it("returns repos from index", () => {
-		indexEntries[mockIndexEntry.qualifiedName] = mockIndexEntry;
+		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 
 		const result = listRepos();
 
-		expect(result).toEqual([mockIndexEntry]);
+		expect(result).toEqual(["github:tanstack/router"]);
 	});
 
 	it("returns empty array when no repos indexed", () => {
@@ -847,8 +878,8 @@ describe("listRepos", () => {
 
 describe("isRepoCloned", () => {
 	it("returns true if in index and exists on disk", () => {
-		indexEntries[mockIndexEntry.qualifiedName] = mockIndexEntry;
-		addVirtualPath(mockIndexEntry.localPath, true);
+		mapEntries[mockSource.qualifiedName] = mockMapEntry;
+		addVirtualPath(mockMapEntry.localPath, true);
 
 		expect(isRepoCloned("github:tanstack/router")).toBe(true);
 	});
@@ -858,7 +889,7 @@ describe("isRepoCloned", () => {
 	});
 
 	it("returns false if in index but not on disk", () => {
-		indexEntries[mockIndexEntry.qualifiedName] = mockIndexEntry;
+		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 		// Don't add to virtualFs
 
 		expect(isRepoCloned("github:tanstack/router")).toBe(false);
@@ -871,12 +902,12 @@ describe("isRepoCloned", () => {
 
 describe("getClonedRepoPath", () => {
 	it("returns local path if exists", () => {
-		indexEntries[mockIndexEntry.qualifiedName] = mockIndexEntry;
-		addVirtualPath(mockIndexEntry.localPath, true);
+		mapEntries[mockSource.qualifiedName] = mockMapEntry;
+		addVirtualPath(mockMapEntry.localPath, true);
 
 		const result = getClonedRepoPath("github:tanstack/router");
 
-		expect(result).toBe(mockIndexEntry.localPath);
+		expect(result).toBe(mockMapEntry.localPath);
 	});
 
 	it("returns undefined if not in index", () => {
@@ -884,7 +915,7 @@ describe("getClonedRepoPath", () => {
 	});
 
 	it("returns undefined if not on disk", () => {
-		indexEntries[mockIndexEntry.qualifiedName] = mockIndexEntry;
+		mapEntries[mockSource.qualifiedName] = mockMapEntry;
 
 		expect(getClonedRepoPath("github:tanstack/router")).toBeUndefined();
 	});

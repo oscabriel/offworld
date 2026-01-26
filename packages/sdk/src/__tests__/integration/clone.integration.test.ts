@@ -37,7 +37,8 @@ vi.mock("../../config.js", () => ({
 	}),
 	getMetaRoot: () => tempMetaRoot,
 	getRepoPath: (fullName: string, provider: string) => join(tempRepoRoot, provider, fullName),
-	getReferencePath: (fullName: string) => join(tempMetaRoot, "references", fullName.replace("/", "-") + ".md"),
+	getReferencePath: (fullName: string) =>
+		join(tempMetaRoot, "references", fullName.replace("/", "-") + ".md"),
 	getMetaPath: (fullName: string) => join(tempMetaRoot, "meta", fullName.replace("/", "-")),
 	toReferenceFileName: (fullName: string) => fullName.replace("/", "-") + ".md",
 }));
@@ -45,10 +46,18 @@ vi.mock("../../config.js", () => ({
 // Mock Paths to avoid XDG-basedir issues
 vi.mock("../../paths.js", () => ({
 	Paths: {
-		get offworldReferencesDir() { return join(tempDir, "offworld", "references"); },
-		get offworldAssetsDir() { return join(tempDir, "offworld", "assets"); },
-		get offworldGlobalMapPath() { return join(tempDir, "offworld", "assets", "map.json"); },
-		get offworldSkillDir() { return join(tempDir, "offworld"); },
+		get offworldReferencesDir() {
+			return join(tempDir, "offworld", "references");
+		},
+		get offworldAssetsDir() {
+			return join(tempDir, "offworld", "assets");
+		},
+		get offworldGlobalMapPath() {
+			return join(tempDir, "offworld", "assets", "map.json");
+		},
+		get offworldSkillDir() {
+			return join(tempDir, "offworld");
+		},
 	},
 	expandTilde: (path: string) => path,
 }));

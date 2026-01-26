@@ -8,15 +8,15 @@ hero:
     - text: Quickstart
       link: /guides/quickstart/
       icon: right-arrow
-    - text: AI Agent Integration
-      link: /agents/
+    - text: How It Works
+      link: /concepts/
       icon: rocket
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-A context management tool for AI coding agents. Keep a persistent clone map and right-sized references for your dependencies. Single CLI, zero rediscovery.
+A context management tool for AI coding agents. Keep a persistent clone map and right-sized references for your dependencies.
 
 <LinkCard
 	title="Quickstart"
@@ -24,109 +24,51 @@ A context management tool for AI coding agents. Keep a persistent clone map and 
 	href="/guides/quickstart/"
 />
 <LinkCard
-	title="AI Agent Integration"
+	title="Agent Integration"
 	description="Use Offworld with Claude Code, Cursor, Amp, and other AI assistants."
 	href="/agents/"
 />
-
-## Three Ways to Use Offworld
-
-<Tabs>
-<TabItem label="CLI for Humans">
-Run commands directly in your terminal with human-readable output:
-
-```bash
-ow pull tanstack/router
-ow project init
-ow list
-```
-
-Perfect for:
-
-- Manual reference management
-- Pulling new references for your stack
-- Terminal-first workflows
-  </TabItem>
-<TabItem label="Skill for Agents">
-After running `ow init`, agents can access references autonomously:
-
-```bash
-ow init  # Symlinks skill to all agents
-```
-
-Then prompt your AI agent:
-
-```
-Use the Offworld skill to check what references are available,
-then help me implement routing with TanStack Router.
-```
-
-Perfect for:
-
-- Autonomous reference discovery
-- Multi-step AI workflows
-- Consistent knowledge across sessions
-  </TabItem>
-<TabItem label="Project Integration">
-Scan your dependencies and install matching references:
-
-```bash
-cd my-project
-ow project init
-```
-
-Creates `.offworld/map.json` and updates your `AGENTS.md` with a reference table.
-
-Perfect for:
-
-- Project onboarding
-- Team consistency
-- Dependency-aware context
-  </TabItem>
-</Tabs>
 
 ## Why Offworld?
 
 <CardGrid>
 	<Card title="AI-Native Design" icon="rocket">
-		Built for coding agents. References are right-sized for LLM consumption—not too big to bloat
-		context, not too small to be useless.
+		References are right-sized for LLM consumption—not too big to bloat context, not too small to be
+		useless.
 	</Card>
 	<Card title="One Skill, All Agents" icon="puzzle">
 		Single skill installation works with Claude Code, Cursor, Amp, OpenCode, Codex, and Gemini.
-		Update once, apply everywhere.
 	</Card>
 	<Card title="Persistent Context" icon="document">
-		Clone map and references survive between sessions. Your agent stops rediscovering the same paths
-		every time.
+		Clone map and references survive between sessions. Your agent stops rediscovering the same
+		paths.
 	</Card>
 	<Card title="Source Over Docs" icon="open-book">
-		Direct access to cloned repositories. Agents can explore actual source code, not just scraped
+		Direct access to cloned repositories. Agents explore actual source code, not scraped
 		documentation.
 	</Card>
 </CardGrid>
 
-## Works Where You Work
+## Quick Example
 
-| Environment     | How It Works                                   |
-| --------------- | ---------------------------------------------- |
-| **Terminal**    | Run `ow` commands anywhere                     |
-| **Claude Code** | Skill auto-loads from `~/.claude/skills/`      |
-| **Cursor**      | Native skill integration with Composer         |
-| **Amp**         | Skills directory at `~/.config/agents/skills/` |
-| **OpenCode**    | Terminal-native with skill support             |
-| **Any Agent**   | Symlink the skill or read references directly  |
+```bash
+# Install
+curl -fsSL https://offworld.sh/install | bash
 
-## How It Works
+# Initialize (symlinks skill to all agents)
+ow init
+
+# Pull a reference
+ow pull tanstack/router
+
+# Set up a project
+cd my-project && ow project init
+```
+
+Then prompt your agent:
 
 ```
-ow project init
-  → Scan manifests (package.json, Cargo.toml, etc.)
-  → Resolve dependencies to repositories
-  → Clone repositories locally
-  → Generate AI-optimized references
-  → Update the clone map
-  → Agents route to the right context instantly
+Using the TanStack Router reference, implement file-based routing for this app.
 ```
 
 ## Resources

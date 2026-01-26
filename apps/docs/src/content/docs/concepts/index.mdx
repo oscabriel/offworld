@@ -1,0 +1,92 @@
+---
+title: How It Works
+description: Understanding the clone map, references, and single-skill architecture.
+---
+
+Offworld keeps a persistent clone map and right-sized references for your dependencies, so agents stop burning tokens rediscovering the same paths every session.
+
+## The Problem
+
+Agents can always find dependencies—they have `package.json`, web search, and `node_modules`. But the path is expensive:
+
+- **Token burn** — Rediscovering docs and source every session
+- **Hallucination** — Context degrades when it gets too deep
+- **No memory** — Forgetting what worked between sessions
+
+## Architecture
+
+```
+~/.local/share/offworld/skills/offworld/
+├── SKILL.md           # Static routing skill
+├── assets/
+│   └── map.json       # Clone map
+└── references/
+    ├── tanstack-router.md
+    ├── drizzle-orm.md
+    └── ...
+```
+
+### Clone Map
+
+The map (`assets/map.json`) is a persistent registry of cloned repositories:
+
+```json
+{
+	"repos": {
+		"tanstack/router": {
+			"localPath": "/Users/you/ow/tanstack/router",
+			"references": ["tanstack-router.md"],
+			"keywords": ["routing", "tanstack"]
+		}
+	}
+}
+```
+
+Agents get instant access to the right source tree without re-discovering it.
+
+### References
+
+AI-optimized markdown files—not too big to bloat context, not too small to be useless. Generated from source code, they contain:
+
+- Key concepts and patterns
+- Common usage examples
+- Important file locations
+- API surface overview
+
+### Single Skill
+
+One static skill that only routes. Load one skill, not dozens. The skill reads the map and directs agents to the right reference on demand.
+
+### Project Maps
+
+`ow project init` creates `.offworld/map.json` in your project root, scoping references to your project's actual dependencies. The skill checks for a project map first, then falls back to the global map.
+
+## Data Flow
+
+```
+ow project init
+  → Parse manifests (package.json, Cargo.toml, etc.)
+  → Resolve dependencies to GitHub repositories
+  → Clone repositories to ~/ow/
+  → Generate AI-optimized references
+  → Update global map
+  → Write project map
+  → Symlink skill to all agents
+```
+
+## Source Over Docs
+
+The best way to ensure your agent uses a library correctly is to give it direct access to the source code—not docs links. Offworld keeps local clones so agents can:
+
+- Read actual implementation code
+- Explore test files for usage patterns
+- Check recent commits for changes
+- Find examples in the codebase
+
+## Comparison
+
+| Approach              | Discovery            | Memory     | Context Size   |
+| --------------------- | -------------------- | ---------- | -------------- |
+| Web search every time | Slow, unreliable     | None       | Unpredictable  |
+| Scraped docs          | Fast but stale       | Static     | Often too much |
+| **Offworld**          | Instant (map lookup) | Persistent | Right-sized    |

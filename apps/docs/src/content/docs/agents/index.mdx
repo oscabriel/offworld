@@ -1,0 +1,144 @@
+---
+title: Agent Integration
+description: Use Offworld with any AI coding agent.
+---
+
+After running `ow init`, the Offworld skill is symlinked to all supported agents. They all work the same way.
+
+## Supported Agents
+
+| Agent       | Skill Location                  |
+| ----------- | ------------------------------- |
+| Claude Code | `~/.claude/skills/`             |
+| Cursor      | `~/.cursor/skills/`             |
+| Amp         | `~/.config/agents/skills/`      |
+| OpenCode    | `~/.config/opencode/skill/`     |
+| Codex       | `~/.codex/skills/`              |
+| Gemini      | `~/.gemini/antigravity/skills/` |
+
+All agents share the same skill via symlinks. Update once, apply everywhere.
+
+## How Agents Use Offworld
+
+1. Agent loads the Offworld skill from its skills directory
+2. Skill runs `ow config show --json` to discover paths
+3. Skill reads the project map (`.offworld/map.json`) or global map
+4. Agent routes to the right reference based on your query
+5. Agent reads the reference file for accurate library knowledge
+
+## Example Prompts
+
+**Check available references:**
+
+```
+What Offworld references are available for this project?
+```
+
+**Implement with a reference:**
+
+```
+Using the TanStack Router reference, implement file-based routing for this app.
+```
+
+**Pull and use:**
+
+```
+Pull the drizzle-orm reference using Offworld, then help me set up the database schema.
+```
+
+**Plan mode for complex tasks:**
+
+```
+Enter plan mode. Using Offworld references, create a plan to:
+1. Set up TanStack Router with file-based routing
+2. Add authentication with protected routes
+3. Implement data fetching with TanStack Query
+```
+
+## Project Configuration
+
+### Project Map
+
+Run `ow project init` to create a project-scoped map:
+
+```bash
+cd my-project
+ow project init
+```
+
+This creates `.offworld/map.json` which scopes references to your project's actual dependencies.
+
+### AGENTS.md Integration
+
+`ow project init` also adds a reference table to your `AGENTS.md`:
+
+```markdown
+## Project References
+
+| Dependency | Reference         | Path                                          |
+| ---------- | ----------------- | --------------------------------------------- |
+| zod        | colinhacks-zod.md | ~/.local/share/offworld/.../colinhacks-zod.md |
+| hono       | honojs-hono.md    | ~/.local/share/offworld/.../honojs-hono.md    |
+```
+
+This helps agents find references even without loading the full skill.
+
+## Without Native Skill Support
+
+For agents that don't support skills, you can:
+
+**Point to references directly:**
+
+```
+Read ~/.local/share/offworld/skill/offworld/references/tanstack-router.md
+and use it to implement routing.
+```
+
+**Use the clone map:**
+
+```
+Check ~/.local/share/offworld/skill/offworld/assets/map.json for available
+references, then read the relevant one.
+```
+
+**Access source directly:**
+
+```
+The TanStack Router source is at ~/ow/tanstack/router. Explore it to understand
+the routing patterns.
+```
+
+## Troubleshooting
+
+### Skill not loading
+
+```bash
+# Verify symlink exists
+ls -la ~/.claude/skills/offworld  # or your agent's path
+
+# Check it points to the right location
+readlink ~/.claude/skills/offworld
+
+# Re-run init if needed
+ow init
+```
+
+### Agent can't find references
+
+```bash
+# Ensure project map exists
+cat .offworld/map.json
+
+# If missing, run project init
+ow project init
+```
+
+### Reference is outdated
+
+```bash
+# Regenerate a specific reference
+ow pull owner/repo --force
+
+# Or regenerate all project references
+ow project init --all --generate
+```

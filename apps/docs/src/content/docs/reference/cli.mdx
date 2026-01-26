@@ -1,0 +1,162 @@
+---
+title: CLI Reference
+description: Core commands for the ow command-line interface.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+## Installation
+
+<Tabs>
+	<TabItem label="macOS / Linux">```bash curl -fsSL https://offworld.sh/install | bash ```</TabItem>
+	<TabItem label="npm">```bash npm install -g offworld ```</TabItem>
+	<TabItem label="bun">```bash bun install -g offworld ```</TabItem>
+</Tabs>
+
+### Environment Variables
+
+| Variable     | Description                         | Default        |
+| ------------ | ----------------------------------- | -------------- |
+| `OW_VERSION` | Pin to specific version             | Latest         |
+| `OW_CHANNEL` | Release channel: `stable` or `beta` | `stable`       |
+| `OW_BIN_DIR` | Override installation directory     | `~/.local/bin` |
+
+## Global Flags
+
+| Flag        | Alias | Description  |
+| ----------- | ----- | ------------ |
+| `--help`    | `-h`  | Show help    |
+| `--version` | `-v`  | Show version |
+
+## ow init
+
+Interactive setup. Configures paths and symlinks the skill to all agents.
+
+```bash
+ow init [options]
+```
+
+| Option        | Description               |
+| ------------- | ------------------------- |
+| `--yes`       | Skip confirmation prompts |
+| `--force`     | Reconfigure if exists     |
+| `--model`     | AI provider/model         |
+| `--repo-root` | Where to clone repos      |
+| `--agents`    | Comma-separated agents    |
+
+## ow pull
+
+Clone a repository and generate a reference.
+
+```bash
+ow pull <repo> [options]
+```
+
+| Option        | Description                     |
+| ------------- | ------------------------------- |
+| `--reference` | Reference filename override     |
+| `--shallow`   | Shallow clone (--depth 1)       |
+| `--sparse`    | Sparse checkout                 |
+| `--branch`    | Branch to clone                 |
+| `--force`     | Force regeneration              |
+| `--model`     | Model override (provider/model) |
+
+```bash
+ow pull tanstack/router
+ow pull https://github.com/facebook/react
+ow pull ./my-lib
+ow pull tanstack/router --force
+```
+
+## ow generate
+
+Force regenerate a reference for an already-cloned repository.
+
+```bash
+ow generate <repo> [options]
+```
+
+Alias: `ow gen`
+
+| Option    | Description                 |
+| --------- | --------------------------- |
+| `--force` | Force even if remote exists |
+| `--model` | Model override              |
+
+## ow push
+
+Upload a reference to offworld.sh for sharing. Requires `ow auth login`.
+
+```bash
+ow push <repo>
+```
+
+## ow list
+
+List managed repositories and references.
+
+```bash
+ow list [options]
+```
+
+Alias: `ow ls`
+
+| Option      | Description          |
+| ----------- | -------------------- |
+| `--json`    | Output as JSON       |
+| `--paths`   | Show full paths      |
+| `--stale`   | Only show stale      |
+| `--pattern` | Filter (e.g., `zod`) |
+
+## ow rm
+
+Remove a repository and its reference.
+
+```bash
+ow rm <repo> [options]
+```
+
+Alias: `ow remove`
+
+| Option             | Description             |
+| ------------------ | ----------------------- |
+| `--yes`            | Skip confirmation       |
+| `--reference-only` | Only remove reference   |
+| `--repo-only`      | Only remove cloned repo |
+| `--dry-run`        | Show what would be done |
+
+## ow project init
+
+Scan project dependencies and install matching references.
+
+```bash
+ow project init [options]
+```
+
+| Option       | Description                         |
+| ------------ | ----------------------------------- |
+| `--all`      | Process all dependencies            |
+| `--deps`     | Comma-separated deps to include     |
+| `--skip`     | Deps to exclude                     |
+| `--generate` | Generate missing references locally |
+| `--dry-run`  | Preview only                        |
+| `--yes`      | Skip confirmations                  |
+
+```bash
+ow project init
+ow project init --all --generate
+ow project init --deps zod,react
+ow project init --dry-run
+```
+
+## Data Locations
+
+| Purpose      | Location                                                  |
+| ------------ | --------------------------------------------------------- |
+| Config       | `~/.config/offworld/config.json`                          |
+| Auth         | `~/.local/share/offworld/auth.json`                       |
+| Global skill | `~/.local/share/offworld/skills/offworld/`                |
+| Global map   | `~/.local/share/offworld/skills/offworld/assets/map.json` |
+| References   | `~/.local/share/offworld/skills/offworld/references/`     |
+| Project map  | `./.offworld/map.json`                                    |
+| Cloned repos | `~/ow/` (configurable)                                    |

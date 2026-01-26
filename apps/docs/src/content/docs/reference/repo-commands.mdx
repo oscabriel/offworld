@@ -1,0 +1,96 @@
+---
+title: Repository Commands
+description: Commands for managing cloned repositories.
+---
+
+## ow repo list
+
+List managed repositories.
+
+```bash
+ow repo list [options]
+```
+
+| Option      | Description     |
+| ----------- | --------------- |
+| `--json`    | Output as JSON  |
+| `--verbose` | Show all fields |
+
+## ow repo update
+
+Update a cloned repository.
+
+```bash
+ow repo update <repo> [options]
+```
+
+| Option         | Description                       |
+| -------------- | --------------------------------- |
+| `--all`        | Update all repos                  |
+| `--regenerate` | Regenerate reference after update |
+
+```bash
+ow repo update tanstack/router
+ow repo update --all --regenerate
+```
+
+## ow repo prune
+
+Remove stale map entries.
+
+```bash
+ow repo prune [options]
+```
+
+| Option             | Description                      |
+| ------------------ | -------------------------------- |
+| `--dry-run`        | Show what would be pruned        |
+| `--yes`            | Skip confirmation                |
+| `--remove-orphans` | Also remove orphaned directories |
+
+## ow repo status
+
+Show summary of managed repos.
+
+```bash
+ow repo status [options]
+```
+
+| Option   | Description    |
+| -------- | -------------- |
+| `--json` | Output as JSON |
+
+## ow repo gc
+
+Garbage collect old or unused repos. Requires at least one filter option.
+
+```bash
+ow repo gc [options]
+```
+
+| Option                | Description                         |
+| --------------------- | ----------------------------------- |
+| `--older-than`        | Remove repos not accessed in N days |
+| `--without-reference` | Remove repos without references     |
+| `--without-repo`      | Remove orphaned references          |
+| `--dry-run`           | Show what would be removed          |
+| `--yes`               | Skip confirmation                   |
+
+```bash
+ow repo gc --older-than 30d
+ow repo gc --without-reference -y
+ow repo gc --without-repo -d
+```
+
+## ow repo discover
+
+Discover and map existing repos in repoRoot.
+
+```bash
+ow repo discover [options]
+```
+
+| Option      | Description              |
+| ----------- | ------------------------ |
+| `--dry-run` | Show what would be added |
+| `--yes`     | Skip confirmation        |

@@ -72,6 +72,16 @@ h6,
 	font-family: "Sorts Mill Goudy", Georgia, "Times New Roman", serif;
 }
 
+/* Body text - use primary color */
+body,
+.sl-markdown-content,
+.sl-markdown-content p,
+.sl-markdown-content li,
+.sl-markdown-content td,
+.content-panel {
+	color: var(--sl-color-white);
+}
+
 /* Remove box shadows */
 .sl-markdown-content,
 .starlight-aside,
@@ -130,13 +140,30 @@ h6,
 }
 
 /* Tables */
+.sl-markdown-content .table-wrapper {
+	width: 100%;
+	overflow-x: auto;
+	margin: 1rem 0;
+}
+
 .sl-markdown-content table {
+	width: 100%;
+	min-width: 100%;
 	border: 1px solid var(--sl-color-gray-3);
+	border-collapse: collapse;
 }
 
 .sl-markdown-content th,
 .sl-markdown-content td {
 	border: 1px solid var(--sl-color-gray-3);
+	padding: 0.5rem 0.75rem;
+	text-align: left;
+	white-space: nowrap;
+}
+
+.sl-markdown-content td:last-child,
+.sl-markdown-content th:last-child {
+	white-space: normal;
 }
 
 /* Blockquotes */

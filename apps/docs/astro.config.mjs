@@ -2,9 +2,13 @@ import alchemy from "alchemy/cloudflare/astro";
 import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
+import { rehypeWrapTables } from "./src/plugins/rehype-wrap-tables";
 
 // https://astro.build/config
 export default defineConfig({
+	markdown: {
+		rehypePlugins: [rehypeWrapTables],
+	},
 	site: "https://offworld.sh",
 	output: "server",
 	adapter: alchemy(),
@@ -30,16 +34,22 @@ export default defineConfig({
 					items: [
 						{ label: "Introduction", slug: "index" },
 						{ label: "Quickstart", slug: "guides/quickstart" },
-						{ label: "AI Agent Integration", slug: "agents" },
 					],
 				},
 				{
-					label: "Concepts",
-					items: [{ label: "How Offworld Works", slug: "concepts" }],
+					label: "Usage",
+					items: [
+						{ label: "Agent Integration", slug: "agents" },
+						{ label: "How It Works", slug: "concepts" },
+					],
 				},
 				{
 					label: "Reference",
-					items: [{ label: "CLI Reference", slug: "reference/cli" }],
+					items: [
+						{ label: "CLI Commands", slug: "reference/cli" },
+						{ label: "Repo Commands", slug: "reference/repo-commands" },
+						{ label: "Config & Auth", slug: "reference/config-auth" },
+					],
 				},
 			],
 		}),

@@ -1,4 +1,6 @@
-# Codebase Cleanup Plan (from CODE_AUDIT.md)
+# Codebase Cleanup Plan
+
+**Context:** Post-refactor clean up following single-skill model migration and code audit.
 
 ## Phase: packages/types
 

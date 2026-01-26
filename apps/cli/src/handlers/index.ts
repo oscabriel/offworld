@@ -1,6 +1,5 @@
 export { pullHandler, type PullOptions, type PullResult } from "./pull.js";
 export { generateHandler, type GenerateOptions, type GenerateResult } from "./generate.js";
-export { listHandler, type ListOptions, type ListResult, type RepoListItem } from "./list.js";
 export {
 	repoListHandler,
 	repoUpdateHandler,

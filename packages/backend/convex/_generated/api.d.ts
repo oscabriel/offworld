@@ -9,15 +9,15 @@
  */
 
 import type * as admin from "../admin.js";
-import type * as analyses from "../analyses.js";
 import type * as auth from "../auth.js";
 import type * as github from "../github.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
+import type * as references from "../references.js";
 import type * as repository from "../repository.js";
 import type * as validation_github from "../validation/github.js";
 import type * as validation_push from "../validation/push.js";
-import type * as validation_skillContent from "../validation/skillContent.js";
+import type * as validation_referenceContent from "../validation/referenceContent.js";
 
 import type {
   ApiFromModules,
@@ -27,15 +27,15 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
-  analyses: typeof analyses;
   auth: typeof auth;
   github: typeof github;
   healthCheck: typeof healthCheck;
   http: typeof http;
+  references: typeof references;
   repository: typeof repository;
   "validation/github": typeof validation_github;
   "validation/push": typeof validation_push;
-  "validation/skillContent": typeof validation_skillContent;
+  "validation/referenceContent": typeof validation_referenceContent;
 }>;
 
 /**

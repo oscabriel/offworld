@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { validatePushArgs } from "../validation/push";
-import { validateSkillContent } from "../validation/skillContent";
+import { validateReferenceContent } from "../validation/referenceContent";
 
 describe("Push Input Validation", () => {
 	describe("validatePushArgs", () => {
 		const validArgs = {
 			fullName: "owner/repo",
-			skillName: "my-skill",
-			skillDescription: "A test skill",
-			skillContent: "a".repeat(500),
+			referenceName: "my-reference",
+			referenceDescription: "A test reference",
+			referenceContent: "# Heading\n\n" + "a".repeat(500),
 			commitSha: "a".repeat(40),
-			analyzedAt: new Date().toISOString(),
+			generatedAt: new Date().toISOString(),
 		};
 
 		it("accepts valid args", () => {
@@ -29,22 +29,22 @@ describe("Push Input Validation", () => {
 			expect(result.error).toContain("owner/repo");
 		});
 
-		it("rejects invalid skillName format", () => {
-			const result = validatePushArgs({ ...validArgs, skillName: "Invalid-Name" });
+		it("rejects invalid referenceName format", () => {
+			const result = validatePushArgs({ ...validArgs, referenceName: "Invalid-Name" });
 			expect(result.valid).toBe(false);
-			expect(result.field).toBe("skillName");
+			expect(result.field).toBe("referenceName");
 		});
 
 		it("rejects short content", () => {
-			const result = validatePushArgs({ ...validArgs, skillContent: "short" });
+			const result = validatePushArgs({ ...validArgs, referenceContent: "short" });
 			expect(result.valid).toBe(false);
-			expect(result.field).toBe("skillContent");
+			expect(result.field).toBe("referenceContent");
 		});
 
 		it("rejects oversized content", () => {
-			const result = validatePushArgs({ ...validArgs, skillContent: "a".repeat(200_001) });
+			const result = validatePushArgs({ ...validArgs, referenceContent: "a".repeat(200_001) });
 			expect(result.valid).toBe(false);
-			expect(result.field).toBe("skillContent");
+			expect(result.field).toBe("referenceContent");
 		});
 
 		it("rejects invalid commit SHA length", () => {
@@ -59,160 +59,89 @@ describe("Push Input Validation", () => {
 			expect(result.field).toBe("commitSha");
 		});
 
-		it("rejects future-dated analyzedAt", () => {
+		it("rejects future-dated generatedAt", () => {
 			const future = new Date(Date.now() + 10 * 60_000).toISOString();
-			const result = validatePushArgs({ ...validArgs, analyzedAt: future });
+			const result = validatePushArgs({ ...validArgs, generatedAt: future });
 			expect(result.valid).toBe(false);
-			expect(result.field).toBe("analyzedAt");
+			expect(result.field).toBe("generatedAt");
 		});
 
-		it("accepts analyzedAt within 5 min of now", () => {
+		it("accepts generatedAt within 5 min of now", () => {
 			const nearFuture = new Date(Date.now() + 3 * 60_000).toISOString();
-			const result = validatePushArgs({ ...validArgs, analyzedAt: nearFuture });
+			const result = validatePushArgs({ ...validArgs, generatedAt: nearFuture });
 			expect(result.valid).toBe(true);
 		});
 	});
 });
 
-describe("Skill Content Validation", () => {
-	const validContent = `---
-name: Test Skill
-description: A test skill for testing
----
+describe("Reference Content Validation", () => {
+	const validContent = `# Test Reference
 
-# Test Skill
-
-This is a test skill with enough content to pass validation.
+This is a test reference with enough content to pass validation.
 
 ${"Lorem ipsum ".repeat(50)}
 `;
 
 	it("accepts valid content", () => {
-		const result = validateSkillContent(validContent);
+		const result = validateReferenceContent(validContent);
 		expect(result.valid).toBe(true);
-		expect(result.name).toBe("Test Skill");
-		expect(result.description).toBe("A test skill for testing");
 	});
 
-	it("rejects content without frontmatter", () => {
-		const result = validateSkillContent("a".repeat(500));
+	it("rejects content without heading", () => {
+		const result = validateReferenceContent("a".repeat(500));
 		expect(result.valid).toBe(false);
-		expect(result.error).toContain("frontmatter");
+		expect(result.error).toContain("heading");
 	});
 
 	it("rejects content with HTML tags", () => {
-		const htmlContent = `---
-name: Test
-description: Test
----
+		const htmlContent = `# Test
 
 <script>alert('xss')</script>
 
 ${"a".repeat(500)}
 `;
-		const result = validateSkillContent(htmlContent);
+		const result = validateReferenceContent(htmlContent);
 		expect(result.valid).toBe(false);
 		expect(result.error).toContain("HTML");
 	});
 
 	it("rejects javascript: links", () => {
-		const jsContent = `---
-name: Test
-description: Test
----
+		const jsContent = `# Test
 
 [Click me](javascript:alert('xss'))
 
 ${"a".repeat(500)}
 `;
-		const result = validateSkillContent(jsContent);
+		const result = validateReferenceContent(jsContent);
 		expect(result.valid).toBe(false);
 		expect(result.error).toContain("Unsafe link");
 	});
 
 	it("rejects data: links", () => {
-		const dataContent = `---
-name: Test
-description: Test
----
+		const dataContent = `# Test
 
 [Image](data:text/plain,hello)
 
 ${"a".repeat(500)}
 `;
-		const result = validateSkillContent(dataContent);
+		const result = validateReferenceContent(dataContent);
 		expect(result.valid).toBe(false);
 		expect(result.error).toContain("Unsafe link");
 	});
 
 	it("rejects content too short", () => {
-		const result = validateSkillContent("short");
+		const result = validateReferenceContent("short");
 		expect(result.valid).toBe(false);
 		expect(result.error).toContain("too short");
 	});
 
 	it("rejects content too large", () => {
-		const largeContent = `---
-name: Test
-description: Test
----
+		const largeContent = `# Test
 
 ${"a".repeat(200_001)}
 `;
-		const result = validateSkillContent(largeContent);
+		const result = validateReferenceContent(largeContent);
 		expect(result.valid).toBe(false);
 		expect(result.error).toContain("too large");
-	});
-
-	it("rejects missing name in frontmatter", () => {
-		const content = `---
-description: A test
----
-
-${"a".repeat(500)}
-`;
-		const result = validateSkillContent(content);
-		expect(result.valid).toBe(false);
-		expect(result.error).toContain("name");
-	});
-
-	it("rejects missing description in frontmatter", () => {
-		const content = `---
-name: Test
----
-
-${"a".repeat(500)}
-`;
-		const result = validateSkillContent(content);
-		expect(result.valid).toBe(false);
-		expect(result.error).toContain("description");
-	});
-
-	it("rejects name too long in frontmatter", () => {
-		const content = `---
-name: ${"a".repeat(101)}
-description: Test
----
-
-${"a".repeat(500)}
-`;
-		const result = validateSkillContent(content);
-		expect(result.valid).toBe(false);
-		expect(result.error).toContain("name");
-		expect(result.error).toContain("too long");
-	});
-
-	it("rejects description too long in frontmatter", () => {
-		const content = `---
-name: Test
-description: ${"a".repeat(201)}
----
-
-${"a".repeat(500)}
-`;
-		const result = validateSkillContent(content);
-		expect(result.valid).toBe(false);
-		expect(result.error).toContain("description");
-		expect(result.error).toContain("too long");
 	});
 });

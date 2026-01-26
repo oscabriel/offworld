@@ -176,10 +176,10 @@
         "rg \"referenceName|referenceDescription|referenceContent|commitSha|generatedAt|pullCount|isVerified|workosId\" packages/backend/convex/schema.ts",
         "test -f packages/backend/convex/references.ts",
         "test ! -f packages/backend/convex/analyses.ts",
-        "test -f packages/backend/convex/referenceContent.ts",
-        "test ! -f packages/backend/convex/skillContent.ts"
+        "test -f packages/backend/convex/validation/referenceContent.ts",
+        "test ! -f packages/backend/convex/validation/skillContent.ts"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-011",

@@ -219,17 +219,17 @@ export async function pullReference(fullName: string): Promise<PullResponse | nu
 	const client = createClient();
 	try {
 		// TODO: US-010 will add api.references - using analyses temporarily
-		let result = await client.query(api.analyses.pull, {
+		let result = await client.query(api.references.pull, {
 			fullName,
 			skillName: toSkillDirName(fullName),
 		});
 		if (!result) {
-			result = await client.query(api.analyses.pull, { fullName });
+			result = await client.query(api.references.pull, { fullName });
 		}
 		if (!result) return null;
 
 		client
-			.mutation(api.analyses.recordPull, { fullName, skillName: result.skillName })
+			.mutation(api.references.recordPull, { fullName, referenceName: result.referenceName })
 			.catch(() => {});
 
 		// Map response fields from skill* to reference*
@@ -261,10 +261,10 @@ export async function pullReferenceByName(
 	const client = createClient();
 	try {
 		// TODO: US-010 will add api.references - using analyses temporarily
-		const result = await client.query(api.analyses.pull, { fullName, skillName: referenceName });
+		const result = await client.query(api.references.pull, { fullName, referenceName });
 		if (!result) return null;
 
-		client.mutation(api.analyses.recordPull, { fullName, skillName: referenceName }).catch(() => {});
+		client.mutation(api.references.recordPull, { fullName, referenceName }).catch(() => {});
 
 		// Map response fields from skill* to reference*
 		return {
@@ -293,7 +293,7 @@ export async function pushReference(reference: ReferenceData, token: string): Pr
 	const client = createClient(token);
 	try {
 		// TODO: US-010 will add api.references - using analyses temporarily
-		const result = await client.action(api.analyses.push, {
+		const result = await client.action(api.references.push, {
 			fullName: reference.fullName,
 			skillName: reference.referenceName,
 			skillDescription: reference.referenceDescription,
@@ -347,12 +347,12 @@ export async function checkRemote(fullName: string): Promise<CheckResponse> {
 	const client = createClient();
 	try {
 		// TODO: US-010 will add api.references - using analyses temporarily
-		let result = await client.query(api.analyses.check, {
+		let result = await client.query(api.references.check, {
 			fullName,
 			skillName: toSkillDirName(fullName),
 		});
 		if (!result.exists) {
-			result = await client.query(api.analyses.check, { fullName });
+			result = await client.query(api.references.check, { fullName });
 		}
 		if (!result.exists) {
 			return { exists: false };
@@ -382,7 +382,7 @@ export async function checkRemoteByName(
 	const client = createClient();
 	try {
 		// TODO: US-010 will add api.references - using analyses temporarily
-		const result = await client.query(api.analyses.check, { fullName, skillName: referenceName });
+		const result = await client.query(api.references.check, { fullName, referenceName });
 		if (!result.exists) {
 			return { exists: false };
 		}

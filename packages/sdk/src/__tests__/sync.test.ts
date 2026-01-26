@@ -55,46 +55,27 @@ describe("sync.ts", () => {
 	});
 
 	// =========================================================================
-	// canPushToWeb tests
+	// canPushToWeb tests (now synchronous, star checks happen server-side)
 	// =========================================================================
 	describe("canPushToWeb", () => {
-		it("rejects local sources", async () => {
-			const result = await canPushToWeb(mockLocalSource);
+		it("rejects local sources", () => {
+			const result = canPushToWeb(mockLocalSource);
 
 			expect(result.allowed).toBe(false);
 			expect(result.reason).toContain("Local repositories");
 		});
 
-		it("rejects non-github providers", async () => {
-			const result = await canPushToWeb(mockGitLabSource);
+		it("rejects non-github providers", () => {
+			const result = canPushToWeb(mockGitLabSource);
 
 			expect(result.allowed).toBe(false);
 			expect(result.reason).toContain("not yet supported");
 		});
 
-		it("rejects repos with <5 stars (mocked GitHub API)", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve({ stargazers_count: 3 }),
-			});
-
-			const result = await canPushToWeb(mockGitHubSource);
-
-			expect(result.allowed).toBe(false);
-			expect(result.reason).toContain("3 stars");
-			expect(result.stars).toBe(3);
-		});
-
-		it("allows repos with 5+ stars", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve({ stargazers_count: 100 }),
-			});
-
-			const result = await canPushToWeb(mockGitHubSource);
+		it("allows github repos (star validation happens server-side)", () => {
+			const result = canPushToWeb(mockGitHubSource);
 
 			expect(result.allowed).toBe(true);
-			expect(result.stars).toBe(100);
 		});
 	});
 
@@ -134,47 +115,31 @@ describe("sync.ts", () => {
 	});
 
 	// =========================================================================
-	// validatePushAllowed tests
+	// validatePushAllowed tests (now synchronous, star checks happen server-side)
 	// =========================================================================
 	describe("validatePushAllowed", () => {
-		it("throws PushNotAllowedError with reason local for local sources", async () => {
-			await expect(validatePushAllowed(mockLocalSource)).rejects.toThrow(PushNotAllowedError);
+		it("throws PushNotAllowedError with reason local for local sources", () => {
+			expect(() => validatePushAllowed(mockLocalSource)).toThrow(PushNotAllowedError);
 
 			try {
-				await validatePushAllowed(mockLocalSource);
+				validatePushAllowed(mockLocalSource);
 			} catch (error) {
 				expect((error as PushNotAllowedError).reason).toBe("local");
 			}
 		});
 
-		it("throws PushNotAllowedError with reason not-github for gitlab", async () => {
+		it("throws PushNotAllowedError with reason not-github for gitlab", () => {
+			expect(() => validatePushAllowed(mockGitLabSource)).toThrow(PushNotAllowedError);
+
 			try {
-				await validatePushAllowed(mockGitLabSource);
+				validatePushAllowed(mockGitLabSource);
 			} catch (error) {
 				expect((error as PushNotAllowedError).reason).toBe("not-github");
 			}
 		});
 
-		it("throws PushNotAllowedError with reason low-stars", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve({ stargazers_count: 2 }),
-			});
-
-			try {
-				await validatePushAllowed(mockGitHubSource);
-			} catch (error) {
-				expect((error as PushNotAllowedError).reason).toBe("low-stars");
-			}
-		});
-
-		it("does not throw for valid source with enough stars", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve({ stargazers_count: 50 }),
-			});
-
-			await expect(validatePushAllowed(mockGitHubSource)).resolves.toBeUndefined();
+		it("does not throw for github source (star validation happens server-side)", () => {
+			expect(() => validatePushAllowed(mockGitHubSource)).not.toThrow();
 		});
 	});
 });

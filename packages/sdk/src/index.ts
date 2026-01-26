@@ -136,7 +136,7 @@ export {
 	installReference,
 	type GenerateReferenceOptions,
 	type GenerateReferenceResult,
-	type InstallSkillMeta,
+	type InstallReferenceMeta,
 } from "./generate.js";
 
 export {

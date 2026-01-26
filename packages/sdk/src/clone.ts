@@ -197,21 +197,18 @@ export async function cloneRepo(
 		throw err;
 	}
 
-	getCommitSha(repoPath);
 	const referenceFileName = toReferenceFileName(source.fullName);
 	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 	const hasReference = existsSync(referencePath);
 
-	// Update global map (only if reference exists)
-	if (hasReference) {
-		upsertGlobalMapEntry(source.fullName, {
-			localPath: repoPath,
-			references: [referenceFileName],
-			primary: referenceFileName,
-			keywords: [],
-			updatedAt: new Date().toISOString(),
-		});
-	}
+	// Update global map unconditionally
+	upsertGlobalMapEntry(source.qualifiedName, {
+		localPath: repoPath,
+		references: hasReference ? [referenceFileName] : [],
+		primary: hasReference ? referenceFileName : "",
+		keywords: [],
+		updatedAt: new Date().toISOString(),
+	});
 
 	return repoPath;
 }
@@ -403,16 +400,20 @@ export async function removeRepo(
 
 	if (removeReferenceFiles) {
 		// Remove reference files
-		const referenceFileName = toReferenceFileName(qualifiedName);
-		const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
-		if (existsSync(referencePath)) {
-			rmSync(referencePath, { force: true });
+		for (const referenceFileName of entry.references) {
+			const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+			if (existsSync(referencePath)) {
+				rmSync(referencePath, { force: true });
+			}
 		}
 
-		// Remove meta directory
-		const metaPath = getMetaPath(qualifiedName);
-		if (existsSync(metaPath)) {
-			rmSync(metaPath, { recursive: true, force: true });
+		// Remove meta directory (only if primary reference exists)
+		if (entry.primary) {
+			const metaDirName = entry.primary.replace(/\.md$/, "");
+			const metaPath = join(Paths.metaDir, metaDirName);
+			if (existsSync(metaPath)) {
+				rmSync(metaPath, { recursive: true, force: true });
+			}
 		}
 	}
 

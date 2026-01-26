@@ -37,9 +37,18 @@ vi.mock("../agents.js", () => ({
 	agents: {},
 }));
 
+vi.mock("../index-manager.js", () => ({
+	readGlobalMap: vi.fn(() => ({ repos: {} })),
+	upsertGlobalMapEntry: vi.fn(),
+}));
+
 vi.mock("../paths.js", () => ({
 	Paths: {
 		data: "/mock/data",
+		metaDir: "/mock/data/meta",
+		offworldReferencesDir: "/mock/data/references",
+		offworldSkillDir: "/mock/data/skill/offworld",
+		offworldAssetsDir: "/mock/data/skill/offworld/assets",
 	},
 	expandTilde: vi.fn((path: string) => path),
 }));
@@ -51,7 +60,7 @@ vi.mock("node:fs", () => ({
 	unlinkSync: vi.fn(),
 	rmSync: vi.fn(),
 	symlinkSync: vi.fn(),
-	existsSync: vi.fn(),
+	existsSync: vi.fn(() => false),
 }));
 
 import { streamPrompt } from "../ai/opencode.js";

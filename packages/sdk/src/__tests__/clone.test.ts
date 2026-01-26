@@ -296,6 +296,7 @@ const mockReferencesRoot = vi.hoisted(() => "/mock/references");
 vi.mock("../paths.js", () => ({
 	Paths: {
 		offworldReferencesDir: mockReferencesRoot,
+		metaDir: "/mock/offworld/meta",
 	},
 }));
 
@@ -451,7 +452,7 @@ describe("cloneRepo", () => {
 		await cloneRepo(mockSource);
 
 		expect(upsertGlobalMapEntry).toHaveBeenCalledWith(
-			mockSource.fullName,
+			mockSource.qualifiedName,
 			expect.objectContaining({
 				localPath: mockMapEntry.localPath,
 				references: [referenceFileName],
@@ -621,8 +622,8 @@ describe("cloneRepo", () => {
 
 			await cloneRepo(mockSource);
 
-			expect(mapEntries[mockSource.fullName]).toBeDefined();
-			expect(mapEntries[mockSource.fullName]?.references).toEqual([referenceFileName]);
+			expect(mapEntries[mockSource.qualifiedName]).toBeDefined();
+			expect(mapEntries[mockSource.qualifiedName]?.references).toEqual([referenceFileName]);
 		});
 	});
 });
@@ -751,9 +752,9 @@ describe("removeRepo", () => {
 		mapEntries[mockSource.qualifiedName] = { ...mockMapEntry };
 		addVirtualPath(mockMapEntry.localPath, true);
 		const { toReferenceFileName, getMetaPath } = await import("../config.js");
-		const referenceFileName = toReferenceFileName(mockSource.qualifiedName);
+		const referenceFileName = toReferenceFileName(mockSource.fullName);
 		addVirtualPath(join(mockReferencesRoot, referenceFileName));
-		const metaPath = getMetaPath(mockSource.qualifiedName);
+		const metaPath = getMetaPath(mockSource.fullName);
 		addVirtualPath(metaPath, true);
 	});
 

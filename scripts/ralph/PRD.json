@@ -55,7 +55,7 @@
 			"priority": 2,
 			"description": "Acceptance criteria: packages/sdk/src/__tests__/generate.test.ts uses installReference and referenceUpdatedAt; config.test.ts validates toReferenceFileName outputs; repo-source.test.ts asserts getReferenceFileNameForSource; mocks/fetch.ts uses /api/references endpoints and reference fields.",
 			"stepsToVerify": ["bun run test"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-008",

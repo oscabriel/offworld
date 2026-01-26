@@ -126,21 +126,21 @@ export function installFetchMock(): Mock {
 /**
  * Mock response for offworld.sh API pull endpoint
  */
-export function mockOffworldPullResponse(analysis: {
+export function mockOffworldPullResponse(reference: {
 	fullName: string;
-	skillName: string;
-	skillDescription: string;
-	skillContent: string;
+	referenceName: string;
+	referenceDescription: string;
+	referenceContent: string;
 	commitSha: string;
-	analyzedAt: string;
+	generatedAt: string;
 }): FetchMockRoute {
 	return {
-		url: "/api/analyses/pull",
+		url: "/api/references/pull",
 		method: "POST",
 		response: {
 			status: 200,
 			ok: true,
-			json: () => Promise.resolve(analysis),
+			json: () => Promise.resolve(reference),
 		},
 	};
 }
@@ -150,10 +150,10 @@ export function mockOffworldPullResponse(analysis: {
  */
 export function mockOffworldCheckResponse(
 	exists: boolean,
-	meta?: { commitSha: string; analyzedAt: string },
+	meta?: { commitSha: string; generatedAt: string },
 ): FetchMockRoute {
 	return {
-		url: "/api/analyses/check",
+		url: "/api/references/check",
 		method: "POST",
 		response: {
 			status: 200,

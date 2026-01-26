@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatShortDate } from "@/lib/format";
 
-export function AnalysisTable() {
+export function ReferenceTable() {
 	const { data: references } = useSuspenseQuery(convexQuery(api.admin.listAllReferences, {}));
 	const deleteReference = useMutation(api.admin.deleteReference);
 	const toggleVerified = useMutation(api.admin.toggleVerified);
@@ -58,7 +58,7 @@ export function AnalysisTable() {
 								Pull Count
 							</th>
 							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
-								Analyzed
+								Generated
 							</th>
 							<th className="text-muted-foreground px-5 py-3 text-left font-mono text-xs">
 								Commit

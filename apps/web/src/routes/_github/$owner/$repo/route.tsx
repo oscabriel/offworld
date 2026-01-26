@@ -2,7 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-export function repoSkillsQuery(owner: string, repo: string) {
+export function repoReferencesQuery(owner: string, repo: string) {
 	return convexQuery(api.references.listByRepo, { fullName: `${owner}/${repo}`.toLowerCase() });
 }
 
@@ -18,6 +18,6 @@ export const Route = createFileRoute("/_github/$owner/$repo")({
 	},
 	component: () => <Outlet />,
 	loader: async ({ context, params }) => {
-		await context.queryClient.ensureQueryData(repoSkillsQuery(params.owner, params.repo));
+		await context.queryClient.ensureQueryData(repoReferencesQuery(params.owner, params.repo));
 	},
 });

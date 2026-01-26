@@ -87,7 +87,7 @@
 			"priority": 2,
 			"description": "Acceptance criteria: apps/web routes use repoReferencesQuery and referenceData props; repo header uses hasReference/referenceData; admin table renamed ReferenceTable with Generated column; cli/explore/breadcrumbs copy uses references; apps/web/e2e/analysis.spec.ts asserts reference copy.",
 			"stepsToVerify": ["bun run typecheck"],
-			"passes": false
+			"passes": true
 		},
 		{
 			"id": "US-012",

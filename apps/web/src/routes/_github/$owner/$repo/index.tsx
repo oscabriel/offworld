@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { RepoHeader } from "@/components/repo/repo-header";
 import { Card } from "@/components/ui/card";
 
-import { repoSkillsQuery } from "./route";
+import { repoReferencesQuery } from "./route";
 
 export const Route = createFileRoute("/_github/$owner/$repo/")({
 	component: RepoReferencesPage,
@@ -69,11 +69,11 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 function RepoReferencesPage() {
 	const { owner, repo } = Route.useParams();
 	const { data: references, isLoading: referencesLoading } = useSuspenseQuery(
-		repoSkillsQuery(owner, repo),
+		repoReferencesQuery(owner, repo),
 	);
 
 	const primaryReference = references[0] ?? null;
-	const analysisData = primaryReference
+	const referenceData = primaryReference
 		? {
 				commitSha: primaryReference.commitSha,
 				pullCount: primaryReference.pullCount,
@@ -88,13 +88,13 @@ function RepoReferencesPage() {
 	if (references.length === 0) {
 		return (
 			<div className="flex flex-1 flex-col">
-				<RepoHeader
-					owner={owner}
-					repo={repo}
-					analysisData={null}
-					githubMetadata={githubMetadata}
-					loading={metadataLoading}
-				/>
+			<RepoHeader
+				owner={owner}
+				repo={repo}
+				referenceData={null}
+				githubMetadata={githubMetadata}
+				loading={metadataLoading}
+			/>
 				<div className="container mx-auto max-w-7xl flex-1 px-5 py-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 					<EmptyState owner={owner} repo={repo} />
 				</div>
@@ -107,7 +107,7 @@ function RepoReferencesPage() {
 			<RepoHeader
 				owner={owner}
 				repo={repo}
-				analysisData={analysisData}
+				referenceData={referenceData}
 				githubMetadata={githubMetadata}
 				loading={referencesLoading || metadataLoading}
 			/>

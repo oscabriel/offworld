@@ -24,9 +24,9 @@ function ExploreComponent() {
 			<div className="container mx-auto max-w-7xl flex-1 px-5 pb-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-13">
 					<div className="space-y-5">
-						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Shared skills</h1>
+						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Shared references</h1>
 						<p className="text-muted-foreground font-mono text-lg">
-							Explore skills shared by the community
+							Explore references shared by the community
 						</p>
 					</div>
 
@@ -43,7 +43,7 @@ function ExploreComponent() {
 						{!repositories || repositories.length === 0 ? (
 							<Card className="border-primary/10 p-13 text-center">
 								<p className="text-muted-foreground font-serif text-lg">
-									No skills have been generated yet. Be the first!
+									No references have been generated yet. Be the first!
 								</p>
 							</Card>
 						) : (

@@ -40,11 +40,27 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Generate Convex code
+        run: bunx convex codegen
+        working-directory: packages/backend
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
+
       - name: Build SDK
         run: bun run build
         working-directory: packages/sdk
         env:
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
+
+      - name: Build Backend API
+        run: bun run build
+        working-directory: packages/backend-api
+
+      - name: Build Types
+        run: bun run build
+        working-directory: packages/types
 
       - name: Build CLI
         run: bun run build
@@ -154,11 +170,27 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Generate Convex code
+        run: bunx convex codegen
+        working-directory: packages/backend
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
+
       - name: Build SDK
         run: bun run build
         working-directory: packages/sdk
         env:
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
+
+      - name: Build Backend API
+        run: bun run build
+        working-directory: packages/backend-api
+
+      - name: Build Types
+        run: bun run build
+        working-directory: packages/types
 
       - name: Build CLI
         run: bun run build
@@ -167,7 +199,25 @@ jobs:
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
           WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
-      - name: Publish to npm
+      - name: Publish Types to npm
+        run: npm publish --access public
+        working-directory: packages/types
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish Backend API to npm
+        run: npm publish --access public
+        working-directory: packages/backend-api
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish SDK to npm
+        run: npm publish --access public
+        working-directory: packages/sdk
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish CLI to npm
         run: npm publish --access public
         working-directory: apps/cli
         env:

@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as CliRouteImport } from './routes/cli'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -23,6 +25,11 @@ import { Route as GithubOwnerRepoRouteRouteImport } from './routes/_github/$owne
 import { Route as GithubOwnerRepoIndexRouteImport } from './routes/_github/$owner/$repo/index'
 import { Route as GithubOwnerRepoReferenceRouteImport } from './routes/_github/$owner/$repo/$reference'
 
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -31,6 +38,11 @@ const SignInRoute = SignInRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
@@ -94,8 +106,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/cli': typeof CliRoute
   '/explore': typeof ExploreRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/sign-in': typeof SignInRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/$owner': typeof GithubOwnerRouteRouteWithChildren
   '/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/callback': typeof ApiAuthCallbackRoute
@@ -108,8 +122,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/cli': typeof CliRoute
   '/explore': typeof ExploreRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/sign-in': typeof SignInRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/$owner': typeof GithubOwnerIndexRoute
   '/$owner/$repo/$reference': typeof GithubOwnerRepoReferenceRoute
@@ -122,8 +138,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/cli': typeof CliRoute
   '/explore': typeof ExploreRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/sign-in': typeof SignInRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/_github/$owner': typeof GithubOwnerRouteRouteWithChildren
   '/_github/$owner/$repo': typeof GithubOwnerRepoRouteRouteWithChildren
   '/api/auth/callback': typeof ApiAuthCallbackRoute
@@ -138,8 +156,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cli'
     | '/explore'
+    | '/privacy-policy'
     | '/profile'
     | '/sign-in'
+    | '/terms-of-service'
     | '/$owner'
     | '/$owner/$repo'
     | '/api/auth/callback'
@@ -152,8 +172,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cli'
     | '/explore'
+    | '/privacy-policy'
     | '/profile'
     | '/sign-in'
+    | '/terms-of-service'
     | '/api/auth/callback'
     | '/$owner'
     | '/$owner/$repo/$reference'
@@ -165,8 +187,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cli'
     | '/explore'
+    | '/privacy-policy'
     | '/profile'
     | '/sign-in'
+    | '/terms-of-service'
     | '/_github/$owner'
     | '/_github/$owner/$repo'
     | '/api/auth/callback'
@@ -181,13 +205,22 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   CliRoute: typeof CliRoute
   ExploreRoute: typeof ExploreRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   SignInRoute: typeof SignInRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
@@ -200,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -326,8 +366,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   CliRoute: CliRoute,
   ExploreRoute: ExploreRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   SignInRoute: SignInRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
 }
 export const routeTree = rootRouteImport

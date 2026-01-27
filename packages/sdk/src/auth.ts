@@ -4,7 +4,18 @@
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
+import { z } from "zod";
+import { WorkOSTokenResponseSchema } from "@offworld/types";
 import { Paths } from "./paths";
+
+// Schema for stored auth data
+const AuthDataSchema = z.object({
+	token: z.string(),
+	expiresAt: z.string().optional(),
+	workosId: z.string().optional(),
+	refreshToken: z.string().optional(),
+	email: z.string().optional(),
+});
 
 // ============================================================================
 // Types
@@ -125,14 +136,14 @@ export function loadAuthData(): AuthData | null {
 
 	try {
 		const content = readFileSync(authPath, "utf-8");
-		const data = JSON.parse(content) as AuthData;
+		const json = JSON.parse(content);
+		const parsed = AuthDataSchema.safeParse(json);
 
-		// Basic validation
-		if (!data.token || typeof data.token !== "string") {
+		if (!parsed.success) {
 			return null;
 		}
 
-		return data;
+		return parsed.data;
 	} catch {
 		return null;
 	}
@@ -283,17 +294,7 @@ function getWorkosClientId(): string {
 	return process.env.WORKOS_CLIENT_ID || "";
 }
 
-interface RefreshTokenResponse {
-	user: {
-		id: string;
-		email: string;
-		firstName?: string;
-		lastName?: string;
-	};
-	access_token: string;
-	refresh_token: string;
-	expires_at?: number;
-}
+// RefreshTokenResponse uses same schema as WorkOSTokenResponse
 
 /**
  * Refreshes the access token using the stored refresh token
@@ -328,7 +329,8 @@ export async function refreshAccessToken(): Promise<AuthData> {
 			throw new AuthError(`Token refresh failed: ${error}`);
 		}
 
-		const tokenData = (await response.json()) as RefreshTokenResponse;
+		const json = await response.json();
+		const tokenData = WorkOSTokenResponseSchema.parse(json);
 
 		const newAuthData: AuthData = {
 			token: tokenData.access_token,

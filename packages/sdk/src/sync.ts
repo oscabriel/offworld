@@ -6,7 +6,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@offworld/backend-api/api";
 import { toReferenceName } from "./config.js";
-import type { RepoSource } from "@offworld/types";
+import { GitHubRepoMetadataSchema, type RepoSource } from "@offworld/types";
 
 // ============================================================================
 // Configuration
@@ -451,12 +451,12 @@ export async function fetchGitHubMetadata(
 			return null;
 		}
 
-		const data = (await response.json()) as {
-			stargazers_count?: number;
-			description?: string | null;
-			language?: string | null;
-			default_branch?: string;
-		};
+		const json = await response.json();
+		const result = GitHubRepoMetadataSchema.safeParse(json);
+		if (!result.success) {
+			return null;
+		}
+		const data = result.data;
 
 		return {
 			stars: data.stargazers_count ?? 0,

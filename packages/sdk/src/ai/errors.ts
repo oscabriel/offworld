@@ -15,12 +15,14 @@ export class OpenCodeReferenceError extends Error {
 }
 
 /**
- * Error when the @opencode-ai/sdk package is not installed
+ * Error when the @opencode-ai/sdk package is not installed or invalid
  */
 export class OpenCodeSDKError extends OpenCodeReferenceError {
 	readonly _tag = "OpenCodeSDKError" as const;
-	constructor() {
-		super("Failed to import @opencode-ai/sdk. Install it with: bun add @opencode-ai/sdk");
+	constructor(message?: string) {
+		super(
+			message ?? "Failed to import @opencode-ai/sdk. Install it with: bun add @opencode-ai/sdk",
+		);
 		this.name = "OpenCodeSDKError";
 	}
 }

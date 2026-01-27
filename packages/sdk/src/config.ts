@@ -48,7 +48,12 @@ export function getRepoPath(
  */
 export function toMetaDirName(repoName: string): string {
 	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/") as [string, string];
+		const parts = repoName.split("/");
+		const owner = parts[0];
+		const repo = parts[1];
+		if (!owner || !repo) {
+			return repoName;
+		}
 		if (owner === repo) {
 			return repo;
 		}
@@ -66,7 +71,12 @@ export function toMetaDirName(repoName: string): string {
  */
 export function toReferenceFileName(repoName: string): string {
 	if (repoName.includes("/")) {
-		const [owner, repo] = repoName.split("/") as [string, string];
+		const parts = repoName.split("/");
+		const owner = parts[0];
+		const repo = parts[1];
+		if (!owner || !repo) {
+			return `${repoName.toLowerCase()}.md`;
+		}
 		const ownerLower = owner.toLowerCase();
 		const repoLower = repo.toLowerCase();
 

@@ -23,6 +23,7 @@ export interface RepoValidationResult {
 	error?: string;
 	stars?: number;
 	description?: string;
+	canonicalFullName?: string;
 }
 
 export interface CommitValidationResult {
@@ -51,6 +52,7 @@ export async function validateRepo(fullName: string): Promise<RepoValidationResu
 			stargazers_count?: number;
 			private?: boolean;
 			description?: string | null;
+			full_name?: string;
 		};
 
 		if (data.private) {
@@ -66,7 +68,12 @@ export async function validateRepo(fullName: string): Promise<RepoValidationResu
 			};
 		}
 
-		return { valid: true, stars, description: data.description ?? undefined };
+		return {
+			valid: true,
+			stars,
+			description: data.description ?? undefined,
+			canonicalFullName: data.full_name,
+		};
 	} catch (error) {
 		return {
 			valid: false,

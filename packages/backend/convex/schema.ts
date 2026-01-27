@@ -10,7 +10,8 @@ export default defineSchema({
 	// Repository table - GitHub metadata
 	repository: defineTable({
 		// GitHub identification
-		fullName: v.string(), // owner/repo format
+		fullName: v.string(), // canonical casing from GitHub API (for display)
+		fullNameLower: v.string(), // lowercase (for indexing/lookups)
 		owner: v.string(),
 		name: v.string(),
 
@@ -25,6 +26,7 @@ export default defineSchema({
 		fetchedAt: v.string(), // when we last synced from GitHub
 	})
 		.index("by_fullName", ["fullName"])
+		.index("by_fullNameLower", ["fullNameLower"])
 		.index("by_owner", ["owner"])
 		.index("by_stars", ["stars"])
 		.index("by_fetchedAt", ["fetchedAt"]),

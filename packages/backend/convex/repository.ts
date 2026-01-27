@@ -14,7 +14,7 @@ export const get = query({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 	},
 });
@@ -75,9 +75,10 @@ export const upsert = internalMutation({
 		githubUrl: v.string(),
 	},
 	handler: async (ctx, args) => {
+		const fullNameLower = args.fullName.toLowerCase();
 		const existing = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", fullNameLower))
 			.first();
 
 		const now = new Date().toISOString();
@@ -92,6 +93,7 @@ export const upsert = internalMutation({
 
 		return await ctx.db.insert("repository", {
 			...args,
+			fullNameLower,
 			fetchedAt: now,
 		});
 	},

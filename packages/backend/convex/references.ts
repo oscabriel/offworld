@@ -24,7 +24,7 @@ export const get = query({
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 
 		if (!repo) return null;
@@ -45,7 +45,7 @@ export const getByName = query({
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 
 		if (!repo) return null;
@@ -67,7 +67,7 @@ export const listByRepo = query({
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 
 		if (!repo) return [];
@@ -173,7 +173,7 @@ export const pull = query({
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 
 		if (!repo) return null;
@@ -212,7 +212,7 @@ export const check = query({
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 
 		if (!repo) return { exists: false as const };
@@ -325,6 +325,7 @@ export const push = action({
 			workosId,
 			repoStars: repoResult.stars,
 			repoDescription: repoResult.description,
+			canonicalFullName: repoResult.canonicalFullName,
 		});
 	},
 });
@@ -347,10 +348,15 @@ export const pushInternal = internalMutation({
 		workosId: v.string(),
 		repoStars: v.optional(v.number()),
 		repoDescription: v.optional(v.string()),
+		canonicalFullName: v.optional(v.string()),
 	},
 	handler: async (ctx, args): Promise<PushResult> => {
-		const { workosId, repoStars, repoDescription, ...referenceData } = args;
+		const { workosId, repoStars, repoDescription, canonicalFullName, ...referenceData } = args;
 		const now = new Date().toISOString();
+
+		// Lowercase for lookups, canonical for display
+		const fullNameLower = args.fullName.toLowerCase();
+		const fullName = canonicalFullName ?? fullNameLower;
 
 		// 1. Global rate limit: 20 pushes/day/user
 		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -378,30 +384,32 @@ export const pushInternal = internalMutation({
 		}
 
 		// 3. Upsert repository (need repo._id for immutability check)
-		const parts = args.fullName.split("/");
+		const parts = fullName.split("/");
 		const owner = parts[0] ?? "";
 		const name = parts[1] ?? "";
 
 		let repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", fullNameLower))
 			.first();
 
 		if (repo) {
 			await ctx.db.patch(repo._id, {
+				fullName, // update canonical if changed
 				stars: repoStars ?? repo.stars,
 				description: repoDescription ?? repo.description,
 				fetchedAt: now,
 			});
 		} else {
 			const repoId = await ctx.db.insert("repository", {
-				fullName: args.fullName,
+				fullName,
+				fullNameLower,
 				owner,
 				name,
 				description: repoDescription,
 				stars: repoStars ?? 0,
 				defaultBranch: "main",
-				githubUrl: `https://github.com/${args.fullName}`,
+				githubUrl: `https://github.com/${fullName}`,
 				fetchedAt: now,
 			});
 			repo = await ctx.db.get(repoId);
@@ -442,7 +450,7 @@ export const pushInternal = internalMutation({
 
 		// 6. Log push for rate limiting
 		await ctx.db.insert("pushLog", {
-			fullName: args.fullName,
+			fullName: fullNameLower,
 			workosId,
 			pushedAt: now,
 			commitSha: args.commitSha,
@@ -460,7 +468,7 @@ export const recordPull = mutation({
 	handler: async (ctx, args) => {
 		const repo = await ctx.db
 			.query("repository")
-			.withIndex("by_fullName", (q) => q.eq("fullName", args.fullName))
+			.withIndex("by_fullNameLower", (q) => q.eq("fullNameLower", args.fullName.toLowerCase()))
 			.first();
 
 		if (!repo) return;

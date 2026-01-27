@@ -324,7 +324,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 			let shouldDiscover = options.yes;
 			if (!options.yes) {
 				const confirmDiscover = await p.confirm({
-					message: "Add them to your index? (they will be marked as not referenced)",
+					message: "Add them to your clone map? (they will be marked as not referenced)",
 					initialValue: true,
 				});
 				if (!p.isCancel(confirmDiscover)) {
@@ -334,7 +334,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 
 			if (shouldDiscover) {
 				const result = await discoverRepos({ repoRoot: expandedRepoRoot });
-				p.log.success(`Added ${result.discovered.length} repos to index`);
+				p.log.success(`Added ${result.discovered.length} repos to clone map`);
 			}
 		}
 	}

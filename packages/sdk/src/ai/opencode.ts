@@ -127,13 +127,22 @@ async function getOpenCodeSDK(): Promise<{
 
 	try {
 		const sdk = await import("@opencode-ai/sdk");
+		if (
+			typeof sdk.createOpencode !== "function" ||
+			typeof sdk.createOpencodeClient !== "function"
+		) {
+			throw new OpenCodeSDKError("SDK missing required exports");
+		}
 		cachedCreateOpencode = sdk.createOpencode as CreateOpencodeFn;
 		cachedCreateOpencodeClient = sdk.createOpencodeClient as CreateOpencodeClientFn;
 		return {
 			createOpencode: cachedCreateOpencode,
 			createOpencodeClient: cachedCreateOpencodeClient,
 		};
-	} catch {
+	} catch (error) {
+		if (error instanceof OpenCodeSDKError) {
+			throw error;
+		}
 		throw new OpenCodeSDKError();
 	}
 }
@@ -153,7 +162,10 @@ function formatToolMessage(tool: string | undefined, state: ToolRunningState): s
 		return null;
 	}
 
-	const input = state.input as Record<string, unknown> | undefined;
+	const input =
+		state.input && typeof state.input === "object" && !Array.isArray(state.input)
+			? (state.input as Record<string, unknown>)
+			: undefined;
 	if (!input) {
 		return `Running ${tool}...`;
 	}

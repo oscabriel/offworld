@@ -1,43 +1,6 @@
+import { ModelsDevDataSchema, type ModelsDevProvider } from "@offworld/types";
+
 const MODELS_DEV_URL = "https://models.dev/api.json";
-
-/**
- * Raw model data from models.dev
- */
-export interface ModelsDevModel {
-	id: string;
-	name: string;
-	family?: string;
-	release_date: string;
-	attachment: boolean;
-	reasoning: boolean;
-	temperature: boolean;
-	tool_call: boolean;
-	cost?: {
-		input: number;
-		output: number;
-		cache_read?: number;
-		cache_write?: number;
-	};
-	limit: {
-		context: number;
-		input?: number;
-		output: number;
-	};
-	experimental?: boolean;
-	status?: "alpha" | "beta" | "deprecated";
-}
-
-/**
- * Raw provider data from models.dev
- */
-export interface ModelsDevProvider {
-	id: string;
-	name: string;
-	api?: string;
-	env: string[];
-	npm?: string;
-	models: Record<string, ModelsDevModel>;
-}
 
 /**
  * Simplified provider info for CLI display
@@ -87,7 +50,12 @@ async function fetchModelsDevData(): Promise<Record<string, ModelsDevProvider>> 
 		throw new Error(`Failed to fetch models.dev: ${res.status} ${res.statusText}`);
 	}
 
-	cachedData = (await res.json()) as Record<string, ModelsDevProvider>;
+	const json = await res.json();
+	const parsed = ModelsDevDataSchema.safeParse(json);
+	if (!parsed.success) {
+		throw new Error(`Invalid models.dev response: ${parsed.error.message}`);
+	}
+	cachedData = parsed.data;
 	cacheTime = now;
 	return cachedData;
 }
@@ -102,7 +70,7 @@ export async function listProviders(): Promise<ProviderInfo[]> {
 		.map((p) => ({
 			id: p.id,
 			name: p.name,
-			env: p.env,
+			env: p.env ?? [],
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -121,13 +89,13 @@ export async function getProvider(providerId: string): Promise<ProviderWithModel
 	return {
 		id: provider.id,
 		name: provider.name,
-		env: provider.env,
+		env: provider.env ?? [],
 		models: Object.values(provider.models)
 			.filter((m) => m.status !== "deprecated")
 			.map((m) => ({
 				id: m.id,
 				name: m.name,
-				reasoning: m.reasoning,
+				reasoning: m.reasoning ?? false,
 				experimental: m.experimental,
 				status: m.status,
 			}))
@@ -145,13 +113,13 @@ export async function listProvidersWithModels(): Promise<ProviderWithModels[]> {
 		.map((p) => ({
 			id: p.id,
 			name: p.name,
-			env: p.env,
+			env: p.env ?? [],
 			models: Object.values(p.models)
 				.filter((m) => m.status !== "deprecated")
 				.map((m) => ({
 					id: m.id,
 					name: m.name,
-					reasoning: m.reasoning,
+					reasoning: m.reasoning ?? false,
 					experimental: m.experimental,
 					status: m.status,
 				}))

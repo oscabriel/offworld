@@ -6,6 +6,7 @@ import { execSync, spawn } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { NpmPackageResponseSchema } from "@offworld/types";
 import { VERSION } from "./constants.js";
 
 const GITHUB_REPO = "oscabriel/offworld";
@@ -122,8 +123,10 @@ export async function fetchLatestVersion(method?: InstallMethod): Promise<string
 			// Fetch from npm registry
 			const response = await fetch(`https://registry.npmjs.org/${NPM_PACKAGE}/latest`);
 			if (!response.ok) return null;
-			const data = (await response.json()) as { version?: string };
-			return data.version ?? null;
+			const json = await response.json();
+			const result = NpmPackageResponseSchema.safeParse(json);
+			if (!result.success) return null;
+			return result.data.version ?? null;
 		}
 
 		// Default: fetch from GitHub releases
@@ -134,9 +137,14 @@ export async function fetchLatestVersion(method?: InstallMethod): Promise<string
 			},
 		});
 		if (!response.ok) return null;
-		const data = (await response.json()) as { tag_name?: string };
+		const json = await response.json();
+		// GitHub releases response - just need tag_name
+		const tagName =
+			typeof json === "object" && json !== null && "tag_name" in json
+				? String(json.tag_name)
+				: null;
 		// Remove 'v' prefix if present
-		return data.tag_name?.replace(/^v/, "") ?? null;
+		return tagName?.replace(/^v/, "") ?? null;
 	} catch {
 		return null;
 	}

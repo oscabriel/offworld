@@ -16,12 +16,19 @@ import {
 	existsSync,
 } from "node:fs";
 import { join } from "node:path";
+import { z } from "zod";
 import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
 import { loadConfig, toReferenceName, toMetaDirName, toReferenceFileName } from "./config.js";
 import { getCommitSha } from "./clone.js";
 import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
 import { readGlobalMap, writeGlobalMap } from "./index-manager.js";
+
+// Schema for package.json keyword extraction
+const PackageJsonKeywordsSchema = z.object({
+	name: z.string().optional(),
+	keywords: z.array(z.string()).optional(),
+});
 
 // ============================================================================
 // Types
@@ -101,15 +108,16 @@ function deriveKeywords(fullName: string, localPath: string, referenceContent: s
 	if (existsSync(packageJsonPath)) {
 		try {
 			const content = readFileSync(packageJsonPath, "utf-8");
-			const data = JSON.parse(content) as { name?: string; keywords?: unknown };
+			const json = JSON.parse(content);
+			const parsed = PackageJsonKeywordsSchema.safeParse(json);
 
-			if (data.name) {
-				addKeywords(data.name);
-			}
+			if (parsed.success) {
+				if (parsed.data.name) {
+					addKeywords(parsed.data.name);
+				}
 
-			if (Array.isArray(data.keywords)) {
-				for (const keyword of data.keywords) {
-					if (typeof keyword === "string") {
+				if (parsed.data.keywords) {
+					for (const keyword of parsed.data.keywords) {
 						addKeywords(keyword);
 					}
 				}
@@ -408,10 +416,6 @@ function ensureSymlink(target: string, linkPath: string): void {
 	mkdirSync(linkDir, { recursive: true });
 	symlinkSync(target, linkPath, "dir");
 }
-
-// ============================================================================
-// Single-Skill Installation (US-005)
-// ============================================================================
 
 /**
  * Static template for the global SKILL.md file.

@@ -5,6 +5,8 @@
  * 3. User prompt (handled by caller)
  */
 
+import { NpmPackageResponseSchema } from "@offworld/types";
+
 export type ResolvedDep = {
 	dep: string;
 	repo: string | null;
@@ -149,10 +151,11 @@ export async function resolveFromNpm(packageName: string): Promise<string | null
 		const res = await fetch(`https://registry.npmjs.org/${packageName}`);
 		if (!res.ok) return null;
 
-		const data = (await res.json()) as {
-			repository?: { url?: string };
-		};
-		const repoUrl = data.repository?.url;
+		const json = await res.json();
+		const result = NpmPackageResponseSchema.safeParse(json);
+		if (!result.success) return null;
+
+		const repoUrl = result.data.repository?.url;
 		if (!repoUrl) return null;
 
 		return parseGitHubUrl(repoUrl);

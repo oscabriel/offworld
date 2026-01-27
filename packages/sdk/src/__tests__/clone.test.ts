@@ -106,8 +106,9 @@ vi.mock("node:fs/promises", () => ({
 }));
 
 function createMockSpawn(gitCommand: string, args: string[]) {
-	// biome-ignore lint/suspicious/noExplicitAny: test mock
-	const listeners: Record<string, ((...args: any[]) => void)[]> = {};
+	// Event listeners with heterogeneous signatures (Buffer for streams, number/Error for process events)
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock requires flexible callback types
+	const listeners: Record<string, Array<(arg: any) => void>> = {};
 	const stdout = {
 		on: (event: string, cb: (data: Buffer) => void) => {
 			if (!listeners[`stdout:${event}`]) listeners[`stdout:${event}`] = [];

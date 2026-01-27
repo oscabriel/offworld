@@ -419,72 +419,63 @@ function ensureSymlink(target: string, linkPath: string): void {
  */
 const GLOBAL_SKILL_TEMPLATE = `---
 name: offworld
-description: Routes agent queries to Offworld reference files. Use to locate, select, and read per-repo references for dependency knowledge.
-allowed-tools: Bash(ow:*) Read Glob Grep
+description: Routes queries to Offworld reference files. Find and read per-repo references for dependency knowledge.
+allowed-tools: Bash(ow:*) Read
 ---
 
-# Offworld Skills Router
+# Offworld Reference Router
 
-Route a dependency or repo question to the right reference, then to the local clone.
+Look up dependency/library documentation via CLI, then read the reference file.
 
-## Quick Route
+## Usage
 
-1. Run \`ow config show --json\` to get paths.
-2. Load \`paths.projectMap\` if it exists, else \`paths.globalMap\`.
-3. Match the repo by exact key (\`owner/repo\`) or by \`keywords\`.
-4. Open \`primary\` in \`paths.referencesDir\`.
-5. Use \`localPath\` to jump into the clone.
-
-## Precedence
-
-- Project map wins when present (scoped to current repo).
-- Global map is fallback for everything else.
-
-## Directory Structure
-
-\`\`\`
-~/.local/share/offworld/skill/offworld/
-├── SKILL.md (this file)
-├── assets/
-│   └── map.json (global map of all installed references)
-└── references/
-    ├── owner-repo.md (reference for owner/repo)
-    └── ...
+**Find a reference:**
+\`\`\`bash
+ow map search <term>     # search by name or keyword
+ow map show <repo>       # get info for specific repo
 \`\`\`
 
-## Map Schema (map.json)
-
-\`\`\`json
-{
-  "repos": {
-    "owner/repo": {
-      "localPath": "/absolute/path/to/clone",
-      "references": ["owner-repo.md"],
-      "primary": "owner-repo.md",
-      "keywords": ["keyword1", "keyword2"],
-      "updatedAt": "2026-01-25"
-    }
-  }
-}
+**Get paths for tools:**
+\`\`\`bash
+ow map show <repo> --ref   # reference file path (use with Read)
+ow map show <repo> --path  # clone directory path
 \`\`\`
 
-## CLI Helpers
+**Example workflow:**
+\`\`\`bash
+# 1. Find the repo
+ow map search zod
 
-- \`ow config show --json\` (paths)
-- \`ow list\` (installed repos)
-- \`ow pull <repo>\` (install + generate reference)
-- \`ow generate <repo>\` (regenerate reference)
-- \`ow project init\` (scan deps, install references)
+# 2. Get reference path
+ow map show colinhacks/zod --ref
+# Output: /Users/.../.local/share/offworld/skill/offworld/references/colinhacks-zod.md
 
-## If No Match
+# 3. Read the reference with the path from step 2
+\`\`\`
 
-1. Try \`ow pull <owner/repo>\` or \`ow project init\`.
-2. Reload map and references.
+## If Reference Not Found
 
-## From Reference to Code
+\`\`\`bash
+ow pull <owner/repo>    # clone + generate reference
+ow project init         # scan project deps, install references
+\`\`\`
 
-- Use \`localPath\` to open the clone.
-- Start with files listed in the reference (Quick References / Packages).
+## All Commands
+
+| Command | Description |
+|---------|-------------|
+| \`ow map search <term>\` | Find repos by name/keyword |
+| \`ow map show <repo>\` | Show repo info |
+| \`ow map show <repo> --ref\` | Print reference file path |
+| \`ow map show <repo> --path\` | Print clone directory path |
+| \`ow list\` | List all installed repos |
+| \`ow pull <repo>\` | Clone + generate reference |
+
+## Notes
+
+- Project map (\`.offworld/map.json\`) takes precedence over global map when present
+- Reference files are markdown with API docs, patterns, best practices
+- Clone paths useful for exploring source code after reading reference
 `;
 
 /**
@@ -573,10 +564,7 @@ export function installReference(
 	const legacyQualifiedName = legacyProvider ? `${legacyProvider}:${fullName}` : undefined;
 	const legacyEntry = legacyQualifiedName ? map.repos[legacyQualifiedName] : undefined;
 
-	const references = [
-		...(existingEntry?.references ?? []),
-		...(legacyEntry?.references ?? []),
-	];
+	const references = [...(existingEntry?.references ?? []), ...(legacyEntry?.references ?? [])];
 	if (!references.includes(referenceFileName)) {
 		references.push(referenceFileName);
 	}

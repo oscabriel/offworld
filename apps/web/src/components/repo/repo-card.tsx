@@ -23,7 +23,9 @@ export function RepoCard({
 	displayName,
 	indexed = true,
 }: RepoCardProps) {
-	const [owner, repo] = fullName.split("/");
+	const parts = fullName.split("/");
+	const owner = parts[0] ?? "";
+	const repo = parts[1] ?? "";
 
 	return (
 		<Link to="/$owner/$repo" params={{ owner, repo }} className="block h-full">

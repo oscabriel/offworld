@@ -506,8 +506,8 @@ describe("config.ts", () => {
 		});
 
 		it("is case insensitive for matching", () => {
-			expect(toReferenceFileName("HonoJS/Hono")).toBe("Hono.md");
-			expect(toReferenceFileName("Get-Convex/Convex-Backend")).toBe("Convex-Backend.md");
+			expect(toReferenceFileName("HonoJS/Hono")).toBe("hono.md");
+			expect(toReferenceFileName("Get-Convex/Convex-Backend")).toBe("convex-backend.md");
 		});
 	});
 });

@@ -55,7 +55,7 @@ describe("repo-source.ts", () => {
 				["facebook/react", "facebook", "react"],
 				["a/b", "a", "b"],
 				["my-org/my-repo", "my-org", "my-repo"],
-				["Org123/Repo_456", "Org123", "Repo_456"],
+				["Org123/Repo_456", "org123", "repo_456"],
 			];
 
 			for (const [input, expectedOwner, expectedRepo] of cases) {

@@ -1,7 +1,10 @@
 {
 	"name": "@offworld/types",
 	"version": "0.1.0",
-	"private": true,
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
 	"type": "module",
 	"exports": {
 		".": {
@@ -13,12 +16,16 @@
 			"import": "./dist/schemas.mjs"
 		}
 	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"build": "tsdown",
 		"dev": "tsdown --watch",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"prepublishOnly": "bun run build"
 	},
 	"dependencies": {
 		"zod": "catalog:"

@@ -93,7 +93,6 @@ ow list
 ```
 --json            Output as JSON
 --paths           Show full paths
---stale           Only show stale repos
 --pattern <pat>   Filter by pattern
 ```
 

@@ -105,14 +105,14 @@ These clones serve two purposes:
 - **Agent reads them** to generate accurate references
 - **You can browse them** anytime for reference or to contribute
 
-| Command            | Description                                           |
-| ------------------ | ----------------------------------------------------- |
-| `ow repo list`     | List all managed repos                                |
-| `ow repo update`   | Pull latest changes (`--all`, `--stale`, `--pattern`) |
-| `ow repo status`   | Show summary: total repos, disk usage, stale count    |
-| `ow repo prune`    | Clean up stale map entries and orphaned dirs          |
-| `ow repo gc`       | Garbage collect old/unused repos                      |
-| `ow repo discover` | Find and index existing repos in your repoRoot        |
+| Command            | Description                                                            |
+| ------------------ | ---------------------------------------------------------------------- |
+| `ow repo list`     | List all managed repos                                                 |
+| `ow repo update`   | Pull latest changes (`--all`, `--pattern`, `--dry-run`, `--unshallow`) |
+| `ow repo status`   | Show summary: total repos, disk usage, stale count                     |
+| `ow repo prune`    | Clean up stale map entries and orphaned dirs                           |
+| `ow repo gc`       | Garbage collect old/unused repos                                       |
+| `ow repo discover` | Find and index existing repos in your repoRoot                         |
 
 ## Supported Agents
 

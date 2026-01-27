@@ -15,7 +15,9 @@ export function validateReferenceContent(content: string): ContentValidationResu
 	}
 
 	// Reject raw HTML tags (simple, conservative scan)
-	if (/<\s*\/?\s*[a-zA-Z][\s\S]*?>/m.test(content)) {
+	// Strip fenced code blocks first to avoid false positives on generics like Queue<T>
+	const withoutCodeBlocks = content.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]+`/g, "");
+	if (/<\s*\/?\s*[a-zA-Z][\s\S]*?>/m.test(withoutCodeBlocks)) {
 		return { valid: false, error: "Raw HTML not allowed in reference content" };
 	}
 

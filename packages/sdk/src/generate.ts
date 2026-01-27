@@ -8,6 +8,7 @@
 import {
 	mkdirSync,
 	writeFileSync,
+	readFileSync,
 	lstatSync,
 	unlinkSync,
 	rmSync,
@@ -20,7 +21,7 @@ import { loadConfig, toReferenceName, toMetaDirName, toReferenceFileName } from 
 import { getCommitSha } from "./clone.js";
 import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
-import { upsertGlobalMapEntry, readGlobalMap } from "./index-manager.js";
+import { readGlobalMap, writeGlobalMap } from "./index-manager.js";
 
 // ============================================================================
 // Types
@@ -51,6 +52,74 @@ export interface InstallReferenceMeta {
 	commitSha: string;
 	/** SDK version used for generation */
 	version: string;
+}
+
+function normalizeKeyword(value: string): string[] {
+	const trimmed = value.trim();
+	if (!trimmed) return [];
+	const normalized = trimmed.toLowerCase();
+	const tokens = new Set<string>();
+
+	const addToken = (token: string): void => {
+		const cleaned = token.trim().toLowerCase();
+		if (cleaned.length < 2) return;
+		tokens.add(cleaned);
+	};
+
+	addToken(normalized);
+	addToken(normalized.replaceAll("/", "-"));
+	addToken(normalized.replaceAll("/", ""));
+
+	for (const token of normalized.split(/[\s/_-]+/)) {
+		addToken(token);
+	}
+
+	if (normalized.startsWith("@")) {
+		addToken(normalized.slice(1));
+	}
+
+	return Array.from(tokens);
+}
+
+function deriveKeywords(fullName: string, localPath: string, referenceContent: string): string[] {
+	const keywords = new Set<string>();
+
+	const addKeywords = (value: string): void => {
+		for (const token of normalizeKeyword(value)) {
+			keywords.add(token);
+		}
+	};
+
+	addKeywords(fullName);
+
+	const headingMatch = referenceContent.match(/^#\s+(.+)$/m);
+	if (headingMatch?.[1]) {
+		addKeywords(headingMatch[1]);
+	}
+
+	const packageJsonPath = join(localPath, "package.json");
+	if (existsSync(packageJsonPath)) {
+		try {
+			const content = readFileSync(packageJsonPath, "utf-8");
+			const data = JSON.parse(content) as { name?: string; keywords?: unknown };
+
+			if (data.name) {
+				addKeywords(data.name);
+			}
+
+			if (Array.isArray(data.keywords)) {
+				for (const keyword of data.keywords) {
+					if (typeof keyword === "string") {
+						addKeywords(keyword);
+					}
+				}
+			}
+		} catch {
+			// Ignore parse errors
+		}
+	}
+
+	return Array.from(keywords);
 }
 
 // ============================================================================
@@ -356,14 +425,20 @@ allowed-tools: Bash(ow:*) Read Glob Grep
 
 # Offworld Skills Router
 
-This is the global Offworld skill that routes queries to per-repository reference files.
+Route a dependency or repo question to the right reference, then to the local clone.
 
-## How it works
+## Quick Route
 
-When you need documentation for a dependency:
-1. Run \`ow config show --json\` to get paths and map data
-2. Parse the map.json to find which reference file corresponds to your query
-3. Read the appropriate reference markdown from the references/ directory
+1. Run \`ow config show --json\` to get paths.
+2. Load \`paths.projectMap\` if it exists, else \`paths.globalMap\`.
+3. Match the repo by exact key (\`owner/repo\`) or by \`keywords\`.
+4. Open \`primary\` in \`paths.referencesDir\`.
+5. Use \`localPath\` to jump into the clone.
+
+## Precedence
+
+- Project map wins when present (scoped to current repo).
+- Global map is fallback for everything else.
 
 ## Directory Structure
 
@@ -377,14 +452,8 @@ When you need documentation for a dependency:
     └── ...
 \`\`\`
 
-## Querying References
+## Map Schema (map.json)
 
-Use \`ow config show --json\` to get:
-- \`paths.globalMap\`: Location of map.json
-- \`paths.referencesDir\`: Directory containing all reference files
-- \`paths.projectMap\`: Project-specific .offworld/map.json (if in a project)
-
-The map.json structure:
 \`\`\`json
 {
   "repos": {
@@ -398,6 +467,24 @@ The map.json structure:
   }
 }
 \`\`\`
+
+## CLI Helpers
+
+- \`ow config show --json\` (paths)
+- \`ow list\` (installed repos)
+- \`ow pull <repo>\` (install + generate reference)
+- \`ow generate <repo>\` (regenerate reference)
+- \`ow project init\` (scan deps, install references)
+
+## If No Match
+
+1. Try \`ow pull <owner/repo>\` or \`ow project init\`.
+2. Reload map and references.
+
+## From Reference to Code
+
+- Use \`localPath\` to open the clone.
+- Start with files listed in the reference (Quick References / Packages).
 `;
 
 /**
@@ -476,18 +563,42 @@ export function installReference(
 	// Update global map
 	const map = readGlobalMap();
 	const existingEntry = map.repos[qualifiedName];
-	const references = existingEntry?.references ?? [];
+	const legacyProviderMap: Record<string, string> = {
+		"github.com": "github",
+		"gitlab.com": "gitlab",
+		"bitbucket.org": "bitbucket",
+	};
+	const [host] = qualifiedName.split(":");
+	const legacyProvider = host ? legacyProviderMap[host] : undefined;
+	const legacyQualifiedName = legacyProvider ? `${legacyProvider}:${fullName}` : undefined;
+	const legacyEntry = legacyQualifiedName ? map.repos[legacyQualifiedName] : undefined;
 
-	// Add reference to list if not present
+	const references = [
+		...(existingEntry?.references ?? []),
+		...(legacyEntry?.references ?? []),
+	];
 	if (!references.includes(referenceFileName)) {
 		references.push(referenceFileName);
 	}
 
-	upsertGlobalMapEntry(qualifiedName, {
+	const derivedKeywords = keywords ?? deriveKeywords(fullName, localPath, referenceContent);
+	const keywordsSet = new Set<string>([
+		...(existingEntry?.keywords ?? []),
+		...(legacyEntry?.keywords ?? []),
+		...derivedKeywords,
+	]);
+
+	map.repos[qualifiedName] = {
 		localPath,
 		references,
 		primary: referenceFileName,
-		keywords: keywords ?? existingEntry?.keywords ?? [],
+		keywords: Array.from(keywordsSet),
 		updatedAt: new Date().toISOString(),
-	});
+	};
+
+	if (legacyQualifiedName && legacyQualifiedName in map.repos) {
+		delete map.repos[legacyQualifiedName];
+	}
+
+	writeGlobalMap(map);
 }

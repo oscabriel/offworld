@@ -4,7 +4,7 @@
  */
 
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "@offworld/backend/api";
+import { api } from "@offworld/backend-api/api";
 import { toReferenceName } from "./config.js";
 import type { RepoSource } from "@offworld/types";
 

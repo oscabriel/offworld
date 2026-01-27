@@ -639,7 +639,7 @@ describe("cloneRepo", () => {
 
 describe("updateRepo", () => {
 	beforeEach(() => {
-		// Setup: add repo to index and filesystem
+		// Setup: add repo to clone map and filesystem
 		mapEntries[mockSource.qualifiedName] = { ...mockMapEntry };
 		addVirtualPath(mockMapEntry.localPath, true);
 	});

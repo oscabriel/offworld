@@ -139,7 +139,9 @@ async function main(): Promise<void> {
 		execSync("git push --tags", { stdio: "inherit" });
 		console.log(`\n✓ Released v${newVersion} — workflow triggered`);
 	} else {
-		console.log(`\nCommit created. To release later:\n  git push && git tag v${newVersion} && git push --tags`);
+		console.log(
+			`\nCommit created. To release later:\n  git push && git tag v${newVersion} && git push --tags`,
+		);
 	}
 }
 

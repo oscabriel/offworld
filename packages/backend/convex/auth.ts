@@ -1,6 +1,20 @@
 import { query, mutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 
+/**
+ * User object validator for Convex return types.
+ * Matches the user table schema defined in schema.ts.
+ */
+const userValidator = v.object({
+	_id: v.id("user"),
+	_creationTime: v.number(),
+	workosId: v.string(),
+	email: v.string(),
+	name: v.optional(v.string()),
+	image: v.optional(v.string()),
+	createdAt: v.string(),
+});
+
 export async function getAuthUser(ctx: QueryCtx | MutationCtx) {
 	const identity = await ctx.auth.getUserIdentity();
 	if (!identity) return null;
@@ -41,7 +55,7 @@ export const ensureUser = mutation({
 
 export const getCurrentUser = query({
 	args: {},
-	returns: v.any(),
+	returns: v.union(userValidator, v.null()),
 	async handler(ctx) {
 		return await getAuthUser(ctx);
 	},
@@ -49,7 +63,7 @@ export const getCurrentUser = query({
 
 export const getCurrentUserSafe = query({
 	args: {},
-	returns: v.any(),
+	returns: v.union(userValidator, v.null()),
 	async handler(ctx) {
 		return await getAuthUser(ctx);
 	},

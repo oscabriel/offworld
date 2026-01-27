@@ -1,32 +1,32 @@
 import { v } from "convex/values";
+import { z } from "zod";
 import { action } from "./_generated/server";
+import { GITHUB_API, getGitHubHeaders } from "./lib/github-auth";
 
-const GITHUB_API_BASE = "https://api.github.com";
+// Zod schemas for runtime validation of GitHub API responses
+const GitHubRepoResponseSchema = z.object({
+	full_name: z.string(),
+	name: z.string(),
+	description: z.string().nullable(),
+	stargazers_count: z.number(),
+	language: z.string().nullable(),
+	html_url: z.string(),
+	default_branch: z.string(),
+	owner: z.object({
+		login: z.string(),
+	}),
+});
 
-interface GitHubOwnerResponse {
-	login: string;
-	name: string | null;
-	avatar_url: string;
-	bio: string | null;
-	type: "User" | "Organization";
-	public_repos: number;
-	followers: number;
-	following: number;
-	html_url: string;
-}
-
-interface GitHubRepoResponse {
-	full_name: string;
-	description: string | null;
-	stargazers_count: number;
-	language: string | null;
-	html_url: string;
-	default_branch: string;
-	owner: {
-		login: string;
-	};
-	name: string;
-}
+const GitHubOwnerResponseSchema = z.object({
+	login: z.string(),
+	name: z.string().nullable(),
+	avatar_url: z.string(),
+	bio: z.string().nullable(),
+	type: z.enum(["User", "Organization"]),
+	public_repos: z.number(),
+	followers: z.number(),
+	html_url: z.string(),
+});
 
 export const fetchRepoMetadata = action({
 	args: {
@@ -34,11 +34,8 @@ export const fetchRepoMetadata = action({
 		name: v.string(),
 	},
 	handler: async (_ctx, args) => {
-		const response = await fetch(`${GITHUB_API_BASE}/repos/${args.owner}/${args.name}`, {
-			headers: {
-				Accept: "application/vnd.github.v3+json",
-				"User-Agent": "offworld-web",
-			},
+		const response = await fetch(`${GITHUB_API}/repos/${args.owner}/${args.name}`, {
+			headers: await getGitHubHeaders(),
 		});
 
 		if (response.status === 404) {
@@ -56,7 +53,13 @@ export const fetchRepoMetadata = action({
 			return null;
 		}
 
-		const data = (await response.json()) as GitHubRepoResponse;
+		const json = await response.json();
+		const parsed = GitHubRepoResponseSchema.safeParse(json);
+		if (!parsed.success) {
+			console.error("Invalid GitHub repo response:", parsed.error.message);
+			return null;
+		}
+		const data = parsed.data;
 
 		return {
 			owner: data.owner.login,
@@ -74,11 +77,8 @@ export const fetchRepoMetadata = action({
 export const fetchOwnerInfo = action({
 	args: { owner: v.string() },
 	handler: async (_ctx, args) => {
-		const response = await fetch(`${GITHUB_API_BASE}/users/${args.owner}`, {
-			headers: {
-				Accept: "application/vnd.github.v3+json",
-				"User-Agent": "offworld-web",
-			},
+		const response = await fetch(`${GITHUB_API}/users/${args.owner}`, {
+			headers: await getGitHubHeaders(),
 		});
 
 		if (response.status === 404) return null;
@@ -91,7 +91,13 @@ export const fetchOwnerInfo = action({
 			return null;
 		}
 
-		const data = (await response.json()) as GitHubOwnerResponse;
+		const json = await response.json();
+		const parsed = GitHubOwnerResponseSchema.safeParse(json);
+		if (!parsed.success) {
+			console.error("Invalid GitHub owner response:", parsed.error.message);
+			return null;
+		}
+		const data = parsed.data;
 
 		return {
 			login: data.login,
@@ -114,13 +120,8 @@ export const fetchOwnerRepos = action({
 	handler: async (_ctx, args) => {
 		const perPage = args.perPage ?? 30;
 		const response = await fetch(
-			`${GITHUB_API_BASE}/users/${args.owner}/repos?per_page=${perPage}&sort=updated`,
-			{
-				headers: {
-					Accept: "application/vnd.github.v3+json",
-					"User-Agent": "offworld-web",
-				},
-			},
+			`${GITHUB_API}/users/${args.owner}/repos?per_page=${perPage}&sort=updated`,
+			{ headers: await getGitHubHeaders() },
 		);
 
 		if (response.status === 404) return null;
@@ -133,9 +134,14 @@ export const fetchOwnerRepos = action({
 			return null;
 		}
 
-		const data = (await response.json()) as GitHubRepoResponse[];
+		const json = await response.json();
+		const parsed = z.array(GitHubRepoResponseSchema).safeParse(json);
+		if (!parsed.success) {
+			console.error("Invalid GitHub repos response:", parsed.error.message);
+			return null;
+		}
 
-		return data.map((repo) => ({
+		return parsed.data.map((repo) => ({
 			owner: repo.owner.login,
 			name: repo.name,
 			fullName: repo.full_name,

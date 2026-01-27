@@ -1,22 +1,15 @@
-const GITHUB_API = "https://api.github.com";
+import { z } from "zod";
+import { GITHUB_API, getGitHubHeaders } from "../lib/github-auth";
+
 const MIN_STARS = 5;
 
-// GitHub App token from environment (set via Convex dashboard)
-function getGitHubToken(): string | undefined {
-	return process.env.GITHUB_APP_TOKEN;
-}
-
-function getAuthHeaders(): Record<string, string> {
-	const token = getGitHubToken();
-	const headers: Record<string, string> = {
-		Accept: "application/vnd.github.v3+json",
-		"User-Agent": "offworld-backend",
-	};
-	if (token) {
-		headers.Authorization = `Bearer ${token}`;
-	}
-	return headers;
-}
+// Zod schema for GitHub repo validation response
+const GitHubRepoValidationSchema = z.object({
+	stargazers_count: z.number().optional(),
+	private: z.boolean().optional(),
+	description: z.string().nullable().optional(),
+	full_name: z.string().optional(),
+});
 
 export interface RepoValidationResult {
 	valid: boolean;
@@ -37,7 +30,7 @@ export interface CommitValidationResult {
 export async function validateRepo(fullName: string): Promise<RepoValidationResult> {
 	try {
 		const response = await fetch(`${GITHUB_API}/repos/${fullName}`, {
-			headers: getAuthHeaders(),
+			headers: await getGitHubHeaders(),
 		});
 
 		if (response.status === 404) {
@@ -48,12 +41,12 @@ export async function validateRepo(fullName: string): Promise<RepoValidationResu
 			return { valid: false, error: `GitHub API error: ${response.status}` };
 		}
 
-		const data = (await response.json()) as {
-			stargazers_count?: number;
-			private?: boolean;
-			description?: string | null;
-			full_name?: string;
-		};
+		const json = await response.json();
+		const parsed = GitHubRepoValidationSchema.safeParse(json);
+		if (!parsed.success) {
+			return { valid: false, error: "Invalid GitHub API response" };
+		}
+		const data = parsed.data;
 
 		if (data.private) {
 			return { valid: false, error: "Private repositories not supported" };
@@ -91,7 +84,7 @@ export async function validateCommit(
 ): Promise<CommitValidationResult> {
 	try {
 		const response = await fetch(`${GITHUB_API}/repos/${fullName}/commits/${commitSha}`, {
-			headers: getAuthHeaders(),
+			headers: await getGitHubHeaders(),
 		});
 
 		if (response.status === 404) {

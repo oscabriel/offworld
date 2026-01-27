@@ -70,31 +70,7 @@ compute_sha256() {
   fi
 }
 
-# Detect libc (glibc vs musl) for Linux
-detect_libc() {
-  # Method 1: Check for musl loader
-  if ls /lib/ld-musl-*.so.1 >/dev/null 2>&1; then
-    echo "-musl"
-    return
-  fi
 
-  # Method 2: Check Alpine release file
-  if [ -f /etc/alpine-release ]; then
-    echo "-musl"
-    return
-  fi
-
-  # Method 3: ldd version string
-  if command -v ldd >/dev/null 2>&1; then
-    if ldd --version 2>&1 | grep -qi musl; then
-      echo "-musl"
-      return
-    fi
-  fi
-
-  # Default: glibc (no suffix)
-  echo ""
-}
 
 # Detect OS
 detect_os() {
@@ -120,17 +96,20 @@ detect_arch() {
   esac
 }
 
-# Detect platform with libc suffix
+# Detect platform
 detect_platform() {
-  local os arch libc=""
+  local os arch
   os=$(detect_os)
   arch=$(detect_arch)
 
+  # Check for musl (Alpine, etc.) - not yet supported
   if [ "$os" = "linux" ]; then
-    libc=$(detect_libc)
+    if ls /lib/ld-musl-*.so.1 >/dev/null 2>&1 || [ -f /etc/alpine-release ]; then
+      error "musl libc (Alpine) is not yet supported.\n  Use npm instead:\n  npm install -g offworld"
+    fi
   fi
 
-  echo "${os}-${arch}${libc}"
+  echo "${os}-${arch}"
 }
 
 # Find a writable bin directory that's in PATH
@@ -241,15 +220,8 @@ get_latest_version() {
 
   local version=""
   if [ "$channel" = "stable" ]; then
-    # Get first non-prerelease
-    version=$(echo "$response" | grep -o '"tag_name": *"[^"]*"' | while read -r line; do
-      tag=$(echo "$line" | cut -d'"' -f4)
-      # Check if this release is not a prerelease (simplified check)
-      if ! echo "$tag" | grep -qE '(alpha|beta|rc|dev)'; then
-        echo "$tag"
-        break
-      fi
-    done | head -1)
+    # Get first non-prerelease (skip alpha/beta/rc/dev tags)
+    version=$(echo "$response" | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4 | grep -vE '(alpha|beta|rc|dev)' | head -1)
   fi
 
   # Fallback to first tag if no stable found or beta channel

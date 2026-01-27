@@ -38,6 +38,9 @@
 			"import": "./dist/index.mjs"
 		}
 	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"build": "tsdown && chmod +x ./dist/cli.mjs",
 		"dev": "tsdown --watch",
@@ -48,7 +51,6 @@
 	},
 	"dependencies": {
 		"@clack/prompts": "^0.11.0",
-		"@offworld/backend": "workspace:*",
 		"@offworld/sdk": "workspace:*",
 		"@offworld/types": "workspace:*",
 		"@orpc/server": "^1.13.4",

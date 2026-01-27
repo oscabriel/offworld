@@ -9,6 +9,7 @@
         "zod": "^4.3.6",
       },
       "devDependencies": {
+        "@clack/prompts": "^0.11.0",
         "@cloudflare/workers-types": "^4.20260124.0",
         "@offworld/config": "workspace:*",
         "oxfmt": "^0.26.0",
@@ -28,7 +29,6 @@
       },
       "dependencies": {
         "@clack/prompts": "^0.11.0",
-        "@offworld/backend": "workspace:*",
         "@offworld/sdk": "workspace:*",
         "@offworld/types": "workspace:*",
         "@orpc/server": "^1.13.4",
@@ -149,6 +149,16 @@
         "vitest": "catalog:",
       },
     },
+    "packages/backend-api": {
+      "name": "@offworld/backend-api",
+      "version": "0.1.0",
+      "dependencies": {
+        "convex": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "catalog:",
+      },
+    },
     "packages/config": {
       "name": "@offworld/config",
       "version": "0.0.0",
@@ -157,7 +167,7 @@
       "name": "@offworld/sdk",
       "version": "0.1.0",
       "dependencies": {
-        "@offworld/backend": "workspace:*",
+        "@offworld/backend-api": "workspace:*",
         "@offworld/types": "workspace:*",
         "@opencode-ai/sdk": "^1.1.36",
         "convex": "catalog:",
@@ -672,6 +682,8 @@
     "@octokit/types": ["@octokit/types@14.1.0", "", { "dependencies": { "@octokit/openapi-types": "^25.1.0" } }, "sha512-1y6DgTy8Jomcpu33N+p5w58l6xyt55Ar2I91RPiIA0xCJBXyUAhXCcmZaDWSANiha7R9a6qJJ2CRomGPZ6f46g=="],
 
     "@offworld/backend": ["@offworld/backend@workspace:packages/backend"],
+
+    "@offworld/backend-api": ["@offworld/backend-api@workspace:packages/backend-api"],
 
     "@offworld/config": ["@offworld/config@workspace:packages/config"],
 

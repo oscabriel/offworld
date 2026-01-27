@@ -33,13 +33,15 @@
 		"dev:setup": "turbo -F @offworld/backend dev:setup",
 		"check": "oxlint && oxfmt --write",
 		"build:cli": "turbo -F offworld build && bun link --cwd apps/cli",
-		"clean:vite": "turbo -F web clean:vite"
+		"clean:vite": "turbo -F web clean:vite",
+		"bump": "bun run scripts/bump-version.ts"
 	},
 	"dependencies": {
 		"dotenv": "^17.2.3",
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
+		"@clack/prompts": "^0.11.0",
 		"@cloudflare/workers-types": "^4.20260124.0",
 		"@offworld/config": "workspace:*",
 		"oxfmt": "^0.26.0",

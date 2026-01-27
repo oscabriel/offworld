@@ -45,6 +45,17 @@ export {
 } from "./index-manager.js";
 
 export {
+	resolveRepoKey,
+	getMapEntry,
+	searchMap,
+	getProjectMapPath,
+	type MapEntry,
+	type SearchResult,
+	type GetMapEntryOptions,
+	type SearchMapOptions,
+} from "./map.js";
+
+export {
 	cloneRepo,
 	updateRepo,
 	removeRepo,

@@ -387,6 +387,13 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 			if (!provider.isDirectory()) continue;
 			const providerPath = join(repoRoot, provider.name);
 
+			const providerHostMap: Record<string, string> = {
+				github: "github.com",
+				gitlab: "gitlab.com",
+				bitbucket: "bitbucket.org",
+			};
+			const providerHost = providerHostMap[provider.name] ?? provider.name;
+
 			const owners = readdirSync(providerPath, { withFileTypes: true });
 			for (const owner of owners) {
 				if (!owner.isDirectory()) continue;
@@ -407,9 +414,9 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 					}
 
 					const fullName = `${owner.name}/${repoName.name}`;
-					const qualifiedName = `${provider.name}:${fullName}`;
+					const qualifiedName = `${providerHost}:${fullName}`;
 
-					onProgress?.(fullName, provider.name);
+					onProgress?.(fullName, providerHost);
 
 					if (!dryRun) {
 						// Add to map with empty references

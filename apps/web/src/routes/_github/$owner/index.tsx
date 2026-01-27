@@ -56,7 +56,7 @@ function OwnerPage() {
 		convexAction(api.github.fetchOwnerRepos, { owner, perPage: 30 }),
 	);
 
-	const indexedRepoNames = new Set(indexedRepos.map((r) => r.fullName.toLowerCase()));
+	const indexedRepoNames = new Set(indexedRepos.map((r) => r.fullName));
 
 	if (ownerLoading || reposLoading) {
 		return <OwnerPageSkeleton />;
@@ -116,7 +116,7 @@ function OwnerPage() {
 									stars={repo.stars}
 									description={repo.description}
 									language={repo.language}
-									indexed={indexedRepoNames.has(repo.fullName.toLowerCase())}
+									indexed={indexedRepoNames.has(repo.fullName)}
 								/>
 							))}
 						</div>

@@ -51,3 +51,11 @@ export { initHandler, type InitOptions, type InitResult } from "./init.js";
 export { projectInitHandler, type ProjectInitOptions, type ProjectInitResult } from "./project.js";
 export { upgradeHandler, type UpgradeOptions, type UpgradeResult } from "./upgrade.js";
 export { uninstallHandler, type UninstallOptions, type UninstallResult } from "./uninstall.js";
+export {
+	mapShowHandler,
+	mapSearchHandler,
+	type MapShowOptions,
+	type MapShowResult,
+	type MapSearchOptions,
+	type MapSearchResult,
+} from "./map.js";

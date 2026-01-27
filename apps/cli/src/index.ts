@@ -25,6 +25,8 @@ import {
 	repoDiscoverHandler,
 	upgradeHandler,
 	uninstallHandler,
+	mapShowHandler,
+	mapSearchHandler,
 } from "./handlers/index.js";
 
 export const version = "0.1.0";
@@ -320,6 +322,49 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 					generate: input.generate,
 					dryRun: input.dryRun,
 					yes: input.yes,
+				});
+			}),
+	}),
+
+	map: os.router({
+		show: os
+			.input(
+				z.object({
+					repo: z.string().describe("repo").meta({ positional: true }),
+					json: z.boolean().default(false).describe("Output as JSON"),
+					path: z.boolean().default(false).describe("Print only local path"),
+					ref: z.boolean().default(false).describe("Print only reference file path"),
+				}),
+			)
+			.meta({
+				description: "Show map entry for a repo",
+				default: true,
+			})
+			.handler(async ({ input }) => {
+				await mapShowHandler({
+					repo: input.repo,
+					json: input.json,
+					path: input.path,
+					ref: input.ref,
+				});
+			}),
+
+		search: os
+			.input(
+				z.object({
+					term: z.string().describe("term").meta({ positional: true }),
+					limit: z.number().default(10).describe("Max results").meta({ alias: "n" }),
+					json: z.boolean().default(false).describe("Output as JSON"),
+				}),
+			)
+			.meta({
+				description: "Search map for repos matching a term",
+			})
+			.handler(async ({ input }) => {
+				await mapSearchHandler({
+					term: input.term,
+					limit: input.limit,
+					json: input.json,
 				});
 			}),
 	}),

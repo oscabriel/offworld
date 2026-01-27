@@ -49,6 +49,15 @@ ow list
 | `ow config get <key>`         | Get a config value          |
 | `ow config agents`            | Select agents interactively |
 
+### Map / Routing
+
+| Command                     | Description                     |
+| --------------------------- | ------------------------------- |
+| `ow map show <repo>`        | Show repo info (path, ref, etc) |
+| `ow map show <repo> --ref`  | Print only reference file path  |
+| `ow map show <repo> --path` | Print only local clone path     |
+| `ow map search <term>`      | Find repos by name or keyword   |
+
 ### Repository Management
 
 | Command                | Description               |
@@ -114,6 +123,21 @@ ow list
 --generate, -g    Generate references for new deps
 --dry-run, -d     Preview only
 --yes, -y         Skip confirmations
+```
+
+### `ow map show`
+
+```
+--json            Output as JSON
+--path            Print only local clone path
+--ref             Print only reference file path
+```
+
+### `ow map search`
+
+```
+--limit, -n       Max results (default 10)
+--json            Output as JSON
 ```
 
 ## Config Keys

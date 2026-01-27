@@ -4,7 +4,6 @@
 
 import * as p from "@clack/prompts";
 import { getMapEntry, searchMap, Paths, type SearchResult } from "@offworld/sdk";
-import type { GlobalMapRepoEntry, ProjectMapRepoEntry } from "@offworld/types";
 
 // ============================================================================
 // Map Show
@@ -43,10 +42,8 @@ export async function mapShowHandler(options: MapShowOptions): Promise<MapShowRe
 	const { scope, qualifiedName, entry } = result;
 
 	// Get primary reference - structure differs between global and project maps
-	const primary =
-		"primary" in entry
-			? (entry as GlobalMapRepoEntry).primary
-			: (entry as ProjectMapRepoEntry).reference;
+	// TypeScript narrows the type based on the "primary" property check
+	const primary = "primary" in entry ? entry.primary : entry.reference;
 
 	// Get keywords
 	const keywords = entry.keywords ?? [];

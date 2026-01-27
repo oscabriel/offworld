@@ -13,6 +13,7 @@ import {
 } from "@offworld/sdk";
 import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
+import { z } from "zod";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -130,19 +131,19 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 			.split(",")
 			.map((a) => a.trim())
 			.filter(Boolean);
-		const validAgents = AgentSchema.options;
-		const invalidAgents = agentValues.filter((a) => !validAgents.includes(a as Agent));
+		const agentsResult = z.array(AgentSchema).safeParse(agentValues);
 
-		if (invalidAgents.length > 0) {
+		if (!agentsResult.success) {
+			const invalidAgents = agentValues.filter((a) => !AgentSchema.options.includes(a as Agent));
 			p.log.error(`Invalid agent(s): ${invalidAgents.join(", ")}`);
-			p.log.info(`Valid agents: ${validAgents.join(", ")}`);
+			p.log.info(`Valid agents: ${AgentSchema.options.join(", ")}`);
 			return {
 				success: false,
 				message: `Invalid agents: ${invalidAgents.join(", ")}`,
 			};
 		}
 
-		parsedValue = agentValues as Agent[];
+		parsedValue = agentsResult.data;
 	} else {
 		parsedValue = value;
 	}
@@ -282,7 +283,8 @@ export async function configAgentsHandler(): Promise<ConfigAgentsResult> {
 		return { success: false };
 	}
 
-	const agents = agentsResult as Agent[];
+	const parsedAgents = z.array(AgentSchema).safeParse(agentsResult);
+	const agents = parsedAgents.success ? parsedAgents.data : [];
 
 	try {
 		saveConfig({ agents });

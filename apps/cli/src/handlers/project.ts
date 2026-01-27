@@ -130,7 +130,7 @@ export async function projectInitHandler(
 			return { success: false, message: "Cancelled by user" };
 		}
 
-		selected = selectedResult as ReferenceMatch[];
+		selected = Array.isArray(selectedResult) ? selectedResult : [];
 	}
 
 	if (selected.length === 0) {

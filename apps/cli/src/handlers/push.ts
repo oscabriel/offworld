@@ -27,6 +27,7 @@ import {
 	GitHubError,
 	type ReferenceData,
 } from "@offworld/sdk";
+import { ReferenceMetaSchema } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
@@ -99,10 +100,12 @@ function loadLocalReference(
 
 	try {
 		const referenceContent = readFileSync(referencePath, "utf-8");
-		const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as {
-			commitSha: string;
-			referenceUpdatedAt: string;
-		};
+		const json = JSON.parse(readFileSync(metaPath, "utf-8"));
+		const parsed = ReferenceMetaSchema.safeParse(json);
+		if (!parsed.success) {
+			return null;
+		}
+		const meta = parsed.data;
 		const referenceName = toReferenceName(fullName);
 		const referenceDescription = extractDescription(referenceContent, `Reference for ${fullName}`);
 

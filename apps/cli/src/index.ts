@@ -552,9 +552,9 @@ const normalizeRootHelp = (help: string) =>
 
 export function createOwCli() {
 	const cli = createCli({
-		router: router as any,
+		router,
 		description: "Offworld CLI - Repository reference generation for AI coding agents",
-	} as any);
+	});
 
 	const buildProgram: typeof cli.buildProgram = (runParams) => {
 		const program = cli.buildProgram(runParams);

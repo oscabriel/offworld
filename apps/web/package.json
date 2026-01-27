@@ -3,9 +3,10 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "alchemy dev --app web",
-		"deploy": "alchemy deploy --app web",
-		"destroy": "alchemy destroy --app web",
+		"dev": "alchemy dev --env-file .env.dev",
+		"deploy": "alchemy deploy --env-file .env.prod",
+		"destroy": "alchemy destroy --env-file .env.dev",
+		"destroy:prod": "alchemy destroy --env-file .env.prod",
 		"build": "vite build",
 		"serve": "vite preview",
 		"typecheck": "tsc --noEmit",

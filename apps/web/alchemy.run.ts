@@ -1,7 +1,7 @@
 import alchemy from "alchemy";
 import { TanStackStart } from "alchemy/cloudflare";
 
-const app = await alchemy("web");
+const app = await alchemy("offworld");
 
 export const web = await TanStackStart("web", {
 	bindings: {
@@ -12,6 +12,8 @@ export const web = await TanStackStart("web", {
 		WORKOS_COOKIE_PASSWORD: alchemy.secret.env.WORKOS_COOKIE_PASSWORD!,
 		WORKOS_REDIRECT_URI: alchemy.env.WORKOS_REDIRECT_URI!,
 	},
+	domains: ["offworld.sh"],
+	adopt: true,
 });
 
 console.log(`Web    -> ${web.url}`);

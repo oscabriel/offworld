@@ -77,14 +77,16 @@ function parseHttpsUrl(input: string): RemoteRepoSource | null {
 	const provider = PROVIDER_HOSTS[host];
 	if (!provider) return null;
 
+	const ownerLower = owner.toLowerCase();
+	const repoLower = repo.toLowerCase();
 	return {
 		type: "remote",
 		provider,
-		owner,
-		repo,
-		fullName: `${owner}/${repo}`,
-		qualifiedName: `${host}:${owner}/${repo}`,
-		cloneUrl: buildCloneUrl(provider, owner, repo),
+		owner: ownerLower,
+		repo: repoLower,
+		fullName: `${ownerLower}/${repoLower}`,
+		qualifiedName: `${host}:${ownerLower}/${repoLower}`,
+		cloneUrl: buildCloneUrl(provider, ownerLower, repoLower),
 	};
 }
 
@@ -101,14 +103,16 @@ function parseSshUrl(input: string): RemoteRepoSource | null {
 	const provider = PROVIDER_HOSTS[host];
 	if (!provider) return null;
 
+	const ownerLower = owner.toLowerCase();
+	const repoLower = repo.toLowerCase();
 	return {
 		type: "remote",
 		provider,
-		owner,
-		repo,
-		fullName: `${owner}/${repo}`,
-		qualifiedName: `${host}:${owner}/${repo}`,
-		cloneUrl: buildCloneUrl(provider, owner, repo),
+		owner: ownerLower,
+		repo: repoLower,
+		fullName: `${ownerLower}/${repoLower}`,
+		qualifiedName: `${host}:${ownerLower}/${repoLower}`,
+		cloneUrl: buildCloneUrl(provider, ownerLower, repoLower),
 	};
 }
 
@@ -126,14 +130,16 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
 	const provider: GitProvider = "github";
 	const host = "github.com";
 
+	const ownerLower = owner.toLowerCase();
+	const repoLower = repo.toLowerCase();
 	return {
 		type: "remote",
 		provider,
-		owner,
-		repo,
-		fullName: `${owner}/${repo}`,
-		qualifiedName: `${host}:${owner}/${repo}`,
-		cloneUrl: buildCloneUrl(provider, owner, repo),
+		owner: ownerLower,
+		repo: repoLower,
+		fullName: `${ownerLower}/${repoLower}`,
+		qualifiedName: `${host}:${ownerLower}/${repoLower}`,
+		cloneUrl: buildCloneUrl(provider, ownerLower, repoLower),
 	};
 }
 

@@ -128,15 +128,18 @@ async function main(): Promise<void> {
 	);
 	execSync(`git commit -m "chore(release): ${newVersion}"`, { stdio: "inherit" });
 
-	const branchName = `release/v${newVersion}`;
-	const shouldCreateBranch = await confirm({
-		message: `Create release branch ${branchName}?`,
+	const shouldRelease = await confirm({
+		message: `Push and release v${newVersion}?`,
 		initialValue: true,
 	});
 
-	if (shouldCreateBranch) {
-		execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
-		execSync(`git push -u origin ${branchName}`, { stdio: "inherit" });
+	if (shouldRelease) {
+		execSync("git push", { stdio: "inherit" });
+		execSync(`git tag v${newVersion}`, { stdio: "inherit" });
+		execSync("git push --tags", { stdio: "inherit" });
+		console.log(`\n✓ Released v${newVersion} — workflow triggered`);
+	} else {
+		console.log(`\nCommit created. To release later:\n  git push && git tag v${newVersion} && git push --tags`);
 	}
 }
 

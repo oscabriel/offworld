@@ -12,9 +12,13 @@ export const Route = createFileRoute("/_github/$owner/$repo/$reference")({
 	staticData: {
 		crumbs: (params) => [
 			{
-				label: params.reference,
+				label: params.reference ?? "",
 				to: "/$owner/$repo/$reference",
-				params: { owner: params.owner, repo: params.repo, reference: params.reference },
+				params: {
+					owner: params.owner ?? "",
+					repo: params.repo ?? "",
+					reference: params.reference ?? "",
+				},
 			},
 		],
 	},

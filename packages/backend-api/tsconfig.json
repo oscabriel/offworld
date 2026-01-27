@@ -13,8 +13,5 @@
 		"target": "ESNext"
 	},
 	"include": ["../backend/convex/**/*.ts"],
-	"exclude": [
-		"../backend/convex/_generated",
-		"../backend/convex/convex.config.ts"
-	]
+	"exclude": ["../backend/convex/_generated", "../backend/convex/convex.config.ts"]
 }

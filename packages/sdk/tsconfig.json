@@ -6,10 +6,7 @@
 		"rootDir": "./src",
 		"declaration": true,
 		"declarationMap": true,
-		"types": ["node"],
-		"paths": {
-			"@offworld/backend-api/api": ["../backend/convex/_generated/api.d.ts"]
-		}
+		"types": ["node"]
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist", "src/__tests__/fixtures"]

@@ -470,7 +470,9 @@ export async function repoDiscoverHandler(
 
 	if (shouldProceed) {
 		const result = await discoverRepos({ repoRoot });
-		p.log.success(`Added ${result.discovered.length} repos to clone map (marked as not referenced)`);
+		p.log.success(
+			`Added ${result.discovered.length} repos to clone map (marked as not referenced)`,
+		);
 		return { discovered: result.discovered.length, alreadyIndexed: result.alreadyIndexed };
 	}
 

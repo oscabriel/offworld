@@ -13,7 +13,8 @@ import {
 } from "@offworld/sdk";
 import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 const VALID_KEYS = ["repoRoot", "defaultShallow", "defaultModel", "agents"] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
@@ -32,20 +33,36 @@ export interface ConfigShowOptions {
 
 export interface ConfigShowResult {
 	config: Record<string, unknown>;
+	paths: {
+		skillDir: string;
+		referencesDir: string;
+		globalMap: string;
+		projectMap?: string;
+	};
 }
 
 export async function configShowHandler(options: ConfigShowOptions): Promise<ConfigShowResult> {
 	const config = loadConfig();
 
+	// Check for project map in cwd
+	const projectMapPath = resolve(process.cwd(), ".offworld/map.json");
+	const hasProjectMap = existsSync(projectMapPath);
+
+	const paths: ConfigShowResult["paths"] = {
+		skillDir: join(Paths.data, "skill", "offworld"),
+		referencesDir: join(Paths.data, "skill", "offworld", "references"),
+		globalMap: join(Paths.data, "skill", "offworld", "assets", "map.json"),
+	};
+
+	// Only include projectMap if it exists
+	if (hasProjectMap) {
+		paths.projectMap = projectMapPath;
+	}
+
 	if (options.json) {
 		const output = {
 			...config,
-			paths: {
-				skillDir: join(Paths.data, "skill", "offworld"),
-				referencesDir: join(Paths.data, "skill", "offworld", "references"),
-				globalMap: join(Paths.data, "skill", "offworld", "assets", "map.json"),
-				projectMap: ".offworld/map.json",
-			},
+			paths,
 		};
 		console.log(JSON.stringify(output, null, 2));
 	} else {
@@ -55,9 +72,12 @@ export async function configShowHandler(options: ConfigShowOptions): Promise<Con
 		}
 		console.log("");
 		p.log.info(`Config file: ${getConfigPath()}`);
+		if (hasProjectMap) {
+			p.log.info(`Project map: ${projectMapPath}`);
+		}
 	}
 
-	return { config };
+	return { config, paths };
 }
 
 // ============================================================================

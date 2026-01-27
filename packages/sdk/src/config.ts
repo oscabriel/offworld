@@ -76,12 +76,12 @@ export function toReferenceFileName(repoName: string): string {
 		const significantPart = repoParts.find((part) => part.length >= 3 && ownerLower.includes(part));
 
 		if (significantPart || ownerLower === repoLower) {
-			return `${repo}.md`;
+			return `${repoLower}.md`;
 		}
 
-		return `${owner}-${repo}.md`;
+		return `${ownerLower}-${repoLower}.md`;
 	}
-	return `${repoName}.md`;
+	return `${repoName.toLowerCase()}.md`;
 }
 
 export function toReferenceName(repoName: string): string {

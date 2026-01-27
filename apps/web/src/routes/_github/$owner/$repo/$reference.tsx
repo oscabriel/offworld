@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_github/$owner/$repo/$reference")({
 	},
 	component: ReferenceDetailPage,
 	loader: async ({ context, params }) => {
-		const fullName = `${params.owner}/${params.repo}`.toLowerCase();
+		const fullName = `${params.owner}/${params.repo}`;
 		await context.queryClient.ensureQueryData(
 			convexQuery(api.references.getByName, { fullName, referenceName: params.reference }),
 		);
@@ -85,7 +85,7 @@ function NotFoundState() {
 
 function ReferenceDetailPage() {
 	const { owner, repo, reference } = Route.useParams();
-	const fullName = `${owner}/${repo}`.toLowerCase();
+	const fullName = `${owner}/${repo}`;
 
 	const { data: referenceData } = useSuspenseQuery(
 		convexQuery(api.references.getByName, { fullName, referenceName: reference }),

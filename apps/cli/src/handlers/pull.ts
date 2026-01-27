@@ -18,7 +18,7 @@ import {
 	generateReferenceWithAI,
 	installReference,
 } from "@offworld/sdk";
-import type { RepoSource } from "@offworld/types";
+import { ReferenceMetaSchema, type RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
@@ -68,7 +68,12 @@ function loadLocalMeta(
 	}
 
 	try {
-		return JSON.parse(readFileSync(metaPath, "utf-8"));
+		const json = JSON.parse(readFileSync(metaPath, "utf-8"));
+		const parsed = ReferenceMetaSchema.safeParse(json);
+		if (!parsed.success) {
+			return null;
+		}
+		return parsed.data;
 	} catch {
 		return null;
 	}

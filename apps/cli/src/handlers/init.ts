@@ -20,6 +20,8 @@ import {
 	type ModelInfo,
 } from "@offworld/sdk";
 import type { Config, Agent } from "@offworld/types";
+import { AgentSchema } from "@offworld/types/schemas";
+import { z } from "zod";
 import { authLoginHandler } from "./auth.js";
 
 export interface InitOptions {
@@ -205,7 +207,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 			return { success: false, configPath };
 		}
 
-		provider = providerResult as string;
+		provider = String(providerResult);
 
 		spin.start("Fetching models...");
 		const providerData = await getProvider(provider);
@@ -236,7 +238,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 			return { success: false, configPath };
 		}
 
-		model = modelResult as string;
+		model = String(modelResult);
 	}
 
 	const detectedAgents = detectInstalledAgents();
@@ -261,31 +263,33 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 		const validAgents = allAgentConfigs
 			.filter((c) => agentNames.includes(c.name))
 			.map((c) => c.name);
-		if (validAgents.length === 0) {
+		const agentsResult = z.array(AgentSchema).safeParse(validAgents);
+		if (!agentsResult.success || agentsResult.data.length === 0) {
 			p.log.error("No valid agent names provided");
 			p.outro("Setup failed");
 			return { success: false, configPath };
 		}
-		agents = validAgents as Agent[];
+		agents = agentsResult.data;
 	} else {
 		const initialAgents =
 			existingConfig.agents && existingConfig.agents.length > 0
 				? existingConfig.agents
 				: detectedAgents;
 
-		const agentsResult = await p.multiselect({
+		const selectResult = await p.multiselect({
 			message: "Select agents to install skills to",
 			options: agentOptions,
 			initialValues: initialAgents,
 			required: false,
 		});
 
-		if (p.isCancel(agentsResult)) {
+		if (p.isCancel(selectResult)) {
 			p.outro("Setup cancelled");
 			return { success: false, configPath };
 		}
 
-		agents = agentsResult as Agent[];
+		const agentsResult = z.array(AgentSchema).safeParse(selectResult);
+		agents = agentsResult.success ? agentsResult.data : [];
 	}
 
 	const defaultModel = `${provider}/${model}`;

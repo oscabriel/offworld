@@ -5,6 +5,13 @@
 
 import * as p from "@clack/prompts";
 import { saveAuthData, clearAuthData, getAuthStatus, getAuthPath } from "@offworld/sdk";
+import {
+	WorkOSDeviceAuthResponseSchema,
+	WorkOSTokenResponseSchema,
+	WorkOSAuthErrorResponseSchema,
+	type WorkOSDeviceAuthResponse,
+	type WorkOSTokenResponse,
+} from "@offworld/types";
 import open from "open";
 import { createSpinner } from "../utils/spinner";
 
@@ -43,36 +50,7 @@ export interface AuthStatusResult {
 	expiresAt?: string;
 }
 
-// ============================================================================
-// WorkOS Device Auth Types
-// ============================================================================
-
-interface DeviceAuthResponse {
-	device_code: string;
-	user_code: string;
-	verification_uri: string;
-	verification_uri_complete: string;
-	expires_in: number;
-	interval: number;
-}
-
-interface TokenResponse {
-	user: {
-		id: string;
-		email: string;
-		firstName?: string;
-		lastName?: string;
-	};
-	access_token: string;
-	refresh_token: string;
-	expires_at?: number;
-	organizationId?: string;
-}
-
-interface AuthErrorResponse {
-	error: "authorization_pending" | "slow_down" | "access_denied" | "expired_token" | string;
-	error_description?: string;
-}
+// Types imported from @offworld/types (WorkOSDeviceAuthResponse, WorkOSTokenResponse)
 
 // ============================================================================
 // Helper Functions
@@ -99,7 +77,7 @@ function extractJwtExpiration(token: string): string | undefined {
 // WorkOS API Functions
 // ============================================================================
 
-async function requestDeviceCode(): Promise<DeviceAuthResponse> {
+async function requestDeviceCode(): Promise<WorkOSDeviceAuthResponse> {
 	const response = await fetch(`${WORKOS_API}/user_management/authorize/device`, {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -111,14 +89,15 @@ async function requestDeviceCode(): Promise<DeviceAuthResponse> {
 		throw new Error(`Failed to request device code: ${error}`);
 	}
 
-	return response.json() as Promise<DeviceAuthResponse>;
+	const data = await response.json();
+	return WorkOSDeviceAuthResponseSchema.parse(data);
 }
 
 async function pollForTokens(
 	deviceCode: string,
 	interval: number,
 	onStatus?: (status: string) => void,
-): Promise<TokenResponse> {
+): Promise<WorkOSTokenResponse> {
 	let pollInterval = interval;
 
 	while (true) {
@@ -133,10 +112,12 @@ async function pollForTokens(
 		});
 
 		if (response.ok) {
-			return response.json() as Promise<TokenResponse>;
+			const data = await response.json();
+			return WorkOSTokenResponseSchema.parse(data);
 		}
 
-		const data = (await response.json()) as AuthErrorResponse;
+		const errorData = await response.json();
+		const data = WorkOSAuthErrorResponseSchema.parse(errorData);
 
 		switch (data.error) {
 			case "authorization_pending":
@@ -191,7 +172,7 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 
 	s.start("Requesting device code...");
 
-	let deviceData: DeviceAuthResponse;
+	let deviceData: WorkOSDeviceAuthResponse;
 	try {
 		deviceData = await requestDeviceCode();
 	} catch (error) {

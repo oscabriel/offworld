@@ -1,13 +1,19 @@
 {
 	"name": "@offworld/sdk",
 	"version": "0.1.0",
-	"private": true,
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
 	"type": "module",
 	"exports": {
 		".": {
-			"types": "./src/index.ts",
+			"types": "./dist/index.d.mts",
 			"import": "./dist/index.mjs"
 		}
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"scripts": {
 		"build": "tsdown",
@@ -17,10 +23,11 @@
 		"test:watch": "vitest",
 		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
 		"test:integration": "vitest run src/__tests__/integration/",
-		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke"
+		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
+		"prepublishOnly": "bun run build"
 	},
 	"dependencies": {
-		"@offworld/backend": "workspace:*",
+		"@offworld/backend-api": "workspace:*",
 		"@offworld/types": "workspace:*",
 		"@opencode-ai/sdk": "^1.1.36",
 		"convex": "catalog:",

@@ -1,11 +1,15 @@
 {
 	"extends": "@offworld/config/tsconfig.base.json",
 	"compilerOptions": {
+		"baseUrl": ".",
 		"outDir": "./dist",
 		"rootDir": "./src",
 		"declaration": true,
 		"declarationMap": true,
-		"types": ["node"]
+		"types": ["node"],
+		"paths": {
+			"@offworld/backend-api/api": ["../backend/convex/_generated/api.d.ts"]
+		}
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist", "src/__tests__/fixtures"]

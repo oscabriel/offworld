@@ -21,7 +21,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.json && bun run ./scripts/copy-generated.ts",
+		"build": "bun run ./scripts/copy-generated.ts",
 		"prepublishOnly": "bun run build"
 	},
 	"dependencies": {

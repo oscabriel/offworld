@@ -8,8 +8,11 @@ import { api } from "@offworld/backend-api/api";
 import { toReferenceName } from "./config.js";
 import { GitHubRepoMetadataSchema, type RepoSource } from "@offworld/types";
 
+// Production Convex URL - dev can override via CONVEX_URL env var
+const PRODUCTION_CONVEX_URL = "https://trustworthy-coyote-128.convex.cloud";
+
 function getConvexUrl(): string {
-	return process.env.CONVEX_URL || "";
+	return process.env.CONVEX_URL ?? PRODUCTION_CONVEX_URL;
 }
 
 const GITHUB_API_BASE = "https://api.github.com";
@@ -169,14 +172,7 @@ export interface CanPushResult {
 }
 
 function createClient(token?: string): ConvexHttpClient {
-	const convexUrl = getConvexUrl();
-	if (!convexUrl) {
-		throw new SyncError(
-			"CONVEX_URL not configured. " +
-				"For local development, ensure apps/cli/.env contains CONVEX_URL=your_convex_url",
-		);
-	}
-	const client = new ConvexHttpClient(convexUrl);
+	const client = new ConvexHttpClient(getConvexUrl());
 	if (token) client.setAuth(token);
 	return client;
 }

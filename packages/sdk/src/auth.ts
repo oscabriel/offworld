@@ -232,8 +232,11 @@ export async function getAuthStatus(): Promise<AuthStatus> {
 
 const WORKOS_API = "https://api.workos.com";
 
+// Production WorkOS client ID - dev can override via WORKOS_CLIENT_ID env var
+const PRODUCTION_WORKOS_CLIENT_ID = "client_01KFAD76TNGN02AP96982HG35E";
+
 function getWorkosClientId(): string {
-	return process.env.WORKOS_CLIENT_ID || "";
+	return process.env.WORKOS_CLIENT_ID ?? PRODUCTION_WORKOS_CLIENT_ID;
 }
 
 export async function refreshAccessToken(): Promise<AuthData> {
@@ -243,11 +246,6 @@ export async function refreshAccessToken(): Promise<AuthData> {
 		throw new AuthError("No refresh token available. Please log in again.");
 	}
 
-	const clientId = getWorkosClientId();
-	if (!clientId) {
-		throw new AuthError("WORKOS_CLIENT_ID not configured");
-	}
-
 	try {
 		const response = await fetch(`${WORKOS_API}/user_management/authenticate`, {
 			method: "POST",
@@ -255,7 +253,7 @@ export async function refreshAccessToken(): Promise<AuthData> {
 			body: new URLSearchParams({
 				grant_type: "refresh_token",
 				refresh_token: data.refreshToken,
-				client_id: clientId,
+				client_id: getWorkosClientId(),
 			}),
 		});
 

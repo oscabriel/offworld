@@ -17,8 +17,11 @@ import { createSpinner } from "../utils/spinner";
 
 const WORKOS_API = "https://api.workos.com";
 
+// Production WorkOS client ID - dev can override via WORKOS_CLIENT_ID env var
+const PRODUCTION_WORKOS_CLIENT_ID = "client_01KFAD76TNGN02AP96982HG35E";
+
 function getWorkosClientId(): string {
-	return process.env.WORKOS_CLIENT_ID || "";
+	return process.env.WORKOS_CLIENT_ID ?? PRODUCTION_WORKOS_CLIENT_ID;
 }
 
 export interface AuthLoginResult {
@@ -123,14 +126,6 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function authLoginHandler(): Promise<AuthLoginResult> {
-	if (!getWorkosClientId()) {
-		p.log.error("WORKOS_CLIENT_ID not configured.");
-		p.log.info("For local development, create apps/cli/.env with:");
-		p.log.info("  WORKOS_CLIENT_ID=your_client_id");
-		p.log.info("  CONVEX_URL=your_convex_url");
-		return { success: false, message: "WORKOS_CLIENT_ID not configured" };
-	}
-
 	const s = createSpinner();
 
 	const currentStatus = await getAuthStatus();

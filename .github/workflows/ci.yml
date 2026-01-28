@@ -29,8 +29,8 @@ jobs:
       - name: Lint (oxlint + oxfmt)
         run: bun run check
 
-      - name: Build dependencies
-        run: bun run build
+      - name: Build packages
+        run: bunx turbo build --filter='./packages/*'
 
       - name: Typecheck
         run: bun run typecheck

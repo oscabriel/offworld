@@ -51,10 +51,18 @@ function EmptyState({ owner, repo }: { owner: string; repo: string }) {
 					<Terminal className="text-muted-foreground size-5" />
 				</div>
 				<div className="space-y-3">
-					<h3 className="font-serif text-xl">No References Generated</h3>
+					<h3 className="font-serif text-xl">No Reference Files Generated</h3>
 					<p className="text-muted-foreground font-mono leading-relaxed">
-						This repository doesn&apos;t have any references yet. Generate and share a reference
-						with the commands below:
+						This repository doesn&apos;t have any{" "}
+						<a
+							href="https://agentskills.io/specification#references/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-primary hover:underline"
+						>
+							reference files
+						</a>{" "}
+						yet. Generate and share one with the commands below:
 					</p>
 					<div className="space-y-2">
 						<CopyableCommand command={`ow generate ${repoPath}`} />

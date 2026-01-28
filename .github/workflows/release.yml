@@ -244,7 +244,7 @@ jobs:
   update-homebrew:
     name: Update Homebrew Tap
     needs: release
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Get version from tag
@@ -309,6 +309,14 @@ jobs:
             end
           end
           FORMULA_EOF
+
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      - name: Add Homebrew to PATH
+        run: |
+          echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
 
       - name: Audit formula
         run: |

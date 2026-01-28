@@ -13,10 +13,6 @@ import type {
 import { GlobalMapSchema, ProjectMapSchema } from "@offworld/types/schemas";
 import { Paths } from "./paths.js";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface MapEntry {
 	scope: "project" | "global";
 	qualifiedName: string;
@@ -41,10 +37,6 @@ export interface SearchMapOptions {
 	limit?: number;
 	cwd?: string;
 }
-
-// ============================================================================
-// Internal helpers
-// ============================================================================
 
 function readGlobalMapSafe(): GlobalMap | null {
 	const mapPath = Paths.offworldGlobalMapPath;
@@ -77,7 +69,6 @@ function readProjectMapSafe(cwd: string): ProjectMap | null {
 function normalizeInput(input: string): { provider?: string; fullName: string; repoName: string } {
 	const trimmed = input.trim().toLowerCase();
 
-	// Handle provider:owner/repo format (e.g., github.com:tanstack/query)
 	if (trimmed.includes(":")) {
 		const parts = trimmed.split(":", 2);
 		const provider = parts[0];
@@ -86,13 +77,11 @@ function normalizeInput(input: string): { provider?: string; fullName: string; r
 		return { provider, fullName, repoName };
 	}
 
-	// Handle owner/repo format
 	if (trimmed.includes("/")) {
 		const repoName = trimmed.split("/").pop() ?? trimmed;
 		return { fullName: trimmed, repoName };
 	}
 
-	// Just repo name
 	return { fullName: trimmed, repoName: trimmed };
 }
 
@@ -108,10 +97,6 @@ function tokenize(str: string): string[] {
 		.filter(Boolean);
 }
 
-// ============================================================================
-// Public API
-// ============================================================================
-
 /**
  * Resolve an input string to a qualified repo key in a map.
  *
@@ -123,7 +108,6 @@ export function resolveRepoKey(input: string, map: GlobalMap | ProjectMap): stri
 	const { provider, fullName, repoName } = normalizeInput(input);
 	const keys = Object.keys(map.repos);
 
-	// Exact match on qualified name (github.com:owner/repo)
 	if (provider) {
 		const qualifiedKey = `${provider}:${fullName}`;
 		if (keys.includes(qualifiedKey)) {
@@ -131,7 +115,6 @@ export function resolveRepoKey(input: string, map: GlobalMap | ProjectMap): stri
 		}
 	}
 
-	// Match by fullName (owner/repo suffix after colon)
 	for (const key of keys) {
 		const keyFullName = key.includes(":") ? key.split(":")[1] : key;
 		if (keyFullName?.toLowerCase() === fullName) {
@@ -139,7 +122,6 @@ export function resolveRepoKey(input: string, map: GlobalMap | ProjectMap): stri
 		}
 	}
 
-	// Match by repo name only (last segment)
 	for (const key of keys) {
 		const keyRepoName = key.split("/").pop()?.toLowerCase();
 		if (keyRepoName === repoName) {
@@ -163,7 +145,6 @@ export function getMapEntry(input: string, options: GetMapEntryOptions = {}): Ma
 	const projectMap = preferProject ? readProjectMapSafe(cwd) : null;
 	const globalMap = readGlobalMapSafe();
 
-	// Try project map first if preferred
 	if (projectMap) {
 		const key = resolveRepoKey(input, projectMap);
 		if (key && projectMap.repos[key]) {
@@ -175,7 +156,6 @@ export function getMapEntry(input: string, options: GetMapEntryOptions = {}): Ma
 		}
 	}
 
-	// Fall back to global map
 	if (globalMap) {
 		const key = resolveRepoKey(input, globalMap);
 		if (key && globalMap.repos[key]) {
@@ -226,31 +206,26 @@ export function searchMap(term: string, options: SearchMapOptions = {}): SearchR
 
 		let score = 0;
 
-		// Exact fullName match
 		if (fullNameLower === termLower) {
 			score += 100;
 		}
 
-		// Keyword exact hits
 		for (const token of termTokens) {
 			if (keywordsLower.includes(token)) {
 				score += 50;
 			}
 		}
 
-		// Partial contains in fullName
 		if (fullNameLower.includes(termLower) && score < 100) {
 			score += 25;
 		}
 
-		// Partial contains in keywords
 		for (const kw of keywordsLower) {
 			if (kw.includes(termLower)) {
 				score += 10;
 			}
 		}
 
-		// Token matching in fullName
 		const fullNameTokens = tokenize(fullName);
 		for (const token of termTokens) {
 			if (fullNameTokens.includes(token)) {
@@ -270,7 +245,6 @@ export function searchMap(term: string, options: SearchMapOptions = {}): SearchR
 		}
 	}
 
-	// Sort by score descending, then alphabetically
 	results.sort((a, b) => {
 		if (b.score !== a.score) return b.score - a.score;
 		return a.fullName.localeCompare(b.fullName);

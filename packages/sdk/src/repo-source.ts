@@ -10,7 +10,6 @@ import type { GitProvider, LocalRepoSource, RemoteRepoSource, RepoSource } from 
 import { toReferenceFileName } from "./config.js";
 import { expandTilde } from "./paths.js";
 
-// Custom error types for specific failure modes
 export class RepoSourceError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -32,14 +31,12 @@ export class NotGitRepoError extends RepoSourceError {
 	}
 }
 
-// Provider hostname mappings
 const PROVIDER_HOSTS: Record<string, GitProvider> = {
 	"github.com": "github",
 	"gitlab.com": "gitlab",
 	"bitbucket.org": "bitbucket",
 };
 
-// Regex patterns for different URL formats
 const HTTPS_URL_REGEX =
 	/^https?:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/([^/]+)\/([^/]+?)(?:\.git)?$/;
 const SSH_URL_REGEX = /^git@(github\.com|gitlab\.com|bitbucket\.org):([^/]+)\/([^/]+?)(?:\.git)?$/;
@@ -148,21 +145,17 @@ function parseShortFormat(input: string): RemoteRepoSource | null {
  * Validates that the path exists and contains a .git directory
  */
 function parseLocalPath(input: string): LocalRepoSource {
-	// Expand ~ and resolve to absolute path
 	const absolutePath = resolve(expandTilde(input));
 
-	// Check if path exists
 	if (!existsSync(absolutePath)) {
 		throw new PathNotFoundError(absolutePath);
 	}
 
-	// Check if it's a directory
 	const stats = statSync(absolutePath);
 	if (!stats.isDirectory()) {
 		throw new RepoSourceError(`Path is not a directory: ${absolutePath}`);
 	}
 
-	// Check for .git directory
 	const gitPath = resolve(absolutePath, ".git");
 	if (!existsSync(gitPath)) {
 		throw new NotGitRepoError(absolutePath);
@@ -183,7 +176,6 @@ function parseLocalPath(input: string): LocalRepoSource {
  * Determines if input looks like a local path
  */
 function isLocalPath(input: string): boolean {
-	// Starts with . (current/relative), / (absolute), or ~ (home)
 	return input.startsWith(".") || input.startsWith("/") || input.startsWith("~");
 }
 
@@ -206,20 +198,16 @@ function isLocalPath(input: string): boolean {
 export function parseRepoInput(input: string): RepoSource {
 	const trimmed = input.trim();
 
-	// Try HTTPS URL first
 	const httpsResult = parseHttpsUrl(trimmed);
 	if (httpsResult) return httpsResult;
 
-	// Try SSH URL
 	const sshResult = parseSshUrl(trimmed);
 	if (sshResult) return sshResult;
 
-	// Check if it looks like a local path
 	if (isLocalPath(trimmed)) {
 		return parseLocalPath(trimmed);
 	}
 
-	// Try short format (owner/repo) - defaults to GitHub
 	const shortResult = parseShortFormat(trimmed);
 	if (shortResult) return shortResult;
 

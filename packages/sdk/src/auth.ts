@@ -8,7 +8,6 @@ import { z } from "zod";
 import { WorkOSTokenResponseSchema } from "@offworld/types";
 import { Paths } from "./paths";
 
-// Schema for stored auth data
 const AuthDataSchema = z.object({
 	token: z.string(),
 	expiresAt: z.string().optional(),
@@ -17,11 +16,6 @@ const AuthDataSchema = z.object({
 	email: z.string().optional(),
 });
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/** Stored authentication data */
 export interface AuthData {
 	token: string;
 	expiresAt?: string;
@@ -37,10 +31,6 @@ export interface AuthStatus {
 	workosId?: string;
 	expiresAt?: string;
 }
-
-// ============================================================================
-// Error Types
-// ============================================================================
 
 export class AuthError extends Error {
 	constructor(message: string) {
@@ -63,15 +53,6 @@ export class TokenExpiredError extends AuthError {
 	}
 }
 
-// ============================================================================
-// JWT Utilities
-// ============================================================================
-
-/**
- * Extracts expiration timestamp from JWT access token
- * @param token - JWT access token
- * @returns ISO string of expiration date, or undefined if extraction fails
- */
 function extractJwtExpiration(token: string): string | undefined {
 	try {
 		const parts = token.split(".");
@@ -89,36 +70,18 @@ function extractJwtExpiration(token: string): string | undefined {
 	}
 }
 
-// ============================================================================
-// Path Utilities
-// ============================================================================
-
-/**
- * Returns the auth file path using XDG Base Directory spec
- * Location: ~/.local/share/offworld/auth.json
- */
 export function getAuthPath(): string {
 	return Paths.authFile;
 }
 
-// ============================================================================
-// Token Storage Functions
-// ============================================================================
-
-/**
- * Saves authentication data to ~/.local/share/offworld/auth.json
- * Creates directory if it doesn't exist
- */
 export function saveAuthData(data: AuthData): void {
 	const authPath = getAuthPath();
 	const authDir = dirname(authPath);
 
-	// Ensure directory exists
 	if (!existsSync(authDir)) {
 		mkdirSync(authDir, { recursive: true });
 	}
 
-	// Write auth data
 	writeFileSync(authPath, JSON.stringify(data, null, 2), "utf-8");
 	chmodSync(authPath, 0o600);
 }
@@ -168,16 +131,6 @@ export function clearAuthData(): boolean {
 	}
 }
 
-// ============================================================================
-// Token Retrieval Functions
-// ============================================================================
-
-/**
- * Gets the current authentication token
- * Auto-refreshes if token expires within 1 minute
- * @throws NotLoggedInError if not logged in
- * @throws TokenExpiredError if token is expired and refresh fails
- */
 export async function getToken(): Promise<string> {
 	const data = loadAuthData();
 
@@ -238,16 +191,9 @@ export async function getTokenOrNull(): Promise<string | null> {
 	}
 }
 
-/**
- * Checks if user is logged in with valid token
- */
 export async function isLoggedIn(): Promise<boolean> {
 	return (await getTokenOrNull()) !== null;
 }
-
-// ============================================================================
-// Status Functions
-// ============================================================================
 
 export async function getAuthStatus(): Promise<AuthStatus> {
 	const data = loadAuthData();
@@ -284,23 +230,12 @@ export async function getAuthStatus(): Promise<AuthStatus> {
 	};
 }
 
-// ============================================================================
-// Token Refresh Functions
-// ============================================================================
-
 const WORKOS_API = "https://api.workos.com";
 
 function getWorkosClientId(): string {
 	return process.env.WORKOS_CLIENT_ID || "";
 }
 
-// RefreshTokenResponse uses same schema as WorkOSTokenResponse
-
-/**
- * Refreshes the access token using the stored refresh token
- * @returns New auth data with refreshed token
- * @throws AuthError if refresh fails
- */
 export async function refreshAccessToken(): Promise<AuthData> {
 	const data = loadAuthData();
 

@@ -24,7 +24,6 @@ const SUSPICIOUS_BYTE_THRESHOLD = 0.3;
  * @returns true if the buffer appears to be binary content
  */
 export function isBinaryBuffer(buffer: Buffer): boolean {
-	// Empty buffers are not binary
 	if (buffer.length === 0) {
 		return false;
 	}
@@ -34,19 +33,15 @@ export function isBinaryBuffer(buffer: Buffer): boolean {
 	for (let i = 0; i < buffer.length; i++) {
 		const byte = buffer[i]!;
 
-		// Null byte is a strong binary indicator
 		if (byte === 0x00) {
 			return true;
 		}
 
-		// Count suspicious control characters (excluding common text ones)
-		// 0x09 = tab, 0x0A = LF, 0x0B = VT, 0x0C = FF, 0x0D = CR are text-safe
 		if ((byte >= 0x01 && byte <= 0x08) || (byte >= 0x0e && byte <= 0x1f)) {
 			suspiciousBytes++;
 		}
 	}
 
-	// Check if suspicious byte ratio exceeds threshold
 	const ratio = suspiciousBytes / buffer.length;
 	return ratio > SUSPICIOUS_BYTE_THRESHOLD;
 }
@@ -95,34 +90,26 @@ export function loadGitignorePatterns(repoPath: string): GitignorePattern[] {
 	const patterns: GitignorePattern[] = [];
 
 	for (const rawLine of lines) {
-		// Trim whitespace
 		let line = rawLine.trim();
 
-		// Skip empty lines and comments
 		if (line === "" || line.startsWith("#")) {
 			continue;
 		}
 
-		// Check for negation
 		let negation = false;
 		if (line.startsWith("!")) {
 			negation = true;
 			line = line.slice(1);
 		}
 
-		// Handle root-relative patterns (leading /)
 		if (line.startsWith("/")) {
 			line = line.slice(1);
 		}
 
-		// Handle trailing slash (directory pattern)
-		// Convert "dir/" to "dir/**" to match all contents
 		if (line.endsWith("/")) {
 			line = line.slice(0, -1) + "/**";
 		}
 
-		// Also add the directory itself if it was a directory pattern
-		// e.g., "node_modules/" should match both "node_modules" and "node_modules/**"
 		if (rawLine.trim().endsWith("/") && !negation) {
 			const dirName = line.slice(0, -3); // Remove "/**"
 			patterns.push({ pattern: dirName, negation: false });

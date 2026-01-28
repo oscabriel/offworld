@@ -56,14 +56,12 @@ function parsePackageJson(path: string): Dependency[] {
 		const pkg = JSON.parse(content);
 		const deps: Dependency[] = [];
 
-		// Regular dependencies
 		if (pkg.dependencies && typeof pkg.dependencies === "object") {
 			for (const [name, version] of Object.entries(pkg.dependencies)) {
 				deps.push({ name, version: version as string, dev: false });
 			}
 		}
 
-		// Dev dependencies
 		if (pkg.devDependencies && typeof pkg.devDependencies === "object") {
 			for (const [name, version] of Object.entries(pkg.devDependencies)) {
 				deps.push({ name, version: version as string, dev: true });
@@ -84,7 +82,6 @@ function parsePyprojectToml(path: string): Dependency[] {
 		const content = readFileSync(path, "utf-8");
 		const deps: Dependency[] = [];
 
-		// Simple regex-based parsing for [project.dependencies]
 		const depsSection = content.match(/\[project\.dependencies\]([\s\S]*?)(?=\[|$)/);
 		if (!depsSection?.[1]) return [];
 

@@ -54,7 +54,6 @@ export function isReferenceInstalled(repo: string): boolean {
  */
 export function matchDependenciesToReferences(resolvedDeps: ResolvedDep[]): ReferenceMatch[] {
 	return resolvedDeps.map((dep) => {
-		// If no repo, mark as unknown
 		if (!dep.repo) {
 			return {
 				dep: dep.dep,
@@ -64,7 +63,6 @@ export function matchDependenciesToReferences(resolvedDeps: ResolvedDep[]): Refe
 			};
 		}
 
-		// Check if reference is installed
 		if (isReferenceInstalled(dep.repo)) {
 			return {
 				dep: dep.dep,
@@ -74,7 +72,6 @@ export function matchDependenciesToReferences(resolvedDeps: ResolvedDep[]): Refe
 			};
 		}
 
-		// Has repo but not installed - mark as available (can be cloned and generated)
 		return {
 			dep: dep.dep,
 			repo: dep.repo,

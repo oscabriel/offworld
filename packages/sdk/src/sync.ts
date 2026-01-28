@@ -8,22 +8,11 @@ import { api } from "@offworld/backend-api/api";
 import { toReferenceName } from "./config.js";
 import { GitHubRepoMetadataSchema, type RepoSource } from "@offworld/types";
 
-// ============================================================================
-// Configuration
-// ============================================================================
-
-// CONVEX_URL can be injected at build time (production) or runtime (dev)
-// For local dev, it's loaded from .env via CLI's env-loader
-// Using a getter to ensure it's evaluated AFTER env is loaded, not at module init
 function getConvexUrl(): string {
 	return process.env.CONVEX_URL || "";
 }
 
 const GITHUB_API_BASE = "https://api.github.com";
-
-// ============================================================================
-// Error Types
-// ============================================================================
 
 export class SyncError extends Error {
 	constructor(message: string) {
@@ -132,10 +121,6 @@ export class PushNotAllowedError extends SyncError {
 	}
 }
 
-// ============================================================================
-// Types
-// ============================================================================
-
 /** Reference data structure for sync operations */
 export interface ReferenceData {
 	fullName: string;
@@ -183,10 +168,6 @@ export interface CanPushResult {
 	stars?: number;
 }
 
-// ============================================================================
-// Convex Client
-// ============================================================================
-
 function createClient(token?: string): ConvexHttpClient {
 	const convexUrl = getConvexUrl();
 	if (!convexUrl) {
@@ -199,10 +180,6 @@ function createClient(token?: string): ConvexHttpClient {
 	if (token) client.setAuth(token);
 	return client;
 }
-
-// ============================================================================
-// API Functions
-// ============================================================================
 
 /**
  * Fetches reference from the remote server
@@ -401,7 +378,6 @@ export async function checkStaleness(
 	const remote = await checkRemote(fullName);
 
 	if (!remote.exists || !remote.commitSha) {
-		// No remote reference, not stale (nothing to compare)
 		return {
 			isStale: false,
 			localCommitSha,
@@ -409,17 +385,12 @@ export async function checkStaleness(
 		};
 	}
 
-	// Stale if commit SHAs differ
 	return {
 		isStale: localCommitSha !== remote.commitSha,
 		localCommitSha,
 		remoteCommitSha: remote.commitSha,
 	};
 }
-
-// ============================================================================
-// Push Validation Functions
-// ============================================================================
 
 /** GitHub repository metadata */
 export interface GitHubRepoMetadata {
@@ -488,7 +459,6 @@ export async function fetchRepoStars(owner: string, repo: string): Promise<numbe
  * @returns Can push result
  */
 export function canPushToWeb(source: RepoSource): CanPushResult {
-	// Reject local repositories
 	if (source.type === "local") {
 		return {
 			allowed: false,
@@ -498,7 +468,6 @@ export function canPushToWeb(source: RepoSource): CanPushResult {
 		};
 	}
 
-	// Reject non-GitHub repos (V1 restriction)
 	if (source.provider !== "github") {
 		return {
 			allowed: false,
@@ -508,7 +477,6 @@ export function canPushToWeb(source: RepoSource): CanPushResult {
 		};
 	}
 
-	// Star count and other validations happen server-side
 	return {
 		allowed: true,
 	};

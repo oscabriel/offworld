@@ -34,7 +34,6 @@ export function readGlobalMap(): GlobalMap {
 		const data = JSON.parse(content);
 		return GlobalMapSchema.parse(data);
 	} catch {
-		// If parsing fails, return empty map
 		return { repos: {} };
 	}
 }
@@ -47,12 +46,10 @@ export function writeGlobalMap(map: GlobalMap): void {
 	const mapPath = Paths.offworldGlobalMapPath;
 	const mapDir = dirname(mapPath);
 
-	// Ensure directory exists
 	if (!existsSync(mapDir)) {
 		mkdirSync(mapDir, { recursive: true });
 	}
 
-	// Validate and write
 	const validated = GlobalMapSchema.parse(map);
 	writeFileSync(mapPath, JSON.stringify(validated, null, 2), "utf-8");
 }
@@ -100,7 +97,6 @@ export function writeProjectMap(
 	const mapPath = join(projectRoot, ".offworld", "map.json");
 	const mapDir = dirname(mapPath);
 
-	// Ensure directory exists
 	if (!existsSync(mapDir)) {
 		mkdirSync(mapDir, { recursive: true });
 	}
@@ -112,7 +108,6 @@ export function writeProjectMap(
 		repos: entries,
 	};
 
-	// Validate and write
 	const validated = ProjectMapSchema.parse(projectMap);
 	writeFileSync(mapPath, JSON.stringify(validated, null, 2), "utf-8");
 }

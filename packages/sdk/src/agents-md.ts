@@ -55,16 +55,13 @@ export function appendReferencesSection(filePath: string, references: InstalledR
 	const content = existsSync(filePath) ? readFileSync(filePath, "utf-8") : "";
 	const referencesMarkdown = generateReferencesTable(references);
 
-	// Look for existing "## Project References" section
 	const sectionRegex = /^## Project References\n(?:.*\n)*?(?=^## |$)/m;
 	const match = content.match(sectionRegex);
 
 	let updatedContent: string;
 	if (match) {
-		// Replace existing section
 		updatedContent = content.replace(sectionRegex, referencesMarkdown);
 	} else {
-		// Append new section
 		updatedContent = content.trim() + "\n\n" + referencesMarkdown;
 	}
 
@@ -82,10 +79,8 @@ export function updateAgentFiles(projectRoot: string, references: InstalledRefer
 	const agentsMdPath = join(projectRoot, "AGENTS.md");
 	const claudeMdPath = join(projectRoot, "CLAUDE.md");
 
-	// Always update AGENTS.md
 	appendReferencesSection(agentsMdPath, references);
 
-	// Update CLAUDE.md if it exists
 	if (existsSync(claudeMdPath)) {
 		appendReferencesSection(claudeMdPath, references);
 	}

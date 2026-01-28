@@ -10,13 +10,11 @@ export const VERSION = "0.1.2";
  * Includes directories, binary files, IDE configs, and build outputs.
  */
 export const DEFAULT_IGNORE_PATTERNS = [
-	// Version control
 	".git",
 	".git/**",
 	".svn",
 	".hg",
 
-	// Dependencies
 	"node_modules",
 	"node_modules/**",
 	"vendor",
@@ -24,7 +22,6 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	".pnpm",
 	".yarn",
 
-	// Build outputs
 	"dist",
 	"dist/**",
 	"build",
@@ -38,7 +35,6 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	"__pycache__",
 	"*.pyc",
 
-	// IDE and editor directories
 	".vscode",
 	".vscode/**",
 	".idea",
@@ -47,7 +43,6 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	"*.swo",
 	".DS_Store",
 
-	// Binary and media extensions
 	"*.jpg",
 	"*.jpeg",
 	"*.png",
@@ -84,7 +79,6 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	"*.eot",
 	"*.otf",
 
-	// Lock files (large, not useful for reference generation)
 	"package-lock.json",
 	"yarn.lock",
 	"pnpm-lock.yaml",
@@ -95,14 +89,12 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	"composer.lock",
 	"go.sum",
 
-	// Coverage and test artifacts
 	"coverage",
 	"coverage/**",
 	".nyc_output",
 	".coverage",
 	"htmlcov",
 
-	// Logs and temp files
 	"*.log",
 	"logs",
 	"tmp",
@@ -111,7 +103,6 @@ export const DEFAULT_IGNORE_PATTERNS = [
 	".temp",
 	".cache",
 
-	// Environment files (security)
 	".env",
 	".env.*",
 	"*.pem",

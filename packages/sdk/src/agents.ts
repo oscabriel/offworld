@@ -9,10 +9,6 @@ import { existsSync } from "node:fs";
 import type { Agent } from "@offworld/types";
 import { expandTilde } from "./paths";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface AgentConfig {
 	/** Agent identifier (matches AgentSchema enum) */
 	name: Agent;
@@ -25,10 +21,6 @@ export interface AgentConfig {
 	/** Check if this agent is installed on the system */
 	detectInstalled: () => boolean;
 }
-
-// ============================================================================
-// Agent Registry
-// ============================================================================
 
 export const agents: Record<Agent, AgentConfig> = {
 	opencode: {
@@ -74,10 +66,6 @@ export const agents: Record<Agent, AgentConfig> = {
 		detectInstalled: () => existsSync(expandTilde("~/.cursor")),
 	},
 };
-
-// ============================================================================
-// Detection Functions
-// ============================================================================
 
 /**
  * Detect which agents are installed on the system.

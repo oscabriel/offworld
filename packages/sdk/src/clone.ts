@@ -10,10 +10,6 @@ import { getRepoPath, loadConfig, toReferenceFileName } from "./config.js";
 import { readGlobalMap, upsertGlobalMapEntry, removeGlobalMapEntry } from "./index-manager.js";
 import { Paths } from "./paths.js";
 
-// ============================================================================
-// Custom Error Types
-// ============================================================================
-
 export class CloneError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -46,10 +42,6 @@ export class GitError extends CloneError {
 	}
 }
 
-// ============================================================================
-// Clone Options
-// ============================================================================
-
 export interface CloneOptions {
 	/** Use shallow clone (--depth 1) */
 	shallow?: boolean;
@@ -62,10 +54,6 @@ export interface CloneOptions {
 	/** Use sparse checkout for large repos (only src/, lib/, packages/, docs/) */
 	sparse?: boolean;
 }
-
-// ============================================================================
-// Git Command Execution
-// ============================================================================
 
 function execGit(args: string[], cwd?: string): string {
 	try {
@@ -118,47 +106,27 @@ function execGitAsync(args: string[], cwd?: string): Promise<string> {
 	});
 }
 
-/**
- * Get the current commit SHA for a repository
- */
 export function getCommitSha(repoPath: string): string {
 	return execGit(["rev-parse", "HEAD"], repoPath);
 }
 
-/**
- * Get the number of commits between two SHAs.
- * Returns the number of commits from `olderSha` to `newerSha`.
- * Returns null if the distance cannot be determined (e.g., shallow clone without the commit).
- *
- * @param repoPath - Path to the git repository
- * @param olderSha - The older commit SHA (e.g., remote skill's commit)
- * @param newerSha - The newer commit SHA (e.g., current HEAD), defaults to HEAD
- */
 export function getCommitDistance(
 	repoPath: string,
 	olderSha: string,
 	newerSha = "HEAD",
 ): number | null {
 	try {
-		// Check if olderSha exists in the repo (may not exist in shallow clones)
 		try {
 			execGit(["cat-file", "-e", olderSha], repoPath);
 		} catch {
-			// Commit doesn't exist locally (shallow clone) - return null
 			return null;
 		}
-
-		// Count commits between olderSha and newerSha
 		const count = execGit(["rev-list", "--count", `${olderSha}..${newerSha}`], repoPath);
 		return Number.parseInt(count, 10);
 	} catch {
 		return null;
 	}
 }
-
-// ============================================================================
-// Clone Operations
-// ============================================================================
 
 const SPARSE_CHECKOUT_DIRS = ["src", "lib", "packages", "docs", "README.md", "package.json"];
 
@@ -201,7 +169,6 @@ export async function cloneRepo(
 	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 	const hasReference = existsSync(referencePath);
 
-	// Update global map unconditionally
 	upsertGlobalMapEntry(source.qualifiedName, {
 		localPath: repoPath,
 		references: hasReference ? [referenceFileName] : [],
@@ -261,13 +228,6 @@ async function cloneSparse(
 	await execGitAsync(["checkout"], repoPath);
 }
 
-// ============================================================================
-// Update Operations
-// ============================================================================
-
-/**
- * Check if a repository is a shallow clone.
- */
 export function isShallowClone(repoPath: string): boolean {
 	try {
 		const result = execGit(["rev-parse", "--is-shallow-repository"], repoPath);
@@ -277,11 +237,6 @@ export function isShallowClone(repoPath: string): boolean {
 	}
 }
 
-/**
- * Convert a shallow clone to a full clone by fetching all history.
- * Returns true if the repo was shallow and is now unshallowed.
- * Returns false if the repo was already a full clone.
- */
 export async function unshallowRepo(repoPath: string): Promise<boolean> {
 	if (!isShallowClone(repoPath)) {
 		return false;
@@ -332,10 +287,7 @@ export async function updateRepo(
 		throw new RepoNotFoundError(qualifiedName);
 	}
 
-	// Get current SHA before update
 	const previousSha = getCommitSha(repoPath);
-
-	// Unshallow if requested
 	let unshallowed = false;
 	if (options.unshallow) {
 		unshallowed = await unshallowRepo(repoPath);
@@ -344,10 +296,7 @@ export async function updateRepo(
 	await execGitAsync(["fetch"], repoPath);
 	await execGitAsync(["pull", "--ff-only"], repoPath);
 
-	// Get new SHA after update
 	const currentSha = getCommitSha(repoPath);
-
-	// Update map with timestamp
 	upsertGlobalMapEntry(qualifiedName, {
 		...entry,
 		updatedAt: new Date().toISOString(),
@@ -361,24 +310,11 @@ export async function updateRepo(
 	};
 }
 
-// ============================================================================
-// Remove Operations
-// ============================================================================
-
 export interface RemoveOptions {
-	/** Only remove reference files (keep cloned repo) */
 	referenceOnly?: boolean;
-	/** Only remove cloned repo (keep reference files) */
 	repoOnly?: boolean;
 }
 
-/**
- * Remove a cloned repository and its reference data.
- *
- * @param qualifiedName - The qualified name of the repo
- * @param options - Remove options
- * @returns true if removed, false if not found
- */
 export async function removeRepo(
 	qualifiedName: string,
 	options: RemoveOptions = {},
@@ -399,7 +335,6 @@ export async function removeRepo(
 	}
 
 	if (removeReferenceFiles) {
-		// Remove reference files
 		for (const referenceFileName of entry.references) {
 			const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 			if (existsSync(referencePath)) {
@@ -407,7 +342,6 @@ export async function removeRepo(
 			}
 		}
 
-		// Remove meta directory (only if primary reference exists)
 		if (entry.primary) {
 			const metaDirName = entry.primary.replace(/\.md$/, "");
 			const metaPath = join(Paths.metaDir, metaDirName);
@@ -430,26 +364,11 @@ export async function removeRepo(
 	return true;
 }
 
-// ============================================================================
-// List Operations
-// ============================================================================
-
-/**
- * List all cloned repositories from the global map.
- *
- * @returns Array of qualified names
- */
 export function listRepos(): string[] {
 	const map = readGlobalMap();
 	return Object.keys(map.repos);
 }
 
-/**
- * Check if a repository is cloned and in the map.
- *
- * @param qualifiedName - The qualified name of the repo
- * @returns true if repo exists in map and on disk
- */
 export function isRepoCloned(qualifiedName: string): boolean {
 	const map = readGlobalMap();
 	const entry = map.repos[qualifiedName];

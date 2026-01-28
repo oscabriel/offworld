@@ -24,15 +24,10 @@ import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
 import { readGlobalMap, writeGlobalMap } from "./index-manager.js";
 
-// Schema for package.json keyword extraction
 const PackageJsonKeywordsSchema = z.object({
 	name: z.string().optional(),
 	keywords: z.array(z.string()).optional(),
 });
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface GenerateReferenceOptions {
 	/** AI provider ID (e.g., "anthropic", "openai"). Defaults to config value. */
@@ -122,17 +117,11 @@ function deriveKeywords(fullName: string, localPath: string, referenceContent: s
 					}
 				}
 			}
-		} catch {
-			// Ignore parse errors
-		}
+		} catch {}
 	}
 
 	return Array.from(keywords);
 }
-
-// ============================================================================
-// Reference Generation
-// ============================================================================
 
 function createReferenceGenerationPrompt(referenceName: string): string {
 	return `You are an expert at analyzing open source libraries and producing reference documentation for AI coding agents.
@@ -282,20 +271,16 @@ Output ONLY the reference content inside the tags. No explanations before or aft
  * (Using last occurrence avoids extracting example tags from echoed prompt)
  */
 function extractReferenceContent(rawResponse: string): string {
-	// Try XML tag extraction first (preferred)
-	// Use lastIndexOf to skip any echoed prompt examples
 	const openTag = "<reference_output>";
 	const closeTag = "</reference_output>";
 	const closeIndex = rawResponse.lastIndexOf(closeTag);
 
 	if (closeIndex !== -1) {
-		// Find the last open tag before this close tag
 		const openIndex = rawResponse.lastIndexOf(openTag, closeIndex);
 
 		if (openIndex !== -1) {
 			let content = rawResponse.slice(openIndex + openTag.length, closeIndex).trim();
 
-			// Remove markdown code fence wrapper if present
 			if (content.startsWith("```")) {
 				content = content.replace(/^```(?:markdown)?\s*\n?/, "");
 				content = content.replace(/\n?```\s*$/, "");
@@ -307,7 +292,6 @@ function extractReferenceContent(rawResponse: string): string {
 		}
 	}
 
-	// No valid extraction - fail loud instead of returning garbage
 	throw new Error(
 		"Failed to extract reference content: no <reference_output> tags found in AI response. " +
 			"The AI may have failed to follow the output format instructions.",
@@ -364,7 +348,6 @@ export async function generateReferenceWithAI(
 	const commitSha = getCommitSha(repoPath);
 	onDebug?.(`Commit SHA: ${commitSha}`);
 
-	// Generate the reference name in owner-repo format
 	const referenceName = toReferenceName(repoName);
 	onDebug?.(`Reference name: ${referenceName}`);
 
@@ -381,7 +364,6 @@ export async function generateReferenceWithAI(
 
 	onDebug?.(`Generation complete (${result.durationMs}ms, ${result.text.length} chars)`);
 
-	// Extract just the reference content, removing any echoed prompt/system context
 	const referenceContent = extractReferenceContent(result.text);
 	onDebug?.(`Extracted reference content (${referenceContent.length} chars)`);
 
@@ -390,10 +372,6 @@ export async function generateReferenceWithAI(
 		commitSha,
 	};
 }
-
-// ============================================================================
-// Skill Installation
-// ============================================================================
 
 /**
  * Ensure a symlink exists, removing any existing file/directory at the path
@@ -408,9 +386,7 @@ function ensureSymlink(target: string, linkPath: string): void {
 		} else {
 			unlinkSync(linkPath);
 		}
-	} catch {
-		// Path doesn't exist, which is fine
-	}
+	} catch {}
 
 	const linkDir = join(linkPath, "..");
 	mkdirSync(linkDir, { recursive: true });
@@ -494,18 +470,15 @@ ow project init         # scan project deps, install references
 export function installGlobalSkill(): void {
 	const config = loadConfig();
 
-	// Ensure offworld skill directory exists
 	mkdirSync(Paths.offworldSkillDir, { recursive: true });
 	mkdirSync(Paths.offworldAssetsDir, { recursive: true });
 	mkdirSync(Paths.offworldReferencesDir, { recursive: true });
 
-	// Write global SKILL.md if it doesn't exist
 	const skillPath = join(Paths.offworldSkillDir, "SKILL.md");
 	if (!existsSync(skillPath)) {
 		writeFileSync(skillPath, GLOBAL_SKILL_TEMPLATE, "utf-8");
 	}
 
-	// Symlink the entire offworld/ directory to each agent's skill directory
 	const configuredAgents = config.agents ?? [];
 	for (const agentName of configuredAgents) {
 		const agentConfig = agents[agentName];
@@ -544,18 +517,15 @@ export function installReference(
 	const referenceFileName = toReferenceFileName(fullName);
 	const metaDirName = toMetaDirName(fullName);
 
-	// Write reference file
 	const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
 	mkdirSync(Paths.offworldReferencesDir, { recursive: true });
 	writeFileSync(referencePath, referenceContent, "utf-8");
 
-	// Write meta.json
 	const metaDir = join(Paths.metaDir, metaDirName);
 	mkdirSync(metaDir, { recursive: true });
 	const metaJson = JSON.stringify(meta, null, 2);
 	writeFileSync(join(metaDir, "meta.json"), metaJson, "utf-8");
 
-	// Update global map
 	const map = readGlobalMap();
 	const existingEntry = map.repos[qualifiedName];
 	const legacyProviderMap: Record<string, string> = {

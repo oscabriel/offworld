@@ -57,8 +57,6 @@ export interface GcResult {
 	freedBytes: number;
 }
 
-// Removed: stale check no longer uses commitSha in map
-
 function getDirSize(dirPath: string): number {
 	if (!existsSync(dirPath)) return 0;
 
@@ -72,14 +70,10 @@ function getDirSize(dirPath: string): number {
 			} else if (entry.isFile()) {
 				try {
 					size += statSync(fullPath).size;
-				} catch {
-					// Can't stat file
-				}
+				} catch {}
 			}
 		}
-	} catch {
-		// Can't read directory
-	}
+	} catch {}
 	return size;
 }
 
@@ -98,9 +92,7 @@ function getLastAccessTime(dirPath: string): Date | null {
 				latestTime = fetchStat.mtime;
 			}
 		}
-	} catch {
-		// Can't stat
-	}
+	} catch {}
 	return latestTime;
 }
 
@@ -136,7 +128,6 @@ export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<Re
 		const entry = map.repos[qualifiedName]!;
 		onProgress?.(i + 1, total, qualifiedName);
 
-		// Yield to event loop to allow Ctrl+C
 		await yieldToEventLoop();
 
 		const exists = existsSync(entry.localPath);
@@ -149,8 +140,6 @@ export async function getRepoStatus(options: RepoStatusOptions = {}): Promise<Re
 		if (entry.references.length > 0) {
 			withReference++;
 		}
-
-		// Stale check removed (no commitSha tracking in map)
 
 		diskBytes += getDirSize(entry.localPath);
 	}
@@ -276,9 +265,7 @@ export async function pruneRepos(options: PruneOptions = {}): Promise<PruneResul
 					}
 				}
 			}
-		} catch {
-			// Can't read repo root
-		}
+		} catch {}
 	}
 
 	return { removedFromIndex, orphanedDirs };
@@ -325,10 +312,8 @@ export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
 		onProgress?.(qualifiedName, reason, sizeBytes);
 
 		if (!dryRun) {
-			// Remove repo
 			rmSync(entry.localPath, { recursive: true, force: true });
 
-			// Remove reference files
 			for (const refFile of entry.references) {
 				const refPath = join(Paths.offworldReferencesDir, refFile);
 				if (existsSync(refPath)) {
@@ -336,7 +321,6 @@ export async function gcRepos(options: GcOptions = {}): Promise<GcResult> {
 				}
 			}
 
-			// Remove meta (derive from primary reference filename)
 			if (entry.primary) {
 				const metaDirName = entry.primary.replace(/\.md$/, "");
 				const metaPath = join(Paths.metaDir, metaDirName);
@@ -419,7 +403,6 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 					onProgress?.(fullName, providerHost);
 
 					if (!dryRun) {
-						// Add to map with empty references
 						upsertGlobalMapEntry(qualifiedName, {
 							localPath: repoPath,
 							references: [],
@@ -433,9 +416,7 @@ export async function discoverRepos(options: DiscoverOptions = {}): Promise<Disc
 				}
 			}
 		}
-	} catch {
-		// Can't read repo root
-	}
+	} catch {}
 
 	return { discovered, alreadyIndexed };
 }

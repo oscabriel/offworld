@@ -80,8 +80,6 @@ export function toReferenceFileName(repoName: string): string {
 		const ownerLower = owner.toLowerCase();
 		const repoLower = repo.toLowerCase();
 
-		// If owner contains repo (or a significant part of repo), just use repo
-		// Split repo by hyphens and check if any part is in the owner
 		const repoParts = repoLower.split("-");
 		const significantPart = repoParts.find((part) => part.length >= 3 && ownerLower.includes(part));
 
@@ -130,7 +128,6 @@ export function loadConfig(): Config {
 		const data = JSON.parse(content);
 		return ConfigSchema.parse(data);
 	} catch {
-		// If parsing fails, return defaults
 		return ConfigSchema.parse({});
 	}
 }
@@ -144,19 +141,15 @@ export function saveConfig(updates: Partial<Config>): Config {
 	const configPath = getConfigPath();
 	const configDir = dirname(configPath);
 
-	// Ensure directory exists
 	if (!existsSync(configDir)) {
 		mkdirSync(configDir, { recursive: true });
 	}
 
-	// Load existing config and merge
 	const existing = loadConfig();
 	const merged = { ...existing, ...updates };
 
-	// Validate merged config
 	const validated = ConfigSchema.parse(merged);
 
-	// Write to file
 	writeFileSync(configPath, JSON.stringify(validated, null, 2), "utf-8");
 
 	return validated;

@@ -18,7 +18,6 @@ export type ResolvedDep = {
  * Covers top ecosystems: React, Vue, Svelte, backend, database, validation, styling.
  */
 export const KNOWN_MAPPINGS: Record<string, string> = {
-	// React ecosystem
 	react: "facebook/react",
 	"react-dom": "facebook/react",
 	next: "vercel/next.js",
@@ -26,17 +25,14 @@ export const KNOWN_MAPPINGS: Record<string, string> = {
 	"@remix-run/react": "remix-run/remix",
 	"@remix-run/node": "remix-run/remix",
 
-	// Vue ecosystem
 	vue: "vuejs/core",
 	nuxt: "nuxt/nuxt",
 	"@nuxt/kit": "nuxt/nuxt",
 
-	// Svelte ecosystem
 	svelte: "sveltejs/svelte",
 	sveltekit: "sveltejs/kit",
 	"@sveltejs/kit": "sveltejs/kit",
 
-	// State management
 	"@tanstack/query": "tanstack/query",
 	"@tanstack/react-query": "tanstack/query",
 	"@tanstack/vue-query": "tanstack/query",
@@ -49,7 +45,6 @@ export const KNOWN_MAPPINGS: Record<string, string> = {
 	redux: "reduxjs/redux",
 	"@reduxjs/toolkit": "reduxjs/redux-toolkit",
 
-	// Backend frameworks
 	express: "expressjs/express",
 	hono: "honojs/hono",
 	fastify: "fastify/fastify",
@@ -66,7 +61,6 @@ export const KNOWN_MAPPINGS: Record<string, string> = {
 	"apollo-server": "apollographql/apollo-server",
 	"@apollo/client": "apollographql/apollo-client",
 
-	// Database ORMs
 	"drizzle-orm": "drizzle-team/drizzle-orm",
 	prisma: "prisma/prisma",
 	"@prisma/client": "prisma/prisma",
@@ -75,45 +69,37 @@ export const KNOWN_MAPPINGS: Record<string, string> = {
 	mongoose: "Automattic/mongoose",
 	knex: "knex/knex",
 
-	// Validation
 	zod: "colinhacks/zod",
 	valibot: "fabian-hiller/valibot",
 	yup: "jquense/yup",
 	joi: "hapijs/joi",
 
-	// Styling
 	tailwindcss: "tailwindlabs/tailwindcss",
 	"styled-components": "styled-components/styled-components",
 	"@emotion/react": "emotion-js/emotion",
 	sass: "sass/sass",
 
-	// Build tools
 	vite: "vitejs/vite",
 	webpack: "webpack/webpack",
 	esbuild: "evanw/esbuild",
 	rollup: "rollup/rollup",
 	"@vitejs/plugin-react": "vitejs/vite-plugin-react",
 
-	// Testing
 	vitest: "vitest-dev/vitest",
 	jest: "jestjs/jest",
 	"@testing-library/react": "testing-library/react-testing-library",
 	cypress: "cypress-io/cypress",
 	playwright: "microsoft/playwright",
 
-	// Convex
 	convex: "get-convex/convex-backend",
 
-	// Better Auth
 	"better-auth": "better-auth/better-auth",
 
-	// Utilities
 	lodash: "lodash/lodash",
 	"date-fns": "date-fns/date-fns",
 	axios: "axios/axios",
 	ky: "sindresorhus/ky",
 
-	// Monorepo tools
 	turborepo: "vercel/turborepo",
 	nx: "nrwl/nx",
 };
@@ -171,17 +157,14 @@ export async function resolveFromNpm(packageName: string): Promise<string | null
  * 3. Return unknown (caller prompts user)
  */
 export async function resolveDependencyRepo(dep: string): Promise<ResolvedDep> {
-	// Tier 1: Known mappings
 	if (dep in KNOWN_MAPPINGS) {
 		return { dep, repo: KNOWN_MAPPINGS[dep] ?? null, source: "known" };
 	}
 
-	// Tier 2: npm registry
 	const npmRepo = await resolveFromNpm(dep);
 	if (npmRepo) {
 		return { dep, repo: npmRepo, source: "npm" };
 	}
 
-	// Tier 3: Unknown (caller handles)
 	return { dep, repo: null, source: "unknown" };
 }

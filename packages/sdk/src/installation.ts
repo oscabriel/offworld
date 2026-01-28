@@ -20,10 +20,8 @@ export type InstallMethod = "curl" | "npm" | "pnpm" | "bun" | "brew" | "unknown"
 export function detectInstallMethod(): InstallMethod {
 	const execPath = process.execPath;
 
-	// curl install goes to ~/.local/bin
 	if (execPath.includes(".local/bin")) return "curl";
 
-	// Check package managers
 	const checks: Array<{ name: InstallMethod; test: () => boolean }> = [
 		{
 			name: "npm",
@@ -79,7 +77,6 @@ export function detectInstallMethod(): InstallMethod {
 		},
 	];
 
-	// Prioritize based on exec path hints
 	if (execPath.includes("npm")) {
 		const check = checks.find((c) => c.name === "npm");
 		if (check?.test()) return "npm";
@@ -97,7 +94,6 @@ export function detectInstallMethod(): InstallMethod {
 		if (check?.test()) return "brew";
 	}
 
-	// Fall back to checking all
 	for (const check of checks) {
 		if (check.test()) return check.name;
 	}
@@ -120,7 +116,6 @@ export async function fetchLatestVersion(method?: InstallMethod): Promise<string
 
 	try {
 		if (installMethod === "npm" || installMethod === "pnpm" || installMethod === "bun") {
-			// Fetch from npm registry
 			const response = await fetch(`https://registry.npmjs.org/${NPM_PACKAGE}/latest`);
 			if (!response.ok) return null;
 			const json = await response.json();
@@ -129,7 +124,6 @@ export async function fetchLatestVersion(method?: InstallMethod): Promise<string
 			return result.data.version ?? null;
 		}
 
-		// Default: fetch from GitHub releases
 		const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
 			headers: {
 				Accept: "application/vnd.github.v3+json",
@@ -138,12 +132,10 @@ export async function fetchLatestVersion(method?: InstallMethod): Promise<string
 		});
 		if (!response.ok) return null;
 		const json = await response.json();
-		// GitHub releases response - just need tag_name
 		const tagName =
 			typeof json === "object" && json !== null && "tag_name" in json
 				? String(json.tag_name)
 				: null;
-		// Remove 'v' prefix if present
 		return tagName?.replace(/^v/, "") ?? null;
 	} catch {
 		return null;
@@ -203,8 +195,6 @@ export function executeUninstall(method: InstallMethod): Promise<void> {
 
 		switch (method) {
 			case "curl":
-				// For curl installs, we just need to remove the binary
-				// The handler will take care of removing data directories
 				try {
 					const binPath = join(homedir(), ".local", "bin", "ow");
 					if (existsSync(binPath)) {
@@ -283,13 +273,10 @@ export function cleanShellConfig(filePath: string): boolean {
 
 		for (const line of lines) {
 			const trimmed = line.trim();
-			// Skip lines that add .local/bin to PATH (our install location)
 			if (
 				trimmed.includes(".local/bin") &&
 				(trimmed.startsWith("export PATH=") || trimmed.startsWith("fish_add_path"))
 			) {
-				// Only skip if it looks like it was added for offworld
-				// Be conservative - only remove if it's clearly ours
 				if (trimmed.includes("# offworld") || trimmed === 'export PATH="$HOME/.local/bin:$PATH"') {
 					modified = true;
 					continue;

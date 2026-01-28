@@ -89,34 +89,62 @@ export async function projectInitHandler(
 	p.log.info(`Found ${dependencies.length} dependencies`);
 
 	p.log.step("Resolving GitHub repositories...");
-	const resolvedPromises = dependencies.map((dep) => resolveDependencyRepo(dep.name));
+	const isInternalDep = (version?: string): boolean => {
+		if (!version) return false;
+		return (
+			version.startsWith("workspace:") ||
+			version.startsWith("file:") ||
+			version.startsWith("link:")
+		);
+	};
+
+	const internalDeps = dependencies.filter((dep) => isInternalDep(dep.version));
+	const externalDeps = dependencies.filter((dep) => !isInternalDep(dep.version));
+
+	if (internalDeps.length > 0) {
+		p.log.warn(`Skipped ${internalDeps.length} internal workspace dependencies:`);
+		for (const dep of internalDeps) {
+			p.log.info(`  - ${dep.name}`);
+		}
+	}
+
+	const resolvedPromises = externalDeps.map((dep) => resolveDependencyRepo(dep.name));
 	const resolved = await Promise.all(resolvedPromises);
 
 	const skipList = options.skip ? options.skip.split(",").map((d) => d.trim()) : [];
 	const depsList = options.deps ? options.deps.split(",").map((d) => d.trim()) : [];
 
 	let filtered = resolved.filter((r) => {
-		if (r.source === "unknown") return false;
 		if (skipList.includes(r.dep)) return false;
 		if (depsList.length > 0) return depsList.includes(r.dep);
 		return true;
 	});
 
 	if (filtered.length === 0) {
-		p.log.warn("No resolvable dependencies after filtering.");
+		p.log.warn("No dependencies left after filtering.");
 		p.outro("");
-		return { success: true, message: "No resolvable dependencies" };
+		return { success: true, message: "No dependencies after filtering" };
 	}
 
 	const matches = matchDependenciesToReferences(filtered);
+	const unresolved = matches.filter((match) => !match.repo);
+	if (unresolved.length > 0) {
+		p.log.warn(`Could not resolve ${unresolved.length} dependencies to a GitHub repo:`);
+		for (const match of unresolved) {
+			p.log.info(`  - ${match.dep}`);
+		}
+	}
+
+	const installable = matches.filter((match) => match.repo);
 
 	let selected: ReferenceMatch[];
 	if (options.all || options.deps) {
-		selected = matches;
+		selected = installable;
 	} else {
 		const checklistOptions = matches.map((m) => {
-			const label = `${m.dep} (${m.repo}) - ${m.status}`;
-			return { value: m, label, hint: m.status };
+			const repoLabel = m.repo ?? "unknown repo";
+			const label = `${m.dep} (${repoLabel}) - ${m.status}`;
+			return { value: m, label, hint: m.status, disabled: m.status === "unknown" };
 		});
 
 		const selectedResult = await p.multiselect({

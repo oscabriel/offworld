@@ -3,7 +3,7 @@
  */
 
 /** SDK version - must match package.json */
-export const VERSION = "0.1.5";
+export const VERSION = "0.1.6";
 
 /**
  * Default patterns to ignore when scanning repositories.

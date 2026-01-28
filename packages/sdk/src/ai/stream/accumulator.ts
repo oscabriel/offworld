@@ -52,6 +52,23 @@ export class TextAccumulator {
 	}
 
 	/**
+	 * Get the number of distinct parts accumulated
+	 */
+	getPartCount(): number {
+		return this.parts.size;
+	}
+
+	/**
+	 * Get info about each part for debugging
+	 */
+	getPartInfo(): Array<{ id: string; length: number }> {
+		return Array.from(this.parts.entries()).map(([id, text]) => ({
+			id,
+			length: text.length,
+		}));
+	}
+
+	/**
 	 * Clear accumulated text
 	 */
 	clear(): void {

@@ -253,46 +253,140 @@ Before outputting, verify:
 
 Now explore the codebase and generate the reference content.
 
-CRITICAL: Wrap your final reference output in XML tags exactly like this:
-<reference_output>
-# {Library Name}
-(the complete markdown content with NO frontmatter)
-</reference_output>
+## OUTPUT INSTRUCTIONS
 
-Output ONLY the reference content inside the tags. No explanations before or after the tags.`;
+After exploring, output your complete reference wrapped in XML tags like this:
+
+\`\`\`
+<reference_output>
+(your complete markdown reference here)
+</reference_output>
+\`\`\`
+
+REQUIREMENTS:
+- Start with a level-1 heading with the actual library name (e.g., "# TanStack Query")
+- Include sections: Quick References (table), When to Use (bullets), Installation, Best Practices, Common Patterns (with code), API Quick Reference (table)
+- Minimum 2000 characters of actual content - short or placeholder content will be rejected
+- Fill in real information from your exploration - do not use placeholder text like "{Library Name}"
+- No YAML frontmatter - start directly with the markdown heading
+- Output ONLY the reference inside the tags, no other text
+
+Begin exploring now.`;
 }
 
 /**
  * Extract the actual reference markdown content from AI response.
  * The response may include echoed prompt/system context before the actual reference.
- * We look for the LAST occurrence of XML tags: <reference_output>...</reference_output>
- * (Using last occurrence avoids extracting example tags from echoed prompt)
+ * Handles multiple edge cases:
+ * - Model echoes the prompt template (skip template content)
+ * - Model forgets to close the tag (extract to end of response)
+ * - Multiple tag pairs (find the one with real content)
  */
-function extractReferenceContent(rawResponse: string): string {
+function extractReferenceContent(
+	rawResponse: string,
+	onDebug?: (message: string) => void,
+): string {
 	const openTag = "<reference_output>";
 	const closeTag = "</reference_output>";
-	const closeIndex = rawResponse.lastIndexOf(closeTag);
 
-	if (closeIndex !== -1) {
-		const openIndex = rawResponse.lastIndexOf(openTag, closeIndex);
+	onDebug?.(`[extract] Raw response length: ${rawResponse.length} chars`);
 
-		if (openIndex !== -1) {
-			let content = rawResponse.slice(openIndex + openTag.length, closeIndex).trim();
+	// Find all occurrences of open and close tags
+	const openIndices: number[] = [];
+	const closeIndices: number[] = [];
+	let pos = 0;
+	while ((pos = rawResponse.indexOf(openTag, pos)) !== -1) {
+		openIndices.push(pos);
+		pos += openTag.length;
+	}
+	pos = 0;
+	while ((pos = rawResponse.indexOf(closeTag, pos)) !== -1) {
+		closeIndices.push(pos);
+		pos += closeTag.length;
+	}
 
-			if (content.startsWith("```")) {
-				content = content.replace(/^```(?:markdown)?\s*\n?/, "");
-				content = content.replace(/\n?```\s*$/, "");
+	onDebug?.(
+		`[extract] Found ${openIndices.length} open tag(s), ${closeIndices.length} close tag(s)`,
+	);
+
+	// Helper to clean content (strip markdown fences)
+	const cleanContent = (raw: string): string => {
+		let content = raw.trim();
+		if (content.startsWith("```")) {
+			content = content.replace(/^```(?:markdown)?\s*\n?/, "");
+			content = content.replace(/\n?```\s*$/, "");
+		}
+		return content.trim();
+	};
+
+	// Helper to check if content is template placeholder
+	const isTemplateContent = (content: string): boolean => {
+		return (
+			content.includes("{Library Name}") ||
+			content.includes("(your complete markdown reference here)")
+		);
+	};
+
+	// Strategy 1: Find properly paired tags, starting from the LAST open tag
+	// (Last is more likely to be actual output, not echoed prompt)
+	for (let i = openIndices.length - 1; i >= 0; i--) {
+		const openIdx = openIndices[i];
+		if (openIdx === undefined) continue;
+
+		// Find the first close tag after this open tag
+		const closeIdx = closeIndices.find((c) => c > openIdx);
+		if (closeIdx !== undefined) {
+			const rawContent = rawResponse.slice(openIdx + openTag.length, closeIdx);
+			const content = cleanContent(rawContent);
+
+			onDebug?.(`[extract] Pair ${i}: open=${openIdx}, close=${closeIdx}, len=${content.length}`);
+			onDebug?.(
+				`[extract] Preview: "${content.slice(0, 200)}${content.length > 200 ? "..." : ""}"`,
+			);
+
+			if (isTemplateContent(content)) {
+				onDebug?.(`[extract] Skipping pair ${i} - template placeholder content`);
+				continue;
 			}
 
-			content = content.trim();
-			validateReferenceContent(content);
-			return content;
+			if (content.length >= 500) {
+				onDebug?.(`[extract] Using pair ${i} - valid content`);
+				validateReferenceContent(content);
+				return content;
+			}
+			onDebug?.(`[extract] Pair ${i} too short (${content.length} chars)`);
 		}
 	}
 
+	// Strategy 2: Handle unclosed tag - model output <reference_output> but never closed it
+	// Find the last open tag that has no close tag after it
+	const lastOpenIdx = openIndices[openIndices.length - 1];
+	if (lastOpenIdx !== undefined) {
+		const hasCloseAfter = closeIndices.some((c) => c > lastOpenIdx);
+		if (!hasCloseAfter) {
+			onDebug?.(`[extract] Last open tag at ${lastOpenIdx} is unclosed - extracting to end`);
+			const rawContent = rawResponse.slice(lastOpenIdx + openTag.length);
+			const content = cleanContent(rawContent);
+
+			onDebug?.(`[extract] Unclosed content: ${content.length} chars`);
+			onDebug?.(
+				`[extract] Preview: "${content.slice(0, 200)}${content.length > 200 ? "..." : ""}"`,
+			);
+
+			if (!isTemplateContent(content) && content.length >= 500) {
+				onDebug?.(`[extract] Using unclosed content - valid`);
+				validateReferenceContent(content);
+				return content;
+			}
+		}
+	}
+
+	onDebug?.(`[extract] No valid content found`);
+	onDebug?.(`[extract] Response tail: "${rawResponse.slice(-300)}"`);
+
 	throw new Error(
-		"Failed to extract reference content: no <reference_output> tags found in AI response. " +
-			"The AI may have failed to follow the output format instructions.",
+		"Failed to extract reference content: no valid <reference_output> tags found. " +
+			"The AI may have failed to follow the output format or produced placeholder content.",
 	);
 }
 
@@ -301,6 +395,27 @@ function extractReferenceContent(rawResponse: string): string {
  * Throws if content is invalid.
  */
 function validateReferenceContent(content: string): void {
+	// Check for template placeholders that indicate the model just echoed the format
+	const templatePlaceholders = [
+		"{Library Name}",
+		"{Full overview paragraph}",
+		"{Table with 3-5 key files}",
+		"{3+ bullet points}",
+		"{Install commands}",
+		"{3+ numbered items}",
+		"{2+ code examples",
+		"{Table of key exports}",
+		"{Additional sections",
+	];
+
+	const foundPlaceholders = templatePlaceholders.filter((p) => content.includes(p));
+	if (foundPlaceholders.length > 0) {
+		throw new Error(
+			`Invalid reference content: contains template placeholders (${foundPlaceholders.slice(0, 3).join(", ")}). ` +
+				"The AI echoed the format instead of generating actual content.",
+		);
+	}
+
 	if (content.length < 500) {
 		throw new Error(
 			`Invalid reference content: too short (${content.length} chars, minimum 500). ` +
@@ -362,7 +477,7 @@ export async function generateReferenceWithAI(
 
 	onDebug?.(`Generation complete (${result.durationMs}ms, ${result.text.length} chars)`);
 
-	const referenceContent = extractReferenceContent(result.text);
+	const referenceContent = extractReferenceContent(result.text, onDebug);
 	onDebug?.(`Extracted reference content (${referenceContent.length} chars)`);
 
 	return {

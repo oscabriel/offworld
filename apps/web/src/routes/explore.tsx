@@ -24,9 +24,7 @@ function ExploreComponent() {
 			<div className="container mx-auto max-w-7xl flex-1 px-5 pb-21 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
 				<div className="space-y-13">
 					<div className="space-y-5">
-						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">
-							Explore
-						</h1>
+						<h1 className="font-serif text-6xl tracking-tight md:text-7xl">Explore</h1>
 						<p className="text-muted-foreground font-mono text-lg">
 							Check out the{" "}
 							<a

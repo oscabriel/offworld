@@ -175,9 +175,7 @@ function patternToRegex(pattern: string): RegExp {
 	if (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
 
 	const escaped = normalized.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-	const withGlob = escaped
-		.replace(/\\\*\\\*/g, ".*")
-		.replace(/\\\*/g, "[^/]+");
+	const withGlob = escaped.replace(/\\\*\\\*/g, ".*").replace(/\\\*/g, "[^/]+");
 
 	return new RegExp(`^${withGlob}$`);
 }

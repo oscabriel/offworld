@@ -18,15 +18,15 @@ function AboutComponent() {
 						Offworld is a CLI that creates and manages local git clones of open source repos and
 						generates reference files that tell your AI coding agents how to use them. Run{" "}
 						<code>ow project init</code> and Offworld scans your dependencies, clones what you need,
-						and installs a single skill that works across OpenCode, Claude Code, Cursor, and
-						other agents.
+						and installs a single skill that works across OpenCode, Claude Code, Cursor, and other
+						agents.
 					</p>
 
 					<h2 className="font-serif">Rediscovery is expensive</h2>
 					<p>
-						Agents can always find your dependencies. But they pay for it every single
-						time. Token burn to rediscover the same docs and source. Hallucinations when the context
-						gets too deep. No memory between sessions.
+						Agents can always find your dependencies. But they pay for it every single time. Token
+						burn to rediscover the same docs and source. Hallucinations when the context gets too
+						deep. No memory between sessions.
 					</p>
 					<p>
 						Stop asking the model to rediscover the same things every session. Keep that context
@@ -39,9 +39,10 @@ function AboutComponent() {
 						the actual source for a library and it'll generate code you actually want to ship.
 					</p>
 					<p>
-						But keeping a huge list of git clones organized and updated is annoying. Offworld handles
-						that for you by giving you commands to update cloned repos (one at a time or in bulk), create
-						fresh reference files after pulling changes, and move where you store your git clones.
+						But keeping a huge list of git clones organized and updated is annoying. Offworld
+						handles that for you by giving you commands to update cloned repos (one at a time or in
+						bulk), create fresh reference files after pulling changes, and move where you store your
+						git clones.
 					</p>
 
 					<h2 className="font-serif">Why this works</h2>

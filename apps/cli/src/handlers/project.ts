@@ -92,9 +92,7 @@ export async function projectInitHandler(
 	const isInternalDep = (version?: string): boolean => {
 		if (!version) return false;
 		return (
-			version.startsWith("workspace:") ||
-			version.startsWith("file:") ||
-			version.startsWith("link:")
+			version.startsWith("workspace:") || version.startsWith("file:") || version.startsWith("link:")
 		);
 	};
 

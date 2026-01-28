@@ -259,7 +259,9 @@ function CliPage() {
 												</span>
 											)}
 										</div>
-										<p className="text-muted-foreground mb-4 font-mono text-sm">{cmd.description}</p>
+										<p className="text-muted-foreground mb-4 font-mono text-sm">
+											{cmd.description}
+										</p>
 										<CodeBlock code={cmd.usage} className="mb-4" />
 										{cmd.flags && cmd.flags.length > 0 && (
 											<div className="mt-4">

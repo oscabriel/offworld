@@ -51,8 +51,8 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
-    "@offworld/sdk": "^0.1.1",
-    "@offworld/types": "^0.1.1",
+    "@offworld/sdk": "workspace:*",
+    "@offworld/types": "workspace:*",
     "@orpc/server": "^1.13.4",
     "convex": "catalog:",
     "open": "^11.0.0",

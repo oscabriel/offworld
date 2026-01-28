@@ -7,11 +7,11 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">01</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							Clone the Repo
+							One Skill for All Agents
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							CLI creates easily-managed clones on your machine that you and your agents can read
-							and work on at any time.
+							Install a single SKILL.md file that is symlinked to all your coding agents
+							automatically.
 						</p>
 					</div>
 				</div>
@@ -20,11 +20,11 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">02</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							Generate Reference from Source
+							Clone the Repo
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Agent explores the codebase and creates reference docs with common patterns, API
-							details, and best practices.
+							CLI creates managed git clones on your machine that you and your agents can read at
+							any time.
 						</p>
 					</div>
 				</div>
@@ -33,11 +33,11 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">03</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							Symlink to All Agents
+							Generate Reference from Source
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							That one SKILL.md file is distributed to Claude Code, OpenCode, Codex, and other agent
-							configs automatically.
+							Agent explores the cloned repo and creates a reference file with common patterns, API
+							details, and best practices.
 						</p>
 					</div>
 				</div>
@@ -49,8 +49,8 @@ export function HowItWorks() {
 							Query Your Clones
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Ask your agent to load a reference and explore any cloned repo—get file summaries,
-							search code, or answer questions about the source.
+							Ask your agent about one of your clones and watch it read the reference, search the
+							code, and answer questions fast.
 						</p>
 					</div>
 				</div>

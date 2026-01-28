@@ -73,10 +73,10 @@ jobs:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
       - name: Build CLI and dependencies
-        run: turbo build --filter=offworld...
+        run: bunx turbo build --filter=offworld...
 
       - name: Test
-        run: turbo test --filter=offworld...
+        run: bunx turbo test --filter=offworld...
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
@@ -198,7 +198,7 @@ jobs:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
       - name: Build CLI and dependencies
-        run: turbo build --filter=offworld...
+        run: bunx turbo build --filter=offworld...
 
       - name: Get versions
         id: versions

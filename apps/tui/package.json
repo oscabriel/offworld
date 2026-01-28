@@ -4,7 +4,8 @@
 	"type": "module",
 	"module": "src/index.tsx",
 	"scripts": {
-		"dev": "bun run --watch src/index.ts"
+		"dev": "bun run --watch src/index.ts",
+		"check": "oxlint && oxfmt --write"
 	},
 	"dependencies": {
 		"@opentui/core": "^0.1.75"

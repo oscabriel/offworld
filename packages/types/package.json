@@ -48,7 +48,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "check": "oxlint && oxfmt --write"
   },
   "dependencies": {
     "zod": "catalog:"

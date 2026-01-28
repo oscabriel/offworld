@@ -8,7 +8,8 @@
 		"destroy": "alchemy destroy --app docs",
 		"build": "astro build",
 		"preview": "astro preview",
-		"astro": "astro"
+		"astro": "astro",
+		"check": "oxlint && oxfmt --write"
 	},
 	"dependencies": {
 		"@astrojs/starlight": "^0.37.4",

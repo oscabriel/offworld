@@ -33,6 +33,7 @@
 		"dev:setup": "turbo -F @offworld/backend dev:setup",
 		"check": "oxlint && oxfmt --write",
 		"build:cli": "turbo -F offworld build && bun link --cwd apps/cli",
+		"ow:dev": "bun run --cwd apps/cli ow:dev --",
 		"clean:vite": "turbo -F web clean:vite",
 		"bump": "bun run scripts/bump-version.ts"
 	},

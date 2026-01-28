@@ -13,7 +13,8 @@
 		"clean:vite": "rm -rf node_modules/.vite",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
-		"test:e2e:headed": "playwright test --headed"
+		"test:e2e:headed": "playwright test --headed",
+		"check": "oxlint && oxfmt --write"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.1.0",

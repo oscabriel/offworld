@@ -20,7 +20,8 @@
 		"dev:setup": "convex dev --configure --until-success",
 		"typecheck": "convex typecheck",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"check": "oxlint && oxfmt --write"
 	},
 	"dependencies": {
 		"@octokit/auth-app": "^8.1.2",

@@ -60,10 +60,12 @@
   "scripts": {
     "build": "tsdown && chmod +x ./dist/cli.mjs",
     "dev": "tsdown --watch",
+    "ow:dev": "bun run src/cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "check": "oxlint && oxfmt --write"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

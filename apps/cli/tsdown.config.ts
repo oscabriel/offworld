@@ -5,8 +5,4 @@ export default defineConfig({
 	format: ["esm"],
 	dts: true,
 	clean: true,
-	env: {
-		CONVEX_URL: process.env.CONVEX_URL || "",
-		WORKOS_CLIENT_ID: process.env.WORKOS_CLIENT_ID || "",
-	},
 });

@@ -313,35 +313,35 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
-          DARWIN_ARM64_SHA=$(grep "darwin-arm64" checksums.txt | cut -d' ' -f1)
-          DARWIN_X64_SHA=$(grep "darwin-x64" checksums.txt | cut -d' ' -f1)
-          LINUX_ARM64_SHA=$(grep "linux-arm64" checksums.txt | cut -d' ' -f1)
-          LINUX_X64_SHA=$(grep "linux-x64" checksums.txt | cut -d' ' -f1)
+          DARWIN_ARM64_SHA=$(grep "darwin-arm64" checksums.txt | awk '{print $1}')
+          DARWIN_X64_SHA=$(grep "darwin-x64" checksums.txt | awk '{print $1}')
+          LINUX_ARM64_SHA=$(grep "linux-arm64" checksums.txt | awk '{print $1}')
+          LINUX_X64_SHA=$(grep "linux-x64" checksums.txt | awk '{print $1}')
 
-          cat > tap/Formula/ow.rb << EOF
+          cat > tap/Formula/ow.rb << FORMULA
           class Ow < Formula
             desc "Offworld CLI - Generate references for your dependencies"
             homepage "https://offworld.sh"
-            version "$VERSION"
+            version "${VERSION}"
             license "MIT"
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-darwin-arm64.tar.gz"
-                sha256 "$DARWIN_ARM64_SHA"
+                url "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ow-darwin-arm64.tar.gz"
+                sha256 "${DARWIN_ARM64_SHA}"
               else
-                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-darwin-x64.tar.gz"
-                sha256 "$DARWIN_X64_SHA"
+                url "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ow-darwin-x64.tar.gz"
+                sha256 "${DARWIN_X64_SHA}"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-linux-arm64.tar.gz"
-                sha256 "$LINUX_ARM64_SHA"
+                url "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ow-linux-arm64.tar.gz"
+                sha256 "${LINUX_ARM64_SHA}"
               else
-                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-linux-x64.tar.gz"
-                sha256 "$LINUX_X64_SHA"
+                url "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/ow-linux-x64.tar.gz"
+                sha256 "${LINUX_X64_SHA}"
               end
             end
 
@@ -353,7 +353,10 @@ jobs:
               assert_match "ow", shell_output("#{bin}/ow --version")
             end
           end
-          EOF
+          FORMULA
+          
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' tap/Formula/ow.rb
 
       - name: Commit and push
         run: |

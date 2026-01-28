@@ -41,48 +41,55 @@ ow list
 
 ### Core
 
-| Command | Description |
-| --- | --- |
-| `ow pull <repo>` | Clone repo and generate reference |
-| `ow generate <repo>` | Generate reference locally |
-| `ow push <repo>` | Upload reference to offworld.sh |
-| `ow list` | List managed repos |
-| `ow rm <repo>` | Remove repo and/or reference |
+| Command              | Description                       |
+| -------------------- | --------------------------------- |
+| `ow pull <repo>`     | Clone repo and generate reference |
+| `ow generate <repo>` | Generate reference locally        |
+| `ow push <repo>`     | Upload reference to offworld.sh   |
+| `ow list`            | List managed repos                |
+| `ow rm <repo>`       | Remove repo and/or reference      |
 
 ### Configuration
 
-| Command | Description |
-| --- | --- |
-| `ow init` | Interactive setup |
-| `ow config show` | Show all settings |
-| `ow config set <key> <value>` | Set a config value |
-| `ow config get <key>` | Get a config value |
-| `ow config agents` | Select agents interactively |
+| Command                       | Description                 |
+| ----------------------------- | --------------------------- |
+| `ow init`                     | Interactive setup           |
+| `ow config show`              | Show all settings           |
+| `ow config set <key> <value>` | Set a config value          |
+| `ow config get <key>`         | Get a config value          |
+| `ow config agents`            | Select agents interactively |
 
 ### Project
 
-| Command | Description |
-| --- | --- |
+| Command           | Description                   |
+| ----------------- | ----------------------------- |
 | `ow project init` | Scan deps, install references |
+
+### Map (Repo Routing)
+
+| Command                | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| `ow map show <repo>`   | Show map entry for a repo (path, ref, keywords) |
+| `ow map search <term>` | Search map for repos matching a term or keyword |
 
 ### Repository Management
 
-| Command | Description |
-| --- | --- |
-| `ow repo list` | List managed repos |
-| `ow repo update --all` | Update all repos |
-| `ow repo status` | Show repo summary |
-| `ow repo prune` | Remove stale map entries |
-| `ow repo gc` | Garbage collect old repos |
-| `ow repo discover` | Index existing repos |
+| Command                | Description               |
+| ---------------------- | ------------------------- |
+| `ow repo list`         | List managed repos        |
+| `ow repo update --all` | Update all repos          |
+| `ow repo status`       | Show repo summary         |
+| `ow repo prune`        | Remove stale map entries  |
+| `ow repo gc`           | Garbage collect old repos |
+| `ow repo discover`     | Index existing repos      |
 
 ### Authentication
 
-| Command | Description |
-| --- | --- |
-| `ow auth login` | Login to offworld.sh |
-| `ow auth logout` | Logout |
-| `ow auth status` | Show auth status |
+| Command          | Description          |
+| ---------------- | -------------------- |
+| `ow auth login`  | Login to offworld.sh |
+| `ow auth logout` | Logout               |
+| `ow auth status` | Show auth status     |
 
 ## Options
 
@@ -126,14 +133,29 @@ ow list
 --yes, -y         Skip confirmations
 ```
 
+### `ow map show`
+
+```
+--json            Output as JSON
+--path            Print only the local path
+--ref             Print only the reference file path
+```
+
+### `ow map search`
+
+```
+--limit, -n       Max results (default: 10)
+--json            Output as JSON
+```
+
 ## Config Keys
 
-| Key | Type | Description |
-| --- | --- | --- |
-| `repoRoot` | string | Where to clone repos (default: `~/ow`) |
-| `defaultShallow` | boolean | Use shallow clone by default |
-| `defaultModel` | string | AI model (e.g., `anthropic/claude-sonnet-4-20250514`) |
-| `agents` | list | Comma-separated agent names |
+| Key              | Type    | Description                                           |
+| ---------------- | ------- | ----------------------------------------------------- |
+| `repoRoot`       | string  | Where to clone repos (default: `~/ow`)                |
+| `defaultShallow` | boolean | Use shallow clone by default                          |
+| `defaultModel`   | string  | AI model (e.g., `anthropic/claude-sonnet-4-20250514`) |
+| `agents`         | list    | Comma-separated agent names                           |
 
 ## Path Discovery
 
@@ -141,12 +163,12 @@ ow list
 
 ```json
 {
-  "paths": {
-    "skillDir": "~/.local/share/offworld/skill/offworld",
-    "globalMap": "~/.local/share/offworld/skill/offworld/assets/map.json",
-    "referencesDir": "~/.local/share/offworld/skill/offworld/references",
-    "projectMap": "/abs/path/to/repo/.offworld/map.json"
-  }
+	"paths": {
+		"skillDir": "~/.local/share/offworld/skill/offworld",
+		"globalMap": "~/.local/share/offworld/skill/offworld/assets/map.json",
+		"referencesDir": "~/.local/share/offworld/skill/offworld/references",
+		"projectMap": "/abs/path/to/repo/.offworld/map.json"
+	}
 }
 ```
 
@@ -163,10 +185,10 @@ Single skill symlinked to:
 
 ## Environment Variables
 
-| Variable | Description |
-| --- | --- |
+| Variable            | Description                             |
+| ------------------- | --------------------------------------- |
 | `ANTHROPIC_API_KEY` | Required for local reference generation |
-| `WORKOS_CLIENT_ID` | Required for `ow auth login` |
+| `WORKOS_CLIENT_ID`  | Required for `ow auth login`            |
 
 ## License
 

@@ -35,15 +35,15 @@ Requires Convex backend running (`bun run dev:server` from root).
 
 ## Routes
 
-| Route | Description |
-| --- | --- |
-| `/` | Landing page |
-| `/explore` | Browse all references |
-| `/cli` | CLI documentation |
-| `/:owner/:repo` | Repository page |
-| `/:owner/:repo/:reference` | Reference detail |
-| `/profile` | User profile |
-| `/admin` | Admin dashboard |
+| Route                      | Description           |
+| -------------------------- | --------------------- |
+| `/`                        | Landing page          |
+| `/explore`                 | Browse all references |
+| `/cli`                     | CLI documentation     |
+| `/:owner/:repo`            | Repository page       |
+| `/:owner/:repo/:reference` | Reference detail      |
+| `/profile`                 | User profile          |
+| `/admin`                   | Admin dashboard       |
 
 ## Environment Variables
 

@@ -34,10 +34,10 @@ Add `.md` or `.mdx` files to `src/content/docs/`. Each file becomes a route base
 
 ## Commands
 
-| Command | Action |
-| --- | --- |
-| `bun run dev` | Start dev server |
-| `bun run build` | Build to `./dist/` |
+| Command           | Action                |
+| ----------------- | --------------------- |
+| `bun run dev`     | Start dev server      |
+| `bun run build`   | Build to `./dist/`    |
 | `bun run preview` | Preview build locally |
 
 ## Deploy

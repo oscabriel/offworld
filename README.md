@@ -43,6 +43,100 @@ bun add -g offworld
 brew install oscabriel/tap/offworld
 ```
 
+## For LLM Agents
+
+<details>
+<summary>Instructions for LLM Agents (click to expand)</summary>
+
+If you're an LLM agent helping set up Offworld, follow these steps:
+
+#### Step 0: Ask for preferences (agent-guided)
+
+Ask the user for:
+
+- Install method (install script vs package manager)
+- Agents to sync (e.g. opencode, claude, codex)
+- Clone directory (default `~/ow`)
+- Model preference (provider/model) or use defaults
+- Dependency selection (all vs a curated list)
+
+Use their answers to fill flags in the commands below. Avoid running interactive CLI flows.
+
+#### Step 1: Install the CLI
+
+```bash
+curl -fsSL https://offworld.sh/install | bash
+```
+
+Or use your preferred package manager:
+
+```bash
+npm install -g offworld
+```
+
+#### Step 2: Initialize Offworld (non-interactive)
+
+```bash
+ow init --yes --agents "<agent-list>" --repo-root "<clone-dir>" --model "<provider/model>"
+```
+
+This will:
+
+- Create config at `~/.config/offworld/config.json`
+- Set the clone directory (`~/ow/`)
+- Configure which agents to sync reference files to
+- Set the default model for reference generation
+
+#### Step 3: Verify the installation
+
+```bash
+ow --version
+ow config show
+```
+
+#### Step 4: Initialize in the current project (non-interactive)
+
+```bash
+ow project init --yes --all --generate
+```
+
+This will:
+
+- Scan package.json (or other manifest files) for dependencies
+- Install reference files for selected dependencies
+- Generate missing references when needed
+- Update AGENTS.md with a table of installed reference files
+
+If you want a specific set of dependencies instead of `--all`:
+
+```bash
+ow project init --yes --deps "zod,typescript,vitest" --generate
+```
+
+Or exclude specific dependencies:
+
+```bash
+ow project init --yes --all --skip "react,react-dom" --generate
+```
+
+#### Step 5: Verify setup
+
+List the installed reference files:
+
+```bash
+ow list
+```
+
+#### Troubleshooting
+
+If reference files are not appearing, check:
+
+1. Is the config valid? `ow config show`
+2. Where is the config file? `ow config path`
+3. Check the reference directory: `ls ~/.local/share/offworld/skill/offworld/references/`
+
+</details>
+
 ## Quick Start
 
 ```bash

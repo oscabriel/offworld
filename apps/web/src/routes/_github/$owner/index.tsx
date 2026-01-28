@@ -113,7 +113,7 @@ function OwnerPage() {
 									key={repo.fullName}
 									fullName={repo.fullName}
 									displayName={repo.name}
-									stars={repo.stars}
+									stars={repo.stars ?? 0}
 									description={repo.description}
 									language={repo.language}
 									indexed={indexedRepoNames.has(repo.fullName)}

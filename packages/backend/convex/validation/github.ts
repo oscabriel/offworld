@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GITHUB_API, getGitHubHeaders } from "../lib/github-auth";
+import { GITHUB_API, getGitHubHeaders } from "../lib/githubAuth";
 
 const MIN_STARS = 5;
 

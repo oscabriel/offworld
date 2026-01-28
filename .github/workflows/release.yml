@@ -317,9 +317,6 @@ jobs:
           # Remove leading whitespace from heredoc
           sed -i 's/^          //' tap/Formula/offworld.rb
 
-          # Remove old formula if present
-          rm -f tap/Formula/ow.rb
-
           echo "Generated formula:"
           cat tap/Formula/offworld.rb
 
@@ -329,6 +326,5 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Formula/offworld.rb
-          git rm -f Formula/ow.rb
           git commit -m "Update offworld to v${{ steps.version.outputs.version }}"
           git push

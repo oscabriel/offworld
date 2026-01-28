@@ -16,19 +16,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RemoteRepoSource } from "@offworld/types";
 
-// ============================================================================
-// Test configuration
-// ============================================================================
-
 const TEST_TIMEOUT = 30000; // 30 seconds for network operations
 
 let tempDir: string;
 let tempRepoRoot: string;
 let tempMetaRoot: string;
-
-// ============================================================================
-// Mock config to use temp directories (but NOT git operations)
-// ============================================================================
 
 vi.mock("../../config.js", () => ({
 	loadConfig: () => ({
@@ -43,7 +35,6 @@ vi.mock("../../config.js", () => ({
 	toReferenceFileName: (fullName: string) => fullName.replace("/", "-") + ".md",
 }));
 
-// Mock Paths to avoid XDG-basedir issues
 vi.mock("../../paths.js", () => ({
 	Paths: {
 		get offworldReferencesDir() {
@@ -62,7 +53,6 @@ vi.mock("../../paths.js", () => ({
 	expandTilde: (path: string) => path,
 }));
 
-// Mock index-manager to avoid polluting real index
 vi.mock("../../index-manager.js", () => ({
 	getIndexEntry: vi.fn(() => null),
 	listIndexedRepos: vi.fn(() => []),
@@ -72,34 +62,21 @@ vi.mock("../../index-manager.js", () => ({
 	readGlobalMap: vi.fn(() => ({ repos: {} })),
 }));
 
-// Import after mocking
 import { cloneRepo, getCommitSha, GitError } from "../../clone.js";
-
-// ============================================================================
-// Setup and teardown
-// ============================================================================
 
 beforeEach(() => {
 	vi.clearAllMocks();
 
-	// Create fresh temp directories
 	tempDir = mkdtempSync(join(tmpdir(), "clone-integration-test-"));
 	tempRepoRoot = join(tempDir, "repos");
 	tempMetaRoot = join(tempDir, ".ow");
 });
 
 afterEach(() => {
-	// Cleanup temp directory
 	try {
 		rmSync(tempDir, { recursive: true, force: true });
-	} catch {
-		// Ignore cleanup errors
-	}
+	} catch {}
 });
-
-// ============================================================================
-// Integration tests
-// ============================================================================
 
 describe("clone.integration", () => {
 	describe("cloneRepo with real git operations", () => {
@@ -118,13 +95,10 @@ describe("clone.integration", () => {
 
 				const repoPath = await cloneRepo(source, { shallow: true });
 
-				// Verify path is correct
 				expect(repoPath).toBe(join(tempRepoRoot, "github", "octocat/Hello-World"));
 
-				// Verify .git directory exists
 				expect(existsSync(join(repoPath, ".git"))).toBe(true);
 
-				// Verify README.md exists (Hello-World has a README)
 				expect(existsSync(join(repoPath, "README"))).toBe(true);
 			},
 			TEST_TIMEOUT,
@@ -145,10 +119,8 @@ describe("clone.integration", () => {
 
 				const repoPath = await cloneRepo(source, { shallow: true });
 
-				// Get commit SHA
 				const sha = getCommitSha(repoPath);
 
-				// Verify SHA is a valid git commit hash (40 hex chars)
 				expect(sha).toMatch(/^[a-f0-9]{40}$/);
 			},
 			TEST_TIMEOUT,
@@ -176,7 +148,6 @@ describe("clone.integration", () => {
 		it(
 			"clones with specific branch",
 			async () => {
-				// octocat/Hello-World has a 'test' branch
 				const source: RemoteRepoSource = {
 					type: "remote",
 					provider: "github",
@@ -189,7 +160,6 @@ describe("clone.integration", () => {
 
 				const repoPath = await cloneRepo(source, { shallow: true, branch: "master" });
 
-				// Verify clone succeeded
 				expect(existsSync(join(repoPath, ".git"))).toBe(true);
 			},
 			TEST_TIMEOUT,
@@ -213,7 +183,6 @@ describe("clone.integration", () => {
 				const repoPath = await cloneRepo(source, { shallow: true });
 				const sha = getCommitSha(repoPath);
 
-				// SHA should be consistent between calls
 				const sha2 = getCommitSha(repoPath);
 				expect(sha).toBe(sha2);
 			},
@@ -221,7 +190,6 @@ describe("clone.integration", () => {
 		);
 
 		it("throws GitError for non-git directory", () => {
-			// tempDir exists but is not a git repository
 			expect(() => getCommitSha(tempDir)).toThrow(GitError);
 		});
 	});

@@ -56,11 +56,9 @@ export function getVirtualFs(): VirtualFileSystem {
  * Normalize a path for lookup
  */
 function normalizePath(p: string): string {
-	// Handle ~ expansion for testing
 	if (p.startsWith("~/")) {
 		p = join("/home/testuser", p.slice(2));
 	}
-	// Normalize separators and remove trailing slashes
 	return p.replace(/\\/g, "/").replace(/\/+$/, "");
 }
 
@@ -115,7 +113,6 @@ export function createFsMock() {
 		const normalized = normalizePath(path);
 
 		if (options?.recursive) {
-			// Create all parent directories
 			const parts = normalized.split("/").filter(Boolean);
 			let current = "";
 			for (const part of parts) {
@@ -141,7 +138,6 @@ export function createFsMock() {
 		}
 
 		if (options?.recursive) {
-			// Remove all paths starting with this path
 			for (const key of Object.keys(virtualFs)) {
 				if (key === normalized || key.startsWith(normalized + "/")) {
 					delete virtualFs[key];

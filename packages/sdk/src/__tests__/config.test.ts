@@ -6,10 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-// ============================================================================
-// Virtual file system state (inline due to vi.mock hoisting)
-// ============================================================================
-
 interface VirtualFile {
 	content: string;
 	isDirectory?: boolean;
@@ -39,16 +35,9 @@ function addVirtualFile(
 	};
 }
 
-// initVirtualFs available for future use but not currently needed
-// function initVirtualFs(files: Record<string, string | { content: string; isDirectory?: boolean; permissions?: number }>): void { ... }
-
 function getVirtualFs(): Record<string, VirtualFile> {
 	return { ...virtualFs };
 }
-
-// ============================================================================
-// Mock node:fs before importing config module
-// ============================================================================
 
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn((path: string) => {
@@ -81,7 +70,6 @@ vi.mock("node:fs", () => ({
 	}),
 	writeFileSync: vi.fn((path: string, content: string, _encoding?: string) => {
 		const normalized = path.replace(/\\/g, "/");
-		// Check if parent dir exists or was created
 		const parentDir = normalized.substring(0, normalized.lastIndexOf("/"));
 		if (parentDir && !(parentDir in virtualFs) && !createdDirs.has(parentDir)) {
 			const error = new Error(
@@ -137,9 +125,6 @@ describe("config.ts", () => {
 		clearVirtualFs();
 	});
 
-	// =========================================================================
-	// getMetaRoot tests
-	// =========================================================================
 	describe("getMetaRoot", () => {
 		it("returns path ending in offworld", () => {
 			const result = getMetaRoot();
@@ -152,9 +137,6 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// getRepoRoot tests
-	// =========================================================================
 	describe("getRepoRoot", () => {
 		it("returns default ~/ow when no config", () => {
 			const result = getRepoRoot();
@@ -203,9 +185,6 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// getRepoPath tests
-	// =========================================================================
 	describe("getRepoPath", () => {
 		it("returns {root}/github/owner/repo for owner/repo format", () => {
 			const result = getRepoPath("tanstack/router");
@@ -246,9 +225,6 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// getMetaPath tests
-	// =========================================================================
 	describe("getMetaPath", () => {
 		it("returns {meta}/meta/owner-repo for owner/repo", () => {
 			const result = getMetaPath("tanstack/router");
@@ -261,9 +237,6 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// getConfigPath tests
-	// =========================================================================
 	describe("getConfigPath", () => {
 		it("returns ~/.config/offworld/offworld.json", () => {
 			const result = getConfigPath();
@@ -271,9 +244,6 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// loadConfig tests - Real JSON parsing
-	// =========================================================================
 	describe("loadConfig", () => {
 		it("returns defaults when config file missing", () => {
 			const result = loadConfig();
@@ -307,9 +277,6 @@ describe("config.ts", () => {
 			expect(result.defaultShallow).toBe(true);
 		});
 
-		// =====================================================================
-		// Malformed JSON tests (T2.2 requirement)
-		// =====================================================================
 		it("returns defaults on JSON parse error - invalid syntax", () => {
 			addVirtualFile(configPath, "invalid json {{{");
 
@@ -359,9 +326,6 @@ describe("config.ts", () => {
 			expect(result.repoRoot).toBe("~/ow");
 		});
 
-		// =====================================================================
-		// Permission scenario tests (T2.2 requirement)
-		// =====================================================================
 		it("returns defaults on read error - permission denied", () => {
 			addVirtualFile(configPath, '{"repoRoot": "/path"}', { permissions: 0o000 });
 
@@ -379,23 +343,14 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// saveConfig tests - Directory creation logic
-	// =========================================================================
 	describe("saveConfig", () => {
-		// =====================================================================
-		// Directory creation tests (T2.2 requirement)
-		// =====================================================================
 		it("creates directory recursively if missing", () => {
-			// Virtual FS is empty - no directories exist
-
 			saveConfig({ repoRoot: "/new/path" });
 
 			expect(mockMkdirSync).toHaveBeenCalledWith(configDir, { recursive: true });
 		});
 
 		it("does not create directory if it already exists", () => {
-			// Pre-create the config directory
 			addVirtualFile(configDir, "", { isDirectory: true });
 
 			saveConfig({ repoRoot: "/new/path" });
@@ -404,19 +359,13 @@ describe("config.ts", () => {
 		});
 
 		it("creates nested directory structure", () => {
-			// Virtual FS is empty
-
 			saveConfig({ repoRoot: "/new/path" });
 
-			// Should create with recursive: true
 			expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringMatching(/offworld$/), {
 				recursive: true,
 			});
 		});
 
-		// =====================================================================
-		// Config merging tests
-		// =====================================================================
 		it("merges with existing config", () => {
 			const existingConfig = {
 				repoRoot: "/old/path",
@@ -463,7 +412,6 @@ describe("config.ts", () => {
 
 			saveConfig({ repoRoot: "/verify/path", defaultShallow: false });
 
-			// Check the actual content in virtual fs
 			const fs = getVirtualFs();
 			const savedFile = fs[configPath];
 			expect(savedFile).toBeDefined();
@@ -473,9 +421,6 @@ describe("config.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// toReferenceFileName tests
-	// =========================================================================
 	describe("toReferenceFileName", () => {
 		it("collapses exact owner/repo match", () => {
 			expect(toReferenceFileName("better-auth/better-auth")).toBe("better-auth.md");
@@ -497,7 +442,6 @@ describe("config.ts", () => {
 		});
 
 		it("ignores short parts (< 3 chars) to avoid false positives", () => {
-			// "ai" is only 2 chars, so vercel/ai should not collapse
 			expect(toReferenceFileName("vercel/ai")).toBe("vercel-ai.md");
 		});
 

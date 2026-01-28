@@ -5,10 +5,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GlobalMap, ProjectMap } from "@offworld/types";
 
-// ============================================================================
-// Virtual file system state
-// ============================================================================
-
 interface VirtualFile {
 	content: string;
 	isDirectory?: boolean;
@@ -37,10 +33,6 @@ const globalMapPath = vi.hoisted(
 const referencesDir = vi.hoisted(
 	() => "/home/user/.local/share/offworld/skill/offworld/references",
 );
-
-// ============================================================================
-// Mock node:fs before importing module
-// ============================================================================
 
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn((path: string) => {

@@ -6,10 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
 import type { GlobalMap, GlobalMapRepoEntry } from "@offworld/types";
 
-// ============================================================================
-// Virtual file system state
-// ============================================================================
-
 interface VirtualFile {
 	content: string;
 	isDirectory?: boolean;
@@ -47,10 +43,6 @@ const globalMapPath = vi.hoisted(
 	() => "/home/user/.local/share/offworld/skill/offworld/assets/map.json",
 );
 const globalMapDir = vi.hoisted(() => "/home/user/.local/share/offworld/skill/offworld/assets");
-
-// ============================================================================
-// Mock node:fs before importing module
-// ============================================================================
 
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn((path: string) => {

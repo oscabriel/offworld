@@ -6,15 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-// ============================================================================
-// Mock setup - vi.mock calls are hoisted
-// ============================================================================
-
-// Virtual file system state
 const virtualFs: Record<string, { content: string }> = {};
 const mockAuthDir = join(homedir(), ".local", "share", "offworld");
 
-// Mock node:fs
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn((path: string) => {
 		const normalized = path.replace(/\\/g, "/");
@@ -51,7 +45,6 @@ vi.mock("node:fs", () => ({
 	}),
 }));
 
-// Import after mocking
 import {
 	getAuthPath,
 	getToken,
@@ -65,10 +58,6 @@ import {
 	TokenExpiredError,
 	type AuthData,
 } from "../auth.js";
-
-// ============================================================================
-// Setup and teardown
-// ============================================================================
 
 function clearVirtualFs(): void {
 	for (const key of Object.keys(virtualFs)) {
@@ -85,10 +74,6 @@ afterEach(() => {
 	vi.clearAllMocks();
 	clearVirtualFs();
 });
-
-// ============================================================================
-// Helper functions
-// ============================================================================
 
 function addAuthFile(data: AuthData): void {
 	const authPath = join(mockAuthDir, "auth.json");
@@ -109,20 +94,12 @@ function createPastDate(): string {
 	return past.toISOString();
 }
 
-// ============================================================================
-// getAuthPath tests
-// ============================================================================
-
 describe("getAuthPath", () => {
 	it("returns path under XDG data dir", () => {
 		const result = getAuthPath();
 		expect(result).toBe(join(mockAuthDir, "auth.json"));
 	});
 });
-
-// ============================================================================
-// loadAuthData tests
-// ============================================================================
 
 describe("loadAuthData", () => {
 	it("returns null when auth file does not exist", () => {
@@ -174,10 +151,6 @@ describe("loadAuthData", () => {
 	});
 });
 
-// ============================================================================
-// saveAuthData tests
-// ============================================================================
-
 describe("saveAuthData", () => {
 	it("saves auth data to correct path", () => {
 		const authData: AuthData = {
@@ -204,10 +177,6 @@ describe("saveAuthData", () => {
 	});
 });
 
-// ============================================================================
-// clearAuthData tests
-// ============================================================================
-
 describe("clearAuthData", () => {
 	it("returns false when auth file does not exist", () => {
 		const result = clearAuthData();
@@ -223,10 +192,6 @@ describe("clearAuthData", () => {
 		expect(fs.unlinkSync).toHaveBeenCalled();
 	});
 });
-
-// ============================================================================
-// getToken tests
-// ============================================================================
 
 describe("getToken", () => {
 	it("throws NotLoggedInError when not logged in", async () => {
@@ -261,10 +226,6 @@ describe("getToken", () => {
 		expect(result).toBe("no-expiry-token");
 	});
 });
-
-// ============================================================================
-// getTokenOrNull tests
-// ============================================================================
 
 describe("getTokenOrNull", () => {
 	it("returns null when not logged in", async () => {
@@ -302,10 +263,6 @@ describe("getTokenOrNull", () => {
 	});
 });
 
-// ============================================================================
-// isLoggedIn tests
-// ============================================================================
-
 describe("isLoggedIn", () => {
 	it("returns false when not logged in", async () => {
 		const result = await isLoggedIn();
@@ -341,10 +298,6 @@ describe("isLoggedIn", () => {
 		expect(result).toBe(true);
 	});
 });
-
-// ============================================================================
-// getAuthStatus tests
-// ============================================================================
 
 describe("getAuthStatus", () => {
 	it("returns isLoggedIn: false when not logged in", async () => {

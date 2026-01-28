@@ -4,10 +4,6 @@
  */
 import { z } from "zod";
 
-// ============================================================================
-// GitHub API Schemas
-// ============================================================================
-
 export const GitHubRepoResponseSchema = z.object({
 	full_name: z.string(),
 	name: z.string(),
@@ -41,10 +37,6 @@ export const GitHubRepoMetadataSchema = z.object({
 	default_branch: z.string().optional(),
 });
 
-// ============================================================================
-// WorkOS API Schemas
-// ============================================================================
-
 export const WorkOSDeviceAuthResponseSchema = z.object({
 	device_code: z.string(),
 	user_code: z.string(),
@@ -76,10 +68,6 @@ export const WorkOSAuthErrorResponseSchema = z.object({
 	error_description: z.string().optional(),
 });
 
-// ============================================================================
-// npm Registry Schemas
-// ============================================================================
-
 export const NpmPackageResponseSchema = z.object({
 	version: z.string().optional(),
 	repository: z
@@ -88,10 +76,6 @@ export const NpmPackageResponseSchema = z.object({
 		})
 		.optional(),
 });
-
-// ============================================================================
-// models.dev Schemas
-// ============================================================================
 
 export const ModelsDevModelSchema = z.object({
 	id: z.string(),
@@ -131,10 +115,6 @@ export const ModelsDevProviderSchema = z.object({
 });
 
 export const ModelsDevDataSchema = z.record(z.string(), ModelsDevProviderSchema);
-
-// ============================================================================
-// Type Exports
-// ============================================================================
 
 export type GitHubRepoResponse = z.infer<typeof GitHubRepoResponseSchema>;
 export type GitHubOwnerResponse = z.infer<typeof GitHubOwnerResponseSchema>;

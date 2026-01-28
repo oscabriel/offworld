@@ -37,7 +37,6 @@ export class TextAccumulator {
 			this._firstTextReceived = true;
 		}
 
-		// Return only the new text
 		if (part.text.length > prevText.length) {
 			return part.text.slice(prevText.length);
 		}

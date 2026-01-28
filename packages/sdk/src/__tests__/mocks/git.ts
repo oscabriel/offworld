@@ -47,7 +47,6 @@ export function createExecSyncMock(): Mock {
 	return vi.fn((command: string, options?: { cwd?: string }) => {
 		const cwd = options?.cwd;
 
-		// Parse git command
 		const parts = command.split(" ");
 		if (parts[0] !== "git") {
 			throw new Error(`Expected git command, got: ${command}`);
@@ -56,12 +55,10 @@ export function createExecSyncMock(): Mock {
 		const gitCommand = parts[1]!;
 		const args = parts.slice(2);
 
-		// Use custom handler if provided
 		if (currentConfig.customHandler) {
 			return currentConfig.customHandler(gitCommand, args, cwd);
 		}
 
-		// Handle specific git commands
 		switch (gitCommand) {
 			case "clone": {
 				const config = currentConfig.clone ?? defaultConfig.clone;

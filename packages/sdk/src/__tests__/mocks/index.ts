@@ -3,7 +3,6 @@
  * Re-exports all mock utilities for easy importing in tests
  */
 
-// Git command mocks
 export {
 	createExecSyncMock,
 	configureGitMock,
@@ -12,7 +11,6 @@ export {
 	type GitMockConfig,
 } from "./git.js";
 
-// Fetch API mocks
 export {
 	createFetchMock,
 	addFetchRoute,
@@ -27,7 +25,6 @@ export {
 	type FetchMockRoute,
 } from "./fetch.js";
 
-// File system mocks
 export {
 	initVirtualFs,
 	addVirtualFile,

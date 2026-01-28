@@ -4,7 +4,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock node:fs before importing repo-source module
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn(),
 	statSync: vi.fn(),
@@ -31,9 +30,6 @@ describe("repo-source.ts", () => {
 		vi.resetAllMocks();
 	});
 
-	// =========================================================================
-	// Short format (owner/repo) parsing
-	// =========================================================================
 	describe("parseRepoInput - short format (owner/repo)", () => {
 		it("returns github remote with correct fields", () => {
 			const result = parseRepoInput("tanstack/router");
@@ -69,9 +65,6 @@ describe("repo-source.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// HTTPS URL parsing
-	// =========================================================================
 	describe("parseRepoInput - HTTPS URLs", () => {
 		it("extracts owner and repo from https://github.com/o/r", () => {
 			const result = parseRepoInput("https://github.com/tanstack/router");
@@ -133,9 +126,6 @@ describe("repo-source.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// SSH URL parsing
-	// =========================================================================
 	describe("parseRepoInput - SSH URLs", () => {
 		it("parses git@github.com:o/r.git SSH URL", () => {
 			const result = parseRepoInput("git@github.com:tanstack/router.git");
@@ -183,13 +173,9 @@ describe("repo-source.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// Local path parsing
-	// =========================================================================
 	describe("parseRepoInput - local paths", () => {
 		it("returns local source for '.' (mocked fs)", () => {
 			mockExistsSync.mockImplementation((_path: string) => {
-				// Both the dir and .git should exist
 				return true;
 			});
 			mockStatSync.mockReturnValue({ isDirectory: () => true });
@@ -226,7 +212,6 @@ describe("repo-source.ts", () => {
 
 		it("throws NotGitRepoError for directory without .git", () => {
 			mockExistsSync.mockImplementation((path: string) => {
-				// Dir exists, but .git doesn't
 				return !path.endsWith(".git");
 			});
 			mockStatSync.mockReturnValue({ isDirectory: () => true });
@@ -242,9 +227,6 @@ describe("repo-source.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// qualifiedName format verification
-	// =========================================================================
 	describe("qualifiedName format", () => {
 		it("is 'host:owner/repo' for remote", () => {
 			const github = parseRepoInput("tanstack/router");
@@ -267,9 +249,6 @@ describe("repo-source.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// getReferenceFileNameForSource tests
-	// =========================================================================
 	describe("getReferenceFileNameForSource", () => {
 		it("returns owner-repo.md format for remote", () => {
 			const source = parseRepoInput("tanstack/router");
@@ -296,9 +275,6 @@ describe("repo-source.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// Edge cases and error handling
-	// =========================================================================
 	describe("error handling", () => {
 		it("throws for completely invalid input", () => {
 			expect(() => parseRepoInput("not-a-valid-input")).toThrow(RepoSourceError);

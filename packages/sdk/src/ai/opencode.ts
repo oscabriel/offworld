@@ -1,5 +1,3 @@
-// Streaming OpenCode API - Markdown templates instead of JSON schemas
-
 import {
 	OpenCodeReferenceError,
 	OpenCodeSDKError,
@@ -313,7 +311,6 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		throw new ServerStartError("Failed to start OpenCode server after all attempts");
 	}
 
-	// Model configuration with fallback to defaults
 	const providerID = optProvider ?? DEFAULT_AI_PROVIDER;
 	const modelID = optModel ?? DEFAULT_AI_MODEL;
 
@@ -326,7 +323,6 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		const sessionId = sessionResult.data.id;
 		debug(`Session created: ${sessionId}`);
 
-		// Validate provider and model before sending prompt
 		debug("Validating provider and model...");
 		const providerResult = await client.provider.list();
 		if (providerResult.error) {
@@ -336,18 +332,15 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		const { all: allProviders, connected: connectedProviders } = providerResult.data;
 		const allProviderIds = allProviders.map((p) => p.id);
 
-		// Check if provider exists
 		const provider = allProviders.find((p) => p.id === providerID);
 		if (!provider) {
 			throw new InvalidProviderError(providerID, allProviderIds);
 		}
 
-		// Check if provider is connected
 		if (!connectedProviders.includes(providerID)) {
 			throw new ProviderNotConnectedError(providerID, connectedProviders);
 		}
 
-		// Check if model exists for this provider
 		const availableModelIds = Object.keys(provider.models);
 		if (!provider.models[modelID]) {
 			throw new InvalidModelError(modelID, providerID, availableModelIds);

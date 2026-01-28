@@ -1,5 +1,3 @@
-// Tagged error types with actionable hints for OpenCode integration
-
 /**
  * Base class for OpenCode reference errors
  */

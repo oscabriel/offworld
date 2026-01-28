@@ -7,10 +7,6 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import type { GlobalMapRepoEntry, RemoteRepoSource } from "@offworld/types";
 
-// ============================================================================
-// Virtual file system state (module-scoped for mock access)
-// ============================================================================
-
 const virtualFs: Record<string, { content: string; isDirectory?: boolean }> = {};
 const createdDirs = new Set<string>();
 
@@ -32,10 +28,6 @@ function addVirtualPath(path: string, isDirectory = false): void {
 	const normalized = normalizePath(path);
 	virtualFs[normalized] = { content: "", isDirectory };
 }
-
-// ============================================================================
-// Git mock configuration (module-scoped)
-// ============================================================================
 
 interface GitMockConfig {
 	clone?: { shouldSucceed?: boolean; errorMessage?: string };
@@ -63,10 +55,6 @@ function resetGitMock(): void {
 	gitConfig = { ...defaultGitConfig };
 	revParseCallCount = 0;
 }
-
-// ============================================================================
-// Mock setup - vi.mock calls are hoisted
-// ============================================================================
 
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn((path: string) => {
@@ -106,8 +94,6 @@ vi.mock("node:fs/promises", () => ({
 }));
 
 function createMockSpawn(gitCommand: string, args: string[]) {
-	// Event listeners with heterogeneous signatures (Buffer for streams, number/Error for process events)
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock requires flexible callback types
 	const listeners: Record<string, Array<(arg: any) => void>> = {};
 	const stdout = {
 		on: (event: string, cb: (data: Buffer) => void) => {
@@ -328,7 +314,6 @@ vi.mock("../config.js", async (importOriginal) => {
 	};
 });
 
-// Map state
 const mapEntries: Record<string, GlobalMapRepoEntry> = {};
 
 vi.mock("../index-manager.js", () => ({
@@ -345,7 +330,6 @@ vi.mock("../index-manager.js", () => ({
 	}),
 }));
 
-// Import after mocking
 import {
 	cloneRepo,
 	updateRepo,
@@ -358,10 +342,6 @@ import {
 	RepoNotFoundError,
 	GitError,
 } from "../clone.js";
-
-// ============================================================================
-// Test fixtures
-// ============================================================================
 
 const mockSource: RemoteRepoSource = {
 	type: "remote",
@@ -381,15 +361,10 @@ const mockMapEntry: GlobalMapRepoEntry = {
 	updatedAt: "2026-01-25T00:00:00Z",
 };
 
-// ============================================================================
-// Setup and teardown
-// ============================================================================
-
 beforeEach(() => {
 	vi.clearAllMocks();
 	clearVirtualFs();
 	resetGitMock();
-	// Clear map entries
 	for (const key of Object.keys(mapEntries)) {
 		delete mapEntries[key];
 	}
@@ -400,10 +375,6 @@ afterEach(() => {
 	clearVirtualFs();
 	resetGitMock();
 });
-
-// ============================================================================
-// cloneRepo tests
-// ============================================================================
 
 describe("cloneRepo", () => {
 	it("calls git clone with correct URL", async () => {
@@ -553,7 +524,6 @@ describe("cloneRepo", () => {
 		});
 	});
 
-	// New tests for git command failure scenarios
 	describe("git command failure scenarios", () => {
 		it("throws GitError with network error message", async () => {
 			configureGitMock({
@@ -634,13 +604,8 @@ describe("cloneRepo", () => {
 	});
 });
 
-// ============================================================================
-// updateRepo tests
-// ============================================================================
-
 describe("updateRepo", () => {
 	beforeEach(() => {
-		// Setup: add repo to clone map and filesystem
 		mapEntries[mockSource.qualifiedName] = { ...mockMapEntry };
 		addVirtualPath(mockMapEntry.localPath, true);
 	});
@@ -709,7 +674,6 @@ describe("updateRepo", () => {
 		);
 	});
 
-	// Git command failure scenarios for update
 	describe("git command failure scenarios", () => {
 		it("throws GitError when fetch fails with network error", async () => {
 			configureGitMock({
@@ -752,10 +716,6 @@ describe("updateRepo", () => {
 		});
 	});
 });
-
-// ============================================================================
-// removeRepo tests
-// ============================================================================
 
 describe("removeRepo", () => {
 	beforeEach(async () => {
@@ -863,10 +823,6 @@ describe("removeRepo", () => {
 	});
 });
 
-// ============================================================================
-// listRepos tests
-// ============================================================================
-
 describe("listRepos", () => {
 	it("returns repos from index", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
@@ -883,10 +839,6 @@ describe("listRepos", () => {
 	});
 });
 
-// ============================================================================
-// isRepoCloned tests
-// ============================================================================
-
 describe("isRepoCloned", () => {
 	it("returns true if in index and exists on disk", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
@@ -901,15 +853,10 @@ describe("isRepoCloned", () => {
 
 	it("returns false if in index but not on disk", () => {
 		mapEntries[mockSource.qualifiedName] = mockMapEntry;
-		// Don't add to virtualFs
 
 		expect(isRepoCloned("github.com:tanstack/router")).toBe(false);
 	});
 });
-
-// ============================================================================
-// getClonedRepoPath tests
-// ============================================================================
 
 describe("getClonedRepoPath", () => {
 	it("returns local path if exists", () => {
@@ -931,10 +878,6 @@ describe("getClonedRepoPath", () => {
 		expect(getClonedRepoPath("github.com:tanstack/router")).toBeUndefined();
 	});
 });
-
-// ============================================================================
-// getCommitSha tests
-// ============================================================================
 
 describe("getCommitSha", () => {
 	it("returns commit SHA from git rev-parse", async () => {
@@ -965,10 +908,6 @@ describe("getCommitSha", () => {
 		expect(() => getCommitSha("/not/a/repo")).toThrow(/not a git repository/);
 	});
 });
-
-// ============================================================================
-// Error handling tests
-// ============================================================================
 
 describe("error handling", () => {
 	it("throws GitError when clone fails", async () => {

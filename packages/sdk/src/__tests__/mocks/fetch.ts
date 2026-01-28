@@ -35,7 +35,6 @@ export function createFetchMock(): Mock {
 		const url = typeof input === "string" ? input : input.url;
 		const method = init?.method ?? "GET";
 
-		// Find matching route
 		for (const route of routes) {
 			const urlMatches =
 				typeof route.url === "string"
@@ -52,7 +51,6 @@ export function createFetchMock(): Mock {
 			}
 		}
 
-		// No matching route - return 404
 		return createMockResponse({
 			status: 404,
 			ok: false,
@@ -118,10 +116,6 @@ export function installFetchMock(): Mock {
 	vi.stubGlobal("fetch", mock);
 	return mock;
 }
-
-// ============================================================================
-// Pre-built mock responses for common scenarios
-// ============================================================================
 
 /**
  * Mock response for offworld.sh API pull endpoint

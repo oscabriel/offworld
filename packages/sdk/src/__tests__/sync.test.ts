@@ -11,7 +11,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteRepoSource, LocalRepoSource } from "@offworld/types";
 
-// Mock global fetch for GitHub API calls
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
@@ -54,9 +53,6 @@ describe("sync.ts", () => {
 		vi.resetAllMocks();
 	});
 
-	// =========================================================================
-	// canPushToWeb tests (now synchronous, star checks happen server-side)
-	// =========================================================================
 	describe("canPushToWeb", () => {
 		it("rejects local sources", () => {
 			const result = canPushToWeb(mockLocalSource);
@@ -79,9 +75,6 @@ describe("sync.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// fetchRepoStars tests
-	// =========================================================================
 	describe("fetchRepoStars", () => {
 		it("parses GitHub API response", async () => {
 			mockFetch.mockResolvedValue({
@@ -114,9 +107,6 @@ describe("sync.ts", () => {
 		});
 	});
 
-	// =========================================================================
-	// validatePushAllowed tests (now synchronous, star checks happen server-side)
-	// =========================================================================
 	describe("validatePushAllowed", () => {
 		it("throws PushNotAllowedError with reason local for local sources", () => {
 			expect(() => validatePushAllowed(mockLocalSource)).toThrow(PushNotAllowedError);

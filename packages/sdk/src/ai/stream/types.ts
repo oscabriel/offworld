@@ -5,10 +5,6 @@
 
 import { z } from "zod";
 
-// ============================================================================
-// Message Part Schemas
-// ============================================================================
-
 const PartBaseSchema = z.object({
 	id: z.string().optional(),
 	sessionID: z.string().optional(),
@@ -20,7 +16,6 @@ export const TextPartSchema = PartBaseSchema.extend({
 	text: z.string().optional(),
 });
 
-// Tool state schemas
 export const ToolStatePendingSchema = z.object({
 	status: z.literal("pending"),
 });
@@ -106,10 +101,6 @@ export const MessagePartSchema = z.discriminatedUnion("type", [
 	ToolResultPartSchema,
 ]);
 
-// ============================================================================
-// Session Error Schema
-// ============================================================================
-
 /**
  * Session error payload
  */
@@ -118,10 +109,6 @@ export const SessionErrorSchema = z.object({
 	message: z.string().optional(),
 	code: z.string().optional(),
 });
-
-// ============================================================================
-// Event Properties Schemas
-// ============================================================================
 
 export const MessagePartUpdatedPropsSchema = z.object({
 	part: MessagePartSchema,
@@ -149,10 +136,6 @@ export const SessionUpdatedPropsSchema = z.object({
 	sessionID: z.string(),
 	status: z.string().optional(),
 });
-
-// ============================================================================
-// Stream Event Schemas
-// ============================================================================
 
 /**
  * message.part.updated event
@@ -193,10 +176,6 @@ export const GenericEventSchema = z.object({
 	type: z.string(),
 	properties: z.record(z.string(), z.unknown()),
 });
-
-// ============================================================================
-// Type Exports
-// ============================================================================
 
 export type TextPart = z.infer<typeof TextPartSchema>;
 export type ToolPart = z.infer<typeof ToolPartSchema>;

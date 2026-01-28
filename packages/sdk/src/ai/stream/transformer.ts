@@ -70,7 +70,6 @@ export function parseStreamEvent(event: RawStreamEvent): ParsedEventResult {
 			}
 			const props = propsResult.data;
 
-			// Extract error details if present
 			let error: SessionErrorPayload | null = null;
 			if (props.error) {
 				const errorResult = SessionErrorSchema.safeParse(props.error);

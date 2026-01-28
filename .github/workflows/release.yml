@@ -72,6 +72,20 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
+      - name: Validate release env
+        run: |
+          if [ -z "$WORKOS_CLIENT_ID" ]; then
+            echo "Missing WORKOS_CLIENT_ID secret for release build."
+            exit 1
+          fi
+          if [ -z "$CONVEX_URL" ]; then
+            echo "Missing CONVEX_URL secret for release build."
+            exit 1
+          fi
+        env:
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
+
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...
         env:
@@ -193,6 +207,20 @@ jobs:
         working-directory: packages/backend
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+      - name: Validate release env
+        run: |
+          if [ -z "$WORKOS_CLIENT_ID" ]; then
+            echo "Missing WORKOS_CLIENT_ID secret for publish build."
+            exit 1
+          fi
+          if [ -z "$CONVEX_URL" ]; then
+            echo "Missing CONVEX_URL secret for publish build."
+            exit 1
+          fi
+        env:
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...

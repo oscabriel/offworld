@@ -1,6 +1,7 @@
 {
 	"$schema": "https://turbo.build/schema.json",
 	"ui": "tui",
+	"globalEnv": ["CONVEX_URL", "WORKOS_CLIENT_ID"],
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],

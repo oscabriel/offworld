@@ -29,7 +29,7 @@ import {
 	mapSearchHandler,
 } from "./handlers/index.js";
 
-export const version = "0.1.8";
+export const version = "0.1.9";
 
 export const router = os.router({
 	pull: os

@@ -292,7 +292,7 @@ function CliPage() {
 						<section id="subcommands" className="pt-21">
 							<h2 className="mb-5 font-serif text-3xl tracking-tight">Subcommands</h2>
 							<p className="text-muted-foreground mb-8 font-mono text-sm">
-								Additional commands organized by category.
+								These commands have their own subcommands.
 							</p>
 
 							<div className="mt-13 space-y-13">
@@ -337,7 +337,7 @@ function CliPage() {
 						<section id="global-options" className="pt-21">
 							<h2 className="mb-5 font-serif text-3xl tracking-tight">Global Options</h2>
 							<p className="text-muted-foreground mb-8 font-mono text-sm">
-								Options available for all commands.
+								The Offworld CLI takes the following global flags.
 							</p>
 							<div className="overflow-x-auto">
 								<table className="w-full">

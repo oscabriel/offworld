@@ -23,7 +23,7 @@ export function InfoSection() {
 				</p>
 				<p>
 					<span className="text-primary mr-1.5">Focused context</span> Use{" "}
-					<code className="text-primary/90 text-sm">project init</code> to add only reference files
+					<code className="text-primary/90 text-base">project init</code> to add only reference files
 					for your current project, rather than a pile of global ones.
 				</p>
 				<p>

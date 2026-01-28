@@ -10,7 +10,16 @@ export function HowItWorks() {
 							One Skill for All Agents
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Install a single SKILL.md file that is symlinked to all your coding agents
+							Install a single{" "}
+							<a
+								href="https://github.com/oscabriel/offworld/blob/main/skills/offworld/SKILL.md"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="hover:underline"
+							>
+								<code className="font-mono text-primary text-base">SKILL.md</code>
+							</a>{" "}
+							file that is symlinked to all your coding agents
 							automatically.
 						</p>
 					</div>

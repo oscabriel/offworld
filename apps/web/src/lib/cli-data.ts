@@ -70,7 +70,7 @@ export const commands: Command[] = [
 	},
 	{
 		name: "pull",
-		description: "Clone a repository and fetch or generate its reference file",
+		description: "Git pull a repository and fetch a reference from offworld.sh or generate one locally",
 		usage: "ow pull <repo> [OPTIONS]",
 		flags: [
 			{ flag: "--reference, -r", description: "Reference file name (defaults to owner-repo)" },
@@ -83,7 +83,7 @@ export const commands: Command[] = [
 	},
 	{
 		name: "generate",
-		description: "Generate reference file locally (ignores remote)",
+		description: "Generate reference file locally, if you want to always ignore the remote references",
 		usage: "ow generate <repo> [OPTIONS]",
 		aliases: ["gen"],
 		flags: [
@@ -93,7 +93,7 @@ export const commands: Command[] = [
 	},
 	{
 		name: "push",
-		description: "Push local reference file to offworld.sh",
+		description: "Push local reference file to offworld.sh, making it available for all users to pull",
 		usage: "ow push <repo>",
 	},
 	{
@@ -140,7 +140,7 @@ export const commands: Command[] = [
 
 export const subcommands: Record<string, SubcommandGroup> = {
 	auth: {
-		description: "Authenticate with offworld.sh to push and pull shared reference files.",
+		description: "Authenticate with offworld.sh to push and pull shared reference files",
 		commands: [
 			{ name: "login", description: "Login to offworld.sh" },
 			{ name: "logout", description: "Logout from offworld.sh" },
@@ -148,7 +148,7 @@ export const subcommands: Record<string, SubcommandGroup> = {
 		],
 	},
 	config: {
-		description: "Manage your Offworld configuration settings.",
+		description: "Manage your Offworld configuration settings",
 		commands: [
 			{ name: "show", description: "Show all config settings" },
 			{ name: "set", description: "Set a config value" },
@@ -159,21 +159,21 @@ export const subcommands: Record<string, SubcommandGroup> = {
 		],
 	},
 	map: {
-		description: "Fast repo routing by name or keyword. Used by agents to resolve references.",
+		description: "Fast repo routing by name or keyword. Used by agents to resolve references",
 		commands: [
 			{ name: "show <repo>", description: "Show map entry for a repo (path, reference, keywords)" },
 			{ name: "search <term>", description: "Search map for repos matching a term or keyword" },
 		],
 	},
 	repo: {
-		description: "Manage your local repository clones and index.",
+		description: "Manage your local repository clones and map",
 		commands: [
 			{ name: "list", description: "List managed repositories" },
 			{ name: "update", description: "Update repos (git fetch + pull)" },
-			{ name: "prune", description: "Remove stale index entries" },
+			{ name: "prune", description: "Remove stale map entries" },
 			{ name: "status", description: "Show summary of managed repos" },
 			{ name: "gc", description: "Garbage collect old/unused repos" },
-			{ name: "discover", description: "Discover and index existing repos" },
+			{ name: "discover", description: "Discover and map existing repos" },
 		],
 	},
 };
@@ -185,7 +185,18 @@ export const nodeInstallCommands = [
 	{ id: "yarn", label: "yarn", command: "yarn global add offworld" },
 ] as const;
 
-export const agentInstallContent = `If you're an LLM agent helping set up Offworld CLI, follow these steps:
+export const agentInstallContent = `If you're an LLM agent helping set up Offworld CLI, ask the user for preferences first, then run non-interactive commands based on their answers.
+
+#### Step 0: Ask for preferences (agent-guided)
+
+Ask the user for:
+- Install method (install script vs package manager)
+- Agents to sync (e.g. opencode, claude, codex)
+- Clone directory (default \`~/ow\`)
+- Model preference (provider/model) or use defaults
+- Dependency selection (all vs a curated list)
+
+Use their answers to fill flags in the commands below. Avoid running interactive CLI flows.
 
 #### Step 1: Install the CLI
 
@@ -198,35 +209,46 @@ Or use your preferred package manager:
 npm install -g offworld
 \`\`\`
 
-#### Step 2: Initialize Offworld
+#### Step 2: Initialize Offworld (non-interactive)
 
-Run the interactive setup:
 \`\`\`bash
-ow init
+ow init --yes --agents "<agent-list>" --repo-root "<clone-dir>" --model "<provider/model>"
 \`\`\`
 
 This will:
 - Create config at \`~/.config/offworld/config.json\`
-- Set up the default clone directory (\`~/ow/\`)
+- Set the clone directory (\`~/ow/\`)
 - Configure which agents to sync reference files to
+- Set the default model for reference generation
 
 #### Step 3: Verify the installation
 
 \`\`\`bash
 ow --version
+ow config show
 \`\`\`
 
-#### Step 4: Initialize in the current project
+#### Step 4: Initialize in the current project (non-interactive)
 
 \`\`\`bash
-ow project init
+ow project init --yes --all --generate
 \`\`\`
 
 This will:
 - Scan package.json (or other manifest files) for dependencies
-- Prompt the user to select which dependencies to create reference files for
-- Fetch or generate reference files for selected dependencies
+- Install reference files for selected dependencies
+- Generate missing references when needed
 - Update AGENTS.md with a table of installed reference files
+
+If you want a specific set of dependencies instead of \`--all\`:
+\`\`\`bash
+ow project init --yes --deps "zod,typescript,vitest" --generate
+\`\`\`
+
+Or exclude specific dependencies:
+\`\`\`bash
+ow project init --yes --all --skip "react,react-dom" --generate
+\`\`\`
 
 #### Step 5: Verify setup
 
@@ -235,14 +257,12 @@ List the installed reference files:
 ow list
 \`\`\`
 
-The user should see their selected dependencies with reference files ready.
-
 #### Troubleshooting
 
-If reference files aren't appearing, check:
+If reference files are not appearing, check:
 1. Is the config valid? \`ow config show\`
-2. Are agents configured? \`ow config agents\`
-3. Check reference file directory: \`ls ~/.local/share/offworld/skill/offworld/references/\``;
+2. Where is the config file? \`ow config path\`
+3. Check the reference directory: \`ls ~/.local/share/offworld/skill/offworld/references/\``;
 
 // Helper to generate URL-friendly IDs from command names
 export const toCommandId = (name: string) => `cmd-${name.replace(/\s+/g, "-")}`;

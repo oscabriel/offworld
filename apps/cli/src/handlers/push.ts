@@ -32,10 +32,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface PushOptions {
 	repo: string;
 }
@@ -44,10 +40,6 @@ export interface PushResult {
 	success: boolean;
 	message: string;
 }
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
 
 const DESCRIPTION_MAX = 200;
 
@@ -93,7 +85,6 @@ function loadLocalReference(
 ): ReferenceData | null {
 	const metaPath = join(metaDir, "meta.json");
 
-	// Check required files for new format
 	if (!existsSync(referencePath) || !existsSync(metaPath)) {
 		return null;
 	}
@@ -122,20 +113,11 @@ function loadLocalReference(
 	}
 }
 
-// ============================================================================
-// Push Handler
-// ============================================================================
-
-/**
- * Main push handler
- * Uploads local reference to offworld.sh
- */
 export async function pushHandler(options: PushOptions): Promise<PushResult> {
 	const { repo } = options;
 	const s = createSpinner();
 
 	try {
-		// Step 1: Check authentication
 		let token: string;
 		try {
 			token = await getToken();
@@ -147,12 +129,10 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			throw err;
 		}
 
-		// Step 2: Parse repository input
 		s.start("Parsing repository...");
 		const source = parseRepoInput(repo);
 		s.stop("Repository parsed");
 
-		// Step 3: Quick client-side checks (server validates everything else)
 		if (source.type === "local") {
 			p.log.error("Local repositories cannot be pushed to offworld.sh.");
 			p.log.info("Only remote GitHub repositories can be pushed.");
@@ -165,14 +145,12 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 			return { success: false, message: "Only GitHub repositories supported" };
 		}
 
-		// Step 4: Check if repo is cloned locally
 		if (!isRepoCloned(source.qualifiedName)) {
 			p.log.error(`Repository ${source.fullName} is not cloned locally.`);
 			p.log.info(`Run 'ow pull ${source.fullName}' first to clone and analyze.`);
 			return { success: false, message: "Repository not cloned locally" };
 		}
 
-		// Step 5: Load local reference
 		s.start("Loading local reference...");
 		const metaDir = getMetaPath(source.fullName);
 		const referencePath = getReferencePath(source.fullName);
@@ -195,7 +173,6 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 
 		localReference.fullName = source.fullName;
 
-		// Verify commit SHA matches current repo state
 		const repoPath = getClonedRepoPath(source.qualifiedName);
 		if (repoPath) {
 			const currentSha = getCommitSha(repoPath);
@@ -211,7 +188,6 @@ export async function pushHandler(options: PushOptions): Promise<PushResult> {
 
 		s.stop("Reference loaded");
 
-		// Step 6: Push to offworld.sh (all validation happens server-side)
 		s.start("Uploading to offworld.sh...");
 		try {
 			const result = await pushReference(localReference, token);

@@ -42,21 +42,17 @@ export async function uninstallHandler(options: UninstallOptions): Promise<Unins
 	const { keepConfig = false, keepData = false, dryRun = false, force = false } = options;
 
 	try {
-		// Detect installation method
 		const method = detectInstallMethod();
 		p.log.info(`Installation method: ${method}`);
 
-		// Gather directories to remove
 		const directories: RemovalTarget[] = [
 			{ path: Paths.data, label: "Data", keep: keepData },
 			{ path: Paths.config, label: "Config", keep: keepConfig },
 			{ path: Paths.state, label: "State", keep: false },
 		];
 
-		// Filter to existing directories that aren't being kept
 		const toRemove = directories.filter((d) => !d.keep && existsSync(d.path));
 
-		// Show what will be removed
 		if (dryRun || !force) {
 			p.log.info("The following will be removed:");
 			console.log("");
@@ -94,7 +90,6 @@ export async function uninstallHandler(options: UninstallOptions): Promise<Unins
 			};
 		}
 
-		// Confirm
 		if (!force) {
 			const confirm = await p.confirm({
 				message: "Are you sure you want to uninstall offworld?",
@@ -110,7 +105,6 @@ export async function uninstallHandler(options: UninstallOptions): Promise<Unins
 		const s = createSpinner();
 		const removed: UninstallResult["removed"] = {};
 
-		// Remove binary/package
 		s.start("Removing offworld...");
 		try {
 			await executeUninstall(method);
@@ -121,7 +115,6 @@ export async function uninstallHandler(options: UninstallOptions): Promise<Unins
 			p.log.warn(err instanceof Error ? err.message : "Unknown error");
 		}
 
-		// Remove directories
 		for (const dir of toRemove) {
 			s.start(`Removing ${dir.label.toLowerCase()}...`);
 			try {
@@ -136,7 +129,6 @@ export async function uninstallHandler(options: UninstallOptions): Promise<Unins
 			}
 		}
 
-		// Clean shell configs (only for curl installs)
 		if (method === "curl") {
 			const shellConfigs = getShellConfigFiles();
 			const cleaned: string[] = [];

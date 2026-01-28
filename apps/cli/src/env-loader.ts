@@ -26,7 +26,6 @@ function loadEnvFile(path: string): void {
 			const cleanKey = key.trim();
 			let cleanValue = value.trim();
 
-			// Remove quotes if present
 			if (
 				(cleanValue.startsWith('"') && cleanValue.endsWith('"')) ||
 				(cleanValue.startsWith("'") && cleanValue.endsWith("'"))
@@ -34,14 +33,11 @@ function loadEnvFile(path: string): void {
 				cleanValue = cleanValue.slice(1, -1);
 			}
 
-			// Only set if not already in environment
 			if (!process.env[cleanKey]) {
 				process.env[cleanKey] = cleanValue;
 			}
 		}
-	} catch {
-		// Silently fail
-	}
+	} catch {}
 }
 
 /**
@@ -50,18 +46,15 @@ function loadEnvFile(path: string): void {
  * 2. Current working directory (for convenience)
  */
 export function loadDevEnv(): void {
-	// Skip in production (when built with env vars)
 	if (process.env.CONVEX_URL && process.env.WORKOS_CLIENT_ID) {
 		return;
 	}
 
-	// Try CLI package directory first (for bun link dev)
 	const __filename = fileURLToPath(import.meta.url);
 	const __dirname = dirname(__filename);
 	const cliEnvPath = resolve(__dirname, "../.env");
 	loadEnvFile(cliEnvPath);
 
-	// Fallback to CWD (for convenience)
 	const cwdEnvPath = resolve(process.cwd(), ".env");
 	if (cwdEnvPath !== cliEnvPath) {
 		loadEnvFile(cwdEnvPath);

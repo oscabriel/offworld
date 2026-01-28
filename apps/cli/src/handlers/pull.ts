@@ -125,7 +125,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 	}
 
 	try {
-		// Parse repo input
 		s.start("Parsing repository input...");
 		const source = parseRepoInput(repo);
 		s.stop("Repository parsed");
@@ -136,12 +135,10 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 		let repoPath: string;
 
-		// Handle cloning/updating for remote repos
 		if (source.type === "remote") {
 			const qualifiedName = source.qualifiedName;
 
 			if (isRepoCloned(qualifiedName)) {
-				// Repo exists, update it
 				s.start("Updating repository...");
 				const result = await updateRepo(qualifiedName);
 				repoPath = getClonedRepoPath(qualifiedName)!;
@@ -172,7 +169,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				}
 			}
 		} else {
-			// Local repo - just use the path
 			repoPath = source.path;
 		}
 
@@ -187,7 +183,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		}
 		const requiredReferenceName = referenceName ?? "";
 
-		// Check for cached reference first
 		if (!force && !isReferenceOverride && hasValidCache(source, currentSha)) {
 			verboseLog("Using cached reference", verbose);
 			s.stop("Using cached reference");
@@ -200,7 +195,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			};
 		}
 
-		// Check remote API for remote repos (with SHA comparison)
 		if (source.type === "remote" && (!force || isReferenceOverride)) {
 			verboseLog(`Checking offworld.sh for reference: ${source.fullName}`, verbose);
 			s.start("Checking offworld.sh for reference...");
@@ -215,7 +209,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					const remoteShaNorm = remoteSha.slice(0, 7);
 					const currentShaNorm = currentSha.slice(0, 7);
 
-					// Check commit distance - accept if within threshold
 					const MAX_COMMIT_DISTANCE = 20;
 					const commitDistance = getCommitDistance(repoPath, remoteSha, currentSha);
 					const isWithinThreshold =
@@ -326,7 +319,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			throw new Error(`Reference not found on offworld.sh: ${referenceName}`);
 		}
 
-		// Generate locally using AI
 		verboseLog(`Starting AI reference generation for: ${repoPath}`, verbose);
 
 		if (!verbose) {
@@ -383,7 +375,6 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const errMessage = err instanceof Error ? err.message : "Unknown error";
 			p.log.error(`Failed to generate reference: ${errMessage}`);
 
-			// Local generation failure should be a hard failure (exit 1)
 			throw new Error(`Reference generation failed: ${errMessage}`);
 		}
 	} catch (error) {

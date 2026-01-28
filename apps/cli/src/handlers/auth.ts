@@ -15,22 +15,11 @@ import {
 import open from "open";
 import { createSpinner } from "../utils/spinner";
 
-// ============================================================================
-// Configuration
-// ============================================================================
-
 const WORKOS_API = "https://api.workos.com";
 
-// WORKOS_CLIENT_ID can be injected at build time (production) or runtime (dev)
-// For local dev, it's loaded from .env via CLI's env-loader
-// Using a getter to ensure it's evaluated AFTER env is loaded, not at module init
 function getWorkosClientId(): string {
 	return process.env.WORKOS_CLIENT_ID || "";
 }
-
-// ============================================================================
-// Handler Types
-// ============================================================================
 
 export interface AuthLoginResult {
 	success: boolean;
@@ -50,12 +39,6 @@ export interface AuthStatusResult {
 	expiresAt?: string;
 }
 
-// Types imported from @offworld/types (WorkOSDeviceAuthResponse, WorkOSTokenResponse)
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
 function extractJwtExpiration(token: string): string | undefined {
 	try {
 		const parts = token.split(".");
@@ -72,10 +55,6 @@ function extractJwtExpiration(token: string): string | undefined {
 		return undefined;
 	}
 }
-
-// ============================================================================
-// WorkOS API Functions
-// ============================================================================
 
 async function requestDeviceCode(): Promise<WorkOSDeviceAuthResponse> {
 	const response = await fetch(`${WORKOS_API}/user_management/authorize/device`, {
@@ -143,12 +122,7 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ============================================================================
-// Login Handler
-// ============================================================================
-
 export async function authLoginHandler(): Promise<AuthLoginResult> {
-	// Validate env vars are loaded
 	if (!getWorkosClientId()) {
 		p.log.error("WORKOS_CLIENT_ID not configured.");
 		p.log.info("For local development, create apps/cli/.env with:");
@@ -188,9 +162,7 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 
 	try {
 		await open(deviceData.verification_uri_complete);
-	} catch {
-		// User can open manually
-	}
+	} catch {}
 
 	s.start("Waiting for approval...");
 
@@ -222,14 +194,6 @@ export async function authLoginHandler(): Promise<AuthLoginResult> {
 	}
 }
 
-// ============================================================================
-// Logout Handler
-// ============================================================================
-
-/**
- * Handles 'ow auth logout' command
- * Clears stored session token
- */
 export async function authLogoutHandler(): Promise<AuthLogoutResult> {
 	const status = await getAuthStatus();
 
@@ -258,14 +222,6 @@ export async function authLogoutHandler(): Promise<AuthLogoutResult> {
 	};
 }
 
-// ============================================================================
-// Status Handler
-// ============================================================================
-
-/**
- * Handles 'ow auth status' command
- * Shows current authentication status
- */
 export async function authStatusHandler(): Promise<AuthStatusResult> {
 	const status = await getAuthStatus();
 

@@ -30,7 +30,6 @@ export async function upgradeHandler(options: UpgradeOptions): Promise<UpgradeRe
 	try {
 		const s = createSpinner();
 
-		// Detect installation method
 		s.start("Detecting installation method...");
 		const method = methodOverride ?? detectInstallMethod();
 		s.stop(`Installation method: ${method}`);
@@ -49,11 +48,9 @@ export async function upgradeHandler(options: UpgradeOptions): Promise<UpgradeRe
 
 		const effectiveMethod = method === "unknown" ? "curl" : method;
 
-		// Get current version
 		const currentVersion = getCurrentVersion();
 		p.log.info(`Current version: ${currentVersion}`);
 
-		// Determine target version
 		let targetVersion = target;
 		if (!targetVersion) {
 			s.start("Fetching latest version...");
@@ -67,10 +64,8 @@ export async function upgradeHandler(options: UpgradeOptions): Promise<UpgradeRe
 			targetVersion = latest;
 		}
 
-		// Normalize version (remove 'v' prefix if provided)
 		targetVersion = targetVersion.replace(/^v/, "");
 
-		// Check if already on target version
 		if (currentVersion === targetVersion) {
 			p.log.success(`Already on version ${targetVersion}`);
 			return { success: true, from: currentVersion, to: targetVersion };
@@ -78,7 +73,6 @@ export async function upgradeHandler(options: UpgradeOptions): Promise<UpgradeRe
 
 		p.log.info(`Upgrading from ${currentVersion} to ${targetVersion}...`);
 
-		// Execute upgrade
 		await executeUpgrade(effectiveMethod, targetVersion);
 
 		p.log.success(`Successfully upgraded to ${targetVersion}`);

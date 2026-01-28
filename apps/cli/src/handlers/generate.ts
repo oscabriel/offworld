@@ -54,7 +54,6 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 
 			if (remoteCheck.exists) {
 				s.stop("Remote reference exists");
-				// Always use --force to override if desired
 				return {
 					success: false,
 					message: "Remote reference exists. Use --force to override.",

@@ -5,10 +5,6 @@
 import * as p from "@clack/prompts";
 import { getMapEntry, searchMap, Paths, type SearchResult } from "@offworld/sdk";
 
-// ============================================================================
-// Map Show
-// ============================================================================
-
 export interface MapShowOptions {
 	repo: string;
 	json?: boolean;
@@ -41,17 +37,9 @@ export async function mapShowHandler(options: MapShowOptions): Promise<MapShowRe
 
 	const { scope, qualifiedName, entry } = result;
 
-	// Get primary reference - structure differs between global and project maps
-	// TypeScript narrows the type based on the "primary" property check
 	const primary = "primary" in entry ? entry.primary : entry.reference;
-
-	// Get keywords
 	const keywords = entry.keywords ?? [];
-
-	// Build full reference path
 	const refPath = `${Paths.offworldReferencesDir}/${primary}`;
-
-	// Output based on flags
 	if (path) {
 		console.log(entry.localPath);
 		return {
@@ -111,10 +99,6 @@ export async function mapShowHandler(options: MapShowOptions): Promise<MapShowRe
 		keywords,
 	};
 }
-
-// ============================================================================
-// Map Search
-// ============================================================================
 
 export interface MapSearchOptions {
 	term: string;

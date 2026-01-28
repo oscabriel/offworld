@@ -24,10 +24,6 @@ function isValidKey(key: string): key is ConfigKey {
 	return VALID_KEYS.includes(key as ConfigKey);
 }
 
-// ============================================================================
-// Config Show
-// ============================================================================
-
 export interface ConfigShowOptions {
 	json?: boolean;
 }
@@ -45,7 +41,6 @@ export interface ConfigShowResult {
 export async function configShowHandler(options: ConfigShowOptions): Promise<ConfigShowResult> {
 	const config = loadConfig();
 
-	// Check for project map in cwd
 	const projectMapPath = resolve(process.cwd(), ".offworld/map.json");
 	const hasProjectMap = existsSync(projectMapPath);
 
@@ -54,8 +49,6 @@ export async function configShowHandler(options: ConfigShowOptions): Promise<Con
 		referencesDir: join(Paths.data, "skill", "offworld", "references"),
 		globalMap: join(Paths.data, "skill", "offworld", "assets", "map.json"),
 	};
-
-	// Only include projectMap if it exists
 	if (hasProjectMap) {
 		paths.projectMap = projectMapPath;
 	}
@@ -81,10 +74,6 @@ export async function configShowHandler(options: ConfigShowOptions): Promise<Con
 	return { config, paths };
 }
 
-// ============================================================================
-// Config Set
-// ============================================================================
-
 export interface ConfigSetOptions {
 	key: string;
 	value: string;
@@ -100,7 +89,6 @@ export interface ConfigSetResult {
 export async function configSetHandler(options: ConfigSetOptions): Promise<ConfigSetResult> {
 	const { key, value } = options;
 
-	// Validate key
 	if (!isValidKey(key)) {
 		p.log.error(`Invalid config key: ${key}`);
 		p.log.info(`Valid keys: ${VALID_KEYS.join(", ")}`);
@@ -110,7 +98,6 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 		};
 	}
 
-	// Parse value based on key type
 	let parsedValue: string | boolean | Agent[];
 
 	if (key === "defaultShallow") {
@@ -126,7 +113,6 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 			};
 		}
 	} else if (key === "agents") {
-		// Array of agents (comma-separated)
 		const agentValues = value
 			.split(",")
 			.map((a) => a.trim())
@@ -168,10 +154,6 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 	}
 }
 
-// ============================================================================
-// Config Get
-// ============================================================================
-
 export interface ConfigGetOptions {
 	key: string;
 }
@@ -197,20 +179,13 @@ export async function configGetHandler(options: ConfigGetOptions): Promise<Confi
 	return { key, value };
 }
 
-// ============================================================================
-// Config Reset
-// ============================================================================
-
 export interface ConfigResetResult {
 	success: boolean;
 }
 
 export async function configResetHandler(): Promise<ConfigResetResult> {
 	try {
-		// Get default config from schema
 		const defaults = ConfigSchema.parse({});
-
-		// Save defaults (overwrites existing)
 		saveConfig(defaults);
 
 		p.log.success("Configuration reset to defaults:");
@@ -226,10 +201,6 @@ export async function configResetHandler(): Promise<ConfigResetResult> {
 	}
 }
 
-// ============================================================================
-// Config Path
-// ============================================================================
-
 export interface ConfigPathResult {
 	path: string;
 }
@@ -239,10 +210,6 @@ export async function configPathHandler(): Promise<ConfigPathResult> {
 	console.log(path);
 	return { path };
 }
-
-// ============================================================================
-// Config Agents
-// ============================================================================
 
 export interface ConfigAgentsResult {
 	success: boolean;
@@ -261,14 +228,11 @@ export async function configAgentsHandler(): Promise<ConfigAgentsResult> {
 		p.log.info(`Detected agents: ${detectedNames}`);
 	}
 
-	// Build options from registry
 	const agentOptions = allAgentConfigs.map((cfg) => ({
 		value: cfg.name,
 		label: cfg.displayName,
 		hint: cfg.globalSkillsDir,
 	}));
-
-	// Use existing config if set, otherwise use detected agents
 	const initialAgents = config.agents && config.agents.length > 0 ? config.agents : detectedAgents;
 
 	const agentsResult = await p.multiselect({

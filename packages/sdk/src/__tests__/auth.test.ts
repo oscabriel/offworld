@@ -335,9 +335,10 @@ describe("getAuthStatus", () => {
 		});
 	});
 
-	it("returns status without expiresAt when missing", async () => {
+	it("returns status without expiresAt when missing and JWT extraction fails", async () => {
+		// Token without valid JWT structure - extraction will fail
 		addAuthFile({
-			token: "valid-token",
+			token: "not-a-valid-jwt",
 			email: "test@example.com",
 		});
 
@@ -348,6 +349,26 @@ describe("getAuthStatus", () => {
 			workosId: undefined,
 			expiresAt: undefined,
 		});
+	});
+
+	it("extracts expiresAt from JWT when missing and persists it", async () => {
+		// Create a valid JWT with exp claim (1 year in the future)
+		const futureExp = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
+		const payload = { sub: "user-123", exp: futureExp };
+		const jwtPayload = Buffer.from(JSON.stringify(payload)).toString("base64");
+		const validJwt = `header.${jwtPayload}.signature`;
+
+		addAuthFile({
+			token: validJwt,
+			email: "test@example.com",
+		});
+
+		const result = await getAuthStatus();
+		expect(result.isLoggedIn).toBe(true);
+		expect(result.email).toBe("test@example.com");
+		// Should have extracted expiresAt from JWT
+		expect(result.expiresAt).toBeDefined();
+		expect(new Date(result.expiresAt!).getTime()).toBeCloseTo(futureExp * 1000, -3);
 	});
 
 	it("returns isLoggedIn: true without email when email is missing", async () => {

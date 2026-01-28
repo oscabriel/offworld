@@ -202,9 +202,23 @@ export async function getAuthStatus(): Promise<AuthStatus> {
 		return { isLoggedIn: false };
 	}
 
-	if (data.expiresAt) {
-		const expiresAt = new Date(data.expiresAt);
-		if (expiresAt <= new Date()) {
+	// Extract expiration from JWT if not already saved (mirrors getToken() logic)
+	let expiresAtStr = data.expiresAt;
+	if (!expiresAtStr) {
+		expiresAtStr = extractJwtExpiration(data.token);
+		if (expiresAtStr) {
+			data.expiresAt = expiresAtStr;
+			saveAuthData(data);
+		}
+	}
+
+	if (expiresAtStr) {
+		const expiresAt = new Date(expiresAtStr);
+		const now = new Date();
+		const oneMinute = 60 * 1000;
+
+		// Token already expired - attempt refresh
+		if (expiresAt <= now) {
 			if (data.refreshToken) {
 				try {
 					const refreshed = await refreshAccessToken();
@@ -220,13 +234,36 @@ export async function getAuthStatus(): Promise<AuthStatus> {
 			}
 			return { isLoggedIn: false };
 		}
+
+		// Proactive refresh: token expires within 1 minute
+		if (expiresAt.getTime() - now.getTime() < oneMinute) {
+			if (data.refreshToken) {
+				try {
+					const refreshed = await refreshAccessToken();
+					return {
+						isLoggedIn: true,
+						email: refreshed.email,
+						workosId: refreshed.workosId,
+						expiresAt: refreshed.expiresAt,
+					};
+				} catch {
+					// Refresh failed, but token still valid - return current data
+					return {
+						isLoggedIn: true,
+						email: data.email,
+						workosId: data.workosId,
+						expiresAt: expiresAtStr,
+					};
+				}
+			}
+		}
 	}
 
 	return {
 		isLoggedIn: true,
 		email: data.email,
 		workosId: data.workosId,
-		expiresAt: data.expiresAt,
+		expiresAt: expiresAtStr,
 	};
 }
 

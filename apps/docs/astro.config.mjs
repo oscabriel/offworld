@@ -2,13 +2,9 @@ import alchemy from "alchemy/cloudflare/astro";
 import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
-import { rehypeWrapTables } from "./src/plugins/rehype-wrap-tables";
 
 // https://astro.build/config
 export default defineConfig({
-	markdown: {
-		rehypePlugins: [rehypeWrapTables],
-	},
 	site: "https://offworld.sh",
 	output: "server",
 	adapter: alchemy(),

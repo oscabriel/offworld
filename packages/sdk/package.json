@@ -1,43 +1,43 @@
 {
-	"name": "@offworld/sdk",
-	"version": "0.1.0",
-	"license": "MIT",
-	"files": [
-		"dist"
-	],
-	"type": "module",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.mts",
-			"import": "./dist/index.mjs"
-		}
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"scripts": {
-		"build": "tsdown",
-		"dev": "tsdown --watch",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-		"test:integration": "vitest run src/__tests__/integration/",
-		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
-		"prepublishOnly": "bun run build"
-	},
-	"dependencies": {
-		"@offworld/backend-api": "workspace:*",
-		"@offworld/types": "workspace:*",
-		"@opencode-ai/sdk": "^1.1.36",
-		"convex": "catalog:",
-		"xdg-basedir": "^5.1.0",
-		"zod": "catalog:"
-	},
-	"devDependencies": {
-		"@types/node": "catalog:",
-		"tsdown": "catalog:",
-		"typescript": "catalog:",
-		"vitest": "catalog:"
-	}
+  "name": "@offworld/sdk",
+  "version": "0.1.1",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run src/__tests__/integration/",
+    "test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@offworld/backend-api": "^0.1.1",
+    "@offworld/types": "^0.1.1",
+    "@opencode-ai/sdk": "^1.1.36",
+    "convex": "catalog:",
+    "xdg-basedir": "^5.1.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }

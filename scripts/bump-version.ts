@@ -3,12 +3,31 @@ import { execSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+const ROOT_PACKAGE_JSON_PATH = join(process.cwd(), "package.json");
 const CLI_PACKAGE_JSON_PATH = join(process.cwd(), "apps/cli/package.json");
 const SDK_PACKAGE_JSON_PATH = join(process.cwd(), "packages/sdk/package.json");
 const TYPES_PACKAGE_JSON_PATH = join(process.cwd(), "packages/types/package.json");
 const BACKEND_API_PACKAGE_JSON_PATH = join(process.cwd(), "packages/backend-api/package.json");
 const CLI_VERSION_PATH = join(process.cwd(), "apps/cli/src/index.ts");
 const SDK_CONSTANTS_PATH = join(process.cwd(), "packages/sdk/src/constants.ts");
+
+/**
+ * Resolve catalog: references in dependencies to actual versions
+ */
+function resolveCatalogRefs(
+	deps: Record<string, string> | undefined,
+	catalog: Record<string, string>,
+): void {
+	if (!deps) return;
+	for (const [name, version] of Object.entries(deps)) {
+		if (version === "catalog:") {
+			const resolved = catalog[name];
+			if (resolved) {
+				deps[name] = resolved;
+			}
+		}
+	}
+}
 
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
@@ -80,19 +99,29 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
+	const rootPackageJson = JSON.parse(await readFile(ROOT_PACKAGE_JSON_PATH, "utf-8"));
 	const sdkPackageJson = JSON.parse(await readFile(SDK_PACKAGE_JSON_PATH, "utf-8"));
 	const typesPackageJson = JSON.parse(await readFile(TYPES_PACKAGE_JSON_PATH, "utf-8"));
 	const backendApiPackageJson = JSON.parse(await readFile(BACKEND_API_PACKAGE_JSON_PATH, "utf-8"));
+
+	const catalog = rootPackageJson.workspaces?.catalog ?? {};
 
 	cliPackageJson.version = newVersion;
 	sdkPackageJson.version = newVersion;
 	typesPackageJson.version = newVersion;
 	backendApiPackageJson.version = newVersion;
 
+	// Resolve workspace references
 	cliPackageJson.dependencies["@offworld/sdk"] = `^${newVersion}`;
 	cliPackageJson.dependencies["@offworld/types"] = `^${newVersion}`;
 	sdkPackageJson.dependencies["@offworld/types"] = `^${newVersion}`;
 	sdkPackageJson.dependencies["@offworld/backend-api"] = `^${newVersion}`;
+
+	// Resolve catalog: references to actual versions
+	resolveCatalogRefs(cliPackageJson.dependencies, catalog);
+	resolveCatalogRefs(sdkPackageJson.dependencies, catalog);
+	resolveCatalogRefs(typesPackageJson.dependencies, catalog);
+	resolveCatalogRefs(backendApiPackageJson.dependencies, catalog);
 
 	await writeFile(CLI_PACKAGE_JSON_PATH, `${JSON.stringify(cliPackageJson, null, 2)}\n`);
 	await writeFile(SDK_PACKAGE_JSON_PATH, `${JSON.stringify(sdkPackageJson, null, 2)}\n`);

@@ -1,14 +1,8 @@
-# Offworld Web App
+# Offworld Web
 
 [offworld.sh](https://offworld.sh) — Browse and share references for coding agents.
 
-## Stack
-
-- **Framework**: TanStack Start (React, TanStack Router, React Query)
-- **Backend**: Convex
-- **Auth**: WorkOS AuthKit
-- **Styling**: Tailwind v4 + shadcn/ui + Base UI
-- **Deploy**: Alchemy → Cloudflare Workers
+A skill directory that keeps a persistent git clone map and reference files for each dependency in your stack.
 
 ## Features
 
@@ -17,7 +11,15 @@
 - Search references by repo name
 - Download/install references via CLI
 - User profiles with push history
-- Admin dashboard
+- Admin dashboard for moderation
+
+## Stack
+
+- **Framework**: TanStack Start (React, TanStack Router, React Query)
+- **Backend**: Convex
+- **Auth**: WorkOS AuthKit
+- **Styling**: Tailwind v4 + shadcn/ui + Base UI
+- **Deploy**: Alchemy (Cloudflare Workers)
 
 ## Development
 
@@ -33,15 +35,15 @@ Requires Convex backend running (`bun run dev:server` from root).
 
 ## Routes
 
-| Route                      | Description           |
-| -------------------------- | --------------------- |
-| `/`                        | Landing page          |
-| `/explore`                 | Browse all references |
-| `/:owner/:repo`            | Repository page       |
-| `/:owner/:repo/:reference` | Reference detail page |
-| `/profile`                 | User profile          |
-| `/admin`                   | Admin dashboard       |
-| `/sign-in`                 | Auth flow             |
+| Route | Description |
+| --- | --- |
+| `/` | Landing page |
+| `/explore` | Browse all references |
+| `/cli` | CLI documentation |
+| `/:owner/:repo` | Repository page |
+| `/:owner/:repo/:reference` | Reference detail |
+| `/profile` | User profile |
+| `/admin` | Admin dashboard |
 
 ## Environment Variables
 
@@ -67,8 +69,8 @@ src/
 │   ├── ui/              # shadcn/ui components
 │   ├── home/            # Landing page components
 │   ├── repo/            # Repository/reference components
-│   ├── layout/          # Header, footer, page containers
+│   ├── layout/          # Header, footer, containers
 │   └── admin/           # Admin dashboard components
-├── lib/                 # Utilities, helpers
-└── hooks/               # Custom React hooks
+├── lib/                 # Utilities
+└── hooks/               # React hooks
 ```

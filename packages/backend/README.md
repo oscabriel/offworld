@@ -2,6 +2,8 @@
 
 Convex serverless backend for Offworld.
 
+Stores and serves shared references from the community at [offworld.sh](https://offworld.sh).
+
 ## Setup
 
 ```bash
@@ -16,12 +18,12 @@ bun run dev
 
 ### Tables
 
-| Table        | Description                    |
-| ------------ | ------------------------------ |
-| `repository` | GitHub repo metadata           |
-| `reference`  | Reference content + metadata   |
-| `pushLog`    | Push history for rate limiting |
-| `user`       | WorkOS user records            |
+| Table | Description |
+| --- | --- |
+| `repository` | GitHub repo metadata |
+| `reference` | Reference content + metadata |
+| `pushLog` | Push history for rate limiting |
+| `user` | WorkOS user records |
 
 ### Repository
 
@@ -57,33 +59,33 @@ bun run dev
 
 ## Modules
 
-| File            | Description               |
-| --------------- | ------------------------- |
-| `schema.ts`     | Table definitions         |
+| File | Description |
+| --- | --- |
+| `schema.ts` | Table definitions |
 | `references.ts` | Reference CRUD operations |
-| `repository.ts` | Repository queries        |
-| `admin.ts`      | Admin functions           |
-| `github.ts`     | GitHub API queries        |
-| `auth.ts`       | WorkOS auth helpers       |
-| `http.ts`       | HTTP routes               |
-| `validation/`   | Input validators          |
+| `repository.ts` | Repository queries |
+| `admin.ts` | Admin functions |
+| `github.ts` | GitHub API queries |
+| `auth.ts` | WorkOS auth helpers |
+| `http.ts` | HTTP routes |
+| `validation/` | Input validators |
 
-## Usage from SDK/Web
+## Usage
 
 ```typescript
 import { api } from "@offworld/backend/api";
 
 // Pull reference
 const ref = await client.query(api.references.getByRepoName, {
-	fullName: "owner/repo",
+  fullName: "owner/repo",
 });
 
 // Push reference
 await client.mutation(api.references.push, {
-	fullName: "owner/repo",
-	referenceName: "repo.md",
-	referenceContent: "...",
-	commitSha: "abc123",
+  fullName: "owner/repo",
+  referenceName: "repo.md",
+  referenceContent: "...",
+  commitSha: "abc123",
 });
 ```
 

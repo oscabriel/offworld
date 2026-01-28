@@ -1,22 +1,32 @@
 # Offworld CLI
 
-One skill for your whole stack.
+**One skill for your whole stack.**
+
+A single skill file and a CLI tool dedicated to empowering your agent with instant context on any open source repo.
 
 ## Installation
 
 ```bash
-bun add -g offworld
-# or
+# curl (recommended)
+curl -fsSL https://offworld.sh/install | bash
+
+# npm
 npm install -g offworld
+
+# bun
+bun add -g offworld
+
+# Homebrew
+brew install oscabriel/tap/offworld
 ```
 
 ## Quick Start
 
 ```bash
-# Initialize config
+# One-time setup
 ow init
 
-# Install references for project deps
+# Install references for your project's dependencies
 cd your-project
 ow project init
 
@@ -31,57 +41,48 @@ ow list
 
 ### Core
 
-| Command              | Description                       |
-| -------------------- | --------------------------------- |
-| `ow pull <repo>`     | Clone repo and generate reference |
-| `ow generate <repo>` | Generate reference locally        |
-| `ow push <repo>`     | Upload reference to offworld.sh   |
-| `ow list`            | List managed repos                |
-| `ow remove <repo>`   | Remove repo and/or reference      |
+| Command | Description |
+| --- | --- |
+| `ow pull <repo>` | Clone repo and generate reference |
+| `ow generate <repo>` | Generate reference locally |
+| `ow push <repo>` | Upload reference to offworld.sh |
+| `ow list` | List managed repos |
+| `ow rm <repo>` | Remove repo and/or reference |
 
 ### Configuration
 
-| Command                       | Description                 |
-| ----------------------------- | --------------------------- |
-| `ow init`                     | Interactive setup           |
-| `ow config show`              | Show all settings           |
-| `ow config set <key> <value>` | Set a config value          |
-| `ow config get <key>`         | Get a config value          |
-| `ow config agents`            | Select agents interactively |
-
-### Map / Routing
-
-| Command                     | Description                     |
-| --------------------------- | ------------------------------- |
-| `ow map show <repo>`        | Show repo info (path, ref, etc) |
-| `ow map show <repo> --ref`  | Print only reference file path  |
-| `ow map show <repo> --path` | Print only local clone path     |
-| `ow map search <term>`      | Find repos by name or keyword   |
-
-### Repository Management
-
-| Command                | Description               |
-| ---------------------- | ------------------------- |
-| `ow repo list`         | List managed repos        |
-| `ow repo update --all` | Update all repos          |
-| `ow repo prune`        | Remove stale map entries  |
-| `ow repo status`       | Show repo summary         |
-| `ow repo gc`           | Garbage collect old repos |
-| `ow repo discover`     | Index existing repos      |
+| Command | Description |
+| --- | --- |
+| `ow init` | Interactive setup |
+| `ow config show` | Show all settings |
+| `ow config set <key> <value>` | Set a config value |
+| `ow config get <key>` | Get a config value |
+| `ow config agents` | Select agents interactively |
 
 ### Project
 
-| Command           | Description                   |
-| ----------------- | ----------------------------- |
+| Command | Description |
+| --- | --- |
 | `ow project init` | Scan deps, install references |
+
+### Repository Management
+
+| Command | Description |
+| --- | --- |
+| `ow repo list` | List managed repos |
+| `ow repo update --all` | Update all repos |
+| `ow repo status` | Show repo summary |
+| `ow repo prune` | Remove stale map entries |
+| `ow repo gc` | Garbage collect old repos |
+| `ow repo discover` | Index existing repos |
 
 ### Authentication
 
-| Command          | Description          |
-| ---------------- | -------------------- |
-| `ow auth login`  | Login to offworld.sh |
-| `ow auth logout` | Logout               |
-| `ow auth status` | Show auth status     |
+| Command | Description |
+| --- | --- |
+| `ow auth login` | Login to offworld.sh |
+| `ow auth logout` | Logout |
+| `ow auth status` | Show auth status |
 
 ## Options
 
@@ -105,7 +106,7 @@ ow list
 --pattern <pat>   Filter by pattern
 ```
 
-### `ow remove`
+### `ow rm`
 
 ```
 --yes, -y           Skip confirmation
@@ -125,29 +126,14 @@ ow list
 --yes, -y         Skip confirmations
 ```
 
-### `ow map show`
-
-```
---json            Output as JSON
---path            Print only local clone path
---ref             Print only reference file path
-```
-
-### `ow map search`
-
-```
---limit, -n       Max results (default 10)
---json            Output as JSON
-```
-
 ## Config Keys
 
-| Key              | Type    | Description                                           |
-| ---------------- | ------- | ----------------------------------------------------- |
-| `repoRoot`       | string  | Where to clone repos (default: `~/ow`)                |
-| `defaultShallow` | boolean | Use shallow clone by default                          |
-| `defaultModel`   | string  | AI model (e.g., `anthropic/claude-sonnet-4-20250514`) |
-| `agents`         | list    | Comma-separated agent names                           |
+| Key | Type | Description |
+| --- | --- | --- |
+| `repoRoot` | string | Where to clone repos (default: `~/ow`) |
+| `defaultShallow` | boolean | Use shallow clone by default |
+| `defaultModel` | string | AI model (e.g., `anthropic/claude-sonnet-4-20250514`) |
+| `agents` | list | Comma-separated agent names |
 
 ## Path Discovery
 
@@ -155,12 +141,12 @@ ow list
 
 ```json
 {
-	"paths": {
-		"skillDir": "~/.local/share/offworld/skill/offworld",
-		"globalMap": "~/.local/share/offworld/skill/offworld/assets/map.json",
-		"referencesDir": "~/.local/share/offworld/skill/offworld/references",
-		"projectMap": "/abs/path/to/repo/.offworld/map.json"
-	}
+  "paths": {
+    "skillDir": "~/.local/share/offworld/skill/offworld",
+    "globalMap": "~/.local/share/offworld/skill/offworld/assets/map.json",
+    "referencesDir": "~/.local/share/offworld/skill/offworld/references",
+    "projectMap": "/abs/path/to/repo/.offworld/map.json"
+  }
 }
 ```
 
@@ -168,19 +154,19 @@ ow list
 
 Single skill symlinked to:
 
-- **OpenCode**: `~/.config/opencode/skill/`
-- **Claude Code**: `~/.claude/skills/`
-- **Codex**: `~/.codex/skills/`
-- **Amp**: `~/.config/agents/skills/`
-- **Antigravity**: `~/.gemini/antigravity/skills/`
-- **Cursor**: `~/.cursor/skills/`
+- OpenCode (`~/.config/opencode/skill/`)
+- Claude Code (`~/.claude/skills/`)
+- Codex (`~/.codex/skills/`)
+- Amp (`~/.config/agents/skills/`)
+- Antigravity (`~/.gemini/antigravity/skills/`)
+- Cursor (`~/.cursor/skills/`)
 
 ## Environment Variables
 
-| Variable            | Description                             |
-| ------------------- | --------------------------------------- |
+| Variable | Description |
+| --- | --- |
 | `ANTHROPIC_API_KEY` | Required for local reference generation |
-| `WORKOS_CLIENT_ID`  | Required for `ow auth login`            |
+| `WORKOS_CLIENT_ID` | Required for `ow auth login` |
 
 ## License
 

@@ -225,6 +225,8 @@ function ConnectionMonitor() {
 			if (!connected && wasConnected) {
 				console.warn("[Convex] WebSocket disconnected");
 				setWasConnected(false);
+				// Cancel pending queries to break suspended promises that would otherwise hang forever
+				void queryClient.cancelQueries();
 			} else if (connected && !wasConnected) {
 				console.info("[Convex] WebSocket reconnected, refreshing queries...");
 				setWasConnected(true);

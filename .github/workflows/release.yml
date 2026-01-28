@@ -377,12 +377,12 @@ jobs:
             exit 1
           fi
 
-          cat > tap/Formula/ow.rb << EOF
-          class Ow < Formula
-            desc "Offworld CLI - Generate references for your dependencies"
-            homepage "https://offworld.sh"
-            version "$VERSION"
-            license "MIT"
+          cat > tap/Formula/offworld.rb << EOF
+          class Offworld < Formula
+             desc "Offworld CLI - Generate references for your dependencies"
+             homepage "https://offworld.sh"
+             version "$VERSION"
+             license "MIT"
 
             on_macos do
               if Hardware::CPU.arm?
@@ -415,16 +415,20 @@ jobs:
           EOF
 
           # Remove leading whitespace from heredoc
-          sed -i 's/^          //' tap/Formula/ow.rb
+          sed -i 's/^          //' tap/Formula/offworld.rb
+
+          # Remove old formula if present
+          rm -f tap/Formula/ow.rb
 
           echo "Generated formula:"
-          cat tap/Formula/ow.rb
+          cat tap/Formula/offworld.rb
 
       - name: Commit and push
         run: |
           cd tap
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add Formula/ow.rb
-          git commit -m "Update ow to v${{ steps.version.outputs.version }}"
+          git add Formula/offworld.rb
+          git rm -f Formula/ow.rb
+          git commit -m "Update offworld to v${{ steps.version.outputs.version }}"
           git push

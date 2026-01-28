@@ -1,6 +1,6 @@
 {
   "name": "@offworld/types",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "TypeScript types and Zod schemas for Offworld CLI",
   "keywords": [
     "ai",

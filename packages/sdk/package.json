@@ -1,6 +1,6 @@
 {
   "name": "@offworld/sdk",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Core SDK for Offworld - clone repos, generate references, sync with offworld.sh",
   "keywords": [
     "ai",

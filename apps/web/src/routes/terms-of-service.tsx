@@ -13,7 +13,7 @@ function TermsOfServiceComponent() {
 					<p className="text-muted-foreground text-sm">Last updated: January 2025</p>
 				</div>
 
-				<div className="prose prose-neutral dark:prose-invert prose-headings:font-serif prose-headings:tracking-tight prose-p:text-muted-foreground prose-li:text-muted-foreground prose-a:text-primary max-w-none">
+				<div className="prose prose-neutral dark:prose-invert prose-headings:font-serif prose-headings:tracking-tight prose-p:text-muted-foreground prose-li:text-muted-foreground prose-a:text-primary max-w-none font-mono">
 					<p>
 						These Terms of Service ("Terms") govern your access to and use of the Offworld website
 						at offworld.sh and command-line interface tool (collectively, the "Service") operated by
@@ -21,7 +21,7 @@ function TermsOfServiceComponent() {
 						bound by these Terms.
 					</p>
 
-					<h2>1. Description of Service</h2>
+					<h2 className="font-serif">1. Description of Service</h2>
 					<p>
 						Offworld is a tool for generating and sharing AI agent{" "}
 						<a
@@ -38,7 +38,7 @@ function TermsOfServiceComponent() {
 						free of charge.
 					</p>
 
-					<h2>2. Account Registration</h2>
+					<h2 className="font-serif">2. Account Registration</h2>
 					<p>
 						Certain features of the Service, including pushing references to the platform, require
 						you to authenticate using your GitHub account. By authenticating, you represent that you
@@ -46,9 +46,9 @@ function TermsOfServiceComponent() {
 						service. You are responsible for maintaining the security of your account credentials.
 					</p>
 
-					<h2>3. User Content</h2>
+					<h2 className="font-serif">3. User Content</h2>
 
-					<h3>3.1 Ownership</h3>
+					<h3 className="font-serif">3.1 Ownership</h3>
 					<p>
 						You retain ownership of any references or other content you create and publish through
 						the Service ("User Content"). By pushing User Content to the platform, you grant us a
@@ -57,19 +57,19 @@ function TermsOfServiceComponent() {
 						Service.
 					</p>
 
-					<h3>3.2 Public Nature</h3>
+					<h3 className="font-serif">3.2 Public Nature</h3>
 					<p>
 						All references pushed to the platform are publicly visible. Do not push content that you
 						wish to keep private or confidential.
 					</p>
 
-					<h3>3.3 Content Requirements</h3>
+					<h3 className="font-serif">3.3 Content Requirements</h3>
 					<p>
 						References may only be pushed for public GitHub repositories with at least 5 stars. Each
 						push must be associated with a valid commit SHA that exists in the repository.
 					</p>
 
-					<h2>4. Acceptable Use</h2>
+					<h2 className="font-serif">4. Acceptable Use</h2>
 					<p>You agree not to:</p>
 					<ul>
 						<li>
@@ -88,21 +88,21 @@ function TermsOfServiceComponent() {
 						</li>
 					</ul>
 
-					<h2>5. Rate Limits</h2>
+					<h2 className="font-serif">5. Rate Limits</h2>
 					<p>
 						To ensure fair access for all users, the Service enforces rate limits including a
 						maximum of 20 pushes per user per day. We reserve the right to modify these limits at
 						any time.
 					</p>
 
-					<h2>6. Moderation and Termination</h2>
+					<h2 className="font-serif">6. Moderation and Termination</h2>
 					<p>
 						We reserve the right to remove any User Content and suspend or terminate your access to
 						the Service at any time, with or without cause or notice, including for violations of
 						these Terms. We may also verify references and mark them as verified at our discretion.
 					</p>
 
-					<h2>7. Intellectual Property</h2>
+					<h2 className="font-serif">7. Intellectual Property</h2>
 					<p>
 						The Service and its original content (excluding User Content), features, and
 						functionality are owned by us and are protected by copyright, trademark, and other
@@ -110,14 +110,14 @@ function TermsOfServiceComponent() {
 						terms of which are available in the project repository.
 					</p>
 
-					<h2>8. Third-Party Services</h2>
+					<h2 className="font-serif">8. Third-Party Services</h2>
 					<p>
 						The Service integrates with third-party services including GitHub, WorkOS, Convex, and
 						Cloudflare. Your use of these services is subject to their respective terms and privacy
 						policies. We are not responsible for the practices of these third parties.
 					</p>
 
-					<h2>9. Disclaimer of Warranties</h2>
+					<h2 className="font-serif">9. Disclaimer of Warranties</h2>
 					<p>
 						THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND,
 						EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF
@@ -130,7 +130,7 @@ function TermsOfServiceComponent() {
 						environments.
 					</p>
 
-					<h2>10. Limitation of Liability</h2>
+					<h2 className="font-serif">10. Limitation of Liability</h2>
 					<p>
 						TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL WE BE LIABLE FOR ANY INDIRECT,
 						INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR
@@ -139,14 +139,14 @@ function TermsOfServiceComponent() {
 						ACCESS OR USE THE SERVICE.
 					</p>
 
-					<h2>11. Indemnification</h2>
+					<h2 className="font-serif">11. Indemnification</h2>
 					<p>
 						You agree to indemnify and hold us harmless from any claims, damages, losses, or
 						expenses (including reasonable attorneys' fees) arising from your use of the Service,
 						your User Content, or your violation of these Terms.
 					</p>
 
-					<h2>12. Changes to Terms</h2>
+					<h2 className="font-serif">12. Changes to Terms</h2>
 					<p>
 						We may modify these Terms at any time. We will provide notice of material changes by
 						posting the updated Terms on this page and updating the "Last updated" date. Your
@@ -154,19 +154,19 @@ function TermsOfServiceComponent() {
 						the revised Terms.
 					</p>
 
-					<h2>13. Governing Law</h2>
+					<h2 className="font-serif">13. Governing Law</h2>
 					<p>
 						These Terms shall be governed by and construed in accordance with the laws of the United
 						States, without regard to conflict of law principles.
 					</p>
 
-					<h2>14. Severability</h2>
+					<h2 className="font-serif">14. Severability</h2>
 					<p>
 						If any provision of these Terms is found to be unenforceable, the remaining provisions
 						will continue in full force and effect.
 					</p>
 
-					<h2>15. Contact</h2>
+					<h2 className="font-serif">15. Contact</h2>
 					<p>
 						If you have questions about these Terms, please contact us at{" "}
 						<a href="mailto:hey@oscargabriel.dev">hey@oscargabriel.dev</a>.

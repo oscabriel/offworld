@@ -70,7 +70,8 @@ export const commands: Command[] = [
 	},
 	{
 		name: "pull",
-		description: "Git pull a repository and fetch a reference from offworld.sh or generate one locally",
+		description:
+			"Git pull a repository and fetch a reference from offworld.sh or generate one locally",
 		usage: "ow pull <repo> [OPTIONS]",
 		flags: [
 			{ flag: "--reference, -r", description: "Reference file name (defaults to owner-repo)" },
@@ -83,7 +84,8 @@ export const commands: Command[] = [
 	},
 	{
 		name: "generate",
-		description: "Generate reference file locally, if you want to always ignore the remote references",
+		description:
+			"Generate reference file locally, if you want to always ignore the remote references",
 		usage: "ow generate <repo> [OPTIONS]",
 		aliases: ["gen"],
 		flags: [
@@ -93,7 +95,8 @@ export const commands: Command[] = [
 	},
 	{
 		name: "push",
-		description: "Push local reference file to offworld.sh, making it available for all users to pull",
+		description:
+			"Push local reference file to offworld.sh, making it available for all users to pull",
 		usage: "ow push <repo>",
 	},
 	{

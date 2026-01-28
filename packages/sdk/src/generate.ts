@@ -282,10 +282,7 @@ Begin exploring now.`;
  * - Model forgets to close the tag (extract to end of response)
  * - Multiple tag pairs (find the one with real content)
  */
-function extractReferenceContent(
-	rawResponse: string,
-	onDebug?: (message: string) => void,
-): string {
+function extractReferenceContent(rawResponse: string, onDebug?: (message: string) => void): string {
 	const openTag = "<reference_output>";
 	const closeTag = "</reference_output>";
 

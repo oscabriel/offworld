@@ -17,10 +17,9 @@ export function HowItWorks() {
 								rel="noopener noreferrer"
 								className="hover:underline"
 							>
-								<code className="font-mono text-primary text-base">SKILL.md</code>
+								<code className="text-primary font-mono text-base">SKILL.md</code>
 							</a>{" "}
-							file that is symlinked to all your coding agents
-							automatically.
+							file that is symlinked to all your coding agents automatically.
 						</p>
 					</div>
 				</div>

@@ -102,7 +102,7 @@ ${longContent}
 		});
 
 		await expect(generateReferenceWithAI("/mock/repo", "test/repo")).rejects.toThrow(
-			"no <reference_output> tags found",
+			"no valid <reference_output> tags found",
 		);
 	});
 
@@ -115,7 +115,9 @@ Short
 			durationMs: 1000,
 		});
 
-		await expect(generateReferenceWithAI("/mock/repo", "test/repo")).rejects.toThrow("too short");
+		await expect(generateReferenceWithAI("/mock/repo", "test/repo")).rejects.toThrow(
+			"no valid <reference_output> tags found",
+		);
 	});
 
 	it("throws when reference content missing markdown heading", async () => {

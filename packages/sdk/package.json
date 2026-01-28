@@ -1,7 +1,36 @@
 {
   "name": "@offworld/sdk",
   "version": "0.1.2",
+  "description": "Core SDK for Offworld - clone repos, generate references, sync with offworld.sh",
+  "keywords": [
+    "ai",
+    "ai-agents",
+    "anthropic",
+    "claude",
+    "clone",
+    "coding-agent",
+    "convex",
+    "dependencies",
+    "git",
+    "llm",
+    "offworld",
+    "opencode",
+    "reference",
+    "sdk",
+    "skill",
+    "sync"
+  ],
+  "homepage": "https://offworld.sh",
   "license": "MIT",
+  "author": "Oscar Gabriel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oscabriel/offworld.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/oscabriel/offworld/issues"
+  },
   "files": [
     "dist"
   ],

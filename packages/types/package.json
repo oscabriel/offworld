@@ -1,7 +1,30 @@
 {
   "name": "@offworld/types",
   "version": "0.1.2",
+  "description": "TypeScript types and Zod schemas for Offworld CLI",
+  "keywords": [
+    "ai",
+    "config",
+    "map",
+    "offworld",
+    "reference",
+    "schemas",
+    "types",
+    "typescript",
+    "validation",
+    "zod"
+  ],
+  "homepage": "https://offworld.sh",
   "license": "MIT",
+  "author": "Oscar Gabriel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oscabriel/offworld.git",
+    "directory": "packages/types"
+  },
+  "bugs": {
+    "url": "https://github.com/oscabriel/offworld/issues"
+  },
   "files": [
     "dist"
   ],

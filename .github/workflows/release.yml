@@ -74,6 +74,9 @@ jobs:
 
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...
+        env:
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Test
         run: bunx turbo test --filter=offworld...
@@ -199,6 +202,9 @@ jobs:
 
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...
+        env:
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Get version and catalog
         id: versions
@@ -344,25 +350,32 @@ jobs:
 
       - name: Download checksums
         run: |
-          curl -sL "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/checksums.txt" -o checksums.txt
-          echo "Downloaded checksums:"
+          URL="https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/checksums.txt"
+          echo "Downloading checksums from: $URL"
+          curl -fSL "$URL" -o checksums.txt
+          echo "Downloaded checksums.txt:"
           cat checksums.txt
 
       - name: Update formula
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          REPO: ${{ github.repository }}
         run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
           DARWIN_ARM64_SHA=$(grep "darwin-arm64" checksums.txt | awk '{print $1}')
           DARWIN_X64_SHA=$(grep "darwin-x64" checksums.txt | awk '{print $1}')
           LINUX_ARM64_SHA=$(grep "linux-arm64" checksums.txt | awk '{print $1}')
           LINUX_X64_SHA=$(grep "linux-x64" checksums.txt | awk '{print $1}')
 
-          echo "Parsed checksums:"
+          # Verify all checksums were extracted
+          echo "Extracted checksums:"
           echo "  darwin-arm64: $DARWIN_ARM64_SHA"
           echo "  darwin-x64: $DARWIN_X64_SHA"
           echo "  linux-arm64: $LINUX_ARM64_SHA"
           echo "  linux-x64: $LINUX_X64_SHA"
+
+          if [ -z "$DARWIN_ARM64_SHA" ] || [ -z "$DARWIN_X64_SHA" ] || [ -z "$LINUX_ARM64_SHA" ] || [ -z "$LINUX_X64_SHA" ]; then
+            echo "Error: One or more checksums are empty"
+            exit 1
+          fi
 
           cat > tap/Formula/ow.rb << EOF
           class Ow < Formula
@@ -373,20 +386,20 @@ jobs:
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/$REPO/releases/download/v$VERSION/ow-darwin-arm64.tar.gz"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-darwin-arm64.tar.gz"
                 sha256 "$DARWIN_ARM64_SHA"
               else
-                url "https://github.com/$REPO/releases/download/v$VERSION/ow-darwin-x64.tar.gz"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-darwin-x64.tar.gz"
                 sha256 "$DARWIN_X64_SHA"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/$REPO/releases/download/v$VERSION/ow-linux-arm64.tar.gz"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-linux-arm64.tar.gz"
                 sha256 "$LINUX_ARM64_SHA"
               else
-                url "https://github.com/$REPO/releases/download/v$VERSION/ow-linux-x64.tar.gz"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-linux-x64.tar.gz"
                 sha256 "$LINUX_X64_SHA"
               end
             end

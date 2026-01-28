@@ -1,6 +1,7 @@
 /**
- * Load environment variables for local development
- * Checks multiple common locations for .env file
+ * Load environment variables for local development overrides.
+ * Production URLs are hardcoded in the SDK, but devs can override
+ * them via .env to point at dev backends.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";

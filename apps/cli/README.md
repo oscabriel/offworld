@@ -185,10 +185,11 @@ Single skill symlinked to:
 
 ## Environment Variables
 
-| Variable            | Description                             |
-| ------------------- | --------------------------------------- |
-| `ANTHROPIC_API_KEY` | Required for local reference generation |
-| `WORKOS_CLIENT_ID`  | Required for `ow auth login`            |
+| Variable            | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `ANTHROPIC_API_KEY` | Required for local reference generation              |
+| `CONVEX_URL`        | Optional: override production Convex URL (dev only)  |
+| `WORKOS_CLIENT_ID`  | Optional: override production WorkOS ID (dev only)   |
 
 ## License
 

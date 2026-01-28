@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { z } from "zod";
 import { action } from "./_generated/server";
-import { GITHUB_API, getGitHubHeaders } from "./lib/github-auth";
+import { GITHUB_API, getGitHubHeaders } from "./lib/githubAuth";
 
 // Zod schemas for runtime validation of GitHub API responses
 const GitHubRepoResponseSchema = z.object({

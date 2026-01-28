@@ -9,17 +9,17 @@ export function InfoSection() {
 				What is Offworld?
 			</h3>
 			<p className="text-muted-foreground font-mono text-base leading-relaxed">
-				Offworld is a CLI tool that generates agent references for any open source library,
-				empowering your agents with precise context.
+				Offworld is a CLI tool that scans your project, clones your dependencies, and writes a map that points your agents
+				straight to the source.
 			</p>
 			<div className="text-muted-foreground space-y-5 font-serif text-lg leading-relaxed">
 				<p>
-					<span className="text-primary mr-1.5">On-demand generation</span> References created from
-					latest commit. Keep them updated by just running the command again.
+					<span className="text-primary mr-1.5">Agent-native</span> Built for coding agents.
+					CLI commands easily used as tools to find and search local git clone directories.
 				</p>
 				<p>
-					<span className="text-primary mr-1.5">Powered by OpenCode</span> A custom OpenCode
-					"Analyze" agent is dedicated to being a fast and thorough learner and reference-writer.
+					<span className="text-primary mr-1.5">On-demand generation</span> References created from
+					latest commit. Keep them updated by running the command again.
 				</p>
 				<p>
 					<span className="text-primary mr-1.5">Focused context</span> Use{" "}

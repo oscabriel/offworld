@@ -2,7 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@offworld/backend/convex/_generated/api";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { ReferenceTable } from "@/components/admin/analysis-table";
+import { ReferenceTable } from "@/components/admin/reference-table";
 import { UserTable } from "@/components/admin/user-table";
 
 export const Route = createFileRoute("/admin")({

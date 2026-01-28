@@ -33,11 +33,19 @@ export function HowItWorks() {
 					<span className="text-muted-foreground font-mono text-sm">03</span>
 					<div className="flex-1 space-y-1">
 						<h4 className="text-foreground font-mono text-sm tracking-wide uppercase">
-							Generate Reference from Source
+							Generate Reference File from Source
 						</h4>
 						<p className="text-muted-foreground font-serif text-lg leading-relaxed">
-							Agent explores the cloned repo and creates a reference file with common patterns, API
-							details, and best practices.
+							Agent explores the cloned repo and creates a{" "}
+							<a
+								href="https://agentskills.io/specification#references/"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-primary hover:underline"
+							>
+								reference file
+							</a>{" "}
+							with common patterns, API details, and best practices.
 						</p>
 					</div>
 				</div>

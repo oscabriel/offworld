@@ -40,7 +40,6 @@ export function CopyableBlock({
 }: CopyableBlockProps) {
 	const [copied, setCopied] = useState(false);
 
-	// Strip frontmatter for display only, but copy the original content
 	const displayContent = stripFrontmatter ? stripYamlFrontmatter(content) : content;
 
 	const copyContent = () => {

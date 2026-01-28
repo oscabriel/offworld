@@ -23,10 +23,19 @@ function TermsOfServiceComponent() {
 
 					<h2>1. Description of Service</h2>
 					<p>
-						Offworld is a tool for generating and sharing AI agent references for open source
-						software libraries. The Service consists of a command-line interface (CLI) that runs
-						locally on your machine and a web platform for discovering and sharing references. The
-						CLI is released under the MIT License. The web service is provided free of charge.
+						Offworld is a tool for generating and sharing AI agent{" "}
+						<a
+							href="https://agentskills.io/specification#references/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-primary hover:underline"
+						>
+							reference files
+						</a>{" "}
+						for open source software libraries. The Service consists of a command-line interface
+						(CLI) that runs locally on your machine and a web platform for discovering and sharing
+						reference files. The CLI is released under the MIT License. The web service is provided
+						free of charge.
 					</p>
 
 					<h2>2. Account Registration</h2>

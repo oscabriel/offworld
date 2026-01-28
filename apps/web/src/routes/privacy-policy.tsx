@@ -31,9 +31,18 @@ function PrivacyPolicyComponent() {
 
 					<h3>Content You Publish</h3>
 					<p>
-						When you push a reference to our platform, we store the reference content, associated
-						repository metadata (name, owner, description, star count), and the commit SHA. All
-						pushed references are publicly visible and attributed to your account.
+						When you push a{" "}
+						<a
+							href="https://agentskills.io/specification#references/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-primary hover:underline"
+						>
+							reference file
+						</a>{" "}
+						to our platform, we store the reference content, associated repository metadata (name,
+						owner, description, star count), and the commit SHA. All pushed reference files are
+						publicly visible and attributed to your account.
 					</p>
 
 					<h3>Usage Information</h3>

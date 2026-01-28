@@ -92,15 +92,24 @@ function ProfileComponent() {
 				</div>
 
 				<div className="space-y-5">
-					<h2 className="font-serif text-3xl tracking-tight">Pushed References</h2>
+					<h2 className="font-serif text-3xl tracking-tight">Pushed Reference Files</h2>
 
 					{pushedReferences.length === 0 ? (
 						<div className="bg-background border-primary/10 border p-8 text-center">
 							<p className="text-muted-foreground font-mono text-base">
-								You haven't pushed any references yet.
+								You haven't pushed any{" "}
+								<a
+									href="https://agentskills.io/specification#references/"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-primary hover:underline"
+								>
+									reference files
+								</a>{" "}
+								yet.
 							</p>
 							<p className="text-muted-foreground mt-2 font-mono text-sm">
-								Use <code className="text-primary">ow push &lt;repo&gt;</code> to share a reference.
+								Use <code className="text-primary">ow push &lt;repo&gt;</code> to share one.
 							</p>
 						</div>
 					) : (

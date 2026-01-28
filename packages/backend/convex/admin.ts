@@ -9,7 +9,6 @@ export const listAllReferences = query({
 
 		const references = await ctx.db.query("reference").order("desc").collect();
 
-		// Join with repository data
 		const results = await Promise.all(
 			references.map(async (ref) => {
 				const repo = await ctx.db.get(ref.repositoryId);

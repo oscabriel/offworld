@@ -11,14 +11,6 @@ import { validateRepo, validateCommit } from "./validation/github";
  * Public queries/mutations for CLI and web app
  */
 
-// ============================================================================
-// Public Query Functions (for web app)
-// ============================================================================
-
-/**
- * Get reference by repository fullName (public)
- * Display reference on web
- */
 export const get = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
@@ -36,10 +28,6 @@ export const get = query({
 	},
 });
 
-/**
- * Get reference by repository fullName + referenceName (public)
- * Display specific reference on web
- */
 export const getByName = query({
 	args: { fullName: v.string(), referenceName: v.string() },
 	handler: async (ctx, args) => {
@@ -59,9 +47,6 @@ export const getByName = query({
 	},
 });
 
-/**
- * List all references for a repository (public)
- */
 export const listByRepo = query({
 	args: { fullName: v.string() },
 	handler: async (ctx, args) => {
@@ -88,10 +73,6 @@ export const listByRepo = query({
 	},
 });
 
-/**
- * List all references sorted by pull count (public)
- * Repo directory/explore page
- */
 export const list = query({
 	args: {
 		limit: v.optional(v.number()),
@@ -106,7 +87,6 @@ export const list = query({
 			.order("desc")
 			.take(limit);
 
-		// Join with repository data
 		const results = await Promise.all(
 			references.map(async (ref) => {
 				const repo = await ctx.db.get(ref.repositoryId);
@@ -124,9 +104,6 @@ export const list = query({
 	},
 });
 
-/**
- * List references pushed by the current user
- */
 export const listByCurrentUser = query({
 	args: {},
 	handler: async (ctx) => {
@@ -139,7 +116,6 @@ export const listByCurrentUser = query({
 			.order("desc")
 			.collect();
 
-		// Join with repository data
 		const results = await Promise.all(
 			references.map(async (ref) => {
 				const repo = await ctx.db.get(ref.repositoryId);
@@ -161,13 +137,6 @@ export const listByCurrentUser = query({
 	},
 });
 
-// ============================================================================
-// Public CLI Functions
-// ============================================================================
-
-/**
- * Fetch reference for CLI pull (no pull count tracking)
- */
 export const pull = query({
 	args: { fullName: v.string(), referenceName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
@@ -204,9 +173,6 @@ export const pull = query({
 	},
 });
 
-/**
- * Lightweight existence check for CLI
- */
 export const check = query({
 	args: { fullName: v.string(), referenceName: v.optional(v.string()) },
 	handler: async (ctx, args) => {
@@ -240,10 +206,6 @@ export const check = query({
 	},
 });
 
-// ============================================================================
-// Push Error Types
-// ============================================================================
-
 export type PushError =
 	| "auth_required"
 	| "invalid_input"
@@ -258,13 +220,6 @@ export type PushError =
 
 export type PushResult = { success: true } | { success: false; error: PushError; message?: string };
 
-// ============================================================================
-// Push Action (public - validates everything)
-// ============================================================================
-
-/**
- * Push reference - public action with full validation
- */
 export const push = action({
 	args: pushArgs,
 	handler: async (ctx, args): Promise<PushResult> => {
@@ -330,13 +285,6 @@ export const push = action({
 	},
 });
 
-// ============================================================================
-// Push Internal Mutation (not directly callable)
-// ============================================================================
-
-/**
- * Internal mutation - DB operations only, not directly callable
- */
 export const pushInternal = internalMutation({
 	args: {
 		fullName: v.string(),
@@ -354,7 +302,6 @@ export const pushInternal = internalMutation({
 		const { workosId, repoStars, repoDescription, canonicalFullName, ...referenceData } = args;
 		const now = new Date().toISOString();
 
-		// Lowercase for lookups, canonical for display
 		const fullNameLower = args.fullName.toLowerCase();
 		const fullName = canonicalFullName ?? fullNameLower;
 
@@ -419,7 +366,6 @@ export const pushInternal = internalMutation({
 			return { success: false, error: "github_error", message: "Failed to create repository" };
 		}
 
-		// 4. Immutability check: reject if (repositoryId, commitSha) exists
 		const existing = await ctx.db
 			.query("reference")
 			.withIndex("by_repositoryId_commitSha", (q) =>
@@ -435,7 +381,6 @@ export const pushInternal = internalMutation({
 			};
 		}
 
-		// 5. Insert new reference (no updates, immutable by commit)
 		await ctx.db.insert("reference", {
 			repositoryId: repo._id,
 			referenceName: referenceData.referenceName,
@@ -460,9 +405,6 @@ export const pushInternal = internalMutation({
 	},
 });
 
-/**
- * Record a pull event - increments pullCount for display on repo pages
- */
 export const recordPull = mutation({
 	args: { fullName: v.string(), referenceName: v.optional(v.string()) },
 	handler: async (ctx, args) => {

@@ -7,22 +7,18 @@ import { v } from "convex/values";
  */
 
 export default defineSchema({
-	// Repository table - GitHub metadata
 	repository: defineTable({
-		// GitHub identification
 		fullName: v.string(), // canonical casing from GitHub API (for display)
 		fullNameLower: v.string(), // lowercase (for indexing/lookups)
 		owner: v.string(),
 		name: v.string(),
 
-		// GitHub metadata
 		description: v.optional(v.string()),
 		stars: v.number(),
 		language: v.optional(v.string()),
 		defaultBranch: v.string(),
 		githubUrl: v.string(),
 
-		// Timestamps
 		fetchedAt: v.string(), // when we last synced from GitHub
 	})
 		.index("by_fullName", ["fullName"])
@@ -31,24 +27,19 @@ export default defineSchema({
 		.index("by_stars", ["stars"])
 		.index("by_fetchedAt", ["fetchedAt"]),
 
-	// Reference table - references repository
 	reference: defineTable({
 		repositoryId: v.id("repository"),
 
-		// Reference content
 		referenceName: v.string(),
 		referenceDescription: v.string(),
 		referenceContent: v.string(), // markdown
 
-		// Metadata
 		commitSha: v.string(),
 		generatedAt: v.string(), // ISO timestamp
 
-		// Stats
 		pullCount: v.number(),
 		isVerified: v.boolean(), // verified by offworld team
 
-		// User who pushed (optional)
 		workosId: v.optional(v.string()),
 	})
 		.index("by_repositoryId", ["repositoryId"])
@@ -58,7 +49,6 @@ export default defineSchema({
 		.index("by_generatedAt", ["generatedAt"])
 		.index("by_workosId", ["workosId"]),
 
-	// Push logs for rate limiting
 	pushLog: defineTable({
 		fullName: v.string(),
 		workosId: v.string(),

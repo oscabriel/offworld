@@ -1,15 +1,24 @@
-# core
+# Offworld TUI
 
-To install dependencies:
+Terminal UI for Offworld, built with [OpenTUI](https://github.com/opentui/opentui).
 
-```bash
-bun install
-```
+Interactive terminal interface for managing your git clones and reference files.
 
-To run:
+## Development
 
 ```bash
-bun dev
+# From monorepo root
+bun run dev:tui
+
+# Or from this directory
+bun run dev
 ```
 
-This project was created using `bun create tui`. [create-tui](https://git.new/create-tui) is the easiest way to get started with OpenTUI.
+## Status
+
+Work in progress. The TUI provides an interactive terminal interface for managing repos and references.
+
+## Stack
+
+- **Framework**: OpenTUI (React-like terminal components)
+- **Runtime**: Bun

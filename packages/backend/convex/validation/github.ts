@@ -1,15 +1,6 @@
-import { z } from "zod";
-import { GITHUB_API, getGitHubHeaders } from "../lib/githubAuth";
+import { getOctokit } from "../lib/githubAuth";
 
 const MIN_STARS = 5;
-
-// Zod schema for GitHub repo validation response
-const GitHubRepoValidationSchema = z.object({
-	stargazers_count: z.number().optional(),
-	private: z.boolean().optional(),
-	description: z.string().nullable().optional(),
-	full_name: z.string().optional(),
-});
 
 export interface RepoValidationResult {
 	valid: boolean;
@@ -29,24 +20,16 @@ export interface CommitValidationResult {
  */
 export async function validateRepo(fullName: string): Promise<RepoValidationResult> {
 	try {
-		const response = await fetch(`${GITHUB_API}/repos/${fullName}`, {
-			headers: await getGitHubHeaders(),
-		});
+		const octokit = getOctokit();
+		const parts = fullName.split("/");
+		const owner = parts[0];
+		const repo = parts[1];
 
-		if (response.status === 404) {
-			return { valid: false, error: "Repository not found on GitHub" };
+		if (!owner || !repo) {
+			return { valid: false, error: "Invalid repository name format" };
 		}
 
-		if (!response.ok) {
-			return { valid: false, error: `GitHub API error: ${response.status}` };
-		}
-
-		const json = await response.json();
-		const parsed = GitHubRepoValidationSchema.safeParse(json);
-		if (!parsed.success) {
-			return { valid: false, error: "Invalid GitHub API response" };
-		}
-		const data = parsed.data;
+		const { data } = await octokit.repos.get({ owner, repo });
 
 		if (data.private) {
 			return { valid: false, error: "Private repositories not supported" };
@@ -67,7 +50,10 @@ export async function validateRepo(fullName: string): Promise<RepoValidationResu
 			description: data.description ?? undefined,
 			canonicalFullName: data.full_name,
 		};
-	} catch (error) {
+	} catch (error: unknown) {
+		if (error && typeof error === "object" && "status" in error && error.status === 404) {
+			return { valid: false, error: "Repository not found on GitHub" };
+		}
 		return {
 			valid: false,
 			error: `Failed to verify repository: ${error instanceof Error ? error.message : "unknown"}`,
@@ -83,20 +69,22 @@ export async function validateCommit(
 	commitSha: string,
 ): Promise<CommitValidationResult> {
 	try {
-		const response = await fetch(`${GITHUB_API}/repos/${fullName}/commits/${commitSha}`, {
-			headers: await getGitHubHeaders(),
-		});
+		const octokit = getOctokit();
+		const parts = fullName.split("/");
+		const owner = parts[0];
+		const repo = parts[1];
 
-		if (response.status === 404) {
-			return { valid: false, error: "Commit not found in repository" };
+		if (!owner || !repo) {
+			return { valid: false, error: "Invalid repository name format" };
 		}
 
-		if (!response.ok) {
-			return { valid: false, error: `GitHub API error: ${response.status}` };
-		}
+		await octokit.repos.getCommit({ owner, repo, ref: commitSha });
 
 		return { valid: true };
-	} catch (error) {
+	} catch (error: unknown) {
+		if (error && typeof error === "object" && "status" in error && error.status === 404) {
+			return { valid: false, error: "Commit not found in repository" };
+		}
 		return {
 			valid: false,
 			error: `Failed to verify commit: ${error instanceof Error ? error.message : "unknown"}`,

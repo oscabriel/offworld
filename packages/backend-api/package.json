@@ -1,6 +1,6 @@
 {
   "name": "@offworld/backend-api",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Generated Convex API types for Offworld",
   "license": "MIT",
   "files": [

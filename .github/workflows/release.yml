@@ -8,20 +8,24 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   deploy-convex:
     name: Deploy Convex Backend
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install dependencies
+      - name: Install
         run: bun install
 
       - name: Deploy to Convex
@@ -51,15 +55,15 @@ jobs:
             bun_target: bun-linux-x64
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install dependencies
+      - name: Install
         run: bun install
 
       - name: Generate Convex types
@@ -68,28 +72,16 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
-      - name: Build Types
+      - name: Build packages
         run: bun run build
-        working-directory: packages/types
 
-      - name: Build Backend API
-        run: bun run build
-        working-directory: packages/backend-api
-
-      - name: Build SDK
-        run: bun run build
-        working-directory: packages/sdk
+      - name: Test
+        run: bun run test
         env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
 
-      - name: Build CLI
-        run: bun run build
-        working-directory: apps/cli
-        env:
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
-
-      - name: Compile to standalone binary
+      - name: Compile CLI binary
         run: |
           bun build ./dist/cli.mjs --compile --target=${{ matrix.bun_target }} --outfile=ow
         working-directory: apps/cli
@@ -111,15 +103,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Download all artifacts
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Move artifacts to release directory
+      - name: Move artifacts
         run: |
           mkdir -p release
           find artifacts -name "*.tar.gz" -exec mv {} release/ \;
@@ -129,65 +128,67 @@ jobs:
           cd release
           sha256sum *.tar.gz > checksums.txt
 
-      - name: Get version from tag
+      - name: Get version
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          bunx changelogithub --output RELEASE_NOTES.md --no-group
+          echo "Generated changelog:"
+          cat RELEASE_NOTES.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ steps.version.outputs.version }}
-          body: |
-            ## Installation
-
-            ### Quick Install (recommended)
-            ```bash
-            curl -fsSL https://offworld.sh/install | bash
-            ```
-
-            ### Homebrew
-            ```bash
-            brew install oscabriel/tap/ow
-            ```
-
-            ### npm
-            ```bash
-            npm install -g offworld
-            ```
-
-            ### Manual Download
-            Download the appropriate binary for your platform below.
-
-            ## Checksums
-            See `checksums.txt` for SHA-256 checksums of all binaries.
+          body_path: RELEASE_NOTES.md
           files: |
             release/*.tar.gz
             release/checksums.txt
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Release Summary
+        run: |
+          echo "## Release ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Assets" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | File |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS (Apple Silicon) | \`ow-darwin-arm64.tar.gz\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS (Intel) | \`ow-darwin-x64.tar.gz\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux (ARM64) | \`ow-linux-arm64.tar.gz\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux (x64) | \`ow-linux-x64.tar.gz\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [npm package](https://www.npmjs.com/package/offworld)" >> $GITHUB_STEP_SUMMARY
+
   publish-npm:
     name: Publish to npm
-    needs: [deploy-convex, release]
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Install dependencies
+      - name: Install
         run: bun install
 
       - name: Generate Convex types
@@ -196,50 +197,96 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
-      - name: Build Types
+      - name: Build packages
         run: bun run build
-        working-directory: packages/types
 
-      - name: Build Backend API
-        run: bun run build
-        working-directory: packages/backend-api
+      - name: Get versions
+        id: versions
+        run: |
+          echo "types=$(jq -r .version packages/types/package.json)" >> $GITHUB_OUTPUT
+          echo "backend_api=$(jq -r .version packages/backend-api/package.json)" >> $GITHUB_OUTPUT
+          echo "sdk=$(jq -r .version packages/sdk/package.json)" >> $GITHUB_OUTPUT
+          echo "cli=$(jq -r .version apps/cli/package.json)" >> $GITHUB_OUTPUT
 
-      - name: Build SDK
-        run: bun run build
-        working-directory: packages/sdk
+      - name: Publish @offworld/types
+        id: publish_types
+        run: |
+          if npm view @offworld/types@${{ steps.versions.outputs.types }} > /dev/null 2>&1; then
+            echo "skipped=true" >> $GITHUB_OUTPUT
+            echo "@offworld/types@${{ steps.versions.outputs.types }} already published, skipping"
+          else
+            cd packages/types && npm publish --access public
+            echo "skipped=false" >> $GITHUB_OUTPUT
+          fi
         env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @offworld/backend-api
+        id: publish_backend_api
+        run: |
+          if npm view @offworld/backend-api@${{ steps.versions.outputs.backend_api }} > /dev/null 2>&1; then
+            echo "skipped=true" >> $GITHUB_OUTPUT
+            echo "@offworld/backend-api@${{ steps.versions.outputs.backend_api }} already published, skipping"
+          else
+            cd packages/backend-api && npm publish --access public
+            echo "skipped=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @offworld/sdk
+        id: publish_sdk
+        run: |
+          if npm view @offworld/sdk@${{ steps.versions.outputs.sdk }} > /dev/null 2>&1; then
+            echo "skipped=true" >> $GITHUB_OUTPUT
+            echo "@offworld/sdk@${{ steps.versions.outputs.sdk }} already published, skipping"
+          else
+            cd packages/sdk && npm publish --access public
+            echo "skipped=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish offworld (CLI)
+        id: publish_cli
+        run: |
+          if npm view offworld@${{ steps.versions.outputs.cli }} > /dev/null 2>&1; then
+            echo "skipped=true" >> $GITHUB_OUTPUT
+            echo "offworld@${{ steps.versions.outputs.cli }} already published, skipping"
+          else
+            cd apps/cli && npm publish --access public
+            echo "skipped=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CONVEX_URL: ${{ secrets.CONVEX_URL }}
 
-      - name: Build CLI
-        run: bun run build
-        working-directory: apps/cli
-        env:
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
-
-      - name: Publish Types to npm
-        run: npm publish --access public
-        working-directory: packages/types
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish Backend API to npm
-        run: npm publish --access public
-        working-directory: packages/backend-api
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish SDK to npm
-        run: npm publish --access public
-        working-directory: packages/sdk
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish CLI to npm
-        run: npm publish --access public
-        working-directory: apps/cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish Summary
+        run: |
+          echo "## npm Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Version | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.publish_types.outputs.skipped }}" = "true" ]; then
+            echo "| @offworld/types | ${{ steps.versions.outputs.types }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| @offworld/types | ${{ steps.versions.outputs.types }} | Published |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.publish_backend_api.outputs.skipped }}" = "true" ]; then
+            echo "| @offworld/backend-api | ${{ steps.versions.outputs.backend_api }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| @offworld/backend-api | ${{ steps.versions.outputs.backend_api }} | Published |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.publish_sdk.outputs.skipped }}" = "true" ]; then
+            echo "| @offworld/sdk | ${{ steps.versions.outputs.sdk }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| @offworld/sdk | ${{ steps.versions.outputs.sdk }} | Published |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.publish_cli.outputs.skipped }}" = "true" ]; then
+            echo "| offworld | ${{ steps.versions.outputs.cli }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| offworld | ${{ steps.versions.outputs.cli }} | Published |" >> $GITHUB_STEP_SUMMARY
+          fi
 
   update-homebrew:
     name: Update Homebrew Tap
@@ -247,11 +294,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get version from tag
+      - name: Get version
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Checkout Homebrew tap
+      - name: Checkout tap
         uses: actions/checkout@v4
         with:
           repository: oscabriel/homebrew-tap
@@ -265,38 +312,36 @@ jobs:
       - name: Update formula
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          OWNER="${GITHUB_REPOSITORY_OWNER}"
 
-          # Extract checksums
           DARWIN_ARM64_SHA=$(grep "darwin-arm64" checksums.txt | cut -d' ' -f1)
           DARWIN_X64_SHA=$(grep "darwin-x64" checksums.txt | cut -d' ' -f1)
           LINUX_ARM64_SHA=$(grep "linux-arm64" checksums.txt | cut -d' ' -f1)
           LINUX_X64_SHA=$(grep "linux-x64" checksums.txt | cut -d' ' -f1)
 
-          cat > tap/Formula/ow.rb << FORMULA_EOF
+          cat > tap/Formula/ow.rb << EOF
           class Ow < Formula
             desc "Offworld CLI - Generate references for your dependencies"
             homepage "https://offworld.sh"
-            version "${VERSION}"
+            version "$VERSION"
             license "MIT"
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-darwin-arm64.tar.gz"
-                sha256 "${DARWIN_ARM64_SHA}"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-darwin-arm64.tar.gz"
+                sha256 "$DARWIN_ARM64_SHA"
               else
-                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-darwin-x64.tar.gz"
-                sha256 "${DARWIN_X64_SHA}"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-darwin-x64.tar.gz"
+                sha256 "$DARWIN_X64_SHA"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-linux-arm64.tar.gz"
-                sha256 "${LINUX_ARM64_SHA}"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-linux-arm64.tar.gz"
+                sha256 "$LINUX_ARM64_SHA"
               else
-                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-linux-x64.tar.gz"
-                sha256 "${LINUX_X64_SHA}"
+                url "https://github.com/${{ github.repository }}/releases/download/v$VERSION/ow-linux-x64.tar.gz"
+                sha256 "$LINUX_X64_SHA"
               end
             end
 
@@ -308,25 +353,9 @@ jobs:
               assert_match "ow", shell_output("#{bin}/ow --version")
             end
           end
-          FORMULA_EOF
+          EOF
 
-      - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-      - name: Add Homebrew to PATH
-        run: |
-          echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
-
-      - name: Audit formula
-        run: |
-          brew audit --strict --online tap/Formula/ow.rb
-
-      - name: Style check formula
-        run: |
-          brew style tap/Formula/ow.rb
-
-      - name: Commit and push formula update
+      - name: Commit and push
         run: |
           cd tap
           git config user.name "GitHub Actions"

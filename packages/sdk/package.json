@@ -27,8 +27,8 @@
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "@offworld/backend-api": "^0.1.1",
-    "@offworld/types": "^0.1.1",
+    "@offworld/backend-api": "workspace:*",
+    "@offworld/types": "workspace:*",
     "@opencode-ai/sdk": "^1.1.36",
     "convex": "catalog:",
     "xdg-basedir": "^5.1.0",

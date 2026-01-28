@@ -200,20 +200,54 @@ jobs:
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...
 
-      - name: Get versions
+      - name: Get version and catalog
         id: versions
         run: |
-          echo "types=$(jq -r .version packages/types/package.json)" >> $GITHUB_OUTPUT
-          echo "backend_api=$(jq -r .version packages/backend-api/package.json)" >> $GITHUB_OUTPUT
-          echo "sdk=$(jq -r .version packages/sdk/package.json)" >> $GITHUB_OUTPUT
-          echo "cli=$(jq -r .version apps/cli/package.json)" >> $GITHUB_OUTPUT
+          VERSION=$(jq -r .version apps/cli/package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Extract catalog versions for resolving catalog: references
+          echo "convex=$(jq -r '.workspaces.catalog.convex' package.json)" >> $GITHUB_OUTPUT
+          echo "zod=$(jq -r '.workspaces.catalog.zod' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Rewrite dependencies for npm
+        run: |
+          VERSION="${{ steps.versions.outputs.version }}"
+          CONVEX="${{ steps.versions.outputs.convex }}"
+          ZOD="${{ steps.versions.outputs.zod }}"
+
+          # @offworld/types - resolve catalog:
+          jq --arg zod "$ZOD" \
+            '.dependencies.zod = $zod' \
+            packages/types/package.json > tmp.json && mv tmp.json packages/types/package.json
+
+          # @offworld/backend-api - resolve catalog:
+          jq --arg convex "$CONVEX" \
+            '.dependencies.convex = $convex' \
+            packages/backend-api/package.json > tmp.json && mv tmp.json packages/backend-api/package.json
+
+          # @offworld/sdk - resolve workspace: and catalog:
+          jq --arg v "^$VERSION" --arg convex "$CONVEX" --arg zod "$ZOD" \
+            '.dependencies["@offworld/backend-api"] = $v | .dependencies["@offworld/types"] = $v | .dependencies.convex = $convex | .dependencies.zod = $zod' \
+            packages/sdk/package.json > tmp.json && mv tmp.json packages/sdk/package.json
+
+          # offworld (CLI) - resolve workspace: and catalog:
+          jq --arg v "^$VERSION" --arg convex "$CONVEX" --arg zod "$ZOD" \
+            '.dependencies["@offworld/sdk"] = $v | .dependencies["@offworld/types"] = $v | .dependencies.convex = $convex | .dependencies.zod = $zod' \
+            apps/cli/package.json > tmp.json && mv tmp.json apps/cli/package.json
+
+          echo "Resolved dependencies:"
+          echo "types:" && jq .dependencies packages/types/package.json
+          echo "backend-api:" && jq .dependencies packages/backend-api/package.json
+          echo "sdk:" && jq .dependencies packages/sdk/package.json
+          echo "cli:" && jq .dependencies apps/cli/package.json
 
       - name: Publish @offworld/types
         id: publish_types
         run: |
-          if npm view @offworld/types@${{ steps.versions.outputs.types }} > /dev/null 2>&1; then
+          VERSION="${{ steps.versions.outputs.version }}"
+          if npm view @offworld/types@$VERSION > /dev/null 2>&1; then
             echo "skipped=true" >> $GITHUB_OUTPUT
-            echo "@offworld/types@${{ steps.versions.outputs.types }} already published, skipping"
+            echo "@offworld/types@$VERSION already published, skipping"
           else
             cd packages/types && npm publish --access public
             echo "skipped=false" >> $GITHUB_OUTPUT
@@ -224,9 +258,10 @@ jobs:
       - name: Publish @offworld/backend-api
         id: publish_backend_api
         run: |
-          if npm view @offworld/backend-api@${{ steps.versions.outputs.backend_api }} > /dev/null 2>&1; then
+          VERSION="${{ steps.versions.outputs.version }}"
+          if npm view @offworld/backend-api@$VERSION > /dev/null 2>&1; then
             echo "skipped=true" >> $GITHUB_OUTPUT
-            echo "@offworld/backend-api@${{ steps.versions.outputs.backend_api }} already published, skipping"
+            echo "@offworld/backend-api@$VERSION already published, skipping"
           else
             cd packages/backend-api && npm publish --access public
             echo "skipped=false" >> $GITHUB_OUTPUT
@@ -237,9 +272,10 @@ jobs:
       - name: Publish @offworld/sdk
         id: publish_sdk
         run: |
-          if npm view @offworld/sdk@${{ steps.versions.outputs.sdk }} > /dev/null 2>&1; then
+          VERSION="${{ steps.versions.outputs.version }}"
+          if npm view @offworld/sdk@$VERSION > /dev/null 2>&1; then
             echo "skipped=true" >> $GITHUB_OUTPUT
-            echo "@offworld/sdk@${{ steps.versions.outputs.sdk }} already published, skipping"
+            echo "@offworld/sdk@$VERSION already published, skipping"
           else
             cd packages/sdk && npm publish --access public
             echo "skipped=false" >> $GITHUB_OUTPUT
@@ -250,42 +286,43 @@ jobs:
       - name: Publish offworld (CLI)
         id: publish_cli
         run: |
-          if npm view offworld@${{ steps.versions.outputs.cli }} > /dev/null 2>&1; then
+          VERSION="${{ steps.versions.outputs.version }}"
+          if npm view offworld@$VERSION > /dev/null 2>&1; then
             echo "skipped=true" >> $GITHUB_OUTPUT
-            echo "offworld@${{ steps.versions.outputs.cli }} already published, skipping"
+            echo "offworld@$VERSION already published, skipping"
           else
             cd apps/cli && npm publish --access public
             echo "skipped=false" >> $GITHUB_OUTPUT
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
 
       - name: Publish Summary
         run: |
+          VERSION="${{ steps.versions.outputs.version }}"
           echo "## npm Publish Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Package | Version | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|---------|--------|" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.publish_types.outputs.skipped }}" = "true" ]; then
-            echo "| @offworld/types | ${{ steps.versions.outputs.types }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+            echo "| @offworld/types | $VERSION | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| @offworld/types | ${{ steps.versions.outputs.types }} | Published |" >> $GITHUB_STEP_SUMMARY
+            echo "| @offworld/types | $VERSION | Published |" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ steps.publish_backend_api.outputs.skipped }}" = "true" ]; then
-            echo "| @offworld/backend-api | ${{ steps.versions.outputs.backend_api }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+            echo "| @offworld/backend-api | $VERSION | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| @offworld/backend-api | ${{ steps.versions.outputs.backend_api }} | Published |" >> $GITHUB_STEP_SUMMARY
+            echo "| @offworld/backend-api | $VERSION | Published |" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ steps.publish_sdk.outputs.skipped }}" = "true" ]; then
-            echo "| @offworld/sdk | ${{ steps.versions.outputs.sdk }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+            echo "| @offworld/sdk | $VERSION | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| @offworld/sdk | ${{ steps.versions.outputs.sdk }} | Published |" >> $GITHUB_STEP_SUMMARY
+            echo "| @offworld/sdk | $VERSION | Published |" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ steps.publish_cli.outputs.skipped }}" = "true" ]; then
-            echo "| offworld | ${{ steps.versions.outputs.cli }} | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
+            echo "| offworld | $VERSION | Skipped (exists) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| offworld | ${{ steps.versions.outputs.cli }} | Published |" >> $GITHUB_STEP_SUMMARY
+            echo "| offworld | $VERSION | Published |" >> $GITHUB_STEP_SUMMARY
           fi
 
   update-homebrew:

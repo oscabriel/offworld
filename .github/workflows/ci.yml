@@ -29,6 +29,9 @@ jobs:
       - name: Lint (oxlint + oxfmt)
         run: bun run check
 
+      - name: Build dependencies
+        run: bun run build
+
       - name: Typecheck
         run: bun run typecheck
 

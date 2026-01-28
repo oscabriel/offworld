@@ -1,72 +1,72 @@
 {
-  "name": "@offworld/sdk",
-  "version": "0.1.2",
-  "description": "Core SDK for Offworld - clone repos, generate references, sync with offworld.sh",
-  "keywords": [
-    "ai",
-    "ai-agents",
-    "anthropic",
-    "claude",
-    "clone",
-    "coding-agent",
-    "convex",
-    "dependencies",
-    "git",
-    "llm",
-    "offworld",
-    "opencode",
-    "reference",
-    "sdk",
-    "skill",
-    "sync"
-  ],
-  "homepage": "https://offworld.sh",
-  "license": "MIT",
-  "author": "Oscar Gabriel",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/oscabriel/offworld.git",
-    "directory": "packages/sdk"
-  },
-  "bugs": {
-    "url": "https://github.com/oscabriel/offworld/issues"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
-    }
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run src/__tests__/integration/",
-    "test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
-    "prepublishOnly": "bun run build"
-  },
-  "dependencies": {
-    "@offworld/backend-api": "workspace:*",
-    "@offworld/types": "workspace:*",
-    "@opencode-ai/sdk": "^1.1.36",
-    "convex": "catalog:",
-    "xdg-basedir": "^5.1.0",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@types/node": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
-  }
+	"name": "@offworld/sdk",
+	"version": "0.1.2",
+	"description": "Core SDK for Offworld - clone repos, generate references, sync with offworld.sh",
+	"keywords": [
+		"ai",
+		"ai-agents",
+		"anthropic",
+		"claude",
+		"clone",
+		"coding-agent",
+		"convex",
+		"dependencies",
+		"git",
+		"llm",
+		"offworld",
+		"opencode",
+		"reference",
+		"sdk",
+		"skill",
+		"sync"
+	],
+	"homepage": "https://offworld.sh",
+	"bugs": {
+		"url": "https://github.com/oscabriel/offworld/issues"
+	},
+	"license": "MIT",
+	"author": "Oscar Gabriel",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/oscabriel/offworld.git",
+		"directory": "packages/sdk"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
+		"test:integration": "vitest run src/__tests__/integration/",
+		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
+		"prepublishOnly": "bun run build"
+	},
+	"dependencies": {
+		"@offworld/backend-api": "workspace:*",
+		"@offworld/types": "workspace:*",
+		"@opencode-ai/sdk": "^1.1.36",
+		"convex": "catalog:",
+		"xdg-basedir": "^5.1.0",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/node": "catalog:",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	}
 }

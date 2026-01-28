@@ -247,6 +247,10 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Checkout Homebrew tap
         uses: actions/checkout@v4
         with:
@@ -254,12 +258,57 @@ jobs:
           token: ${{ secrets.TAP_TOKEN }}
           path: tap
 
-      - name: Update formula using action
-        uses: int128/update-homebrew-formula-action@v2
-        with:
-          formula: tap/Formula/ow.rb
-          tap: oscabriel/tap
-          token: ${{ secrets.TAP_TOKEN }}
+      - name: Download checksums
+        run: |
+          curl -sL "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/checksums.txt" -o checksums.txt
+
+      - name: Update formula
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+
+          # Extract checksums
+          DARWIN_ARM64_SHA=$(grep "darwin-arm64" checksums.txt | cut -d' ' -f1)
+          DARWIN_X64_SHA=$(grep "darwin-x64" checksums.txt | cut -d' ' -f1)
+          LINUX_ARM64_SHA=$(grep "linux-arm64" checksums.txt | cut -d' ' -f1)
+          LINUX_X64_SHA=$(grep "linux-x64" checksums.txt | cut -d' ' -f1)
+
+          cat > tap/Formula/ow.rb << FORMULA_EOF
+          class Ow < Formula
+            desc "Offworld CLI - Generate references for your dependencies"
+            homepage "https://offworld.sh"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-darwin-arm64.tar.gz"
+                sha256 "${DARWIN_ARM64_SHA}"
+              else
+                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-darwin-x64.tar.gz"
+                sha256 "${DARWIN_X64_SHA}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-linux-arm64.tar.gz"
+                sha256 "${LINUX_ARM64_SHA}"
+              else
+                url "https://github.com/${OWNER}/releases/download/v${VERSION}/ow-linux-x64.tar.gz"
+                sha256 "${LINUX_X64_SHA}"
+              end
+            end
+
+            def install
+              bin.install "ow"
+            end
+
+            test do
+              assert_match "ow", shell_output("#{bin}/ow --version")
+            end
+          end
+          FORMULA_EOF
 
       - name: Audit formula
         run: |
@@ -268,3 +317,12 @@ jobs:
       - name: Style check formula
         run: |
           brew style tap/Formula/ow.rb
+
+      - name: Commit and push formula update
+        run: |
+          cd tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/ow.rb
+          git commit -m "Update ow to v${{ steps.version.outputs.version }}"
+          git push

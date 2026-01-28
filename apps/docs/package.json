@@ -21,6 +21,7 @@
 		"zod": "catalog:"
 	},
 	"devDependencies": {
+		"@astrojs/cloudflare": "^12.6.12",
 		"alchemy": "catalog:"
 	}
 }

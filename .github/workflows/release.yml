@@ -413,10 +413,10 @@ jobs:
             end
           end
           EOF
-          
+
           # Remove leading whitespace from heredoc
           sed -i 's/^          //' tap/Formula/ow.rb
-          
+
           echo "Generated formula:"
           cat tap/Formula/ow.rb
 

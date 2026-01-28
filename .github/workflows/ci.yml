@@ -61,4 +61,3 @@ jobs:
         run: bun run test
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}

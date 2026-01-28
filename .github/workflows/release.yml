@@ -72,31 +72,13 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
-      - name: Validate release env
-        run: |
-          if [ -z "$WORKOS_CLIENT_ID" ]; then
-            echo "Missing WORKOS_CLIENT_ID secret for release build."
-            exit 1
-          fi
-          if [ -z "$CONVEX_URL" ]; then
-            echo "Missing CONVEX_URL secret for release build."
-            exit 1
-          fi
-        env:
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
-
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...
-        env:
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Test
         run: bunx turbo test --filter=offworld...
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
 
       - name: Compile CLI binary
         run: |
@@ -208,25 +190,8 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
-      - name: Validate release env
-        run: |
-          if [ -z "$WORKOS_CLIENT_ID" ]; then
-            echo "Missing WORKOS_CLIENT_ID secret for publish build."
-            exit 1
-          fi
-          if [ -z "$CONVEX_URL" ]; then
-            echo "Missing CONVEX_URL secret for publish build."
-            exit 1
-          fi
-        env:
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
-
       - name: Build CLI and dependencies
         run: bunx turbo build --filter=offworld...
-        env:
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Publish all packages
         run: |
@@ -246,8 +211,6 @@ jobs:
           done
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-          CONVEX_URL: ${{ secrets.CONVEX_URL }}
-          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Publish Summary
         run: |

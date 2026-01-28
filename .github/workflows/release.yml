@@ -246,6 +246,8 @@ jobs:
           done
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CONVEX_URL: ${{ secrets.CONVEX_URL }}
+          WORKOS_CLIENT_ID: ${{ secrets.WORKOS_CLIENT_ID }}
 
       - name: Publish Summary
         run: |

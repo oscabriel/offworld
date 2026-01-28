@@ -43,17 +43,14 @@ export function Footer() {
 							Learn
 						</h3>
 						<div className="flex flex-col gap-1">
-							<a
-								href="https://docs.offworld.sh"
-								target="_blank"
-								rel="noopener noreferrer"
+							<Link
+								to="/cli"
 								className="text-foreground hover:text-primary font-mono text-sm transition-colors"
 							>
 								Docs
-							</a>
+							</Link>
 							<Link
-								to="/$owner/$repo"
-								params={{ owner: "oscabriel", repo: "offworld" }}
+								to="/about"
 								className="text-foreground hover:text-primary font-mono text-sm transition-colors"
 							>
 								About

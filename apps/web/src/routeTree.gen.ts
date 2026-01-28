@@ -16,6 +16,7 @@ import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as CliRouteImport } from './routes/cli'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as GithubRouteRouteImport } from './routes/_github/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GithubOwnerRouteRouteImport } from './routes/_github/$owner/route'
@@ -58,6 +59,11 @@ const CliRoute = CliRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GithubRouteRoute = GithubRouteRouteImport.update({
@@ -103,6 +109,7 @@ const GithubOwnerRepoReferenceRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/cli': typeof CliRoute
   '/explore': typeof ExploreRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/cli': typeof CliRoute
   '/explore': typeof ExploreRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_github': typeof GithubRouteRouteWithChildren
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/cli': typeof CliRoute
   '/explore': typeof ExploreRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/admin'
     | '/cli'
     | '/explore'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/admin'
     | '/cli'
     | '/explore'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_github'
+    | '/about'
     | '/admin'
     | '/cli'
     | '/explore'
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GithubRouteRoute: typeof GithubRouteRouteWithChildren
+  AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   CliRoute: typeof CliRoute
   ExploreRoute: typeof ExploreRoute
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_github': {
@@ -363,6 +383,7 @@ const GithubRouteRouteWithChildren = GithubRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GithubRouteRoute: GithubRouteRouteWithChildren,
+  AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   CliRoute: CliRoute,
   ExploreRoute: ExploreRoute,

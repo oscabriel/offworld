@@ -390,17 +390,11 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 							}
 						}
 						if (parsed.textPart) {
-							const partId = parsed.textPart.id;
 							const delta = textAccumulator.accumulatePart(parsed.textPart);
 							if (!textAccumulator.hasReceivedText) {
 								debug("Writing reference...");
 							}
 							if (delta) {
-								// Log first chunk of each new part to help debug multi-part responses
-								const currentLength = parsed.textPart.text?.length ?? 0;
-								if (currentLength === delta.length && delta.length > 0) {
-									debug(`[part:${partId}] New text part started (${delta.slice(0, 50)}...)`);
-								}
 								stream(delta);
 							}
 						}
@@ -410,10 +404,6 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 					case "session.idle": {
 						if (parsed.props.sessionID === sessionId) {
 							debug("Response complete");
-							const partInfo = textAccumulator.getPartInfo();
-							debug(
-								`[parts] ${partInfo.length} text part(s): ${partInfo.map((p) => `${p.id}(${p.length})`).join(", ")}`,
-							);
 							return textAccumulator.getFullText();
 						}
 						break;

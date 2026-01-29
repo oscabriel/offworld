@@ -17,9 +17,12 @@ import {
 	RepoExistsError,
 	generateReferenceWithAI,
 	installReference,
+	toReferenceFileName,
+	Paths,
 } from "@offworld/sdk";
 import { ReferenceMetaSchema, type RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
 
@@ -45,6 +48,14 @@ export interface PullResult {
 
 function timestamp(): string {
 	return new Date().toISOString().slice(11, 23);
+}
+
+function toTildePath(absolutePath: string): string {
+	const home = homedir();
+	if (absolutePath.startsWith(home)) {
+		return "~" + absolutePath.slice(home.length);
+	}
+	return absolutePath;
 }
 
 function verboseLog(message: string, verbose: boolean): void {
@@ -273,10 +284,16 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 									remoteReference.generatedAt ?? new Date().toISOString(),
 								);
 
+								const remoteReferenceFileName = toReferenceFileName(qualifiedName);
+								const remoteReferencePath = join(
+									Paths.offworldReferencesDir,
+									remoteReferenceFileName,
+								);
+								const remoteRelativePath = toTildePath(remoteReferencePath);
 								p.log.success(
 									referenceName
-										? `Reference installed (${referenceName}) for: ${qualifiedName}`
-										: `Reference installed for: ${qualifiedName}`,
+										? `Reference file (${referenceName}) at: ${remoteRelativePath}`
+										: `Reference file at: ${remoteRelativePath}`,
 								);
 
 								return {
@@ -330,7 +347,12 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 				? (message: string) => {
 						p.log.info(`[${timestamp()}] [debug] ${message}`);
 					}
-				: (msg: string) => s.message(msg);
+				: (msg: string) => {
+						// Filter out internal debug messages (prefixed with [) from spinner
+						if (!msg.startsWith("[")) {
+							s.message(msg);
+						}
+					};
 
 			const result = await generateReferenceWithAI(repoPath, qualifiedName, {
 				provider,
@@ -345,13 +367,17 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 			installReference(source.qualifiedName, referenceRepoName, repoPath, referenceContent, meta);
 
+			const referenceFileName = toReferenceFileName(qualifiedName);
+			const referencePath = join(Paths.offworldReferencesDir, referenceFileName);
+			const relativePath = toTildePath(referencePath);
+
 			if (!verbose) {
-				s.stop("Reference generated");
+				s.stop("Reference file created");
 			} else {
-				p.log.success("Reference generated");
+				p.log.success("Reference file created");
 			}
 
-			p.log.success(`Reference installed for: ${qualifiedName}`);
+			p.log.success(`Reference file at: ${relativePath}`);
 
 			if (source.type === "remote") {
 				const authData = loadAuthData();

@@ -159,7 +159,7 @@ export {
 } from "./manifest.js";
 
 export {
-	KNOWN_MAPPINGS,
+	FALLBACK_MAPPINGS,
 	resolveFromNpm,
 	resolveDependencyRepo,
 	type ResolvedDep,
@@ -167,6 +167,7 @@ export {
 
 export {
 	matchDependenciesToReferences,
+	matchDependenciesToReferencesWithRemoteCheck,
 	isReferenceInstalled,
 	type ReferenceStatus,
 	type ReferenceMatch,

@@ -3,6 +3,11 @@
   "version": "0.2.0",
   "description": "Generated Convex API types for Offworld",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oscabriel/offworld.git",
+    "directory": "packages/backend-api"
+  },
   "files": [
     "dist"
   ],

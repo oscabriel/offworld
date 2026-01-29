@@ -1,62 +1,62 @@
 {
-	"name": "@offworld/types",
-	"version": "0.1.11",
-	"description": "TypeScript types and Zod schemas for Offworld CLI",
-	"keywords": [
-		"ai",
-		"config",
-		"map",
-		"offworld",
-		"reference",
-		"schemas",
-		"types",
-		"typescript",
-		"validation",
-		"zod"
-	],
-	"homepage": "https://offworld.sh",
-	"bugs": {
-		"url": "https://github.com/oscabriel/offworld/issues"
-	},
-	"license": "MIT",
-	"author": "Oscar Gabriel",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/oscabriel/offworld.git",
-		"directory": "packages/types"
-	},
-	"files": [
-		"dist"
-	],
-	"type": "module",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.mts",
-			"import": "./dist/index.mjs"
-		},
-		"./schemas": {
-			"types": "./dist/schemas.d.mts",
-			"import": "./dist/schemas.mjs"
-		}
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"scripts": {
-		"build": "tsdown",
-		"dev": "tsdown --watch",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"prepublishOnly": "bun run build",
-		"check": "oxlint && oxfmt --write"
-	},
-	"dependencies": {
-		"zod": "catalog:"
-	},
-	"devDependencies": {
-		"tsdown": "catalog:",
-		"typescript": "catalog:",
-		"vitest": "catalog:"
-	}
+  "name": "@offworld/types",
+  "version": "0.2.0",
+  "description": "TypeScript types and Zod schemas for Offworld CLI",
+  "keywords": [
+    "ai",
+    "config",
+    "map",
+    "offworld",
+    "reference",
+    "schemas",
+    "types",
+    "typescript",
+    "validation",
+    "zod"
+  ],
+  "homepage": "https://offworld.sh",
+  "bugs": {
+    "url": "https://github.com/oscabriel/offworld/issues"
+  },
+  "license": "MIT",
+  "author": "Oscar Gabriel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oscabriel/offworld.git",
+    "directory": "packages/types"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./schemas": {
+      "types": "./dist/schemas.d.mts",
+      "import": "./dist/schemas.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "bun run build",
+    "check": "oxlint && oxfmt --write"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }

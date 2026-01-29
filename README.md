@@ -233,7 +233,7 @@ bun run test             # Vitest
 ## Links
 
 - **Web**: [offworld.sh](https://offworld.sh)
-- **Docs**: [docs.offworld.sh](https://docs.offworld.sh)
+- **Docs**: [offworld.sh/cli](https://offworld.sh/cli)
 
 ## License
 

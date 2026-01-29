@@ -20,18 +20,16 @@ export function HeroSection() {
 				}`}
 				style={{ transitionDelay: "100ms" }}
 			>
-				<a
-					href="https://docs.offworld.sh/cli"
-					target="_blank"
-					rel="noopener noreferrer"
+				<Link
+					to="/cli"
 					className="group border-primary/20 bg-background/30 hover:border-primary/40 hover:bg-background/50 mb-8 inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-xs backdrop-blur-sm transition-colors"
 				>
 					<Badge variant="secondary" className="bg-green-500/20 text-green-500">
 						NEW
 					</Badge>
-					<span className="text-muted-foreground">v2.0 — Offworld CLI!</span>
+					<span className="text-muted-foreground">Offworld CLI!</span>
 					<ArrowRight className="text-muted-foreground size-3 transition-transform group-hover:translate-x-0.5" />
-				</a>
+				</Link>
 
 				<h1 className="text-primary mb-5 text-center font-serif text-5xl tracking-tight md:text-6xl lg:text-7xl">
 					One skill for your <em>whole</em> stack

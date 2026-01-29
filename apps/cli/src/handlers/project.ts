@@ -4,7 +4,7 @@ import {
 	loadConfig,
 	parseDependencies,
 	resolveDependencyRepo,
-	matchDependenciesToReferences,
+	matchDependenciesToReferencesWithRemoteCheck,
 	updateAgentFiles,
 	getReferencePath,
 	toReferenceFileName,
@@ -88,23 +88,25 @@ export async function projectInitHandler(
 
 	p.log.info(`Found ${dependencies.length} dependencies`);
 
+	if (dependencies.length > 10) {
+		p.log.warn(
+			"Generating many reference files at once or for a particularly large repo will result in using a lot of tokens and take a long time.",
+		);
+		p.log.info("Consider selecting only the deps you're most interested in learning about.");
+	}
+
 	p.log.step("Resolving GitHub repositories...");
 	const isInternalDep = (version?: string): boolean => {
 		if (!version) return false;
 		return (
-			version.startsWith("workspace:") || version.startsWith("file:") || version.startsWith("link:")
+			version.startsWith("workspace:") ||
+			version.startsWith("catalog:") ||
+			version.startsWith("file:") ||
+			version.startsWith("link:")
 		);
 	};
 
-	const internalDeps = dependencies.filter((dep) => isInternalDep(dep.version));
 	const externalDeps = dependencies.filter((dep) => !isInternalDep(dep.version));
-
-	if (internalDeps.length > 0) {
-		p.log.warn(`Skipped ${internalDeps.length} internal workspace dependencies:`);
-		for (const dep of internalDeps) {
-			p.log.info(`  - ${dep.name}`);
-		}
-	}
 
 	const resolvedPromises = externalDeps.map((dep) => resolveDependencyRepo(dep.name));
 	const resolved = await Promise.all(resolvedPromises);
@@ -124,7 +126,17 @@ export async function projectInitHandler(
 		return { success: true, message: "No dependencies after filtering" };
 	}
 
-	const matches = matchDependenciesToReferences(filtered);
+	p.log.step("Checking for available remote references...");
+	const matches = await matchDependenciesToReferencesWithRemoteCheck(filtered);
+
+	const remoteCount = matches.filter((m) => m.status === "remote").length;
+	const generateCount = matches.filter((m) => m.status === "generate").length;
+	if (remoteCount > 0 || generateCount > 0) {
+		p.log.info(
+			`${remoteCount} available remotely (quick), ${generateCount} need generation (slow)`,
+		);
+	}
+
 	const unresolved = matches.filter((match) => !match.repo);
 	if (unresolved.length > 0) {
 		p.log.warn(`Could not resolve ${unresolved.length} dependencies to a GitHub repo:`);
@@ -139,16 +151,35 @@ export async function projectInitHandler(
 	if (options.all || options.deps) {
 		selected = installable;
 	} else {
+		const maxDepLen = Math.max(...matches.map((m) => m.dep.length));
+		const maxRepoLen = Math.max(...matches.map((m) => (m.repo ?? "unknown").length));
+
+		const statusLabel = (status: string) => {
+			switch (status) {
+				case "installed":
+					return "installed";
+				case "remote":
+					return "remote available";
+				case "generate":
+					return "generate";
+				default:
+					return "unknown";
+			}
+		};
+
 		const checklistOptions = matches.map((m) => {
-			const repoLabel = m.repo ?? "unknown repo";
-			const label = `${m.dep} (${repoLabel}) - ${m.status}`;
-			return { value: m, label, hint: m.status, disabled: m.status === "unknown" };
+			const dep = m.dep.padEnd(maxDepLen);
+			const repo = (m.repo ?? "unknown").padEnd(maxRepoLen);
+			const status = statusLabel(m.status);
+			const label = `${dep}  ${repo}  ${status}`;
+			return { value: m, label, disabled: m.status === "unknown" };
 		});
 
 		const selectedResult = await p.multiselect({
-			message: "Select dependencies to install references for:",
+			message: "Select references (dep / repo / status):",
 			options: checklistOptions,
 			required: false,
+			maxItems: 20,
 		});
 
 		if (p.isCancel(selectedResult)) {

@@ -56,10 +56,31 @@ function detectProjectRoot(): string | null {
 	return null;
 }
 
+const LOGO_LINES = [
+	" ██████╗ ███████╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗     ██████╗ ",
+	"██╔═══██╗██╔════╝██╔════╝██║    ██║██╔═══██╗██╔══██╗██║     ██╔══██╗",
+	"██║   ██║█████╗  █████╗  ██║ █╗ ██║██║   ██║██████╔╝██║     ██║  ██║",
+	"██║   ██║██╔══╝  ██╔══╝  ██║███╗██║██║   ██║██╔══██╗██║     ██║  ██║",
+	"╚██████╔╝██║     ██║     ╚███╔███╔╝╚██████╔╝██║  ██║███████╗██████╔╝",
+	" ╚═════╝ ╚═╝     ╚═╝      ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝ ",
+];
+
+const OLIVE = "\x1b[38;5;187m";
+const RESET = "\x1b[0m";
+
+function showBanner(): void {
+	console.log();
+	for (const line of LOGO_LINES) {
+		console.log(`${OLIVE}${line}${RESET}`);
+	}
+	console.log();
+}
+
 export async function projectInitHandler(
 	options: ProjectInitOptions = {},
 ): Promise<ProjectInitResult> {
-	p.intro("ow project init");
+	showBanner();
+	p.intro("Scan your deps to install reference files and create a clone map for your agents.");
 
 	const configPath = getConfigPath();
 	if (!existsSync(configPath)) {

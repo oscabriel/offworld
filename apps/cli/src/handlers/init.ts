@@ -84,12 +84,22 @@ function detectProjectRoot(): string | null {
 	return null;
 }
 
+const BANNER = `
+ ██████╗ ███████╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗     ██████╗ 
+██╔═══██╗██╔════╝██╔════╝██║    ██║██╔═══██╗██╔══██╗██║     ██╔══██╗
+██║   ██║█████╗  █████╗  ██║ █╗ ██║██║   ██║██████╔╝██║     ██║  ██║
+██║   ██║██╔══╝  ██╔══╝  ██║███╗██║██║   ██║██╔══██╗██║     ██║  ██║
+╚██████╔╝██║     ██║     ╚███╔███╔╝╚██████╔╝██║  ██║███████╗██████╔╝
+ ╚═════╝ ╚═╝     ╚═╝      ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝ 
+`;
+
 export async function initHandler(options: InitOptions = {}): Promise<InitResult> {
 	const configPath = getConfigPath();
 	const existingConfig = loadConfig();
 	const configExists = existsSync(configPath);
 	const projectRoot = detectProjectRoot();
 
+	console.log(BANNER);
 	p.intro("ow init");
 
 	if (!options.skipAuth) {

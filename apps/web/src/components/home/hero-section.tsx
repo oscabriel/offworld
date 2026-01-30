@@ -35,10 +35,10 @@ export function HeroSection() {
 					One skill for your <em>whole</em> stack
 				</h1>
 
-<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-base md:text-xl">
-	CLI tool that gives your coding agents instant, up-to-date context on any open source
-	repo.
-</p>
+				<p className="text-muted-foreground mb-13 max-w-xl text-center font-mono text-base md:text-xl">
+					CLI tool that gives your coding agents instant, up-to-date context on any open source
+					repo.
+				</p>
 			</div>
 
 			<div

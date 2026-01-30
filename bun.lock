@@ -20,7 +20,7 @@
     },
     "apps/cli": {
       "name": "offworld",
-      "version": "0.1.11",
+      "version": "0.2.1",
       "bin": {
         "offworld": "./dist/cli.mjs",
         "ow": "./dist/cli.mjs",
@@ -32,6 +32,7 @@
         "@orpc/server": "^1.13.4",
         "convex": "catalog:",
         "open": "^11.0.0",
+        "picocolors": "^1.1.1",
         "trpc-cli": "^0.12.2",
         "zod": "catalog:",
       },
@@ -139,7 +140,7 @@
     },
     "packages/backend-api": {
       "name": "@offworld/backend-api",
-      "version": "0.1.11",
+      "version": "0.2.1",
       "dependencies": {
         "convex": "catalog:",
       },
@@ -153,7 +154,7 @@
     },
     "packages/sdk": {
       "name": "@offworld/sdk",
-      "version": "0.1.11",
+      "version": "0.2.1",
       "dependencies": {
         "@offworld/backend-api": "workspace:*",
         "@offworld/types": "workspace:*",
@@ -171,7 +172,7 @@
     },
     "packages/types": {
       "name": "@offworld/types",
-      "version": "0.1.11",
+      "version": "0.2.1",
       "dependencies": {
         "zod": "catalog:",
       },

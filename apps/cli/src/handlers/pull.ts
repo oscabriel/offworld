@@ -34,6 +34,8 @@ export interface PullOptions {
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
+	/** Suppress all output except errors (for batch operations) */
+	quiet?: boolean;
 	/** Model override in provider/model format (e.g., "anthropic/claude-sonnet-4-20250514") */
 	model?: string;
 }
@@ -121,15 +123,27 @@ function parseModelFlag(model?: string): { provider?: string; model?: string } {
 }
 
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
-	const { repo, shallow = false, sparse = false, branch, force = false, verbose = false } = options;
+	const {
+		repo,
+		shallow = false,
+		sparse = false,
+		branch,
+		force = false,
+		verbose = false,
+		quiet = false,
+	} = options;
 	const referenceName = options.reference?.trim() || undefined;
 	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
 	const isReferenceOverride = Boolean(referenceName);
 
-	const s = createSpinner();
+	const s = createSpinner({ silent: quiet });
 
-	if (verbose) {
+	// Helper to conditionally log
+	const log = quiet ? () => {} : (msg: string) => p.log.info(msg);
+	const logSuccess = quiet ? () => {} : (msg: string) => p.log.success(msg);
+
+	if (verbose && !quiet) {
 		p.log.info(
 			`[verbose] Options: repo=${repo}, reference=${referenceName ?? "default"}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
 		);
@@ -250,22 +264,27 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						const previewUrl = referenceName
 							? `https://offworld.sh/${source.fullName}/${encodeURIComponent(referenceName)}`
 							: `https://offworld.sh/${source.fullName}`;
-						p.log.info(`Preview: ${previewUrl}`);
+						log(`Preview: ${previewUrl}`);
 
-						const useRemote = await p.confirm({
-							message: "Download this reference from offworld.sh?",
-							initialValue: true,
-						});
+						// In quiet mode, auto-accept remote references
+						let useRemote = true;
+						if (!quiet) {
+							const confirmResult = await p.confirm({
+								message: "Download this reference from offworld.sh?",
+								initialValue: true,
+							});
 
-						if (p.isCancel(useRemote)) {
-							throw new Error("Operation cancelled");
+							if (p.isCancel(confirmResult)) {
+								throw new Error("Operation cancelled");
+							}
+							useRemote = confirmResult;
 						}
 
 						if (!useRemote) {
 							if (isReferenceOverride) {
 								throw new Error("Remote reference download declined");
 							}
-							p.log.info("Skipping remote reference, generating locally...");
+							log("Skipping remote reference, generating locally...");
 						} else {
 							s.start("Downloading remote reference...");
 							const remoteReference = isReferenceOverride
@@ -290,7 +309,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 									remoteReferenceFileName,
 								);
 								const remoteRelativePath = toTildePath(remoteReferencePath);
-								p.log.success(
+								logSuccess(
 									referenceName
 										? `Reference file (${referenceName}) at: ${remoteRelativePath}`
 										: `Reference file at: ${remoteRelativePath}`,
@@ -374,17 +393,15 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			if (!verbose) {
 				s.stop("Reference file created");
 			} else {
-				p.log.success("Reference file created");
+				logSuccess("Reference file created");
 			}
 
-			p.log.success(`Reference file at: ${relativePath}`);
+			logSuccess(`Reference file at: ${relativePath}`);
 
 			if (source.type === "remote") {
 				const authData = loadAuthData();
 				if (authData?.token) {
-					p.log.info(
-						`Run 'ow push ${source.fullName}' to share this reference to https://offworld.sh.`,
-					);
+					log(`Run 'ow push ${source.fullName}' to share this reference to https://offworld.sh.`);
 				}
 			}
 

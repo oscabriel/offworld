@@ -12,6 +12,11 @@ class NoOpSpinner implements SpinnerLike {
 	message(_message: string): void {}
 }
 
+export interface CreateSpinnerOptions {
+	/** If true, returns a no-op spinner regardless of TTY status */
+	silent?: boolean;
+}
+
 /**
  * Creates a spinner that works in both TTY and non-TTY environments.
  * In TTY: returns a real @clack/prompts spinner with animation
@@ -20,7 +25,10 @@ class NoOpSpinner implements SpinnerLike {
  * This prevents garbage output when running in non-interactive environments
  * (CI, piped output, agent sessions).
  */
-export function createSpinner(): SpinnerLike {
+export function createSpinner(options: CreateSpinnerOptions = {}): SpinnerLike {
+	if (options.silent) {
+		return new NoOpSpinner();
+	}
 	if (process.stdout.isTTY) {
 		return p.spinner();
 	}

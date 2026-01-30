@@ -1,4 +1,5 @@
 import * as p from "@clack/prompts";
+import pc from "picocolors";
 import {
 	getConfigPath,
 	loadConfig,
@@ -86,13 +87,12 @@ export async function projectInitHandler(
 		return { success: true, message: "No dependencies found" };
 	}
 
-	p.log.info(`Found ${dependencies.length} dependencies`);
+	p.log.info(`Found ${pc.cyan(dependencies.length)} dependencies`);
 
 	if (dependencies.length > 10) {
 		p.log.warn(
-			"Generating many reference files at once or for a particularly large repo will result in using a lot of tokens and take a long time.",
+			"Generating many references at once uses a lot of tokens. Consider selecting just a few.",
 		);
-		p.log.info("Consider selecting only the deps you're most interested in learning about.");
 	}
 
 	p.log.step("Resolving GitHub repositories...");
@@ -129,12 +129,16 @@ export async function projectInitHandler(
 	p.log.step("Checking for available remote references...");
 	const matches = await matchDependenciesToReferencesWithRemoteCheck(filtered);
 
+	const readyCount = matches.filter((m) => m.status === "installed").length;
 	const remoteCount = matches.filter((m) => m.status === "remote").length;
 	const generateCount = matches.filter((m) => m.status === "generate").length;
-	if (remoteCount > 0 || generateCount > 0) {
-		p.log.info(
-			`${remoteCount} available remotely (quick), ${generateCount} need generation (slow)`,
-		);
+
+	const parts: string[] = [];
+	if (readyCount > 0) parts.push(`${pc.blue(readyCount)} ref installed`);
+	if (remoteCount > 0) parts.push(`${pc.green(remoteCount)} remote`);
+	if (generateCount > 0) parts.push(`${pc.yellow(generateCount)} need generation`);
+	if (parts.length > 0) {
+		p.log.info(parts.join(", "));
 	}
 
 	const unresolved = matches.filter((match) => !match.repo);
@@ -151,32 +155,50 @@ export async function projectInitHandler(
 	if (options.all || options.deps) {
 		selected = installable;
 	} else {
-		const maxDepLen = Math.max(...matches.map((m) => m.dep.length));
-		const maxRepoLen = Math.max(...matches.map((m) => (m.repo ?? "unknown").length));
-
 		const statusLabel = (status: string) => {
 			switch (status) {
 				case "installed":
-					return "installed";
+					return pc.blue("(add to map)"); // Already on machine, just add to project
 				case "remote":
-					return "remote available";
+					return pc.green("(remote available)"); // Quick download from offworld.sh
 				case "generate":
-					return "generate";
+					return pc.yellow("(generate)"); // Slow AI generation needed
 				default:
-					return "unknown";
+					return pc.dim("(not found)");
 			}
 		};
 
-		const checklistOptions = matches.map((m) => {
-			const dep = m.dep.padEnd(maxDepLen);
-			const repo = (m.repo ?? "unknown").padEnd(maxRepoLen);
-			const status = statusLabel(m.status);
-			const label = `${dep}  ${repo}  ${status}`;
-			return { value: m, label, disabled: m.status === "unknown" };
+		// Dedupe by repo - group deps that share the same repo
+		const repoGroups = new Map<string, ReferenceMatch[]>();
+		for (const m of matches) {
+			const repo = m.repo ?? "unknown";
+			if (!repoGroups.has(repo)) {
+				repoGroups.set(repo, []);
+			}
+			repoGroups.get(repo)!.push(m);
+		}
+
+		// Sort repos alphabetically
+		const sortedRepos = [...repoGroups.keys()].sort((a, b) => a.localeCompare(b));
+
+		const checklistOptions = sortedRepos.map((repo) => {
+			const group = repoGroups.get(repo)!;
+			// Use first match as representative (they share the same repo/status)
+			const representative = group[0]!;
+			const status = statusLabel(representative.status);
+			const label = `${repo} ${status}`;
+			// Show all dep names in hint
+			const deps = group.map((m) => m.dep).join(", ");
+			return {
+				value: representative,
+				label,
+				hint: deps,
+				disabled: representative.status === "unknown",
+			};
 		});
 
 		const selectedResult = await p.multiselect({
-			message: "Select references (dep / repo / status):",
+			message: "Select references[repo name (status) (deps list)]:",
 			options: checklistOptions,
 			required: false,
 			maxItems: 20,
@@ -217,38 +239,44 @@ export async function projectInitHandler(
 		return { success: true, message: "Dry run complete" };
 	}
 
-	p.log.step(`Installing ${selected.length} references...`);
-
 	const installed: InstalledReference[] = [];
 	let failedCount = 0;
+	const total = selected.length;
 
-	for (const match of selected) {
+	for (let i = 0; i < selected.length; i++) {
+		const match = selected[i]!;
+		if (!match.repo) continue;
+
+		const repo = match.repo;
+		const progress = `[${i + 1}/${total}]`;
+		const spinner = p.spinner();
+		spinner.start(`${progress} ${match.dep} (${repo})`);
+
 		try {
-			if (!match.repo) continue;
-
-			p.log.info(`Installing reference for ${match.dep}...`);
-
 			const pullResult = await pullHandler({
-				repo: match.repo,
+				repo,
 				shallow: true,
 				force: options.generate,
 				verbose: false,
+				quiet: true,
 			});
 
 			if (pullResult.success && pullResult.referenceInstalled) {
-				const referencePath = getReferencePath(match.repo);
+				const referencePath = getReferencePath(repo);
 				installed.push({
 					dependency: match.dep,
-					reference: toReferenceFileName(match.repo),
+					reference: toReferenceFileName(repo),
 					path: referencePath,
 				});
+				const source = pullResult.referenceSource === "remote" ? "downloaded" : "generated";
+				spinner.stop(`${progress} ${match.dep} ${pc.green("✓")} ${pc.dim(`(${source})`)}`);
 			} else {
-				p.log.warn(`Failed to install reference for ${match.dep}`);
+				spinner.stop(`${progress} ${match.dep} ${pc.red("✗")} ${pc.red("failed")}`);
 				failedCount++;
 			}
 		} catch (error) {
 			const errMsg = error instanceof Error ? error.message : "Unknown error";
-			p.log.error(`Error installing ${match.dep}: ${errMsg}`);
+			spinner.stop(`${progress} ${match.dep} ${pc.red("✗")} ${pc.dim(errMsg)}`);
 			failedCount++;
 		}
 	}
@@ -273,23 +301,17 @@ export async function projectInitHandler(
 	writeProjectMap(projectRoot, projectEntries);
 
 	if (installed.length > 0) {
-		p.log.step("Updating AGENTS.md...");
 		try {
 			updateAgentFiles(projectRoot, installed);
-			p.log.success("AGENTS.md updated");
 		} catch (error) {
 			const errMsg = error instanceof Error ? error.message : "Unknown error";
 			p.log.error(`Failed to update AGENTS.md: ${errMsg}`);
 		}
 	}
 
-	p.log.info("");
-	p.log.success(`Installed ${installed.length} references`);
-	if (failedCount > 0) {
-		p.log.warn(`Failed to install ${failedCount} references`);
-	}
-
-	p.outro("Project init complete");
+	const successText = pc.green(`${installed.length} references installed`);
+	const failText = failedCount > 0 ? pc.dim(` (${failedCount} failed)`) : "";
+	p.outro(`${successText}${failText}`);
 
 	return { success: true, referencesInstalled: installed.length };
 }

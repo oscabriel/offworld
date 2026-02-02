@@ -39,6 +39,11 @@ The core architecture is strong, but the current build and distribution path sti
 2. **Heavy dependencies in the default SDK entrypoint**: `convex` and AI-related code are available on the main entrypoint, which means consumers pay for them even if they only use local repo management.
 3. **Release fragility**: The release pipeline depends on build/publish order and the presence of the backend-api shim. Any mismatch between versions or missing codegen output breaks publishing.
 4. **Public vs internal API**: The SDK entrypoint currently acts as a catch-all export surface, which makes it hard to draw a stable boundary between “public API” and “CLI internals.”
+5. **CLI root SDK usage is broad**: CLI imports the SDK root in many handlers, so splitting sync/AI/internal requires a broader migration than just pull/push.
+6. **Subpath builds need explicit entries**: Adding `@offworld/sdk/internal` (and other subpaths) requires tsdown entries or the export will point to missing build output.
+7. **AI dependency still installs by default**: Moving AI to a subpath export does not make `@opencode-ai/sdk` optional unless the dependency itself is optional/peer.
+8. **Convex peer impact on CLI**: If `convex` becomes an optional peer for the SDK, the CLI still needs it in its own deps for sync.
+9. **Convex codegen dependency stays**: Copying generated Convex types into the SDK still requires codegen to run before SDK build in CI.
 
 ## Recommended Approach (Simplify + Improve Reliability)
 
@@ -99,6 +104,7 @@ This reduces accidental dependency on internal APIs and gives room to evolve CLI
 - The CLI will continue to build as a single ESM bundle via `tsdown` and get compiled to a static binary via Bun in CI. This remains unchanged and reliable.
 - After the SDK split, the CLI should import sync and AI functionality from `@offworld/sdk/sync` and `@offworld/sdk/ai` (or `@offworld/sdk/internal`), preventing unwanted dependency loading on `@offworld/sdk` consumers.
 - The installer and release binary pipeline are already robust; the primary risk is ensuring the SDK build produces Convex stubs before CLI builds in CI. With an SDK copy step in its `build` script, the `turbo` build graph will handle ordering.
+- CLI updates must touch all handlers that currently import `@offworld/sdk`, not just pull/push.
 
 ## Suggested Implementation Order
 

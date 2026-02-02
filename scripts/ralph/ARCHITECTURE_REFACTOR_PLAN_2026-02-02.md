@@ -10,6 +10,7 @@ Goal: Reduce package indirection, make heavy dependencies optional, clarify SDK 
 - Copy from `packages/backend/convex/_generated` to `packages/sdk/dist/convex/_generated`.
 - Copy these files: `api.js`, `api.d.ts`, `server.js`, `server.d.ts`, `dataModel.d.ts`.
 - Wire into SDK build: update [packages/sdk/package.json](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/package.json) to run `tsdown && bun run ./scripts/copy-convex-generated.ts`.
+- Note: Convex codegen must still run before SDK build in CI so `_generated` exists (same dependency as today, just relocated).
 
 ### 2. Add Convex subpath exports to SDK
 
@@ -47,6 +48,7 @@ Goal: Reduce package indirection, make heavy dependencies optional, clarify SDK 
 
 - Move `convex` from `dependencies` to `peerDependencies` in [packages/sdk/package.json](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/package.json).
 - Add `peerDependenciesMeta: { "convex": { "optional": true } }`.
+- Ensure the CLI keeps `convex` in its own dependencies since it uses sync.
 
 ### 3. Dynamic import Convex client
 
@@ -59,6 +61,7 @@ Goal: Reduce package indirection, make heavy dependencies optional, clarify SDK 
 - Keep `packages/sdk/src/ai/index.ts` as-is but export it under `"./ai"` in [packages/sdk/package.json](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/package.json).
 - Add `src/ai/index.ts` entry to [packages/sdk/tsdown.config.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/tsdown.config.ts).
 - Remove AI exports from [packages/sdk/src/index.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/src/index.ts).
+- Make `@opencode-ai/sdk` optional (peer or optionalDependency) so installing `@offworld/sdk` alone doesn’t pull AI by default.
 
 ### Acceptance
 
@@ -75,6 +78,7 @@ Goal: Reduce package indirection, make heavy dependencies optional, clarify SDK 
 ### 2. Add internal entrypoint
 
 - Create `packages/sdk/src/internal.ts` to expose CLI-only helpers.
+- Add `src/internal.ts` entry to [packages/sdk/tsdown.config.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/tsdown.config.ts) so the export resolves.
 - Add `"./internal"` export mapping in [packages/sdk/package.json](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/package.json).
 
 ### Acceptance
@@ -86,11 +90,11 @@ Goal: Reduce package indirection, make heavy dependencies optional, clarify SDK 
 
 ### 1. Handlers
 
-- Update handlers importing sync and AI to use subpaths:
+- Update all handlers importing the SDK root to use subpaths:
   - `@offworld/sdk/sync` for sync API.
   - `@offworld/sdk/ai` for AI generation.
   - `@offworld/sdk/internal` for CLI-only helpers.
-- Start with [apps/cli/src/handlers/pull.ts](file:///Users/oscargabriel/Developer/projects/offworld/apps/cli/src/handlers/pull.ts) and [apps/cli/src/handlers/push.ts](file:///Users/oscargabriel/Developer/projects/offworld/apps/cli/src/handlers/push.ts).
+- Cover every handler that currently imports `@offworld/sdk`.
 
 ### 2. Tests
 

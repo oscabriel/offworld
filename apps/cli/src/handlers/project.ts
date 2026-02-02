@@ -270,8 +270,10 @@ export async function projectInitHandler(
 
 		const repo = match.repo;
 		const progress = `[${i + 1}/${total}]`;
+		const prefix = `${progress} ${match.dep}`;
+
 		const spinner = p.spinner();
-		spinner.start(`${progress} ${match.dep} (${repo})`);
+		spinner.start(`${prefix}: Starting...`);
 
 		try {
 			const pullResult = await pullHandler({
@@ -280,6 +282,8 @@ export async function projectInitHandler(
 				force: options.generate,
 				verbose: false,
 				quiet: true,
+				skipConfirm: true,
+				onProgress: (msg) => spinner.message(`${prefix}: ${msg}`),
 			});
 
 			if (pullResult.success && pullResult.referenceInstalled) {
@@ -290,14 +294,14 @@ export async function projectInitHandler(
 					path: referencePath,
 				});
 				const source = pullResult.referenceSource === "remote" ? "downloaded" : "generated";
-				spinner.stop(`${progress} ${match.dep} ${pc.green("✓")} ${pc.dim(`(${source})`)}`);
+				spinner.stop(`${prefix} ${pc.green("✓")} ${pc.dim(`(${source})`)}`);
 			} else {
-				spinner.stop(`${progress} ${match.dep} ${pc.red("✗")} ${pc.red("failed")}`);
+				spinner.stop(`${prefix} ${pc.red("✗")} ${pc.red("failed")}`);
 				failedCount++;
 			}
 		} catch (error) {
 			const errMsg = error instanceof Error ? error.message : "Unknown error";
-			spinner.stop(`${progress} ${match.dep} ${pc.red("✗")} ${pc.dim(errMsg)}`);
+			spinner.stop(`${prefix} ${pc.red("✗")} ${pc.dim(errMsg)}`);
 			failedCount++;
 		}
 	}

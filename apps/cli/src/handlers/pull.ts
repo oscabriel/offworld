@@ -38,6 +38,10 @@ export interface PullOptions {
 	quiet?: boolean;
 	/** Model override in provider/model format (e.g., "anthropic/claude-sonnet-4-20250514") */
 	model?: string;
+	/** Skip confirmation prompts (auto-accept remote references) */
+	skipConfirm?: boolean;
+	/** Progress callback for external spinner updates */
+	onProgress?: (message: string) => void;
 }
 
 export interface PullResult {
@@ -131,13 +135,22 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		force = false,
 		verbose = false,
 		quiet = false,
+		skipConfirm = false,
+		onProgress,
 	} = options;
 	const referenceName = options.reference?.trim() || undefined;
 	const { provider, model } = parseModelFlag(options.model);
 	const config = loadConfig();
 	const isReferenceOverride = Boolean(referenceName);
 
-	const s = createSpinner({ silent: quiet });
+	// If onProgress is provided, use a callback-based spinner that updates in place
+	const s = onProgress
+		? {
+				start: (msg?: string) => onProgress(msg ?? ""),
+				stop: (_msg?: string) => {},
+				message: (msg: string) => onProgress(msg),
+			}
+		: createSpinner({ silent: quiet });
 
 	// Helper to conditionally log
 	const log = quiet ? () => {} : (msg: string) => p.log.info(msg);
@@ -266,9 +279,9 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							: `https://offworld.sh/${source.fullName}`;
 						log(`Preview: ${previewUrl}`);
 
-						// In quiet mode, auto-accept remote references
+						// In quiet mode or skipConfirm, auto-accept remote references
 						let useRemote = true;
-						if (!quiet) {
+						if (!quiet && !skipConfirm) {
 							const confirmResult = await p.confirm({
 								message: "Download this reference from offworld.sh?",
 								initialValue: true,

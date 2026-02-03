@@ -12,21 +12,23 @@ import {
 	getCommitSha,
 	getClonedRepoPath,
 	isRepoCloned,
-	pushReference,
 	NotLoggedInError,
 	TokenExpiredError,
+} from "@offworld/sdk/internal";
+import {
+	pushReference,
 	AuthenticationError,
 	RateLimitError,
 	CommitExistsError,
 	InvalidInputError,
 	InvalidReferenceError,
-	SyncRepoNotFoundError,
+	RepoNotFoundError as SyncRepoNotFoundError,
 	LowStarsError,
 	PrivateRepoError,
 	CommitNotFoundError,
 	GitHubError,
 	type ReferenceData,
-} from "@offworld/sdk";
+} from "@offworld/sdk/sync";
 import { ReferenceMetaSchema } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";

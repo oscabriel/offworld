@@ -10,7 +10,7 @@ import {
 	readGlobalMap,
 	getMetaPath,
 	Paths,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";

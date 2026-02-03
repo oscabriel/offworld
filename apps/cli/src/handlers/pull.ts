@@ -7,19 +7,21 @@ import {
 	getCommitSha,
 	getCommitDistance,
 	parseRepoInput,
-	pullReference,
-	pullReferenceByName,
-	checkRemote,
-	checkRemoteByName,
 	loadConfig,
 	loadAuthData,
 	getMetaPath,
 	RepoExistsError,
-	generateReferenceWithAI,
 	installReference,
 	toReferenceFileName,
 	Paths,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
+import {
+	pullReference,
+	pullReferenceByName,
+	checkRemote,
+	checkRemoteByName,
+} from "@offworld/sdk/sync";
+import { generateReferenceWithAI } from "@offworld/sdk/ai";
 import { ReferenceMetaSchema, type RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";

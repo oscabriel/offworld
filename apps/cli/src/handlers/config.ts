@@ -10,7 +10,7 @@ import {
 	detectInstalledAgents,
 	getAllAgentConfigs,
 	Paths,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import { ConfigSchema, AgentSchema } from "@offworld/types/schemas";
 import type { Agent } from "@offworld/types";
 import { z } from "zod";

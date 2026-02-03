@@ -28,6 +28,9 @@ jobs:
       - name: Install
         run: bun install
 
+      - name: Verify versions
+        run: bun run verify:versions
+
       - name: Deploy to Convex
         run: bunx convex deploy
         working-directory: packages/backend
@@ -197,7 +200,7 @@ jobs:
         run: |
           # bun publish handles workspace: and catalog: resolution automatically
           # Publish in dependency order, skip if version already exists
-          for pkg in packages/types packages/backend-api packages/sdk apps/cli; do
+          for pkg in packages/types packages/sdk apps/cli; do
             cd $pkg
             NAME=$(jq -r .name package.json)
             VERSION=$(jq -r .version package.json)
@@ -220,7 +223,6 @@ jobs:
           echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
           echo "| @offworld/types | $VERSION |" >> $GITHUB_STEP_SUMMARY
-          echo "| @offworld/backend-api | $VERSION |" >> $GITHUB_STEP_SUMMARY
           echo "| @offworld/sdk | $VERSION |" >> $GITHUB_STEP_SUMMARY
           echo "| offworld | $VERSION |" >> $GITHUB_STEP_SUMMARY
 

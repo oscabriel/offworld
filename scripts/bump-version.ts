@@ -6,7 +6,6 @@ import { join } from "node:path";
 const CLI_PACKAGE_JSON_PATH = join(process.cwd(), "apps/cli/package.json");
 const SDK_PACKAGE_JSON_PATH = join(process.cwd(), "packages/sdk/package.json");
 const TYPES_PACKAGE_JSON_PATH = join(process.cwd(), "packages/types/package.json");
-const BACKEND_API_PACKAGE_JSON_PATH = join(process.cwd(), "packages/backend-api/package.json");
 const CLI_VERSION_PATH = join(process.cwd(), "apps/cli/src/index.ts");
 const SDK_CONSTANTS_PATH = join(process.cwd(), "packages/sdk/src/constants.ts");
 
@@ -82,21 +81,15 @@ async function main(): Promise<void> {
 
 	const sdkPackageJson = JSON.parse(await readFile(SDK_PACKAGE_JSON_PATH, "utf-8"));
 	const typesPackageJson = JSON.parse(await readFile(TYPES_PACKAGE_JSON_PATH, "utf-8"));
-	const backendApiPackageJson = JSON.parse(await readFile(BACKEND_API_PACKAGE_JSON_PATH, "utf-8"));
 
 	// Update versions only - workspace: and catalog: refs are resolved at publish time in CI
 	cliPackageJson.version = newVersion;
 	sdkPackageJson.version = newVersion;
 	typesPackageJson.version = newVersion;
-	backendApiPackageJson.version = newVersion;
 
 	await writeFile(CLI_PACKAGE_JSON_PATH, `${JSON.stringify(cliPackageJson, null, 2)}\n`);
 	await writeFile(SDK_PACKAGE_JSON_PATH, `${JSON.stringify(sdkPackageJson, null, 2)}\n`);
 	await writeFile(TYPES_PACKAGE_JSON_PATH, `${JSON.stringify(typesPackageJson, null, 2)}\n`);
-	await writeFile(
-		BACKEND_API_PACKAGE_JSON_PATH,
-		`${JSON.stringify(backendApiPackageJson, null, 2)}\n`,
-	);
 
 	const cliVersionSource = await readFile(CLI_VERSION_PATH, "utf-8");
 	await writeFile(
@@ -119,7 +112,7 @@ async function main(): Promise<void> {
 	execSync("bun install", { stdio: "inherit" });
 	execSync("bun run build:cli", { stdio: "inherit" });
 	execSync(
-		"git add apps/cli/package.json packages/sdk/package.json packages/types/package.json packages/backend-api/package.json apps/cli/src/index.ts packages/sdk/src/constants.ts bun.lock",
+		"git add apps/cli/package.json packages/sdk/package.json packages/types/package.json apps/cli/src/index.ts packages/sdk/src/constants.ts bun.lock",
 		{ stdio: "inherit" },
 	);
 	execSync(`git commit -m "chore(release): ${newVersion}"`, { stdio: "inherit" });

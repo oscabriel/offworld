@@ -23,7 +23,7 @@ The core architecture is strong, but the current build and distribution path sti
 
 ### Convex Generated Types
 
-- Convex generates API stubs under `packages/backend/convex/_generated`. See [packages/backend/convex/_generated/api.d.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/backend/convex/_generated/api.d.ts).
+- Convex generates API stubs under `packages/backend/convex/_generated`. See [packages/backend/convex/\_generated/api.d.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/backend/convex/_generated/api.d.ts).
 - `@offworld/backend-api` is a packaging shim that copies those generated files into `dist/_generated` and exposes `./api` and `./server`. See [packages/backend-api/package.json](file:///Users/oscargabriel/Developer/projects/offworld/packages/backend-api/package.json) and [packages/backend-api/scripts/copy-generated.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/backend-api/scripts/copy-generated.ts).
 - SDK sync code imports the Convex API from that shim, creating a build and publish dependency chain. See [packages/sdk/src/sync.ts](file:///Users/oscargabriel/Developer/projects/offworld/packages/sdk/src/sync.ts).
 

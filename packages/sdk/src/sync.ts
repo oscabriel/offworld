@@ -3,10 +3,30 @@
  * Uses ConvexHttpClient for direct type-safe API calls
  */
 
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@offworld/backend-api/api";
 import { toReferenceName } from "./config.js";
 import { GitHubRepoMetadataSchema, type RepoSource } from "@offworld/types";
+import { getConvexClient, SyncUnavailableError } from "./sync/client.js";
+
+type ConvexApi = typeof import("@offworld/sdk/convex/api").api;
+
+let cachedApi: ConvexApi | null = null;
+
+async function getApi(): Promise<ConvexApi> {
+	if (cachedApi) return cachedApi;
+	try {
+		const { api } = await import("@offworld/sdk/convex/api");
+		cachedApi = api;
+		return api;
+	} catch (error) {
+		const err = error as { code?: string };
+		if (err?.code === "ERR_MODULE_NOT_FOUND") {
+			throw new SyncUnavailableError(
+				"Convex API types not found. Run `bun run build` to generate SDK artifacts.",
+			);
+		}
+		throw error;
+	}
+}
 
 // Production Convex URL - dev can override via CONVEX_URL env var
 const PRODUCTION_CONVEX_URL = "https://trustworthy-coyote-128.convex.cloud";
@@ -144,6 +164,17 @@ export interface PullResponse {
 	generatedAt: string;
 }
 
+function toPullResponse(result: PullResponse): PullResponse {
+	return {
+		fullName: result.fullName,
+		referenceName: result.referenceName,
+		referenceDescription: result.referenceDescription,
+		referenceContent: result.referenceContent,
+		commitSha: result.commitSha,
+		generatedAt: result.generatedAt,
+	};
+}
+
 /** Response from check query */
 export interface CheckResponse {
 	exists: boolean;
@@ -171,10 +202,8 @@ export interface CanPushResult {
 	stars?: number;
 }
 
-function createClient(token?: string): ConvexHttpClient {
-	const client = new ConvexHttpClient(getConvexUrl());
-	if (token) client.setAuth(token);
-	return client;
+async function createClient(token?: string) {
+	return getConvexClient(getConvexUrl(), token);
 }
 
 /**
@@ -183,7 +212,8 @@ function createClient(token?: string): ConvexHttpClient {
  * @returns Reference data or null if not found
  */
 export async function pullReference(fullName: string): Promise<PullResponse | null> {
-	const client = createClient();
+	const client = await createClient();
+	const api = await getApi();
 	try {
 		let result = await client.query(api.references.pull, {
 			fullName,
@@ -198,14 +228,7 @@ export async function pullReference(fullName: string): Promise<PullResponse | nu
 			.mutation(api.references.recordPull, { fullName, referenceName: result.referenceName })
 			.catch(() => {});
 
-		return {
-			fullName: result.fullName,
-			referenceName: result.referenceName,
-			referenceDescription: result.referenceDescription,
-			referenceContent: result.referenceContent,
-			commitSha: result.commitSha,
-			generatedAt: result.generatedAt,
-		};
+		return toPullResponse(result);
 	} catch (error) {
 		throw new NetworkError(
 			`Failed to pull reference: ${error instanceof Error ? error.message : error}`,
@@ -223,21 +246,15 @@ export async function pullReferenceByName(
 	fullName: string,
 	referenceName: string,
 ): Promise<PullResponse | null> {
-	const client = createClient();
+	const client = await createClient();
+	const api = await getApi();
 	try {
 		const result = await client.query(api.references.pull, { fullName, referenceName });
 		if (!result) return null;
 
 		client.mutation(api.references.recordPull, { fullName, referenceName }).catch(() => {});
 
-		return {
-			fullName: result.fullName,
-			referenceName: result.referenceName,
-			referenceDescription: result.referenceDescription,
-			referenceContent: result.referenceContent,
-			commitSha: result.commitSha,
-			generatedAt: result.generatedAt,
-		};
+		return toPullResponse(result);
 	} catch (error) {
 		throw new NetworkError(
 			`Failed to pull reference: ${error instanceof Error ? error.message : error}`,
@@ -256,7 +273,8 @@ export async function pushReference(
 	reference: ReferenceData,
 	token: string,
 ): Promise<PushResponse> {
-	const client = createClient(token);
+	const client = await createClient(token);
+	const api = await getApi();
 	try {
 		const result = await client.action(api.references.push, {
 			fullName: reference.fullName,
@@ -309,7 +327,8 @@ export async function pushReference(
  * @returns Check result
  */
 export async function checkRemote(fullName: string): Promise<CheckResponse> {
-	const client = createClient();
+	const client = await createClient();
+	const api = await getApi();
 	try {
 		let result = await client.query(api.references.check, {
 			fullName,
@@ -343,7 +362,8 @@ export async function checkRemoteByName(
 	fullName: string,
 	referenceName: string,
 ): Promise<CheckResponse> {
-	const client = createClient();
+	const client = await createClient();
+	const api = await getApi();
 	try {
 		const result = await client.query(api.references.check, { fullName, referenceName });
 		if (!result.exists) {
@@ -493,3 +513,5 @@ export function validatePushAllowed(source: RepoSource): void {
 		throw new PushNotAllowedError(result.reason!, reason);
 	}
 }
+
+export { SyncUnavailableError } from "./sync/client.js";

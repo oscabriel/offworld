@@ -16,3 +16,9 @@ export {
 	SessionError,
 	TimeoutError,
 } from "./errors.js";
+
+export {
+	generateReferenceWithAI,
+	type GenerateReferenceOptions,
+	type GenerateReferenceResult,
+} from "../generate.js";

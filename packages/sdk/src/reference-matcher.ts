@@ -9,7 +9,6 @@ import { join } from "node:path";
 import { toReferenceFileName } from "./config.js";
 import { Paths } from "./paths.js";
 import type { ResolvedDep } from "./dep-mappings.js";
-import { checkRemote } from "./sync.js";
 
 export type ReferenceStatus = "installed" | "remote" | "generate" | "unknown";
 
@@ -94,6 +93,7 @@ export function matchDependenciesToReferences(resolvedDeps: ResolvedDep[]): Refe
 export async function matchDependenciesToReferencesWithRemoteCheck(
 	resolvedDeps: ResolvedDep[],
 ): Promise<ReferenceMatch[]> {
+	const { checkRemote } = await import("./sync.js");
 	const results = await Promise.all(
 		resolvedDeps.map(async (dep) => {
 			if (!dep.repo) {

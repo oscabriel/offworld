@@ -10,26 +10,40 @@ Powers the CLI and web app with git clone management, AI reference generation, a
 bun add @offworld/sdk
 ```
 
+### Optional dependencies
+
+- Sync: `bun add convex`
+- AI: `bun add @opencode-ai/sdk`
+
+### Entry points
+
+- `@offworld/sdk` (core local functionality)
+- `@offworld/sdk/sync` (Convex sync)
+- `@offworld/sdk/ai` (AI generation)
+- `@offworld/sdk/internal` (CLI-only helpers)
+- `@offworld/sdk/convex/api` and `@offworld/sdk/convex/server` (Convex types)
+
 ## Modules
 
-| Module                 | Description                               |
-| ---------------------- | ----------------------------------------- |
-| `config.ts`            | Config load/save, path utilities          |
-| `paths.ts`             | XDG-compliant path resolution             |
-| `clone.ts`             | Git clone/update/remove                   |
-| `index-manager.ts`     | Global + project map management           |
-| `generate.ts`          | AI reference generation                   |
-| `sync.ts`              | Convex client for push/pull               |
-| `auth.ts`              | WorkOS token management                   |
-| `agents.ts`            | Agent registry                            |
-| `agents-md.ts`         | AGENTS.md reference table generation      |
-| `repo-source.ts`       | Parse repo input (URL, owner/repo, local) |
-| `manifest.ts`          | Dependency parsing (package.json, etc.)   |
-| `dep-mappings.ts`      | npm package to GitHub repo resolution     |
-| `reference-matcher.ts` | Match deps to installed references        |
-| `repo-manager.ts`      | Bulk repo operations (update, prune, gc)  |
-| `models.ts`            | AI provider/model registry                |
-| `installation.ts`      | Upgrade/uninstall utilities               |
+| Module                 | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `config.ts`            | Config load/save, path utilities                   |
+| `paths.ts`             | XDG-compliant path resolution                      |
+| `clone.ts`             | Git clone/update/remove                            |
+| `index-manager.ts`     | Global + project map management                    |
+| `reference.ts`         | Reference install + SKILL.md                       |
+| `generate.ts`          | AI reference generation (`@offworld/sdk/ai`)       |
+| `sync.ts`              | Convex client for push/pull (`@offworld/sdk/sync`) |
+| `auth.ts`              | WorkOS token management                            |
+| `agents.ts`            | Agent registry                                     |
+| `agents-md.ts`         | AGENTS.md reference table generation (internal)    |
+| `repo-source.ts`       | Parse repo input (URL, owner/repo, local)          |
+| `manifest.ts`          | Dependency parsing (package.json, etc.)            |
+| `dep-mappings.ts`      | npm package to GitHub repo resolution              |
+| `reference-matcher.ts` | Match deps to installed references                 |
+| `repo-manager.ts`      | Bulk repo operations (update, prune, gc)           |
+| `models.ts`            | AI provider/model registry                         |
+| `installation.ts`      | Upgrade/uninstall utilities                        |
 
 ## Usage
 
@@ -56,7 +70,8 @@ await removeRepo("owner/repo", { referenceOnly: true });
 ### Reference Generation
 
 ```typescript
-import { generateReferenceWithAI, installReference } from "@offworld/sdk";
+import { generateReferenceWithAI } from "@offworld/sdk/ai";
+import { installReference } from "@offworld/sdk";
 
 const result = await generateReferenceWithAI(repoPath, { model: "claude-sonnet-4-20250514" });
 await installReference("owner/repo", result.referenceContent, result.commitSha);
@@ -75,7 +90,7 @@ await writeProjectMap(cwd, projectMap);
 ### Sync (Push/Pull)
 
 ```typescript
-import { pullReference, pushReference, checkRemote } from "@offworld/sdk";
+import { pullReference, pushReference, checkRemote } from "@offworld/sdk/sync";
 
 const ref = await pullReference("owner/repo");
 await pushReference("owner/repo", referenceData);

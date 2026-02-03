@@ -61,7 +61,8 @@ vi.mock("../index-manager.js", () => ({
 import { streamPrompt } from "../ai/opencode.js";
 import { getCommitSha } from "../clone.js";
 import { loadConfig } from "../config.js";
-import { generateReferenceWithAI, installReference } from "../generate.js";
+import { generateReferenceWithAI } from "../generate.js";
+import { installReference } from "../reference.js";
 import * as fs from "node:fs";
 
 const mockStreamPrompt = streamPrompt as ReturnType<typeof vi.fn>;

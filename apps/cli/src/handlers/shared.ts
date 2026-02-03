@@ -2,7 +2,7 @@
  * Shared utilities for CLI handlers
  */
 
-import { readGlobalMap } from "@offworld/sdk";
+import { readGlobalMap } from "@offworld/sdk/internal";
 import { existsSync } from "node:fs";
 
 export interface RepoListItem {

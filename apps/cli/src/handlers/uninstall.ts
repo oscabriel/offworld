@@ -9,7 +9,7 @@ import {
 	getShellConfigFiles,
 	cleanShellConfig,
 	Paths,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import { existsSync, rmSync } from "node:fs";
 import { createSpinner } from "../utils/spinner.js";
 

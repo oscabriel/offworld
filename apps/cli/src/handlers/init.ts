@@ -18,7 +18,7 @@ import {
 	discoverRepos,
 	type ProviderInfo,
 	type ModelInfo,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import type { Config, Agent } from "@offworld/types";
 import { AgentSchema } from "@offworld/types/schemas";
 import { z } from "zod";

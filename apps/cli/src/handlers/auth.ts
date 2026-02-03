@@ -4,7 +4,7 @@
  */
 
 import * as p from "@clack/prompts";
-import { saveAuthData, clearAuthData, getAuthStatus, getAuthPath } from "@offworld/sdk";
+import { saveAuthData, clearAuthData, getAuthStatus, getAuthPath } from "@offworld/sdk/internal";
 import {
 	WorkOSDeviceAuthResponseSchema,
 	WorkOSTokenResponseSchema,

@@ -3,7 +3,7 @@
  */
 
 import * as p from "@clack/prompts";
-import { getMapEntry, searchMap, Paths, type SearchResult } from "@offworld/sdk";
+import { getMapEntry, searchMap, Paths, type SearchResult } from "@offworld/sdk/internal";
 
 export interface MapShowOptions {
 	repo: string;

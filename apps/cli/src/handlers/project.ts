@@ -13,7 +13,7 @@ import {
 	writeProjectMap,
 	type InstalledReference,
 	type ReferenceMatch,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";

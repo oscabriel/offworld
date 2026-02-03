@@ -4,12 +4,12 @@ import {
 	cloneRepo,
 	isRepoCloned,
 	getClonedRepoPath,
-	checkRemote,
-	generateReferenceWithAI,
 	installReference,
 	loadConfig,
 	getReferencePath,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
+import { checkRemote } from "@offworld/sdk/sync";
+import { generateReferenceWithAI } from "@offworld/sdk/ai";
 import { createSpinner } from "../utils/spinner";
 
 export interface GenerateOptions {

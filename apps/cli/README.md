@@ -190,6 +190,11 @@ Single skill symlinked to:
 | `CONVEX_URL`       | Optional: override production Convex URL (dev only) |
 | `WORKOS_CLIENT_ID` | Optional: override production WorkOS ID (dev only)  |
 
+## SDK Notes (dev)
+
+- CLI uses SDK subpaths: `@offworld/sdk/internal`, `@offworld/sdk/sync`, `@offworld/sdk/ai`
+- Sync requires `convex`; AI requires `@opencode-ai/sdk`
+
 ## License
 
 MIT

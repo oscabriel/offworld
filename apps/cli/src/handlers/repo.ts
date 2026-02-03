@@ -9,7 +9,7 @@ import {
 	getRepoRoot,
 	loadConfig,
 	readGlobalMap,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import { existsSync, rmSync } from "node:fs";
 import { formatRepoForDisplay, type RepoListItem } from "./shared.js";
 

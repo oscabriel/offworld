@@ -9,7 +9,7 @@ import {
 	fetchLatestVersion,
 	executeUpgrade,
 	type InstallMethod,
-} from "@offworld/sdk";
+} from "@offworld/sdk/internal";
 import { createSpinner } from "../utils/spinner.js";
 
 export interface UpgradeOptions {

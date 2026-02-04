@@ -8,10 +8,10 @@
 		"check": "oxlint && oxfmt --write"
 	},
 	"dependencies": {
-		"@opentui/core": "^0.1.75"
+		"@opentui/core": "^0.1.77"
 	},
 	"devDependencies": {
-		"@types/bun": "1.3.6"
+		"@types/bun": "1.3.8"
 	},
 	"peerDependencies": {
 		"typescript": "^5"

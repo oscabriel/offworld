@@ -9,10 +9,10 @@
 		"catalog": {
 			"@convex-dev/better-auth": "^0.10.9",
 			"@edge-runtime/vm": "^5.0.0",
-			"@types/node": "^25.0.10",
-			"alchemy": "^0.83.1",
+			"@types/node": "^25.2.0",
+			"alchemy": "^0.83.2",
 			"better-auth": "1.4.13",
-			"convex": "^1.31.6",
+			"convex": "^1.31.7",
 			"convex-test": "^0.0.41",
 			"dotenv": "^17.2.3",
 			"tsdown": "^0.20.1",
@@ -43,11 +43,11 @@
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
-		"@clack/prompts": "^0.11.0",
+		"@clack/prompts": "^1.0.0",
 		"@offworld/config": "workspace:*",
-		"oxfmt": "^0.27.0",
-		"oxlint": "^1.42.0",
-		"turbo": "^2.7.6",
+		"oxfmt": "^0.28.0",
+		"oxlint": "^1.43.0",
+		"turbo": "^2.8.3",
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.18"
 	},

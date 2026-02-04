@@ -1,102 +1,102 @@
 {
-  "name": "@offworld/sdk",
-  "version": "0.3.0",
-  "description": "Core SDK for Offworld - clone repos, generate references, sync with offworld.sh",
-  "keywords": [
-    "ai",
-    "ai-agents",
-    "anthropic",
-    "claude",
-    "clone",
-    "coding-agent",
-    "convex",
-    "dependencies",
-    "git",
-    "llm",
-    "offworld",
-    "opencode",
-    "reference",
-    "sdk",
-    "skill",
-    "sync"
-  ],
-  "homepage": "https://offworld.sh",
-  "bugs": {
-    "url": "https://github.com/oscabriel/offworld/issues"
-  },
-  "license": "MIT",
-  "author": "Oscar Gabriel",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/oscabriel/offworld.git",
-    "directory": "packages/sdk"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
-    },
-    "./sync": {
-      "types": "./dist/sync/index.d.mts",
-      "import": "./dist/sync/index.mjs"
-    },
-    "./ai": {
-      "types": "./dist/ai/index.d.mts",
-      "import": "./dist/ai/index.mjs"
-    },
-    "./internal": {
-      "types": "./dist/internal.d.mts",
-      "import": "./dist/internal.mjs"
-    },
-    "./convex/api": {
-      "types": "./dist/convex/_generated/api.d.ts",
-      "import": "./dist/convex/_generated/api.js"
-    },
-    "./convex/server": {
-      "types": "./dist/convex/_generated/server.d.ts",
-      "import": "./dist/convex/_generated/server.js"
-    }
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "scripts": {
-    "build": "tsdown && bun run ./scripts/copy-convex-generated.ts",
-    "dev": "tsdown --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run src/__tests__/integration/",
-    "test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
-    "prepublishOnly": "bun run build",
-    "check": "oxlint && oxfmt --write"
-  },
-  "dependencies": {
-    "@offworld/types": "workspace:*",
-    "xdg-basedir": "^5.1.0",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@types/node": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
-  },
-  "peerDependencies": {
-    "@opencode-ai/sdk": "^1.1.36",
-    "convex": "catalog:"
-  },
-  "peerDependenciesMeta": {
-    "@opencode-ai/sdk": {
-      "optional": true
-    },
-    "convex": {
-      "optional": true
-    }
-  }
+	"name": "@offworld/sdk",
+	"version": "0.3.0",
+	"description": "Core SDK for Offworld - clone repos, generate references, sync with offworld.sh",
+	"keywords": [
+		"ai",
+		"ai-agents",
+		"anthropic",
+		"claude",
+		"clone",
+		"coding-agent",
+		"convex",
+		"dependencies",
+		"git",
+		"llm",
+		"offworld",
+		"opencode",
+		"reference",
+		"sdk",
+		"skill",
+		"sync"
+	],
+	"homepage": "https://offworld.sh",
+	"bugs": {
+		"url": "https://github.com/oscabriel/offworld/issues"
+	},
+	"license": "MIT",
+	"author": "Oscar Gabriel",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/oscabriel/offworld.git",
+		"directory": "packages/sdk"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		},
+		"./sync": {
+			"types": "./dist/sync/index.d.mts",
+			"import": "./dist/sync/index.mjs"
+		},
+		"./ai": {
+			"types": "./dist/ai/index.d.mts",
+			"import": "./dist/ai/index.mjs"
+		},
+		"./internal": {
+			"types": "./dist/internal.d.mts",
+			"import": "./dist/internal.mjs"
+		},
+		"./convex/api": {
+			"types": "./dist/convex/_generated/api.d.ts",
+			"import": "./dist/convex/_generated/api.js"
+		},
+		"./convex/server": {
+			"types": "./dist/convex/_generated/server.d.ts",
+			"import": "./dist/convex/_generated/server.js"
+		}
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsdown && bun run ./scripts/copy-convex-generated.ts",
+		"dev": "tsdown --watch",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:unit": "vitest run --exclude '**/*.integration.test.ts'",
+		"test:integration": "vitest run src/__tests__/integration/",
+		"test:smoke": "SMOKE_TESTS=1 vitest run --testNamePattern Smoke",
+		"prepublishOnly": "bun run build",
+		"check": "oxlint && oxfmt --write"
+	},
+	"dependencies": {
+		"@offworld/types": "workspace:*",
+		"xdg-basedir": "^5.1.0",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/node": "catalog:",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
+	"peerDependencies": {
+		"@opencode-ai/sdk": "^1.1.36",
+		"convex": "catalog:"
+	},
+	"peerDependenciesMeta": {
+		"@opencode-ai/sdk": {
+			"optional": true
+		},
+		"convex": {
+			"optional": true
+		}
+	}
 }

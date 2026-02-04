@@ -13,6 +13,22 @@ export class OpenCodeReferenceError extends Error {
 }
 
 /**
+ * Error when the opencode CLI binary is not installed
+ */
+export class OpenCodeNotInstalledError extends OpenCodeReferenceError {
+	readonly _tag = "OpenCodeNotInstalledError" as const;
+	readonly hint: string;
+
+	constructor() {
+		const hint =
+			"opencode is required for local AI reference generation. Install it: curl -fsSL https://opencode.ai/install | bash";
+		super(`opencode is not installed. ${hint}`);
+		this.name = "OpenCodeNotInstalledError";
+		this.hint = hint;
+	}
+}
+
+/**
  * Error when the @opencode-ai/sdk package is not installed or invalid
  */
 export class OpenCodeSDKError extends OpenCodeReferenceError {

@@ -1,6 +1,8 @@
+import { execSync } from "node:child_process";
 import {
 	OpenCodeReferenceError,
 	OpenCodeSDKError,
+	OpenCodeNotInstalledError,
 	InvalidProviderError,
 	ProviderNotConnectedError,
 	InvalidModelError,
@@ -112,6 +114,14 @@ type CreateOpencodeFn = (opts: {
 let cachedCreateOpencode: CreateOpencodeFn | null = null;
 let cachedCreateOpencodeClient: CreateOpencodeClientFn | null = null;
 
+function assertOpenCodeInstalled(): void {
+	try {
+		execSync("opencode --version", { stdio: "ignore" });
+	} catch {
+		throw new OpenCodeNotInstalledError();
+	}
+}
+
 async function getOpenCodeSDK(): Promise<{
 	createOpencode: CreateOpencodeFn;
 	createOpencodeClient: CreateOpencodeClientFn;
@@ -122,6 +132,8 @@ async function getOpenCodeSDK(): Promise<{
 			createOpencodeClient: cachedCreateOpencodeClient,
 		};
 	}
+
+	assertOpenCodeInstalled();
 
 	try {
 		const sdk = await import("@opencode-ai/sdk");

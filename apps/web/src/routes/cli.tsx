@@ -104,6 +104,29 @@ function CliPage() {
 							</p>
 						</section>
 
+						{/* Prerequisites */}
+						<section id="prerequisites" className="pt-13">
+							<h2 className="mb-5 font-serif text-3xl tracking-tight">Prerequisites</h2>
+							<p className="text-muted-foreground mb-5 font-mono text-sm">
+								Offworld uses{" "}
+								<a
+									href="https://opencode.ai"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-primary hover:underline"
+								>
+									opencode
+								</a>{" "}
+								as its AI runtime for local reference generation. Install it before installing
+								Offworld.
+							</p>
+							<CodeBlock code="curl -fsSL https://opencode.ai/install | bash" />
+							<p className="text-muted-foreground mt-3 font-mono text-sm">
+								Verify the installation:
+							</p>
+							<CodeBlock code="opencode --version" />
+						</section>
+
 						{/* Installation */}
 						<section id="installation" className="pt-13">
 							<h2 className="mb-5 font-serif text-3xl tracking-tight">Installation</h2>

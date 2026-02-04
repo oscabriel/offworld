@@ -201,7 +201,20 @@ Ask the user for:
 
 Use their answers to fill flags in the commands below. Avoid running interactive CLI flows.
 
-#### Step 1: Install the CLI
+#### Step 1: Check for opencode
+
+opencode is required for local AI reference generation. Verify it's installed:
+
+\`\`\`bash
+opencode --version
+\`\`\`
+
+If not installed:
+\`\`\`bash
+curl -fsSL https://opencode.ai/install | bash
+\`\`\`
+
+#### Step 2: Install the CLI
 
 \`\`\`bash
 curl -fsSL https://offworld.sh/install | bash
@@ -212,7 +225,7 @@ Or use your preferred package manager:
 npm install -g offworld
 \`\`\`
 
-#### Step 2: Initialize Offworld (non-interactive)
+#### Step 3: Initialize Offworld (non-interactive)
 
 \`\`\`bash
 ow init --yes --agents "<agent-list>" --repo-root "<clone-dir>" --model "<provider/model>"
@@ -224,14 +237,14 @@ This will:
 - Configure which agents to sync reference files to
 - Set the default model for reference generation
 
-#### Step 3: Verify the installation
+#### Step 4: Verify the installation
 
 \`\`\`bash
 ow --version
 ow config show
 \`\`\`
 
-#### Step 4: Initialize in the current project (non-interactive)
+#### Step 5: Initialize in the current project (non-interactive)
 
 \`\`\`bash
 ow project init --yes --all --generate
@@ -253,7 +266,7 @@ Or exclude specific dependencies:
 ow project init --yes --all --skip "react,react-dom" --generate
 \`\`\`
 
-#### Step 5: Verify setup
+#### Step 6: Verify setup
 
 List the installed reference files:
 \`\`\`bash
@@ -274,6 +287,7 @@ export const toSubcommandId = (group: string) => `sub-${group}`;
 export function buildTocSections(): TocSection[] {
 	return [
 		{ id: "overview", label: "Overview" },
+		{ id: "prerequisites", label: "Prerequisites" },
 		{
 			id: "installation",
 			label: "Installation",

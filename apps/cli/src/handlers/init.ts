@@ -61,8 +61,8 @@ function collapseTilde(path: string): string {
 	return path;
 }
 
-function validatePath(value: string): string | undefined {
-	if (!value.trim()) {
+function validatePath(value: string | undefined): string | Error | undefined {
+	if (!value?.trim()) {
 		return "Path cannot be empty";
 	}
 	return undefined;

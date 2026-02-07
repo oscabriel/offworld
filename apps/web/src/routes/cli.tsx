@@ -158,6 +158,15 @@ function CliPage() {
 								<CodeBlock code="brew install oscabriel/tap/offworld" />
 							</div>
 
+							{/* skills.sh */}
+							<div id="install-skills" className="mt-13 scroll-mt-24 space-y-3">
+								<h3 className="text-primary font-mono">skills.sh</h3>
+								<p className="text-muted-foreground font-mono text-sm">
+									Install the Offworld skill directly with the skills npm package.
+								</p>
+								<CodeBlock code="npx skills add oscabriel/offworld-skill --skill offworld" />
+							</div>
+
 							{/* Agent-native */}
 							<div id="install-agent" className="mt-13 scroll-mt-24 space-y-3">
 								<h3 className="text-primary font-mono">Agent-native</h3>

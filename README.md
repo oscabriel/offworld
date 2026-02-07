@@ -41,7 +41,20 @@ bun add -g offworld
 
 # Homebrew
 brew install oscabriel/tap/offworld
+
+# skills.sh
+npx skills add oscabriel/offworld-skill --skill offworld
 ```
+
+## Install via skills.sh
+
+You can also install the Offworld skill directly with the `skills` npm package:
+
+```bash
+npx skills add oscabriel/offworld-skill --skill offworld
+```
+
+After installing the skill, use your agent to run the setup flow in `references/installation.md`.
 
 ## For LLM Agents
 

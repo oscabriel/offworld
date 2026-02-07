@@ -295,6 +295,7 @@ export function buildTocSections(): TocSection[] {
 				{ id: "install-script", label: "Install Script" },
 				{ id: "install-nodejs", label: "Node.js" },
 				{ id: "install-homebrew", label: "Homebrew" },
+				{ id: "install-skills", label: "skills.sh" },
 				{ id: "install-agent", label: "Agent-native" },
 			],
 		},

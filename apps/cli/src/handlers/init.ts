@@ -1,12 +1,13 @@
 import * as p from "@clack/prompts";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { resolve, join, dirname } from "node:path";
+import { resolve, join, dirname, basename } from "node:path";
 import {
 	loadConfig,
 	saveConfig,
 	getConfigPath,
 	getMetaRoot,
+	getReferencePath,
 	Paths,
 	detectInstalledAgents,
 	getAllAgentConfigs,
@@ -16,6 +17,9 @@ import {
 	getProvider,
 	validateProviderModel,
 	discoverRepos,
+	readGlobalMap,
+	writeGlobalMap,
+	resolveReferenceKeywords,
 	type ProviderInfo,
 	type ModelInfo,
 } from "@offworld/sdk/internal";
@@ -85,18 +89,19 @@ function detectProjectRoot(): string | null {
 }
 
 const BANNER = `
- ██████╗ ███████╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗     ██████╗ 
+ ██████╗ ███████╗███████╗██╗    ██╗ ██████╗ ██████╗ ██╗     ██████╗
 ██╔═══██╗██╔════╝██╔════╝██║    ██║██╔═══██╗██╔══██╗██║     ██╔══██╗
 ██║   ██║█████╗  █████╗  ██║ █╗ ██║██║   ██║██████╔╝██║     ██║  ██║
 ██║   ██║██╔══╝  ██╔══╝  ██║███╗██║██║   ██║██╔══██╗██║     ██║  ██║
 ╚██████╔╝██║     ██║     ╚███╔███╔╝╚██████╔╝██║  ██║███████╗██████╔╝
- ╚═════╝ ╚═╝     ╚═╝      ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝ 
+ ╚═════╝ ╚═╝     ╚═╝      ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝
 `;
 
 export async function initHandler(options: InitOptions = {}): Promise<InitResult> {
 	const configPath = getConfigPath();
 	const existingConfig = loadConfig();
 	const configExists = existsSync(configPath);
+	const mapExistedBeforeInit = existsSync(Paths.offworldGlobalMapPath);
 	const projectRoot = detectProjectRoot();
 
 	console.log(BANNER);
@@ -338,7 +343,7 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 			let shouldDiscover = options.yes;
 			if (!options.yes) {
 				const confirmDiscover = await p.confirm({
-					message: "Add them to your clone map? (they will be marked as not referenced)",
+					message: "Add them to your clone map?",
 					initialValue: true,
 				});
 				if (!p.isCancel(confirmDiscover)) {
@@ -349,6 +354,46 @@ export async function initHandler(options: InitOptions = {}): Promise<InitResult
 			if (shouldDiscover) {
 				const result = await discoverRepos({ repoRoot: expandedRepoRoot });
 				p.log.success(`Added ${result.discovered.length} repos to clone map`);
+
+				if (!mapExistedBeforeInit && result.discovered.length > 0) {
+					const refreshSpinner = p.spinner();
+					refreshSpinner.start("Building map.json...");
+
+					const map = readGlobalMap();
+					let refreshedCount = 0;
+					let withReferenceCount = 0;
+
+					for (const repo of result.discovered) {
+						const existingEntry = map.repos[repo.qualifiedName];
+						if (!existingEntry) continue;
+
+						const keywords = await resolveReferenceKeywords(repo.fullName, repo.localPath);
+						const referencePath = getReferencePath(repo.fullName);
+						const referenceFile = existsSync(referencePath) ? basename(referencePath) : "";
+						const references = referenceFile
+							? Array.from(new Set([...(existingEntry.references ?? []), referenceFile]))
+							: existingEntry.references;
+
+						if (referenceFile) {
+							withReferenceCount++;
+						}
+
+						map.repos[repo.qualifiedName] = {
+							...existingEntry,
+							references,
+							primary: referenceFile || existingEntry.primary,
+							keywords,
+							updatedAt: new Date().toISOString(),
+						};
+
+						refreshedCount++;
+					}
+
+					writeGlobalMap(map);
+					refreshSpinner.stop(
+						`Refreshed ${refreshedCount} map entries (${withReferenceCount} with references)`,
+					);
+				}
 			}
 		}
 	}

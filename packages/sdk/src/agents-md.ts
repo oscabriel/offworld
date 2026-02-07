@@ -17,29 +17,18 @@ export interface InstalledReference {
 }
 
 /**
- * Generate markdown table for project references section.
+ * Generate single-line project reference guidance.
  *
- * @param references - Array of installed references
- * @returns Markdown string with table
+ * @param _references - Installed references (unused; reserved for future context)
+ * @returns Markdown string with one-line guidance
  */
-function generateReferencesTable(references: InstalledReference[]): string {
+function generateReferencesTable(_references: InstalledReference[]): string {
 	const lines = [
 		"## Project References",
 		"",
-		"References installed for this project's dependencies:",
+		"Use the Offworld CLI to find and read directly from local codebases for any repo in `.offworld/map.json` whenever the user asks about a specific open source project.",
 		"",
-		"| Dependency | Reference | Path |",
-		"| --- | --- | --- |",
 	];
-
-	for (const reference of references) {
-		lines.push(`| ${reference.dependency} | ${reference.reference} | ${reference.path} |`);
-	}
-
-	lines.push("");
-	lines.push("To update references: `ow pull <dependency>`");
-	lines.push("To regenerate all: `ow project init --all --generate`");
-	lines.push("");
 
 	return lines.join("\n");
 }

@@ -3,7 +3,8 @@
  */
 
 import { readGlobalMap } from "@offworld/sdk/internal";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 export interface RepoListItem {
 	fullName: string;
@@ -62,4 +63,65 @@ export async function entryToListItem(qualifiedName: string): Promise<RepoListIt
 		commitSha: undefined, // Map doesn't store commitSha yet
 		exists,
 	};
+}
+
+function normalizeKeywords(values: string[]): string[] {
+	const seen = new Set<string>();
+	for (const value of values) {
+		const normalized = value.trim().toLowerCase();
+		if (normalized.length < 2) continue;
+		seen.add(normalized);
+	}
+	return Array.from(seen);
+}
+
+function deriveMinimalKeywords(fullName: string): string[] {
+	const normalized = fullName.trim().toLowerCase();
+	if (!normalized) return [];
+	const repoName = normalized.split("/").pop() ?? normalized;
+	return normalizeKeywords([normalized, repoName]);
+}
+
+function readPackageName(repoPath: string): string | null {
+	const packageJsonPath = join(repoPath, "package.json");
+	if (!existsSync(packageJsonPath)) return null;
+
+	try {
+		const content = readFileSync(packageJsonPath, "utf-8");
+		const json = JSON.parse(content) as { name?: unknown };
+		return typeof json.name === "string" ? json.name : null;
+	} catch {
+		return null;
+	}
+}
+
+async function fetchNpmKeywords(packageName: string): Promise<string[]> {
+	try {
+		const response = await fetch(`https://registry.npmjs.org/${packageName}`);
+		if (!response.ok) return [];
+
+		const json = (await response.json()) as { keywords?: unknown };
+		if (!Array.isArray(json.keywords)) return [];
+
+		return normalizeKeywords(
+			json.keywords.filter((value): value is string => typeof value === "string"),
+		);
+	} catch {
+		return [];
+	}
+}
+
+export async function resolveReferenceKeywordsForRepo(
+	repoPath: string,
+	fullName: string,
+): Promise<string[]> {
+	const packageName = readPackageName(repoPath);
+	if (!packageName) return deriveMinimalKeywords(fullName);
+
+	const npmKeywords = await fetchNpmKeywords(packageName);
+	if (npmKeywords.length > 0) {
+		return normalizeKeywords([packageName, ...npmKeywords]);
+	}
+
+	return normalizeKeywords([packageName]);
 }

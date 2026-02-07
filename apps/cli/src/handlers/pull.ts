@@ -27,6 +27,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createSpinner } from "../utils/spinner";
+import { resolveReferenceKeywordsForRepo } from "./shared";
 
 export interface PullOptions {
 	repo: string;
@@ -107,16 +108,17 @@ function hasValidCache(source: RepoSource, currentSha: string): boolean {
  * Save remote reference to local filesystem.
  * Remote reference comes with pre-generated reference content.
  */
-function saveRemoteReference(
+async function saveRemoteReference(
 	qualifiedName: string,
 	referenceRepoName: string,
 	localPath: string,
 	referenceContent: string,
 	commitSha: string,
 	referenceUpdatedAt: string,
-): void {
+): Promise<void> {
 	const meta = { referenceUpdatedAt, commitSha, version: "0.1.0" };
-	installReference(qualifiedName, referenceRepoName, localPath, referenceContent, meta);
+	const keywords = await resolveReferenceKeywordsForRepo(localPath, referenceRepoName);
+	installReference(qualifiedName, referenceRepoName, localPath, referenceContent, meta, keywords);
 }
 
 function parseModelFlag(model?: string): { provider?: string; model?: string } {
@@ -309,7 +311,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 							if (remoteReference) {
 								s.stop("Downloaded remote reference");
 
-								saveRemoteReference(
+								await saveRemoteReference(
 									source.qualifiedName,
 									source.fullName,
 									repoPath,
@@ -398,8 +400,16 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const referenceUpdatedAt = new Date().toISOString();
 			const meta = { referenceUpdatedAt, commitSha: referenceCommitSha, version: "0.1.0" };
 			const referenceRepoName = source.type === "remote" ? source.fullName : source.name;
+			const keywords = await resolveReferenceKeywordsForRepo(repoPath, referenceRepoName);
 
-			installReference(source.qualifiedName, referenceRepoName, repoPath, referenceContent, meta);
+			installReference(
+				source.qualifiedName,
+				referenceRepoName,
+				repoPath,
+				referenceContent,
+				meta,
+				keywords,
+			);
 
 			const referenceFileName = toReferenceFileName(qualifiedName);
 			const referencePath = join(Paths.offworldReferencesDir, referenceFileName);

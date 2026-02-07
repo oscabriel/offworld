@@ -46,11 +46,10 @@ function parseGitHubUrl(url: string): string | null {
 	return null;
 }
 
-/**
- * Fallback to npm registry to extract repository.url.
- * Returns null if package not found, no repo field, or not a GitHub repo.
- */
-export async function resolveFromNpm(packageName: string): Promise<string | null> {
+async function fetchNpmPackage(packageName: string): Promise<{
+	repository?: string | { url?: string };
+	keywords?: string[];
+} | null> {
 	try {
 		const res = await fetch(`https://registry.npmjs.org/${packageName}`);
 		if (!res.ok) return null;
@@ -59,13 +58,38 @@ export async function resolveFromNpm(packageName: string): Promise<string | null
 		const result = NpmPackageResponseSchema.safeParse(json);
 		if (!result.success) return null;
 
-		const repoUrl = result.data.repository?.url;
-		if (!repoUrl) return null;
-
-		return parseGitHubUrl(repoUrl);
+		return result.data;
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * Fallback to npm registry to extract repository.url.
+ * Returns null if package not found, no repo field, or not a GitHub repo.
+ */
+export async function resolveFromNpm(packageName: string): Promise<string | null> {
+	const pkg = await fetchNpmPackage(packageName);
+	if (!pkg?.repository) return null;
+
+	const repoUrl = typeof pkg.repository === "string" ? pkg.repository : pkg.repository.url;
+	if (!repoUrl) return null;
+
+	return parseGitHubUrl(repoUrl);
+}
+
+export async function getNpmKeywords(packageName: string): Promise<string[]> {
+	const pkg = await fetchNpmPackage(packageName);
+	if (!pkg?.keywords || pkg.keywords.length === 0) return [];
+
+	const seen = new Set<string>();
+	for (const keyword of pkg.keywords) {
+		const normalized = keyword.trim().toLowerCase();
+		if (normalized.length < 2) continue;
+		seen.add(normalized);
+	}
+
+	return Array.from(seen);
 }
 
 /**

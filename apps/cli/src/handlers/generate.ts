@@ -11,6 +11,7 @@ import {
 import { checkRemote } from "@offworld/sdk/sync";
 import { generateReferenceWithAI } from "@offworld/sdk/ai";
 import { createSpinner } from "../utils/spinner";
+import { resolveReferenceKeywordsForRepo } from "./shared";
 
 export interface GenerateOptions {
 	repo: string;
@@ -95,10 +96,11 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 		const { referenceContent, commitSha } = result;
 		const referenceUpdatedAt = new Date().toISOString();
 		const meta = { referenceUpdatedAt, commitSha, version: "0.1.0" };
+		const keywords = await resolveReferenceKeywordsForRepo(repoPath, referenceRepoName);
 
 		const referencePath = getReferencePath(referenceRepoName);
 
-		installReference(qualifiedName, referenceRepoName, repoPath, referenceContent, meta);
+		installReference(qualifiedName, referenceRepoName, repoPath, referenceContent, meta, keywords);
 
 		p.log.success(`Reference saved to: ${referencePath}`);
 		p.log.info(`Reference installed for: ${qualifiedName}`);

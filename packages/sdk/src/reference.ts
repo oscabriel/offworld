@@ -14,10 +14,10 @@ import { loadConfig, toMetaDirName, toReferenceFileName } from "./config.js";
 import { agents } from "./agents.js";
 import { expandTilde, Paths } from "./paths.js";
 import { readGlobalMap, writeGlobalMap } from "./index-manager.js";
+import { getNpmKeywords } from "./dep-mappings.js";
 
-const PackageJsonKeywordsSchema = z.object({
+const PackageJsonNameSchema = z.object({
 	name: z.string().optional(),
-	keywords: z.array(z.string()).optional(),
 });
 
 export interface InstallReferenceMeta {
@@ -29,71 +29,59 @@ export interface InstallReferenceMeta {
 	version: string;
 }
 
-function normalizeKeyword(value: string): string[] {
-	const trimmed = value.trim();
-	if (!trimmed) return [];
-	const normalized = trimmed.toLowerCase();
-	const tokens = new Set<string>();
-
-	const addToken = (token: string): void => {
-		const cleaned = token.trim().toLowerCase();
-		if (cleaned.length < 2) return;
-		tokens.add(cleaned);
-	};
-
-	addToken(normalized);
-	addToken(normalized.replaceAll("/", "-"));
-	addToken(normalized.replaceAll("/", ""));
-
-	for (const token of normalized.split(/[\s/_-]+/)) {
-		addToken(token);
+function normalizeKeywords(values: string[]): string[] {
+	const seen = new Set<string>();
+	for (const value of values) {
+		const normalized = value.trim().toLowerCase();
+		if (normalized.length < 2) continue;
+		seen.add(normalized);
 	}
-
-	if (normalized.startsWith("@")) {
-		addToken(normalized.slice(1));
-	}
-
-	return Array.from(tokens);
+	return Array.from(seen);
 }
 
-function deriveKeywords(fullName: string, localPath: string, referenceContent: string): string[] {
-	const keywords = new Set<string>();
+function deriveMinimalKeywords(fullName: string): string[] {
+	const normalized = fullName.trim().toLowerCase();
+	if (!normalized) return [];
 
-	const addKeywords = (value: string): void => {
-		for (const token of normalizeKeyword(value)) {
-			keywords.add(token);
-		}
-	};
+	const repoName = normalized.split("/").pop() ?? normalized;
+	return normalizeKeywords([normalized, repoName]);
+}
 
-	addKeywords(fullName);
-
-	const headingMatch = referenceContent.match(/^#\s+(.+)$/m);
-	if (headingMatch?.[1]) {
-		addKeywords(headingMatch[1]);
-	}
-
+function getPackageName(localPath: string): string | null {
 	const packageJsonPath = join(localPath, "package.json");
-	if (existsSync(packageJsonPath)) {
-		try {
-			const content = readFileSync(packageJsonPath, "utf-8");
-			const json = JSON.parse(content);
-			const parsed = PackageJsonKeywordsSchema.safeParse(json);
+	if (!existsSync(packageJsonPath)) return null;
 
-			if (parsed.success) {
-				if (parsed.data.name) {
-					addKeywords(parsed.data.name);
-				}
+	try {
+		const content = readFileSync(packageJsonPath, "utf-8");
+		const json = JSON.parse(content);
+		const parsed = PackageJsonNameSchema.safeParse(json);
+		if (!parsed.success || !parsed.data.name) return null;
+		return parsed.data.name;
+	} catch {
+		return null;
+	}
+}
 
-				if (parsed.data.keywords) {
-					for (const keyword of parsed.data.keywords) {
-						addKeywords(keyword);
-					}
-				}
-			}
-		} catch {}
+/**
+ * Resolve keywords with npm-first strategy.
+ * - npm package: package name + npm keywords
+ * - non-npm package: minimal repo-derived keywords
+ */
+export async function resolveReferenceKeywords(
+	fullName: string,
+	localPath: string,
+): Promise<string[]> {
+	const packageName = getPackageName(localPath);
+	if (!packageName) {
+		return deriveMinimalKeywords(fullName);
 	}
 
-	return Array.from(keywords);
+	const npmKeywords = await getNpmKeywords(packageName);
+	if (npmKeywords.length > 0) {
+		return normalizeKeywords([packageName, ...npmKeywords]);
+	}
+
+	return normalizeKeywords([packageName]);
 }
 
 /**
@@ -142,33 +130,9 @@ Use \`ow\` to locate and read Offworld reference files for dependencies.
 - You want the verified reference instead of web search
 - You are about to work inside a repo clone
 
-## Prerequisites
+## Installation and Setup
 
-Check that the CLI is available:
-
-\`\`\`bash
-ow --version
-\`\`\`
-
-If \`ow\` is not available, install it:
-
-\`\`\`bash
-curl -fsSL https://offworld.sh/install | bash
-\`\`\`
-
-## Setup
-
-Initialize Offworld once per machine:
-
-\`\`\`bash
-ow init
-\`\`\`
-
-For a specific project, build a project map:
-
-\`\`\`bash
-ow project init
-\`\`\`
+If Offworld CLI or opencode is missing, read \`references/installation.md\` in this skill directory and follow it.
 
 ## Usage
 
@@ -214,6 +178,60 @@ ow project init         # scan project deps, install references
 - Docs: https://offworld.sh/cli
 `;
 
+const INSTALLATION_REFERENCE_TEMPLATE = `# Offworld Installation
+
+Use this when Offworld CLI or opencode is not installed.
+
+## 1) Check opencode
+
+\`\`\`bash
+opencode --version
+\`\`\`
+
+If missing:
+
+\`\`\`bash
+curl -fsSL https://opencode.ai/install | bash
+\`\`\`
+
+## 2) Check Offworld CLI
+
+\`\`\`bash
+ow --version
+\`\`\`
+
+If missing:
+
+\`\`\`bash
+curl -fsSL https://offworld.sh/install | bash
+\`\`\`
+
+## 3) Initialize Offworld (non-interactive)
+
+\`\`\`bash
+ow init --yes --agents "<agent-list>" --repo-root "<clone-dir>" --model "<provider/model>"
+\`\`\`
+
+Example:
+
+\`\`\`bash
+ow init --yes --agents "opencode,codex" --repo-root "~/ow" --model "anthropic/claude-sonnet-4-20250514"
+\`\`\`
+
+## 4) Initialize current project
+
+\`\`\`bash
+ow project init --yes --all --generate
+\`\`\`
+
+## 5) Verify
+
+\`\`\`bash
+ow config show
+ow list
+\`\`\`
+`;
+
 /**
  * Ensures the global SKILL.md exists and symlinks the offworld/ directory to all agent skill directories.
  *
@@ -233,6 +251,11 @@ export function installGlobalSkill(): void {
 	const skillPath = join(Paths.offworldSkillDir, "SKILL.md");
 	if (!existsSync(skillPath)) {
 		writeFileSync(skillPath, GLOBAL_SKILL_TEMPLATE, "utf-8");
+	}
+
+	const installationReferencePath = join(Paths.offworldReferencesDir, "installation.md");
+	if (!existsSync(installationReferencePath)) {
+		writeFileSync(installationReferencePath, INSTALLATION_REFERENCE_TEMPLATE, "utf-8");
 	}
 
 	const configuredAgents = config.agents ?? [];
@@ -299,18 +322,14 @@ export function installReference(
 		references.push(referenceFileName);
 	}
 
-	const derivedKeywords = keywords ?? deriveKeywords(fullName, localPath, referenceContent);
-	const keywordsSet = new Set<string>([
-		...(existingEntry?.keywords ?? []),
-		...(legacyEntry?.keywords ?? []),
-		...derivedKeywords,
-	]);
+	const derivedKeywords =
+		keywords && keywords.length > 0 ? keywords : deriveMinimalKeywords(fullName);
 
 	map.repos[qualifiedName] = {
 		localPath,
 		references,
 		primary: referenceFileName,
-		keywords: Array.from(keywordsSet),
+		keywords: normalizeKeywords(derivedKeywords),
 		updatedAt: new Date().toISOString(),
 	};
 

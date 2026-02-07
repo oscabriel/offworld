@@ -93,7 +93,12 @@ export {
 	type AuthStatus,
 } from "./auth.js";
 
-export { installGlobalSkill, installReference, type InstallReferenceMeta } from "./reference.js";
+export {
+	installGlobalSkill,
+	installReference,
+	resolveReferenceKeywords,
+	type InstallReferenceMeta,
+} from "./reference.js";
 
 export {
 	agents,
@@ -113,6 +118,7 @@ export {
 export {
 	FALLBACK_MAPPINGS,
 	resolveFromNpm,
+	getNpmKeywords,
 	resolveDependencyRepo,
 	type ResolvedDep,
 } from "./dep-mappings.js";

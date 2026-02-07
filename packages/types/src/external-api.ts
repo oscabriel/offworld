@@ -71,10 +71,14 @@ export const WorkOSAuthErrorResponseSchema = z.object({
 export const NpmPackageResponseSchema = z.object({
 	version: z.string().optional(),
 	repository: z
-		.object({
-			url: z.string().optional(),
-		})
+		.union([
+			z.string(),
+			z.object({
+				url: z.string().optional(),
+			}),
+		])
 		.optional(),
+	keywords: z.array(z.string()).optional(),
 });
 
 export const ModelsDevModelSchema = z.object({

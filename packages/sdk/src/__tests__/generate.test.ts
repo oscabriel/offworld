@@ -214,12 +214,12 @@ describe("installReference", () => {
 			expect.objectContaining({
 				localPath: "/home/user/ow/tanstack/router",
 				primary: "tanstack-router.md",
-				keywords: expect.arrayContaining(["tanstack/router", "tanstack", "router"]),
+				keywords: ["tanstack/router", "router"],
 			}),
 		);
 	});
 
-	it("derives keywords from repo name and content", () => {
+	it("derives minimal keywords from repo name", () => {
 		installReference(
 			"github.com:colinhacks/zod",
 			"colinhacks/zod",
@@ -235,12 +235,12 @@ describe("installReference", () => {
 		const entry = globalMapState.repos["github.com:colinhacks/zod"];
 		expect(entry).toEqual(
 			expect.objectContaining({
-				keywords: expect.arrayContaining(["colinhacks/zod", "colinhacks-zod", "zod"]),
+				keywords: ["colinhacks/zod", "zod"],
 			}),
 		);
 	});
 
-	it("merges keywords from existing entry when updating", () => {
+	it("replaces keywords with minimal set when updating", () => {
 		globalMapState.repos["github.com:tanstack/router"] = {
 			localPath: "/old/path",
 			references: ["old-reference.md"],
@@ -265,7 +265,7 @@ describe("installReference", () => {
 		expect(entry).toEqual(
 			expect.objectContaining({
 				localPath: "/new/path",
-				keywords: expect.arrayContaining(["old-keyword", "tanstack", "router"]),
+				keywords: ["tanstack/router", "router"],
 			}),
 		);
 	});
@@ -290,7 +290,7 @@ describe("installReference", () => {
 		expect(updatedEntry).toEqual(
 			expect.objectContaining({
 				localPath: "/new/path",
-				keywords: expect.arrayContaining(["legacy"]),
+				keywords: ["tanstack/router", "router"],
 			}),
 		);
 

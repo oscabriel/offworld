@@ -1,8 +1,9 @@
 /**
  * Dependency name to GitHub repo resolution:
- * 1. Query npm registry for repository.url
- * 2. Fall back to FALLBACK_MAPPINGS for packages missing repository field
- * 3. Return unknown (caller handles)
+ * 1. Parse repo from dependency spec (git/https/github shorthand)
+ * 2. Query npm registry for repository.url
+ * 3. Fall back to FALLBACK_MAPPINGS for packages missing repository field
+ * 4. Return unknown (caller handles)
  */
 
 import { NpmPackageResponseSchema } from "@offworld/types";
@@ -10,8 +11,15 @@ import { NpmPackageResponseSchema } from "@offworld/types";
 export type ResolvedDep = {
 	dep: string;
 	repo: string | null;
-	source: "npm" | "fallback" | "unknown";
+	source: "spec" | "npm" | "fallback" | "unknown";
 };
+
+export interface ResolveDependencyRepoOptions {
+	allowNpm?: boolean;
+	npmTimeoutMs?: number;
+}
+
+const DEFAULT_NPM_FETCH_TIMEOUT_MS = 5000;
 
 /**
  * Fallback mappings for packages where npm registry doesn't have repository.url.
@@ -28,30 +36,72 @@ export const FALLBACK_MAPPINGS: Record<string, string> = {
  * - git+https://github.com/owner/repo.git
  * - https://github.com/owner/repo
  * - git://github.com/owner/repo.git
+ * - https://github.com/owner/repo/tree/main
+ * - git@github.com:owner/repo.git
  * - github:owner/repo
  */
 function parseGitHubUrl(url: string): string | null {
+	const cleaned = url
+		.trim()
+		.replace(/^git\+/, "")
+		.split("#")[0]
+		?.split("?")[0]
+		?.trim();
+
+	if (!cleaned) return null;
+
 	const patterns = [
-		/github\.com[/:]([\w-]+)\/([\w.-]+?)(?:\.git)?$/,
-		/^github:([\w-]+)\/([\w.-]+)$/,
+		/github\.com[/:]([\w.-]+)\/([\w.-]+)(?:\.git)?(?:[/?#].*)?$/,
+		/^github:([\w.-]+)\/([\w.-]+)(?:[/?#].*)?$/,
 	];
 
 	for (const pattern of patterns) {
-		const match = url.match(pattern);
+		const match = cleaned.match(pattern);
 		if (match) {
-			return `${match[1]}/${match[2]}`;
+			const owner = match[1];
+			const repo = match[2]?.replace(/\.git$/i, "");
+			if (!owner || !repo) return null;
+			return `${owner}/${repo}`;
 		}
 	}
 
 	return null;
 }
 
-async function fetchNpmPackage(packageName: string): Promise<{
+function resolveFromSpec(spec?: string): string | null {
+	if (!spec) return null;
+
+	const trimmed = spec.trim();
+	if (!trimmed) return null;
+
+	const isGitSpec =
+		trimmed.startsWith("github:") ||
+		trimmed.startsWith("git+") ||
+		trimmed.startsWith("git://") ||
+		trimmed.startsWith("https://") ||
+		trimmed.startsWith("http://") ||
+		trimmed.startsWith("ssh://") ||
+		trimmed.startsWith("git@");
+
+	if (!isGitSpec) return null;
+
+	return parseGitHubUrl(trimmed);
+}
+
+async function fetchNpmPackage(
+	packageName: string,
+	timeoutMs = DEFAULT_NPM_FETCH_TIMEOUT_MS,
+): Promise<{
 	repository?: string | { url?: string };
 	keywords?: string[];
 } | null> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
 	try {
-		const res = await fetch(`https://registry.npmjs.org/${packageName}`);
+		const res = await fetch(`https://registry.npmjs.org/${packageName}`, {
+			signal: controller.signal,
+		});
 		if (!res.ok) return null;
 
 		const json = await res.json();
@@ -61,6 +111,8 @@ async function fetchNpmPackage(packageName: string): Promise<{
 		return result.data;
 	} catch {
 		return null;
+	} finally {
+		clearTimeout(timeoutId);
 	}
 }
 
@@ -68,8 +120,8 @@ async function fetchNpmPackage(packageName: string): Promise<{
  * Fallback to npm registry to extract repository.url.
  * Returns null if package not found, no repo field, or not a GitHub repo.
  */
-export async function resolveFromNpm(packageName: string): Promise<string | null> {
-	const pkg = await fetchNpmPackage(packageName);
+export async function resolveFromNpm(packageName: string, timeoutMs?: number): Promise<string | null> {
+	const pkg = await fetchNpmPackage(packageName, timeoutMs);
 	if (!pkg?.repository) return null;
 
 	const repoUrl = typeof pkg.repository === "string" ? pkg.repository : pkg.repository.url;
@@ -94,18 +146,32 @@ export async function getNpmKeywords(packageName: string): Promise<string[]> {
 
 /**
  * Resolution order:
- * 1. Query npm registry for repository.url
- * 2. Check FALLBACK_MAPPINGS for packages missing repository field
- * 3. Return unknown
+ * 1. Parse repo from dependency spec (git/https/github shorthand)
+ * 2. Query npm registry for repository.url
+ * 3. Check FALLBACK_MAPPINGS for packages missing repository field
+ * 4. Return unknown
  */
-export async function resolveDependencyRepo(dep: string): Promise<ResolvedDep> {
-	const npmRepo = await resolveFromNpm(dep);
-	if (npmRepo) {
-		return { dep, repo: npmRepo, source: "npm" };
+export async function resolveDependencyRepo(
+	dep: string,
+	spec?: string,
+	options: ResolveDependencyRepoOptions = {},
+): Promise<ResolvedDep> {
+	const { allowNpm = true, npmTimeoutMs } = options;
+
+	const specRepo = resolveFromSpec(spec);
+	if (specRepo) {
+		return { dep, repo: specRepo, source: "spec" };
 	}
 
-	if (dep in FALLBACK_MAPPINGS) {
-		return { dep, repo: FALLBACK_MAPPINGS[dep] ?? null, source: "fallback" };
+	if (allowNpm) {
+		const npmRepo = await resolveFromNpm(dep, npmTimeoutMs);
+		if (npmRepo) {
+			return { dep, repo: npmRepo, source: "npm" };
+		}
+
+		if (dep in FALLBACK_MAPPINGS) {
+			return { dep, repo: FALLBACK_MAPPINGS[dep] ?? null, source: "fallback" };
+		}
 	}
 
 	return { dep, repo: null, source: "unknown" };

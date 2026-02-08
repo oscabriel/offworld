@@ -19,8 +19,8 @@ export interface ReferenceMatch {
 	repo: string | null;
 	/** Reference availability status */
 	status: ReferenceStatus;
-	/** Resolution source: 'npm' | 'fallback' | 'unknown' */
-	source: "npm" | "fallback" | "unknown";
+	/** Resolution source: 'spec' | 'npm' | 'fallback' | 'unknown' */
+	source: "spec" | "npm" | "fallback" | "unknown";
 }
 
 /**
@@ -94,48 +94,50 @@ export async function matchDependenciesToReferencesWithRemoteCheck(
 	resolvedDeps: ResolvedDep[],
 ): Promise<ReferenceMatch[]> {
 	const { checkRemote } = await import("./sync.js");
-	const results = await Promise.all(
-		resolvedDeps.map(async (dep) => {
-			if (!dep.repo) {
-				return {
-					dep: dep.dep,
-					repo: null,
-					status: "unknown" as const,
-					source: dep.source,
-				};
-			}
+	const repoStatus = new Map<string, ReferenceStatus>();
 
-			if (isReferenceInstalled(dep.repo)) {
-				return {
-					dep: dep.dep,
-					repo: dep.repo,
-					status: "installed" as const,
-					source: dep.source,
-				};
-			}
+	const remoteChecks: Promise<void>[] = [];
+	for (const dep of resolvedDeps) {
+		if (!dep.repo || repoStatus.has(dep.repo)) continue;
 
-			try {
-				const remote = await checkRemote(dep.repo);
-				if (remote.exists) {
-					return {
-						dep: dep.dep,
-						repo: dep.repo,
-						status: "remote" as const,
-						source: dep.source,
-					};
+		if (isReferenceInstalled(dep.repo)) {
+			repoStatus.set(dep.repo, "installed");
+			continue;
+		}
+
+		repoStatus.set(dep.repo, "generate");
+		remoteChecks.push(
+			(async () => {
+				try {
+					const remote = await checkRemote(dep.repo!);
+					if (remote.exists) {
+						repoStatus.set(dep.repo!, "remote");
+					}
+				} catch {
+					// Network error - keep generate status
 				}
-			} catch {
-				// Network error - fall through to generate
-			}
+			})(),
+		);
+	}
 
+	await Promise.all(remoteChecks);
+
+	return resolvedDeps.map((dep) => {
+		if (!dep.repo) {
 			return {
 				dep: dep.dep,
-				repo: dep.repo,
-				status: "generate" as const,
+				repo: null,
+				status: "unknown" as const,
 				source: dep.source,
 			};
-		}),
-	);
+		}
 
-	return results;
+		const status = repoStatus.get(dep.repo) ?? "generate";
+		return {
+			dep: dep.dep,
+			repo: dep.repo,
+			status,
+			source: dep.source,
+		};
+	});
 }

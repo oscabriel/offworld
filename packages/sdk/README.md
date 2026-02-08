@@ -106,7 +106,7 @@ import {
 } from "@offworld/sdk";
 
 const deps = parseDependencies("package.json");
-const repo = await resolveDependencyRepo("zod");
+const repo = await resolveDependencyRepo("zod", "^3.0.0");
 const matches = matchDependenciesToReferences(deps);
 ```
 

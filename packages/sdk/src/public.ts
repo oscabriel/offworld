@@ -120,6 +120,7 @@ export {
 	resolveFromNpm,
 	getNpmKeywords,
 	resolveDependencyRepo,
+	type ResolveDependencyRepoOptions,
 	type ResolvedDep,
 } from "./dep-mappings.js";
 

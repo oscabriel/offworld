@@ -40,6 +40,45 @@ export interface ProjectInitResult {
 	referencesInstalled?: number;
 }
 
+export function isInternalDependencyVersion(version?: string): boolean {
+	if (!version) return false;
+	const trimmed = version.trim();
+	if (!trimmed) return false;
+
+	const isPathReference =
+		trimmed.startsWith("./") ||
+		trimmed.startsWith("../") ||
+		trimmed.startsWith("/") ||
+		trimmed.startsWith("~/") ||
+		trimmed.startsWith("~\\");
+
+	return (
+		trimmed.startsWith("workspace:") ||
+		trimmed.startsWith("file:") ||
+		trimmed.startsWith("link:") ||
+		trimmed.startsWith("portal:") ||
+		isPathReference
+	);
+}
+
+function dedupeMatchesByRepo(matches: ReferenceMatch[]): ReferenceMatch[] {
+	const seenRepos = new Set<string>();
+	const deduped: ReferenceMatch[] = [];
+
+	for (const match of matches) {
+		if (!match.repo) {
+			deduped.push(match);
+			continue;
+		}
+
+		if (seenRepos.has(match.repo)) continue;
+		seenRepos.add(match.repo);
+		deduped.push(match);
+	}
+
+	return deduped;
+}
+
 function detectProjectRoot(): string | null {
 	let currentDir = process.cwd();
 	while (currentDir !== homedir()) {
@@ -117,19 +156,9 @@ export async function projectInitHandler(
 	}
 
 	p.log.step("Resolving GitHub repositories...");
-	const isInternalDep = (version?: string): boolean => {
-		if (!version) return false;
-		return (
-			version.startsWith("workspace:") ||
-			version.startsWith("catalog:") ||
-			version.startsWith("file:") ||
-			version.startsWith("link:")
-		);
-	};
+	const externalDeps = dependencies.filter((dep) => !isInternalDependencyVersion(dep.version));
 
-	const externalDeps = dependencies.filter((dep) => !isInternalDep(dep.version));
-
-	const resolvedPromises = externalDeps.map((dep) => resolveDependencyRepo(dep.name));
+	const resolvedPromises = externalDeps.map((dep) => resolveDependencyRepo(dep.name, dep.version));
 	const resolved = await Promise.all(resolvedPromises);
 
 	const skipList = options.skip ? options.skip.split(",").map((d) => d.trim()) : [];
@@ -233,6 +262,13 @@ export async function projectInitHandler(
 		selected = Array.isArray(selectedResult) ? selectedResult : [];
 	}
 
+	const dedupedSelected = dedupeMatchesByRepo(selected);
+	if (dedupedSelected.length !== selected.length) {
+		const dedupeCount = selected.length - dedupedSelected.length;
+		p.log.info(`Deduped ${dedupeCount} duplicate dependencies that map to the same repository.`);
+	}
+	selected = dedupedSelected;
+
 	if (selected.length === 0) {
 		p.log.warn("No dependencies selected.");
 		p.outro("");
@@ -261,6 +297,7 @@ export async function projectInitHandler(
 	}
 
 	const installed: InstalledReference[] = [];
+	const successfulMatches: ReferenceMatch[] = [];
 	let failedCount = 0;
 	const total = selected.length;
 
@@ -288,6 +325,7 @@ export async function projectInitHandler(
 
 			if (pullResult.success && pullResult.referenceInstalled) {
 				const referencePath = getReferencePath(repo);
+				successfulMatches.push(match);
 				installed.push({
 					dependency: match.dep,
 					reference: toReferenceFileName(repo),
@@ -306,24 +344,33 @@ export async function projectInitHandler(
 		}
 	}
 
-	const map = readGlobalMap();
-	const projectEntries = Object.fromEntries(
-		selected
-			.filter((m) => m.repo)
-			.map((m) => {
-				const qualifiedName = `github.com:${m.repo}`;
+	if (successfulMatches.length > 0) {
+		const map = readGlobalMap();
+		const successfulRepos = new Map<string, ReferenceMatch>();
+		for (const match of successfulMatches) {
+			if (!match.repo || successfulRepos.has(match.repo)) continue;
+			successfulRepos.set(match.repo, match);
+		}
+
+		const projectEntries = Object.fromEntries(
+			Array.from(successfulRepos.values()).map((match) => {
+				const qualifiedName = `github.com:${match.repo}`;
 				const entry = map.repos[qualifiedName];
 				return [
 					qualifiedName,
 					{
 						localPath: entry?.localPath ?? "",
-						reference: toReferenceFileName(m.repo!),
+						reference: toReferenceFileName(match.repo!),
 						keywords: entry?.keywords ?? [],
 					},
 				];
 			}),
-	);
-	writeProjectMap(projectRoot, projectEntries);
+		);
+
+		writeProjectMap(projectRoot, projectEntries);
+	} else {
+		p.log.warn("No references were installed. Project map was not updated.");
+	}
 
 	if (installed.length > 0) {
 		try {

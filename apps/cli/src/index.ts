@@ -41,11 +41,6 @@ export const router = os.router({
 					.optional()
 					.describe("Reference name to pull (defaults to owner-repo)")
 					.meta({ alias: "r" }),
-				shallow: z
-					.boolean()
-					.default(false)
-					.describe("Use shallow clone (--depth 1)")
-					.meta({ negativeAlias: "full-history" }),
 				sparse: z
 					.boolean()
 					.default(false)
@@ -68,7 +63,6 @@ export const router = os.router({
 			await pullHandler({
 				repo: input.repo,
 				reference: input.reference,
-				shallow: input.shallow,
 				sparse: input.sparse,
 				branch: input.branch,
 				force: input.force,
@@ -213,10 +207,11 @@ export const router = os.router({
 				description: `Set a config value
 
 Valid keys:
-  repoRoot        (string)  Where to clone repos (e.g., ~/ow)
-  defaultShallow  (boolean) Use shallow clone by default (true/false)
-  defaultModel    (string)  AI provider/model (e.g., anthropic/claude-sonnet-4-20250514)
-  agents          (list)    Comma-separated agents (e.g., claude-code,opencode)`,
+  repoRoot             (string)  Where to clone repos (e.g., ~/ow)
+  defaultModel         (string)  AI provider/model (e.g., anthropic/claude-sonnet-4-20250514)
+  maxCommitDistance     (number)  Max commit distance to accept remote references (default: 20)
+  acceptUnknownDistance (boolean) Accept remote refs when distance is unknown (default: false)
+  agents               (list)    Comma-separated agents (e.g., claude-code,opencode)`,
 			})
 			.handler(async ({ input }) => {
 				await configSetHandler({ key: input.key, value: input.value });
@@ -231,7 +226,7 @@ Valid keys:
 			.meta({
 				description: `Get a config value
 
-Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
+Valid keys: repoRoot, defaultModel, maxCommitDistance, acceptUnknownDistance, agents`,
 			})
 			.handler(async ({ input }) => {
 				await configGetHandler({ key: input.key });
@@ -308,6 +303,13 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 						.describe("Show what would be done without doing it")
 						.meta({ alias: "d" }),
 					yes: z.boolean().default(false).describe("Skip confirmations").meta({ alias: "y" }),
+					concurrency: z
+						.number()
+						.int()
+						.min(1)
+						.default(4)
+						.describe("Max parallel installs for remote/installed refs (min: 1)")
+						.meta({ alias: "c" }),
 				}),
 			)
 			.meta({
@@ -322,6 +324,7 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 					generate: input.generate,
 					dryRun: input.dryRun,
 					yes: input.yes,
+					concurrency: input.concurrency,
 				});
 			}),
 	}),
@@ -401,7 +404,6 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 						.default(false)
 						.describe("Show what would be updated")
 						.meta({ alias: "d" }),
-					unshallow: z.boolean().default(false).describe("Convert shallow clones to full clones"),
 				}),
 			)
 			.meta({ description: "Update repos (git fetch + pull)" })
@@ -410,7 +412,6 @@ Valid keys: repoRoot, defaultShallow, defaultModel, agents`,
 					all: input.all,
 					pattern: input.pattern,
 					dryRun: input.dryRun,
-					unshallow: input.unshallow,
 				});
 			}),
 

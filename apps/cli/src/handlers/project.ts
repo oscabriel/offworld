@@ -14,6 +14,7 @@ import {
 	type InstalledReference,
 	type ReferenceMatch,
 } from "@offworld/sdk/internal";
+import { createOpenCodeContext, type OpenCodeContext } from "@offworld/sdk/ai";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
@@ -32,6 +33,8 @@ export interface ProjectInitOptions {
 	dryRun?: boolean;
 	/** Skip confirmations */
 	yes?: boolean;
+	/** Max parallel installs for remote/installed refs */
+	concurrency?: number;
 }
 
 export interface ProjectInitResult {
@@ -113,6 +116,29 @@ function showBanner(): void {
 		console.log(`${OLIVE}${line}${RESET}`);
 	}
 	console.log();
+}
+
+async function runWithConcurrency<T>(
+	tasks: (() => Promise<T>)[],
+	concurrency: number,
+): Promise<T[]> {
+	if (concurrency < 1) {
+		throw new Error("Concurrency must be at least 1.");
+	}
+
+	const results: T[] = [];
+	let index = 0;
+
+	async function worker(): Promise<void> {
+		while (index < tasks.length) {
+			const i = index++;
+			results[i] = await tasks[i]!();
+		}
+	}
+
+	const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker());
+	await Promise.all(workers);
+	return results;
 }
 
 export async function projectInitHandler(
@@ -208,17 +234,16 @@ export async function projectInitHandler(
 		const statusLabel = (status: string) => {
 			switch (status) {
 				case "installed":
-					return pc.blue("(add to map)"); // Already on machine, just add to project
+					return pc.blue("(add to map)");
 				case "remote":
-					return pc.green("(remote available)"); // Quick download from offworld.sh
+					return pc.green("(remote available)");
 				case "generate":
-					return pc.yellow("(generate)"); // Slow AI generation needed
+					return pc.yellow("(generate)");
 				default:
 					return pc.dim("(not found)");
 			}
 		};
 
-		// Dedupe by repo - group deps that share the same repo
 		const repoGroups = new Map<string, ReferenceMatch[]>();
 		for (const m of matches) {
 			const repo = m.repo ?? "unknown";
@@ -228,16 +253,13 @@ export async function projectInitHandler(
 			repoGroups.get(repo)!.push(m);
 		}
 
-		// Sort repos alphabetically
 		const sortedRepos = [...repoGroups.keys()].sort((a, b) => a.localeCompare(b));
 
 		const checklistOptions = sortedRepos.map((repo) => {
 			const group = repoGroups.get(repo)!;
-			// Use first match as representative (they share the same repo/status)
 			const representative = group[0]!;
 			const status = statusLabel(representative.status);
 			const label = `${repo} ${status}`;
-			// Show all dep names in hint
 			const deps = group.map((m) => m.dep).join(", ");
 			return {
 				value: representative,
@@ -296,34 +318,32 @@ export async function projectInitHandler(
 		return { success: true, message: "Dry run complete" };
 	}
 
+	const requestedConcurrency = options.concurrency ?? 4;
+	const concurrency =
+		Number.isFinite(requestedConcurrency) && requestedConcurrency > 0
+			? Math.max(1, Math.trunc(requestedConcurrency))
+			: 4;
+	const installedGroup = selected.filter((m) => m.status === "installed");
+	const remoteGroup = selected.filter((m) => m.status === "remote");
+	const generateGroup = selected.filter((m) => m.status === "generate");
+	const total = selected.length;
+
 	const installed: InstalledReference[] = [];
 	const successfulMatches: ReferenceMatch[] = [];
 	let failedCount = 0;
-	const total = selected.length;
+	let counter = 0;
 
-	for (let i = 0; i < selected.length; i++) {
-		const match = selected[i]!;
-		if (!match.repo) continue;
+	// --- Phase 1: Installed refs (fast path — no pull, just map + agent files) ---
+	if (installedGroup.length > 0) {
+		p.log.step(`Adding ${pc.blue(installedGroup.length)} already-installed references...`);
 
-		const repo = match.repo;
-		const progress = `[${i + 1}/${total}]`;
-		const prefix = `${progress} ${match.dep}`;
+		const installedTasks = installedGroup.map((match) => async () => {
+			const i = ++counter;
+			const repo = match.repo!;
+			const progress = `[${i}/${total}]`;
+			const prefix = `${progress} ${match.dep}`;
 
-		const spinner = p.spinner();
-		spinner.start(`${prefix}: Starting...`);
-
-		try {
-			const pullResult = await pullHandler({
-				repo,
-				shallow: true,
-				force: options.generate,
-				verbose: false,
-				quiet: true,
-				skipConfirm: true,
-				onProgress: (msg) => spinner.message(`${prefix}: ${msg}`),
-			});
-
-			if (pullResult.success && pullResult.referenceInstalled) {
+			try {
 				const referencePath = getReferencePath(repo);
 				successfulMatches.push(match);
 				installed.push({
@@ -331,17 +351,131 @@ export async function projectInitHandler(
 					reference: toReferenceFileName(repo),
 					path: referencePath,
 				});
-				const source = pullResult.referenceSource === "remote" ? "downloaded" : "generated";
-				spinner.stop(`${prefix} ${pc.green("✓")} ${pc.dim(`(${source})`)}`);
-			} else {
+				p.log.info(`${prefix} ${pc.green("✓")} ${pc.dim("(already installed)")}`);
+				return { match, success: true, source: "installed" as const };
+			} catch (error) {
+				const errMsg = error instanceof Error ? error.message : "Unknown error";
+				p.log.info(`${prefix} ${pc.red("✗")} ${pc.dim(errMsg)}`);
+				failedCount++;
+				return { match, success: false };
+			}
+		});
+
+		await runWithConcurrency(installedTasks, concurrency);
+	}
+
+	// --- Phase 2: Remote refs (download from offworld.sh, bounded parallelism) ---
+	if (remoteGroup.length > 0) {
+		p.log.step(`Downloading ${pc.green(remoteGroup.length)} remote references...`);
+
+		const remoteTasks = remoteGroup.map((match) => async () => {
+			const i = ++counter;
+			const repo = match.repo!;
+			const progress = `[${i}/${total}]`;
+			const prefix = `${progress} ${match.dep}`;
+
+			const spinner = p.spinner();
+			spinner.start(`${prefix}: Downloading...`);
+
+			try {
+				const pullResult = await pullHandler({
+					repo,
+					force: false,
+					verbose: false,
+					allowGenerate: false,
+					quiet: true,
+					skipConfirm: true,
+					skipUpdate: true,
+					onProgress: (msg) => spinner.message(`${prefix}: ${msg}`),
+				});
+
+				if (pullResult.success && pullResult.referenceInstalled) {
+					const referencePath = getReferencePath(repo);
+					successfulMatches.push(match);
+					installed.push({
+						dependency: match.dep,
+						reference: toReferenceFileName(repo),
+						path: referencePath,
+					});
+					const source =
+						pullResult.referenceSource === "remote" ? "downloaded" : pullResult.referenceSource;
+					spinner.stop(`${prefix} ${pc.green("✓")} ${pc.dim(`(${source})`)}`);
+					return { match, success: true, source: "remote" as const };
+				}
 				spinner.stop(`${prefix} ${pc.red("✗")} ${pc.red("failed")}`);
 				failedCount++;
+				return { match, success: false };
+			} catch (error) {
+				const errMsg = error instanceof Error ? error.message : "Unknown error";
+				spinner.stop(`${prefix} ${pc.red("✗")} ${pc.dim(errMsg)}`);
+				failedCount++;
+				return { match, success: false };
 			}
-		} catch (error) {
-			const errMsg = error instanceof Error ? error.message : "Unknown error";
-			spinner.stop(`${prefix} ${pc.red("✗")} ${pc.dim(errMsg)}`);
-			failedCount++;
+		});
+
+		await runWithConcurrency(remoteTasks, concurrency);
+	}
+
+	// --- Phase 3: Generate refs (sequential, shared OpenCode server) ---
+	if (generateGroup.length > 0 && options.generate) {
+		p.log.step(`Generating ${pc.yellow(generateGroup.length)} references with AI...`);
+
+		let openCodeContext: OpenCodeContext | undefined;
+		try {
+			if (generateGroup.length > 1) {
+				p.log.info(pc.dim("Starting shared AI server for batch generation..."));
+				openCodeContext = await createOpenCodeContext({
+					onDebug: () => {},
+				});
+			}
+
+			for (const match of generateGroup) {
+				const i = ++counter;
+				const repo = match.repo!;
+				const progress = `[${i}/${total}]`;
+				const prefix = `${progress} ${match.dep}`;
+
+				const spinner = p.spinner();
+				spinner.start(`${prefix}: Starting...`);
+
+				try {
+					const pullResult = await pullHandler({
+						repo,
+						force: options.generate,
+						verbose: false,
+						quiet: true,
+						skipConfirm: true,
+						openCodeContext,
+						onProgress: (msg) => spinner.message(`${prefix}: ${msg}`),
+					});
+
+					if (pullResult.success && pullResult.referenceInstalled) {
+						const referencePath = getReferencePath(repo);
+						successfulMatches.push(match);
+						installed.push({
+							dependency: match.dep,
+							reference: toReferenceFileName(repo),
+							path: referencePath,
+						});
+						const source = pullResult.referenceSource === "remote" ? "downloaded" : "generated";
+						spinner.stop(`${prefix} ${pc.green("✓")} ${pc.dim(`(${source})`)}`);
+					} else {
+						spinner.stop(`${prefix} ${pc.red("✗")} ${pc.red("failed")}`);
+						failedCount++;
+					}
+				} catch (error) {
+					const errMsg = error instanceof Error ? error.message : "Unknown error";
+					spinner.stop(`${prefix} ${pc.red("✗")} ${pc.dim(errMsg)}`);
+					failedCount++;
+				}
+			}
+		} finally {
+			openCodeContext?.close();
 		}
+	} else if (generateGroup.length > 0 && !options.generate) {
+		p.log.info(
+			`Skipping ${pc.yellow(generateGroup.length)} deps that need generation (use --generate to include them).`,
+		);
 	}
 
 	if (successfulMatches.length > 0) {

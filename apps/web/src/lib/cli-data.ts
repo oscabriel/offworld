@@ -66,6 +66,7 @@ export const commands: Command[] = [
 			},
 			{ flag: "--dry-run, -d", description: "Show what would be done" },
 			{ flag: "--yes, -y", description: "Skip confirmations" },
+			{ flag: "--concurrency, -c", description: "Max parallel installs (default: 4)" },
 		],
 	},
 	{
@@ -75,7 +76,6 @@ export const commands: Command[] = [
 		usage: "ow pull <repo> [OPTIONS]",
 		flags: [
 			{ flag: "--reference, -r", description: "Reference file name (defaults to owner-repo)" },
-			{ flag: "--shallow", description: "Use shallow clone (--depth 1)" },
 			{ flag: "--sparse", description: "Use sparse checkout (only src/, lib/, packages/, docs/)" },
 			{ flag: "--branch", description: "Branch to clone" },
 			{ flag: "--force, -f", description: "Force re-generation" },

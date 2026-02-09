@@ -55,7 +55,6 @@ ow pull <repo> [options]
 | Option        | Description                     |
 | ------------- | ------------------------------- |
 | `--reference` | Reference filename override     |
-| `--shallow`   | Shallow clone (--depth 1)       |
 | `--sparse`    | Sparse checkout                 |
 | `--branch`    | Branch to clone                 |
 | `--force`     | Force regeneration              |
@@ -133,14 +132,15 @@ Scan project dependencies and install matching references.
 ow project init [options]
 ```
 
-| Option       | Description                         |
-| ------------ | ----------------------------------- |
-| `--all`      | Process all dependencies            |
-| `--deps`     | Comma-separated deps to include     |
-| `--skip`     | Deps to exclude                     |
-| `--generate` | Generate missing references locally |
-| `--dry-run`  | Preview only                        |
-| `--yes`      | Skip confirmations                  |
+| Option          | Description                         |
+| --------------- | ----------------------------------- |
+| `--all`         | Process all dependencies            |
+| `--deps`        | Comma-separated deps to include     |
+| `--skip`        | Deps to exclude                     |
+| `--generate`    | Generate missing references locally |
+| `--dry-run`     | Preview only                        |
+| `--yes`         | Skip confirmations                  |
+| `--concurrency` | Max parallel installs (default: 4)  |
 
 ```bash
 ow project init
@@ -148,6 +148,16 @@ ow project init --all --generate
 ow project init --deps zod,react
 ow project init --dry-run
 ```
+
+### Config keys
+
+| Key                     | Type    | Default | Description                                                    |
+| ----------------------- | ------- | ------- | -------------------------------------------------------------- |
+| `repoRoot`              | string  | `~/ow`  | Where to clone repos                                           |
+| `defaultModel`          | string  | —       | AI provider/model (e.g., `anthropic/claude-sonnet-4-20250514`) |
+| `maxCommitDistance`     | number  | `20`    | Max commit distance to accept remote references                |
+| `acceptUnknownDistance` | boolean | `false` | Accept remote refs when distance is unknown                    |
+| `agents`                | list    | `[]`    | Comma-separated agents for skill symlinks                      |
 
 ## Data Locations
 

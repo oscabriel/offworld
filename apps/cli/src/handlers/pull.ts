@@ -21,7 +21,7 @@ import {
 	checkRemote,
 	checkRemoteByName,
 } from "@offworld/sdk/sync";
-import { generateReferenceWithAI } from "@offworld/sdk/ai";
+import { generateReferenceWithAI, type OpenCodeContext } from "@offworld/sdk/ai";
 import { ReferenceMetaSchema, type RepoSource } from "@offworld/types";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -32,11 +32,16 @@ import { resolveReferenceKeywordsForRepo } from "./shared";
 export interface PullOptions {
 	repo: string;
 	reference?: string;
-	shallow?: boolean;
 	sparse?: boolean;
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
+	/** Allow local AI generation when remote reference is unavailable/outdated. */
+	allowGenerate?: boolean;
+	/** Skip git fetch/pull (assumes repo is already up to date). */
+	skipUpdate?: boolean;
+	/** Shared OpenCode server context for batch generation. */
+	openCodeContext?: OpenCodeContext;
 	/** Suppress all output except errors (for batch operations) */
 	quiet?: boolean;
 	/** Model override in provider/model format (e.g., "anthropic/claude-sonnet-4-20250514") */
@@ -133,11 +138,12 @@ function parseModelFlag(model?: string): { provider?: string; model?: string } {
 export async function pullHandler(options: PullOptions): Promise<PullResult> {
 	const {
 		repo,
-		shallow = false,
 		sparse = false,
 		branch,
 		force = false,
 		verbose = false,
+		allowGenerate = true,
+		skipUpdate = false,
 		quiet = false,
 		skipConfirm = false,
 		onProgress,
@@ -162,7 +168,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 	if (verbose && !quiet) {
 		p.log.info(
-			`[verbose] Options: repo=${repo}, reference=${referenceName ?? "default"}, shallow=${shallow}, branch=${branch || "default"}, force=${force}`,
+			`[verbose] Options: repo=${repo}, reference=${referenceName ?? "default"}, branch=${branch || "default"}, force=${force}`,
 		);
 	}
 
@@ -181,20 +187,26 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const qualifiedName = source.qualifiedName;
 
 			if (isRepoCloned(qualifiedName)) {
-				s.start("Updating repository...");
-				const result = await updateRepo(qualifiedName);
-				repoPath = getClonedRepoPath(qualifiedName)!;
-
-				if (result.updated) {
-					s.stop(`Updated (${result.previousSha.slice(0, 7)} → ${result.currentSha.slice(0, 7)})`);
+				if (skipUpdate) {
+					repoPath = getClonedRepoPath(qualifiedName)!;
+					s.stop("Using existing clone");
 				} else {
-					s.stop("Already up to date");
+					s.start("Updating repository...");
+					const result = await updateRepo(qualifiedName);
+					repoPath = getClonedRepoPath(qualifiedName)!;
+
+					if (result.updated) {
+						s.stop(
+							`Updated (${result.previousSha.slice(0, 7)} → ${result.currentSha.slice(0, 7)})`,
+						);
+					} else {
+						s.stop("Already up to date");
+					}
 				}
 			} else {
 				s.start(`Cloning ${source.fullName}...`);
 				try {
 					repoPath = await cloneRepo(source, {
-						shallow,
 						sparse,
 						branch,
 						config,
@@ -251,27 +263,35 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 					const remoteShaNorm = remoteSha.slice(0, 7);
 					const currentShaNorm = currentSha.slice(0, 7);
 
-					const MAX_COMMIT_DISTANCE = 20;
+					const maxCommitDistance = config.maxCommitDistance ?? 20;
+					const acceptUnknownDistance = config.acceptUnknownDistance ?? false;
 					const commitDistance = getCommitDistance(repoPath, remoteSha, currentSha);
+					const isExactMatch = remoteShaNorm === currentShaNorm || commitDistance === 0;
+					const isWithinDistance = commitDistance !== null && commitDistance <= maxCommitDistance;
+					const hasUnknownDistance = commitDistance === null;
 					const isWithinThreshold =
-						remoteShaNorm === currentShaNorm ||
-						(commitDistance !== null && commitDistance <= MAX_COMMIT_DISTANCE);
+						isExactMatch || isWithinDistance || (acceptUnknownDistance && hasUnknownDistance);
 
 					const shouldDownload = isReferenceOverride || isWithinThreshold;
 
 					if (shouldDownload) {
 						if (!isReferenceOverride) {
-							if (commitDistance === 0 || remoteShaNorm === currentShaNorm) {
+							if (isExactMatch) {
 								verboseLog(`Remote SHA matches (${remoteShaNorm})`, verbose);
 								s.stop("Remote reference found (exact match)");
-							} else if (commitDistance !== null) {
+							} else if (isWithinDistance) {
 								verboseLog(
-									`Remote reference is ${commitDistance} commits behind (within ${MAX_COMMIT_DISTANCE} threshold)`,
+									`Remote reference is ${commitDistance} commits behind (within ${maxCommitDistance} threshold)`,
 									verbose,
 								);
 								s.stop(`Remote reference found (${commitDistance} commits behind)`);
+							} else if (hasUnknownDistance) {
+								const fallbackStatus = acceptUnknownDistance
+									? "Remote reference found (distance unknown, accepted)"
+									: "Remote reference found (commit distance unknown)";
+								verboseLog(fallbackStatus, verbose);
+								s.stop("Remote reference found");
 							} else {
-								verboseLog("Remote reference found (commit distance unknown)", verbose);
 								s.stop("Remote reference found");
 							}
 						} else {
@@ -348,7 +368,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 						const distanceInfo =
 							commitDistance !== null ? ` (${commitDistance} commits behind)` : "";
 						verboseLog(
-							`Remote reference too outdated${distanceInfo}, threshold is ${MAX_COMMIT_DISTANCE}`,
+							`Remote reference too outdated${distanceInfo}, threshold is ${maxCommitDistance}`,
 							verbose,
 						);
 						s.stop(`Remote reference outdated${distanceInfo}`);
@@ -372,6 +392,19 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			throw new Error(`Reference not found on offworld.sh: ${referenceName}`);
 		}
 
+		if (!allowGenerate && source.type === "remote") {
+			const message =
+				"Remote reference unavailable, outdated, or declined; local generation is disabled.";
+			s.stop(message);
+			return {
+				success: false,
+				repoPath,
+				referenceSource: "local",
+				referenceInstalled: false,
+				message,
+			};
+		}
+
 		verboseLog(`Starting AI reference generation for: ${repoPath}`, verbose);
 
 		if (!verbose) {
@@ -393,6 +426,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			const result = await generateReferenceWithAI(repoPath, qualifiedName, {
 				provider,
 				model,
+				openCodeContext: options.openCodeContext,
 				onDebug,
 			});
 

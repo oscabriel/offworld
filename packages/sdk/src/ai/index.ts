@@ -1,7 +1,10 @@
 export {
 	streamPrompt,
+	createOpenCodeContext,
 	DEFAULT_AI_PROVIDER,
 	DEFAULT_AI_MODEL,
+	type OpenCodeContext,
+	type OpenCodeClient,
 	type StreamPromptOptions,
 	type StreamPromptResult,
 } from "./opencode.js";

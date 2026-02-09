@@ -3,7 +3,7 @@
  * by delegating all codebase exploration to the AI agent via OpenCode.
  */
 
-import { streamPrompt, type StreamPromptOptions } from "./ai/opencode.js";
+import { streamPrompt, type OpenCodeContext, type StreamPromptOptions } from "./ai/opencode.js";
 import { loadConfig, toReferenceName } from "./config.js";
 import { getCommitSha } from "./clone.js";
 
@@ -12,6 +12,8 @@ export interface GenerateReferenceOptions {
 	provider?: string;
 	/** AI model ID. Defaults to config value. */
 	model?: string;
+	/** Shared OpenCode server context for multi-repo generation */
+	openCodeContext?: OpenCodeContext;
 	/** Debug callback for detailed logging */
 	onDebug?: (message: string) => void;
 	/** Stream callback for real-time AI output */
@@ -348,7 +350,7 @@ export async function generateReferenceWithAI(
 	repoName: string,
 	options: GenerateReferenceOptions = {},
 ): Promise<GenerateReferenceResult> {
-	const { provider, model, onDebug, onStream } = options;
+	const { provider, model, onDebug, onStream, openCodeContext } = options;
 	const config = loadConfig();
 
 	const [configProvider, configModel] = config.defaultModel?.split("/") ?? [];
@@ -370,6 +372,7 @@ export async function generateReferenceWithAI(
 		cwd: repoPath,
 		provider: aiProvider,
 		model: aiModel,
+		openCodeContext,
 		onDebug,
 		onStream,
 	};

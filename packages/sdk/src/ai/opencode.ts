@@ -20,6 +20,7 @@ export interface StreamPromptOptions {
 	cwd: string;
 	systemPrompt?: string;
 	provider?: string;
+	openCodeContext?: OpenCodeContext;
 
 	model?: string;
 	/** Timeout in milliseconds. Set to 0 or undefined for no timeout. */
@@ -65,7 +66,7 @@ interface OpenCodeProviderListResponse {
 	default: Record<string, string>;
 }
 
-interface OpenCodeClient {
+export interface OpenCodeClient {
 	session: {
 		create: () => Promise<{ data: OpenCodeSession; error?: unknown }>;
 		prompt: (options: {
@@ -85,6 +86,17 @@ interface OpenCodeClient {
 	provider: {
 		list: () => Promise<{ data: OpenCodeProviderListResponse; error?: unknown }>;
 	};
+}
+
+export interface OpenCodeContext {
+	baseUrl: string;
+	createClient: (cwd: string) => OpenCodeClient;
+	close: () => void;
+}
+
+export interface CreateOpenCodeContextOptions {
+	cwd?: string;
+	onDebug?: (message: string) => void;
 }
 
 interface AgentConfig {
@@ -216,31 +228,8 @@ function formatToolMessage(tool: string | undefined, state: ToolRunningState): s
 	}
 }
 
-export async function streamPrompt(options: StreamPromptOptions): Promise<StreamPromptResult> {
-	const {
-		prompt,
-		cwd,
-		systemPrompt,
-		provider: optProvider,
-		model: optModel,
-		timeoutMs,
-		onDebug,
-		onStream,
-	} = options;
-
-	const debug = onDebug ?? (() => {});
-	const stream = onStream ?? (() => {});
-	const startTime = Date.now();
-
-	debug("Loading OpenCode SDK...");
-	const { createOpencode, createOpencodeClient } = await getOpenCodeSDK();
-
-	const maxAttempts = 10;
-	let server: OpenCodeServer | null = null;
-	let client: OpenCodeClient | null = null;
-	let port = 0;
-
-	const config: OpenCodeConfig = {
+function getOpenCodeConfig(): OpenCodeConfig {
+	return {
 		plugin: [],
 		mcp: {},
 		instructions: [],
@@ -297,18 +286,29 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			},
 		},
 	};
+}
+
+export async function createOpenCodeContext(
+	options: CreateOpenCodeContextOptions = {},
+): Promise<OpenCodeContext> {
+	const debug = options.onDebug ?? (() => {});
+
+	debug("Loading OpenCode SDK...");
+	const { createOpencode, createOpencodeClient } = await getOpenCodeSDK();
+
+	const maxAttempts = 10;
+	let server: OpenCodeServer | null = null;
+	let port = 0;
+
+	const config = getOpenCodeConfig();
 
 	debug("Starting embedded OpenCode server...");
 
 	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		port = Math.floor(Math.random() * 3000) + 3000;
 		try {
-			const result = await createOpencode({ port, cwd, config });
+			const result = await createOpencode({ port, cwd: options.cwd, config });
 			server = result.server;
-			client = createOpencodeClient({
-				baseUrl: `http://localhost:${port}`,
-				directory: cwd,
-			});
 			debug(`Server started on port ${port}`);
 			break;
 		} catch (err) {
@@ -319,12 +319,51 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 		}
 	}
 
-	if (!server || !client) {
+	if (!server) {
 		throw new ServerStartError("Failed to start OpenCode server after all attempts");
 	}
 
+	const baseUrl = `http://localhost:${port}`;
+	let closed = false;
+
+	return {
+		baseUrl,
+		createClient: (cwd: string) =>
+			createOpencodeClient({
+				baseUrl,
+				directory: cwd,
+			}),
+		close: () => {
+			if (closed) return;
+			closed = true;
+			debug("Closing server...");
+			server?.close();
+		},
+	};
+}
+
+export async function streamPrompt(options: StreamPromptOptions): Promise<StreamPromptResult> {
+	const {
+		prompt,
+		cwd,
+		systemPrompt,
+		provider: optProvider,
+		model: optModel,
+		timeoutMs,
+		onDebug,
+		onStream,
+		openCodeContext,
+	} = options;
+
+	const debug = onDebug ?? (() => {});
+	const stream = onStream ?? (() => {});
+	const startTime = Date.now();
+
 	const providerID = optProvider ?? DEFAULT_AI_PROVIDER;
 	const modelID = optModel ?? DEFAULT_AI_MODEL;
+	const shouldCloseContext = !openCodeContext;
+	const context = openCodeContext ?? (await createOpenCodeContext({ cwd, onDebug: debug }));
+	const client = context.createClient(cwd);
 
 	try {
 		debug("Creating session...");
@@ -467,7 +506,8 @@ export async function streamPrompt(options: StreamPromptOptions): Promise<Stream
 			durationMs,
 		};
 	} finally {
-		debug("Closing server...");
-		server.close();
+		if (shouldCloseContext) {
+			context.close();
+		}
 	}
 }

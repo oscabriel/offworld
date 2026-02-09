@@ -293,7 +293,6 @@ vi.mock("../config.js", async (importOriginal) => {
 		...actual,
 		loadConfig: vi.fn(() => ({
 			repoRoot: "~/ow",
-			defaultShallow: true,
 			agents: [],
 		})),
 		getRepoPath: vi.fn((fullName: string, provider: string) => {
@@ -385,18 +384,6 @@ describe("cloneRepo", () => {
 		expect(spawn).toHaveBeenCalledWith(
 			"git",
 			expect.arrayContaining(["clone", "https://github.com/tanstack/router.git"]),
-			expect.any(Object),
-		);
-	});
-
-	it("uses --depth 1 when shallow=true", async () => {
-		const { spawn } = await import("node:child_process");
-
-		await cloneRepo(mockSource, { shallow: true });
-
-		expect(spawn).toHaveBeenCalledWith(
-			"git",
-			expect.arrayContaining(["--depth", "1"]),
 			expect.any(Object),
 		);
 	});
@@ -504,23 +491,6 @@ describe("cloneRepo", () => {
 
 			expect(sparseSetIdx).toBeGreaterThan(-1);
 			expect(checkoutIdx).toBeGreaterThan(sparseSetIdx);
-		});
-
-		it("combines sparse with shallow clone", async () => {
-			const { spawn } = await import("node:child_process");
-
-			await cloneRepo(mockSource, { sparse: true, shallow: true });
-
-			expect(spawn).toHaveBeenCalledWith(
-				"git",
-				expect.arrayContaining(["--depth", "1"]),
-				expect.any(Object),
-			);
-			expect(spawn).toHaveBeenCalledWith(
-				"git",
-				expect.arrayContaining(["--sparse"]),
-				expect.any(Object),
-			);
 		});
 	});
 

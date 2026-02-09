@@ -29,14 +29,11 @@ export interface RepoUpdateOptions {
 	all?: boolean;
 	pattern?: string;
 	dryRun?: boolean;
-	/** Convert shallow clones to full clones */
-	unshallow?: boolean;
 }
 
 export interface RepoUpdateResult {
 	updated: string[];
 	skipped: string[];
-	unshallowed: string[];
 	errors: Array<{ repo: string; error: string }>;
 }
 
@@ -154,11 +151,11 @@ export async function repoListHandler(options: RepoListOptions): Promise<RepoLis
 }
 
 export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<RepoUpdateResult> {
-	const { all = false, pattern, dryRun = false, unshallow = false } = options;
+	const { all = false, pattern, dryRun = false } = options;
 
 	if (!all && !pattern) {
 		p.log.error("Specify --all or a pattern to update.");
-		return { updated: [], skipped: [], unshallowed: [], errors: [] };
+		return { updated: [], skipped: [], errors: [] };
 	}
 
 	const qualifiedNames = listRepos();
@@ -169,20 +166,19 @@ export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<Rep
 
 	if (total === 0) {
 		p.log.info(pattern ? `No repos matching "${pattern}"` : "No repos to update");
-		return { updated: [], skipped: [], unshallowed: [], errors: [] };
+		return { updated: [], skipped: [], errors: [] };
 	}
 
 	let processed = 0;
 	const outcomes: Array<{ repo: string; status: string; message?: string }> = [];
 
 	const spinner = p.spinner();
-	const action = unshallow ? "Unshallowing" : "Updating";
+	const action = "Updating";
 	spinner.start(dryRun ? `Checking ${total} repos...` : `${action} ${total} repos...`);
 
 	const result = await updateAllRepos({
 		pattern,
 		dryRun,
-		unshallow,
 		onProgress: (repo: string, status: string, message?: string) => {
 			if (status === "updating") {
 				processed++;
@@ -198,8 +194,6 @@ export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<Rep
 	for (const { repo, status, message } of outcomes) {
 		if (status === "updated") {
 			p.log.success(`${repo}${message ? ` (${message})` : ""}`);
-		} else if (status === "unshallowed") {
-			p.log.success(`${repo}: ${message}`);
 		} else if (status === "error") {
 			p.log.error(`${repo}: ${message}`);
 		} else if (
@@ -214,7 +208,6 @@ export async function repoUpdateHandler(options: RepoUpdateOptions): Promise<Rep
 	const parts: string[] = [];
 	if (result.updated.length > 0)
 		parts.push(`${result.updated.length} ${dryRun ? "would update" : "updated"}`);
-	if (result.unshallowed.length > 0) parts.push(`${result.unshallowed.length} unshallowed`);
 	if (result.skipped.length > 0) parts.push(`${result.skipped.length} skipped`);
 	if (result.errors.length > 0) parts.push(`${result.errors.length} failed`);
 

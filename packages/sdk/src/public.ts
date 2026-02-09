@@ -64,8 +64,6 @@ export {
 	getClonedRepoPath,
 	getCommitSha,
 	getCommitDistance,
-	isShallowClone,
-	unshallowRepo,
 	CloneError,
 	RepoExistsError,
 	RepoNotFoundError,

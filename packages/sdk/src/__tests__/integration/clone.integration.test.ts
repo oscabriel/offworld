@@ -93,7 +93,7 @@ describe("clone.integration", () => {
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
-				const repoPath = await cloneRepo(source, { shallow: true });
+				const repoPath = await cloneRepo(source);
 
 				expect(repoPath).toBe(join(tempRepoRoot, "github", "octocat/Hello-World"));
 
@@ -117,7 +117,7 @@ describe("clone.integration", () => {
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
-				const repoPath = await cloneRepo(source, { shallow: true });
+				const repoPath = await cloneRepo(source);
 
 				const sha = getCommitSha(repoPath);
 
@@ -158,7 +158,7 @@ describe("clone.integration", () => {
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
-				const repoPath = await cloneRepo(source, { shallow: true, branch: "master" });
+				const repoPath = await cloneRepo(source, { branch: "master" });
 
 				expect(existsSync(join(repoPath, ".git"))).toBe(true);
 			},
@@ -180,7 +180,7 @@ describe("clone.integration", () => {
 					cloneUrl: "https://github.com/octocat/Hello-World.git",
 				};
 
-				const repoPath = await cloneRepo(source, { shallow: true });
+				const repoPath = await cloneRepo(source);
 				const sha = getCommitSha(repoPath);
 
 				const sha2 = getCommitSha(repoPath);

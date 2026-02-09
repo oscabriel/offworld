@@ -43,7 +43,7 @@ export class GitError extends CloneError {
 }
 
 export interface CloneOptions {
-	/** Use shallow clone (--depth 1) */
+	/** Deprecated: shallow clones are no longer supported */
 	shallow?: boolean;
 	/** Clone specific branch */
 	branch?: string;
@@ -134,7 +134,7 @@ const SPARSE_CHECKOUT_DIRS = ["src", "lib", "packages", "docs", "README.md", "pa
  * Clone a remote repository to the local repo root.
  *
  * @param source - Remote repo source from parseRepoInput()
- * @param options - Clone options (shallow, branch, config)
+ * @param options - Clone options (branch, config)
  * @returns The local path where the repo was cloned
  * @throws RepoExistsError if repo already exists (unless force is true)
  * @throws GitError if clone fails
@@ -195,7 +195,7 @@ async function cloneStandard(
 	const args = ["clone"];
 
 	if (options.shallow) {
-		args.push("--depth", "1");
+		throw new CloneError("Shallow clones are no longer supported. Use a full clone.");
 	}
 
 	if (options.branch) {
@@ -214,7 +214,7 @@ async function cloneSparse(
 	const args = ["clone", "--filter=blob:none", "--no-checkout", "--sparse"];
 
 	if (options.shallow) {
-		args.push("--depth", "1");
+		throw new CloneError("Shallow clones are no longer supported. Use a full clone.");
 	}
 
 	if (options.branch) {
@@ -228,24 +228,6 @@ async function cloneSparse(
 	await execGitAsync(["checkout"], repoPath);
 }
 
-export function isShallowClone(repoPath: string): boolean {
-	try {
-		const result = execGit(["rev-parse", "--is-shallow-repository"], repoPath);
-		return result === "true";
-	} catch {
-		return false;
-	}
-}
-
-export async function unshallowRepo(repoPath: string): Promise<boolean> {
-	if (!isShallowClone(repoPath)) {
-		return false;
-	}
-
-	await execGitAsync(["fetch", "--unshallow"], repoPath);
-	return true;
-}
-
 export interface UpdateResult {
 	/** Whether any updates were fetched */
 	updated: boolean;
@@ -253,13 +235,11 @@ export interface UpdateResult {
 	previousSha: string;
 	/** Current commit SHA after update */
 	currentSha: string;
-	/** Whether the repo was unshallowed */
-	unshallowed?: boolean;
 }
 
 export interface UpdateOptions {
-	/** Convert shallow clone to full clone */
-	unshallow?: boolean;
+	/** Skip fetching/pulling updates (useful when cache is valid). */
+	skipFetch?: boolean;
 }
 
 /**
@@ -288,15 +268,12 @@ export async function updateRepo(
 	}
 
 	const previousSha = getCommitSha(repoPath);
-	let unshallowed = false;
-	if (options.unshallow) {
-		unshallowed = await unshallowRepo(repoPath);
+	if (!options.skipFetch) {
+		await execGitAsync(["fetch"], repoPath);
+		await execGitAsync(["pull", "--ff-only"], repoPath);
 	}
 
-	await execGitAsync(["fetch"], repoPath);
-	await execGitAsync(["pull", "--ff-only"], repoPath);
-
-	const currentSha = getCommitSha(repoPath);
+	const currentSha = options.skipFetch ? previousSha : getCommitSha(repoPath);
 	upsertGlobalMapEntry(qualifiedName, {
 		...entry,
 		updatedAt: new Date().toISOString(),
@@ -306,7 +283,6 @@ export async function updateRepo(
 		updated: previousSha !== currentSha,
 		previousSha,
 		currentSha,
-		unshallowed,
 	};
 }
 

@@ -72,7 +72,6 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			} else {
 				s.start(`Cloning ${source.fullName}...`);
 				repoPath = await cloneRepo(source, {
-					shallow: config.defaultShallow,
 					config,
 				});
 				s.stop("Repository cloned");

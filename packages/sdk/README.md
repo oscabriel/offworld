@@ -62,7 +62,7 @@ const globalMap = Paths.globalMap;
 ```typescript
 import { cloneRepo, updateRepo, removeRepo } from "@offworld/sdk";
 
-await cloneRepo(repoSource, { shallow: true });
+await cloneRepo(repoSource);
 await updateRepo("owner/repo");
 await removeRepo("owner/repo", { referenceOnly: true });
 ```

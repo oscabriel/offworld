@@ -182,3 +182,7 @@ Single skill symlinked to:
 - **SKILL.md**: Static routing skill; all paths discovered via `ow config show --json`
 - **References**: Markdown files without frontmatter, one per repo
 - **Generation**: Returns `referenceContent` + `commitSha`
+
+## Project References
+
+Use the Offworld CLI to find and read directly from local codebases for any repo in `.offworld/map.json` whenever the user asks about a specific open source project.

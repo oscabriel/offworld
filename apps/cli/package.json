@@ -1,91 +1,91 @@
 {
-  "name": "offworld",
-  "version": "0.3.6",
-  "description": "Offworld CLI - Repository reference generation for AI coding agents",
-  "keywords": [
-    "ai",
-    "ai-agents",
-    "amp",
-    "anthropic",
-    "claude",
-    "claude-code",
-    "cli",
-    "codex",
-    "coding-agent",
-    "context",
-    "cursor",
-    "dependencies",
-    "developer-tools",
-    "documentation",
-    "git",
-    "llm",
-    "monorepo",
-    "offworld",
-    "opencode",
-    "reference",
-    "repository",
-    "skill",
-    "typescript"
-  ],
-  "homepage": "https://offworld.sh",
-  "bugs": {
-    "url": "https://github.com/oscabriel/offworld/issues"
-  },
-  "license": "MIT",
-  "author": "Oscar Gabriel",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/oscabriel/offworld.git",
-    "directory": "apps/cli"
-  },
-  "bin": {
-    "offworld": "./dist/cli.mjs",
-    "ow": "./dist/cli.mjs"
-  },
-  "files": [
-    "dist",
-    "LICENSE",
-    "README.md"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
-    }
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "scripts": {
-    "build": "tsdown && chmod +x ./dist/cli.mjs",
-    "dev": "tsdown --watch",
-    "ow:dev": "bun run src/cli.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "npm run build",
-    "check": "oxlint && oxfmt --write"
-  },
-  "dependencies": {
-    "@clack/prompts": "^1.0.0",
-    "@offworld/sdk": "workspace:*",
-    "@offworld/types": "workspace:*",
-    "@opencode-ai/sdk": "^1.1.51",
-    "@orpc/server": "^1.13.4",
-    "convex": "catalog:",
-    "open": "^11.0.0",
-    "picocolors": "^1.1.1",
-    "trpc-cli": "^0.12.2",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@types/node": "catalog:",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
-  },
-  "engines": {
-    "node": ">=18"
-  }
+	"name": "offworld",
+	"version": "0.3.6",
+	"description": "Offworld CLI - Repository reference generation for AI coding agents",
+	"keywords": [
+		"ai",
+		"ai-agents",
+		"amp",
+		"anthropic",
+		"claude",
+		"claude-code",
+		"cli",
+		"codex",
+		"coding-agent",
+		"context",
+		"cursor",
+		"dependencies",
+		"developer-tools",
+		"documentation",
+		"git",
+		"llm",
+		"monorepo",
+		"offworld",
+		"opencode",
+		"reference",
+		"repository",
+		"skill",
+		"typescript"
+	],
+	"homepage": "https://offworld.sh",
+	"bugs": {
+		"url": "https://github.com/oscabriel/offworld/issues"
+	},
+	"license": "MIT",
+	"author": "Oscar Gabriel",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/oscabriel/offworld.git",
+		"directory": "apps/cli"
+	},
+	"bin": {
+		"offworld": "./dist/cli.mjs",
+		"ow": "./dist/cli.mjs"
+	},
+	"files": [
+		"dist",
+		"LICENSE",
+		"README.md"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"build": "tsdown && chmod +x ./dist/cli.mjs",
+		"dev": "tsdown --watch",
+		"ow:dev": "bun run src/cli.ts",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepublishOnly": "npm run build",
+		"check": "oxlint && oxfmt --write"
+	},
+	"dependencies": {
+		"@clack/prompts": "^1.0.0",
+		"@offworld/sdk": "workspace:*",
+		"@offworld/types": "workspace:*",
+		"@opencode-ai/sdk": "^1.1.51",
+		"@orpc/server": "^1.13.4",
+		"convex": "catalog:",
+		"open": "^11.0.0",
+		"picocolors": "^1.1.1",
+		"trpc-cli": "^0.12.2",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/node": "catalog:",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
+	"engines": {
+		"node": ">=18"
+	}
 }

@@ -27,7 +27,7 @@ export interface ProjectInitOptions {
 	deps?: string;
 	/** Comma-separated deps to exclude */
 	skip?: string;
-	/** Generate references for deps without existing ones */
+	/** Force local generation for deps without existing references */
 	generate?: boolean;
 	/** Show what would be done without doing it */
 	dryRun?: boolean;
@@ -417,13 +417,13 @@ export async function projectInitHandler(
 	}
 
 	// --- Phase 3: Generate refs (sequential, shared OpenCode server) ---
-	if (generateGroup.length > 0 && options.generate) {
-		p.log.step(`Generating ${pc.yellow(generateGroup.length)} references with AI...`);
+	if (generateGroup.length > 0) {
+		p.log.step(`Generating ${pc.yellow(generateGroup.length)} references with OpenCode...`);
 
 		let openCodeContext: OpenCodeContext | undefined;
 		try {
 			if (generateGroup.length > 1) {
-				p.log.info(pc.dim("Starting shared AI server for batch generation..."));
+				p.log.info(pc.dim("Starting OpenCode server for batch generation..."));
 				openCodeContext = await createOpenCodeContext({
 					onDebug: () => {},
 				});
@@ -472,10 +472,6 @@ export async function projectInitHandler(
 		} finally {
 			openCodeContext?.close();
 		}
-	} else if (generateGroup.length > 0 && !options.generate) {
-		p.log.info(
-			`Skipping ${pc.yellow(generateGroup.length)} deps that need generation (use --generate to include them).`,
-		);
 	}
 
 	if (successfulMatches.length > 0) {

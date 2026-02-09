@@ -295,7 +295,7 @@ Valid keys: repoRoot, defaultModel, maxCommitDistance, acceptUnknownDistance, ag
 					generate: z
 						.boolean()
 						.default(false)
-						.describe("Generate references for deps without existing ones")
+						.describe("Force local generation for deps without existing refs")
 						.meta({ alias: "g" }),
 					dryRun: z
 						.boolean()

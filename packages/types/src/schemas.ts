@@ -15,9 +15,12 @@ export const AgentSchema = z.enum([
 
 export const ConfigSchema = z.object({
 	repoRoot: z.string().default("~/ow"),
-	defaultShallow: z.boolean().default(true),
 	/** Default model in provider/model format (e.g., anthropic/claude-sonnet-4-20250514) */
 	defaultModel: z.string().default("anthropic/claude-sonnet-4-20250514"),
+	/** Max commit distance to accept remote references (use 0 for exact match) */
+	maxCommitDistance: z.number().int().nonnegative().default(20),
+	/** Accept remote references even when commit distance is unknown */
+	acceptUnknownDistance: z.boolean().default(false),
 	/** Agents to create skill symlinks for. Auto-detected if empty. */
 	agents: z.array(AgentSchema).default([]),
 });

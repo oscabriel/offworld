@@ -38,12 +38,13 @@ Set a configuration value.
 ow config set <key> <value>
 ```
 
-| Key              | Type    | Example                                                         |
-| ---------------- | ------- | --------------------------------------------------------------- |
-| `repoRoot`       | string  | `ow config set repoRoot ~/repos`                                |
-| `defaultShallow` | boolean | `ow config set defaultShallow true`                             |
-| `defaultModel`   | string  | `ow config set defaultModel anthropic/claude-sonnet-4-20250514` |
-| `agents`         | list    | `ow config set agents opencode,claude-code`                     |
+| Key                     | Type    | Example                                                         |
+| ----------------------- | ------- | --------------------------------------------------------------- |
+| `repoRoot`              | string  | `ow config set repoRoot ~/repos`                                |
+| `defaultModel`          | string  | `ow config set defaultModel anthropic/claude-sonnet-4-20250514` |
+| `maxCommitDistance`     | number  | `ow config set maxCommitDistance 20`                            |
+| `acceptUnknownDistance` | boolean | `ow config set acceptUnknownDistance true`                      |
+| `agents`                | list    | `ow config set agents opencode,claude-code`                     |
 
 ### ow config get
 

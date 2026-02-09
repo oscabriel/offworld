@@ -97,7 +97,6 @@ ow list
 
 ```
 --reference, -r   Reference filename override
---shallow         Use shallow clone (--depth 1)
 --sparse          Sparse checkout (src/, lib/, packages/, docs/)
 --branch <name>   Branch to clone
 --force, -f       Force regeneration
@@ -150,12 +149,13 @@ ow list
 
 ## Config Keys
 
-| Key              | Type    | Description                                           |
-| ---------------- | ------- | ----------------------------------------------------- |
-| `repoRoot`       | string  | Where to clone repos (default: `~/ow`)                |
-| `defaultShallow` | boolean | Use shallow clone by default                          |
-| `defaultModel`   | string  | AI model (e.g., `anthropic/claude-sonnet-4-20250514`) |
-| `agents`         | list    | Comma-separated agent names                           |
+| Key                     | Type    | Description                                                           |
+| ----------------------- | ------- | --------------------------------------------------------------------- |
+| `repoRoot`              | string  | Where to clone repos (default: `~/ow`)                                |
+| `defaultModel`          | string  | AI model (e.g., `anthropic/claude-sonnet-4-20250514`)                 |
+| `maxCommitDistance`     | number  | Max commit distance to accept remote references (default: `20`)       |
+| `acceptUnknownDistance` | boolean | Accept remote refs when commit distance is unknown (default: `false`) |
+| `agents`                | list    | Comma-separated agent names                                           |
 
 ## Path Discovery
 

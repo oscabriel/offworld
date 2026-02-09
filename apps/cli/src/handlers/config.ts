@@ -17,7 +17,13 @@ import { z } from "zod";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const VALID_KEYS = ["repoRoot", "defaultShallow", "defaultModel", "agents"] as const;
+const VALID_KEYS = [
+	"repoRoot",
+	"defaultModel",
+	"maxCommitDistance",
+	"acceptUnknownDistance",
+	"agents",
+] as const;
 type ConfigKey = (typeof VALID_KEYS)[number];
 
 function isValidKey(key: string): key is ConfigKey {
@@ -98,21 +104,9 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 		};
 	}
 
-	let parsedValue: string | boolean | Agent[];
+	let parsedValue: string | number | boolean | Agent[];
 
-	if (key === "defaultShallow") {
-		if (value === "true" || value === "1") {
-			parsedValue = true;
-		} else if (value === "false" || value === "0") {
-			parsedValue = false;
-		} else {
-			p.log.error(`Invalid boolean value: ${value}. Use 'true' or 'false'.`);
-			return {
-				success: false,
-				message: `Invalid boolean value: ${value}`,
-			};
-		}
-	} else if (key === "agents") {
+	if (key === "agents") {
 		const agentValues = value
 			.split(",")
 			.map((a) => a.trim())
@@ -130,6 +124,26 @@ export async function configSetHandler(options: ConfigSetOptions): Promise<Confi
 		}
 
 		parsedValue = agentsResult.data;
+	} else if (key === "maxCommitDistance") {
+		const parsed = Number.parseInt(value, 10);
+		if (Number.isNaN(parsed) || parsed < 0) {
+			p.log.error("maxCommitDistance must be a non-negative integer.");
+			return {
+				success: false,
+				message: "Invalid maxCommitDistance value",
+			};
+		}
+		parsedValue = parsed;
+	} else if (key === "acceptUnknownDistance") {
+		const normalized = value.trim().toLowerCase();
+		if (normalized !== "true" && normalized !== "false") {
+			p.log.error("acceptUnknownDistance must be 'true' or 'false'.");
+			return {
+				success: false,
+				message: "Invalid acceptUnknownDistance value",
+			};
+		}
+		parsedValue = normalized === "true";
 	} else {
 		parsedValue = value;
 	}

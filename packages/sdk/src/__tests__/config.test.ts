@@ -151,8 +151,9 @@ describe("config.ts", () => {
 		it("returns custom path when configured", () => {
 			const config = {
 				repoRoot: "/custom/repos",
-				defaultShallow: true,
 				defaultModel: "anthropic/claude-sonnet-4-20250514",
+				maxCommitDistance: 20,
+				acceptUnknownDistance: false,
 				agents: ["opencode"] as (
 					| "opencode"
 					| "claude-code"
@@ -169,8 +170,9 @@ describe("config.ts", () => {
 		it("expands tilde in custom path", () => {
 			const config = {
 				repoRoot: "~/custom/repos",
-				defaultShallow: true,
 				defaultModel: "anthropic/claude-sonnet-4-20250514",
+				maxCommitDistance: 20,
+				acceptUnknownDistance: false,
 				agents: ["opencode"] as (
 					| "opencode"
 					| "claude-code"
@@ -204,8 +206,9 @@ describe("config.ts", () => {
 		it("uses custom repoRoot from config", () => {
 			const config = {
 				repoRoot: "/data/repos",
-				defaultShallow: true,
 				defaultModel: "anthropic/claude-sonnet-4-20250514",
+				maxCommitDistance: 20,
+				acceptUnknownDistance: false,
 				agents: ["opencode"] as (
 					| "opencode"
 					| "claude-code"
@@ -249,20 +252,20 @@ describe("config.ts", () => {
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("~/ow");
-			expect(result.defaultShallow).toBe(true);
+			expect(result.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 
 		it("parses existing config file correctly", () => {
 			const existingConfig = {
 				repoRoot: "/custom/path",
-				defaultShallow: false,
+				defaultModel: "anthropic/claude-sonnet-4-20250514",
 			};
 			addVirtualFile(configPath, JSON.stringify(existingConfig));
 
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("/custom/path");
-			expect(result.defaultShallow).toBe(false);
+			expect(result.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 
 		it("applies defaults for missing fields in config file", () => {
@@ -274,7 +277,7 @@ describe("config.ts", () => {
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("/custom/path");
-			expect(result.defaultShallow).toBe(true);
+			expect(result.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 
 		it("returns defaults on JSON parse error - invalid syntax", () => {
@@ -283,7 +286,7 @@ describe("config.ts", () => {
 			const result = loadConfig();
 
 			expect(result.repoRoot).toBe("~/ow");
-			expect(result.defaultShallow).toBe(true);
+			expect(result.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 
 		it("returns defaults on JSON parse error - truncated JSON", () => {
@@ -369,7 +372,7 @@ describe("config.ts", () => {
 		it("merges with existing config", () => {
 			const existingConfig = {
 				repoRoot: "/old/path",
-				defaultShallow: true,
+				defaultModel: "anthropic/claude-sonnet-4-20250514",
 			};
 			addVirtualFile(configDir, "", { isDirectory: true });
 			addVirtualFile(configPath, JSON.stringify(existingConfig));
@@ -379,7 +382,7 @@ describe("config.ts", () => {
 			expect(mockWriteFileSync).toHaveBeenCalled();
 			const writtenContent = JSON.parse(mockWriteFileSync.mock.calls[0]![1] as string);
 			expect(writtenContent.repoRoot).toBe("/new/path");
-			expect(writtenContent.defaultShallow).toBe(true);
+			expect(writtenContent.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 
 		it("writes valid JSON", () => {
@@ -394,7 +397,7 @@ describe("config.ts", () => {
 			const result = saveConfig({ repoRoot: "/test/path" });
 
 			expect(result.repoRoot).toBe("/test/path");
-			expect(result.defaultShallow).toBe(true);
+			expect(result.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 
 		it("writes config with correct encoding", () => {
@@ -410,14 +413,14 @@ describe("config.ts", () => {
 		it("verifies actual file content after save", () => {
 			addVirtualFile(configDir, "", { isDirectory: true });
 
-			saveConfig({ repoRoot: "/verify/path", defaultShallow: false });
+			saveConfig({ repoRoot: "/verify/path" });
 
 			const fs = getVirtualFs();
 			const savedFile = fs[configPath];
 			expect(savedFile).toBeDefined();
 			const parsed = JSON.parse(savedFile!.content);
 			expect(parsed.repoRoot).toBe("/verify/path");
-			expect(parsed.defaultShallow).toBe(false);
+			expect(parsed.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		});
 	});
 

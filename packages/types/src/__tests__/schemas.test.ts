@@ -22,7 +22,6 @@ describe("ConfigSchema", () => {
 	it("validates valid config objects", () => {
 		const config = {
 			repoRoot: "/custom/path",
-			defaultShallow: false,
 		};
 		const result = ConfigSchema.safeParse(config);
 		expect(result.success).toBe(true);
@@ -34,7 +33,7 @@ describe("ConfigSchema", () => {
 	it("rejects invalid config (wrong types)", () => {
 		const invalid = {
 			repoRoot: 123,
-			defaultShallow: "yes",
+			defaultModel: 123,
 		};
 		const result = ConfigSchema.safeParse(invalid);
 		expect(result.success).toBe(false);
@@ -46,7 +45,7 @@ describe("ConfigSchema", () => {
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.data.repoRoot).toBe("~/ow");
-			expect(result.data.defaultShallow).toBe(true);
+			expect(result.data.defaultModel).toBe("anthropic/claude-sonnet-4-20250514");
 		}
 	});
 });

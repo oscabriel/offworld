@@ -20,7 +20,7 @@
     },
     "apps/cli": {
       "name": "offworld",
-      "version": "0.3.0",
+      "version": "0.3.5",
       "bin": {
         "offworld": "./dist/cli.mjs",
         "ow": "./dist/cli.mjs",
@@ -145,7 +145,7 @@
     },
     "packages/sdk": {
       "name": "@offworld/sdk",
-      "version": "0.3.0",
+      "version": "0.3.5",
       "dependencies": {
         "@offworld/types": "workspace:*",
         "xdg-basedir": "^5.1.0",
@@ -168,7 +168,7 @@
     },
     "packages/types": {
       "name": "@offworld/types",
-      "version": "0.3.0",
+      "version": "0.3.5",
       "dependencies": {
         "zod": "catalog:",
       },

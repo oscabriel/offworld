@@ -7,6 +7,8 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
+const referencesSectionRegex = /^## Project References\n(?:.*\n)*?(?=^## |$)/m;
+
 export interface InstalledReference {
 	/** Dependency name */
 	dependency: string;
@@ -44,12 +46,11 @@ export function appendReferencesSection(filePath: string, references: InstalledR
 	const content = existsSync(filePath) ? readFileSync(filePath, "utf-8") : "";
 	const referencesMarkdown = generateReferencesTable(references);
 
-	const sectionRegex = /^## Project References\n(?:.*\n)*?(?=^## |$)/m;
-	const match = content.match(sectionRegex);
+	const match = content.match(referencesSectionRegex);
 
 	let updatedContent: string;
 	if (match) {
-		updatedContent = content.replace(sectionRegex, referencesMarkdown);
+		updatedContent = content.replace(referencesSectionRegex, referencesMarkdown);
 	} else {
 		updatedContent = content.trim() + "\n\n" + referencesMarkdown;
 	}
@@ -58,19 +59,29 @@ export function appendReferencesSection(filePath: string, references: InstalledR
 }
 
 /**
- * Update AGENTS.md and agent-specific files with project references.
- * Creates files if they don't exist.
+ * Update AGENTS.md with project references if the section is missing.
  *
  * @param projectRoot - Project root directory
  * @param references - Array of installed references to document
  */
 export function updateAgentFiles(projectRoot: string, references: InstalledReference[]): void {
 	const agentsMdPath = join(projectRoot, "AGENTS.md");
-	const claudeMdPath = join(projectRoot, "CLAUDE.md");
+	const referencesMarkdown = generateReferencesTable(references);
 
-	appendReferencesSection(agentsMdPath, references);
-
-	if (existsSync(claudeMdPath)) {
-		appendReferencesSection(claudeMdPath, references);
+	if (!existsSync(agentsMdPath)) {
+		writeFileSync(agentsMdPath, referencesMarkdown, "utf-8");
+		return;
 	}
+
+	const content = readFileSync(agentsMdPath, "utf-8");
+	if (referencesSectionRegex.test(content)) {
+		return;
+	}
+
+	const separator = content.endsWith("\n\n") ? "" : content.endsWith("\n") ? "\n" : "\n\n";
+	const updatedContent =
+		content.trim().length === 0
+			? referencesMarkdown
+			: `${content}${separator}${referencesMarkdown}`;
+	writeFileSync(agentsMdPath, updatedContent, "utf-8");
 }

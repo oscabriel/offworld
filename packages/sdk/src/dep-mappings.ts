@@ -120,7 +120,10 @@ async function fetchNpmPackage(
  * Fallback to npm registry to extract repository.url.
  * Returns null if package not found, no repo field, or not a GitHub repo.
  */
-export async function resolveFromNpm(packageName: string, timeoutMs?: number): Promise<string | null> {
+export async function resolveFromNpm(
+	packageName: string,
+	timeoutMs?: number,
+): Promise<string | null> {
 	const pkg = await fetchNpmPackage(packageName, timeoutMs);
 	if (!pkg?.repository) return null;
 

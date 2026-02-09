@@ -127,7 +127,7 @@ ow list
 --all             Select all deps
 --deps            Comma-separated deps
 --skip            Deps to exclude
---generate, -g    Generate references for new deps
+--generate, -g    Force local generation for new deps
 --dry-run, -d     Preview only
 --yes, -y         Skip confirmations
 ```

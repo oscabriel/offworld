@@ -132,19 +132,19 @@ Scan project dependencies and install matching references.
 ow project init [options]
 ```
 
-| Option          | Description                         |
-| --------------- | ----------------------------------- |
-| `--all`         | Process all dependencies            |
-| `--deps`        | Comma-separated deps to include     |
-| `--skip`        | Deps to exclude                     |
-| `--generate`    | Generate missing references locally |
-| `--dry-run`     | Preview only                        |
-| `--yes`         | Skip confirmations                  |
-| `--concurrency` | Max parallel installs (default: 4)  |
+| Option          | Description                                   |
+| --------------- | --------------------------------------------- |
+| `--all`         | Process all dependencies                      |
+| `--deps`        | Comma-separated deps to include               |
+| `--skip`        | Deps to exclude                               |
+| `--generate`    | Force local generation for missing references |
+| `--dry-run`     | Preview only                                  |
+| `--yes`         | Skip confirmations                            |
+| `--concurrency` | Max parallel installs (default: 4)            |
 
 ```bash
 ow project init
-ow project init --all --generate
+ow project init --all
 ow project init --deps zod,react
 ow project init --dry-run
 ```

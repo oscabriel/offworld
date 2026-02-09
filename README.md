@@ -110,7 +110,7 @@ ow config show
 #### Step 4: Initialize in the current project (non-interactive)
 
 ```bash
-ow project init --yes --all --generate
+ow project init --yes --all
 ```
 
 This will:
@@ -123,13 +123,13 @@ This will:
 If you want a specific set of dependencies instead of `--all`:
 
 ```bash
-ow project init --yes --deps "zod,typescript,vitest" --generate
+ow project init --yes --deps "zod,typescript,vitest"
 ```
 
 Or exclude specific dependencies:
 
 ```bash
-ow project init --yes --all --skip "react,react-dom" --generate
+ow project init --yes --all --skip "react,react-dom"
 ```
 
 #### Step 5: Verify setup

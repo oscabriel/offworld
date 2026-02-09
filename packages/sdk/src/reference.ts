@@ -221,7 +221,7 @@ ow init --yes --agents "opencode,codex" --repo-root "~/ow" --model "anthropic/cl
 ## 4) Initialize current project
 
 \`\`\`bash
-ow project init --yes --all --generate
+ow project init --yes --all
 \`\`\`
 
 ## 5) Verify

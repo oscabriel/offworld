@@ -408,7 +408,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		verboseLog(`Starting AI reference generation for: ${repoPath}`, verbose);
 
 		if (!verbose) {
-			s.start("Generating reference with AI...");
+			s.start("Generating reference with OpenCode...");
 		}
 
 		try {

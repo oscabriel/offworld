@@ -62,7 +62,7 @@ export const commands: Command[] = [
 			{ flag: "--skip", description: "Comma-separated deps to exclude" },
 			{
 				flag: "--generate, -g",
-				description: "Generate reference files for deps without existing ones",
+				description: "Force local generation for deps without existing refs",
 			},
 			{ flag: "--dry-run, -d", description: "Show what would be done" },
 			{ flag: "--yes, -y", description: "Skip confirmations" },
@@ -247,7 +247,7 @@ ow config show
 #### Step 5: Initialize in the current project (non-interactive)
 
 \`\`\`bash
-ow project init --yes --all --generate
+ow project init --yes --all
 \`\`\`
 
 This will:
@@ -258,12 +258,12 @@ This will:
 
 If you want a specific set of dependencies instead of \`--all\`:
 \`\`\`bash
-ow project init --yes --deps "zod,typescript,vitest" --generate
+ow project init --yes --deps "zod,typescript,vitest"
 \`\`\`
 
 Or exclude specific dependencies:
 \`\`\`bash
-ow project init --yes --all --skip "react,react-dom" --generate
+ow project init --yes --all --skip "react,react-dom"
 \`\`\`
 
 #### Step 6: Verify setup

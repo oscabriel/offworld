@@ -80,7 +80,7 @@ export async function generateHandler(options: GenerateOptions): Promise<Generat
 			repoPath = source.path;
 		}
 
-		s.start("Generating reference with AI...");
+		s.start("Generating reference with OpenCode...");
 
 		const qualifiedName = source.qualifiedName;
 		const referenceRepoName = source.type === "remote" ? source.fullName : source.name;

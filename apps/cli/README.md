@@ -41,13 +41,13 @@ ow list
 
 ### Core
 
-| Command              | Description                       |
-| -------------------- | --------------------------------- |
-| `ow pull <repo>`     | Clone repo and generate reference |
-| `ow generate <repo>` | Generate reference locally        |
-| `ow push <repo>`     | Upload reference to offworld.sh   |
-| `ow list`            | List managed repos                |
-| `ow rm <repo>`       | Remove repo and/or reference      |
+| Command              | Description                                             |
+| -------------------- | ------------------------------------------------------- |
+| `ow pull <repo>`     | Clone repo and fetch/generate reference (or clone only) |
+| `ow generate <repo>` | Generate reference locally                              |
+| `ow push <repo>`     | Upload reference to offworld.sh                         |
+| `ow list`            | List managed repos                                      |
+| `ow rm <repo>`       | Remove repo and/or reference                            |
 
 ### Configuration
 
@@ -99,6 +99,7 @@ ow list
 --reference, -r   Reference filename override
 --sparse          Sparse checkout (src/, lib/, packages/, docs/)
 --branch <name>   Branch to clone
+--clone-only      Clone/update repo only; skip reference download/generation
 --force, -f       Force regeneration
 --verbose         Detailed output
 --model, -m       Model override (provider/model)

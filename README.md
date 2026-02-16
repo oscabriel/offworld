@@ -173,18 +173,18 @@ ow project init
 
 ## CLI Commands
 
-| Command                | Description                                   |
-| ---------------------- | --------------------------------------------- |
-| `ow project init`      | Scan deps, generate references, update map    |
-| `ow pull <repo>`       | Clone + generate reference for specific repo  |
-| `ow list`              | List managed repos                            |
-| `ow generate <repo>`   | Force local AI generation                     |
-| `ow push <repo>`       | Share reference to offworld.sh                |
-| `ow rm <repo>`         | Remove repo and reference files               |
-| `ow init`              | Interactive global setup                      |
-| `ow config show`       | View configuration                            |
-| `ow repo update --all` | Pull latest for all cloned repos              |
-| `ow repo status`       | Summary: total repos, disk usage, stale count |
+| Command                | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| `ow project init`      | Scan deps, generate references, update map       |
+| `ow pull <repo>`       | Clone + fetch/generate reference (or clone only) |
+| `ow list`              | List managed repos                               |
+| `ow generate <repo>`   | Force local AI generation                        |
+| `ow push <repo>`       | Share reference to offworld.sh                   |
+| `ow rm <repo>`         | Remove repo and reference files                  |
+| `ow init`              | Interactive global setup                         |
+| `ow config show`       | View configuration                               |
+| `ow repo update --all` | Pull latest for all cloned repos                 |
+| `ow repo status`       | Summary: total repos, disk usage, stale count    |
 
 ## Local Layout
 

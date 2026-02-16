@@ -47,6 +47,10 @@ export const router = os.router({
 					.describe("Use sparse checkout (only src/, lib/, packages/, docs/)"),
 				branch: z.string().optional().describe("Branch to clone"),
 				force: z.boolean().default(false).describe("Force re-generation").meta({ alias: "f" }),
+				cloneOnly: z
+					.boolean()
+					.default(false)
+					.describe("Clone/update repo only; skip downloading/generating reference"),
 				verbose: z.boolean().default(false).describe("Show detailed output"),
 				model: z
 					.string()
@@ -56,7 +60,7 @@ export const router = os.router({
 			}),
 		)
 		.meta({
-			description: "Clone a repository and fetch or generate its reference",
+			description: "Clone a repository and fetch or generate its reference (or clone only)",
 			negateBooleans: true,
 		})
 		.handler(async ({ input }) => {
@@ -66,6 +70,7 @@ export const router = os.router({
 				sparse: input.sparse,
 				branch: input.branch,
 				force: input.force,
+				cloneOnly: input.cloneOnly,
 				verbose: input.verbose,
 				model: input.model,
 			});

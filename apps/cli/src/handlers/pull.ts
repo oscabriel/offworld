@@ -36,6 +36,8 @@ export interface PullOptions {
 	branch?: string;
 	force?: boolean;
 	verbose?: boolean;
+	/** Clone/update repository only; skip reference download/generation. */
+	cloneOnly?: boolean;
 	/** Allow local AI generation when remote reference is unavailable/outdated. */
 	allowGenerate?: boolean;
 	/** Skip git fetch/pull (assumes repo is already up to date). */
@@ -55,7 +57,7 @@ export interface PullOptions {
 export interface PullResult {
 	success: boolean;
 	repoPath: string;
-	referenceSource: "remote" | "local" | "cached";
+	referenceSource: "remote" | "local" | "cached" | "none";
 	referenceInstalled: boolean;
 	message?: string;
 }
@@ -141,6 +143,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 		sparse = false,
 		branch,
 		force = false,
+		cloneOnly = false,
 		verbose = false,
 		allowGenerate = true,
 		skipUpdate = false,
@@ -168,7 +171,7 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 
 	if (verbose && !quiet) {
 		p.log.info(
-			`[verbose] Options: repo=${repo}, reference=${referenceName ?? "default"}, branch=${branch || "default"}, force=${force}`,
+			`[verbose] Options: repo=${repo}, reference=${referenceName ?? "default"}, branch=${branch || "default"}, force=${force}, cloneOnly=${cloneOnly}`,
 		);
 	}
 
@@ -236,6 +239,21 @@ export async function pullHandler(options: PullOptions): Promise<PullResult> {
 			throw new Error("--reference requires a reference name");
 		}
 		const requiredReferenceName = referenceName ?? "";
+
+		if (cloneOnly && isReferenceOverride) {
+			throw new Error("--clone-only cannot be combined with --reference");
+		}
+
+		if (cloneOnly) {
+			s.stop("Clone ready; reference generation skipped (--clone-only)");
+			return {
+				success: true,
+				repoPath,
+				referenceSource: "none",
+				referenceInstalled: false,
+				message: "Clone ready; reference generation skipped (--clone-only).",
+			};
+		}
 
 		if (!force && !isReferenceOverride && hasValidCache(source, currentSha)) {
 			verboseLog("Using cached reference", verbose);

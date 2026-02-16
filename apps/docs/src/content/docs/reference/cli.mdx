@@ -46,25 +46,27 @@ ow init [options]
 
 ## ow pull
 
-Clone a repository and generate a reference.
+Clone a repository and fetch or generate a reference (or clone only).
 
 ```bash
 ow pull <repo> [options]
 ```
 
-| Option        | Description                     |
-| ------------- | ------------------------------- |
-| `--reference` | Reference filename override     |
-| `--sparse`    | Sparse checkout                 |
-| `--branch`    | Branch to clone                 |
-| `--force`     | Force regeneration              |
-| `--model`     | Model override (provider/model) |
+| Option         | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| `--reference`  | Reference filename override                                |
+| `--sparse`     | Sparse checkout                                            |
+| `--branch`     | Branch to clone                                            |
+| `--clone-only` | Clone/update repo only; skip reference download/generation |
+| `--force`      | Force regeneration                                         |
+| `--model`      | Model override (provider/model)                            |
 
 ```bash
 ow pull tanstack/router
 ow pull https://github.com/facebook/react
 ow pull ./my-lib
 ow pull tanstack/router --force
+ow pull tanstack/router --clone-only
 ```
 
 ## ow generate
